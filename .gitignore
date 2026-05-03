@@ -68,3 +68,16 @@ app.*.map.json
 # Windows Self-Signed for msix
 windows/sign.pfx
 windows/sign.cer
+
+#VS Code
+.vs/
+
+#generated
+linux/flutter/generated_*
+windows/flutter/generated_*
+macos/flutter/generated_*
+Claude.md
+.claude/*
+.vscode/settings.json
+pubspec.lock
+macos/Flutter/GeneratedPluginRegistrant.swift

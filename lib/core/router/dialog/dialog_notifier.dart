@@ -4,7 +4,6 @@ import 'package:hiddify/core/router/dialog/widgets/action_at_closing_dialog.dart
 import 'package:hiddify/core/router/dialog/widgets/confirmation_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/custom_alert_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/experimental_feature_notice.dart';
-import 'package:hiddify/core/router/dialog/widgets/free_profile_consent_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/new_version_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/no_active_profile_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/ok_dialog.dart';
@@ -125,10 +124,6 @@ class DialogNotifier extends _$DialogNotifier {
 
   Future<void> showNoActiveProfile() async {
     return await _show<void>(const NoActiveProfileDialog());
-  }
-
-  Future<bool> showFreeProfileConsent({required String title, required String consent}) async {
-    return await _show<bool?>(FreeProfileConsentDialog(title: title, consent: consent)) ?? false;
   }
 
   Future<bool> showUnknownDomainsWarning({required String url}) async {
