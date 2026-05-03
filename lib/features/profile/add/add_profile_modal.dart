@@ -12,9 +12,9 @@ import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class AddProfileModal extends HookConsumerWidget {
-  const AddProfileModal({super.key, this.url});
-  // static const warpConsentGiven = "warp_consent_given";
+  const AddProfileModal({super.key, this.url, this.initialPage});
   final String? url;
+  final AddProfilePages? initialPage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,6 +27,22 @@ class AddProfileModal extends HookConsumerWidget {
         });
       }
     });
+
+    useEffect(() {
+      final initial = initialPage;
+      if (initial != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final notifier = ref.read(addProfilePageNotifierProvider.notifier);
+          switch (initial) {
+            case AddProfilePages.options:
+              notifier.goOptions();
+            case AddProfilePages.manual:
+              notifier.goManual();
+          }
+        });
+      }
+      return null;
+    }, const []);
 
     useMemoized(() async {
       await Future.delayed(const Duration(milliseconds: 200));
@@ -124,7 +140,9 @@ class AddProfileManual extends HookConsumerWidget {
                 Expanded(child: Text(t.common.manually, style: theme.textTheme.headlineMedium)),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: () => ref.read(addProfilePageNotifierProvider.notifier).goOptions(),
+                  onPressed: () {
+                    if (context.canPop()) context.pop();
+                  },
                 ),
               ],
             ),
