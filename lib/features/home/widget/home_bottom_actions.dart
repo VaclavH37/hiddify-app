@@ -29,6 +29,7 @@ class HomeBottomActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
+    final accent = Theme.of(context).colorScheme.primary;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(_gap, 0, _gap, _bottomGap),
@@ -76,6 +77,7 @@ class HomeBottomActions extends ConsumerWidget {
                     height: _buttonHeight,
                     title: t.common.clipboard,
                     icon: Icons.content_paste,
+                    color: accent,
                     onTap: () async {
                       final cr = await Clipboard.getData(Clipboard.kTextPlain).then((v) => v?.text ?? '');
                       await ref.read(addProfileNotifierProvider.notifier).addClipboard(cr);
@@ -87,6 +89,7 @@ class HomeBottomActions extends ConsumerWidget {
                     height: _buttonHeight,
                     title: t.common.manually,
                     icon: Icons.add,
+                    color: accent,
                     onTap: () => ref
                         .read(bottomSheetsNotifierProvider.notifier)
                         .showAddProfile(initialPage: AddProfilePages.manual),

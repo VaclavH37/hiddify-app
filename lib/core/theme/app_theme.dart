@@ -8,8 +8,14 @@ class AppTheme {
   final AppThemeMode mode;
   final String fontFamily;
 
-  ThemeData lightTheme(ColorScheme? lightColorScheme) {
-    final ColorScheme scheme = lightColorScheme ?? ColorScheme.fromSeed(seedColor: const Color(0xFF293CA0));
+  /// Brand accent. Used as the seed for the generated [ColorScheme] and forced
+  /// onto [ColorScheme.primary] so widgets reading the previous accent
+  /// (`theme.colorScheme.primary`) render in this exact hex.
+  static const Color brandAccent = Color(0xFFF59E0B);
+
+  ThemeData lightTheme(ColorScheme? _) {
+    final ColorScheme scheme =
+        ColorScheme.fromSeed(seedColor: brandAccent).copyWith(primary: brandAccent);
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
@@ -18,13 +24,17 @@ class AppTheme {
     );
   }
 
-  ThemeData darkTheme(ColorScheme? darkColorScheme) {
-    final ColorScheme scheme =
-        darkColorScheme ?? ColorScheme.fromSeed(seedColor: const Color(0xFF293CA0), brightness: Brightness.dark);
+  ThemeData darkTheme(ColorScheme? _) {
+    final ColorScheme scheme = ColorScheme.fromSeed(
+      seedColor: brandAccent,
+      brightness: Brightness.dark,
+    ).copyWith(primary: brandAccent);
+    const darkSurface = Color(0xFF09090B);
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: mode.trueBlack ? Colors.black : scheme.background,
+      appBarTheme: const AppBarTheme(backgroundColor: darkSurface),
       fontFamily: fontFamily,
       extensions: const <ThemeExtension<dynamic>>{ConnectionButtonTheme.light},
     );
