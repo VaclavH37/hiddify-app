@@ -20,8 +20,12 @@ class HomePage extends HookConsumerWidget {
       body: Container(
         decoration: BoxDecoration(
           color: theme.brightness == Brightness.dark ? const Color(0xFF09090B) : null,
-          image: const DecorationImage(
-            image: AssetImage('assets/images/world_map.png'),
+          image: DecorationImage(
+            image: AssetImage(
+              theme.brightness == Brightness.dark
+                  ? 'assets/images/constellation_dark.png'
+                  : 'assets/images/constellation_light.png',
+            ),
             fit: BoxFit.cover,
           ),
         ),

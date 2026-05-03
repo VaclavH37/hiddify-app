@@ -1,12 +1,11 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:hiddify/gen/fonts.gen.dart';
 import 'package:hiddify/gen/translations.g.dart';
 
 extension AppLocaleX on AppLocale {
+  // Persian keeps Shabnam (Geist lacks Persian glyphs); every other locale
+  // uses Geist as the default UI font.
   String get preferredFontFamily =>
-      this == AppLocale.fa ? FontFamily.shabnam : (kIsWeb || !Platform.isWindows ? "" : FontFamily.emoji);
+      this == AppLocale.fa ? FontFamily.shabnam : FontFamily.geist;
 
   String get localeName => switch (flutterLocale.toString()) {
     "ar" => "العربية",

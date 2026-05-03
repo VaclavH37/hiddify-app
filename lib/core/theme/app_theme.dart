@@ -9,13 +9,17 @@ class AppTheme {
   final String fontFamily;
 
   /// Brand accent. Used as the seed for the generated [ColorScheme] and forced
-  /// onto [ColorScheme.primary] so widgets reading the previous accent
+  /// onto [ColorScheme.primary] in dark mode so widgets reading the accent
   /// (`theme.colorScheme.primary`) render in this exact hex.
   static const Color brandAccent = Color(0xFFF59E0B);
 
+  /// Primary colour in light mode — a near-black for high contrast on light
+  /// surfaces. The amber [brandAccent] still seeds the rest of the palette.
+  static const Color lightPrimary = Color(0xFF09090B);
+
   ThemeData lightTheme(ColorScheme? _) {
     final ColorScheme scheme =
-        ColorScheme.fromSeed(seedColor: brandAccent).copyWith(primary: brandAccent);
+        ColorScheme.fromSeed(seedColor: brandAccent).copyWith(primary: lightPrimary);
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,

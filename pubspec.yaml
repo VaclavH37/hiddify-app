@@ -168,18 +168,23 @@ flutter:
     - assets/images/tray_icon_connected.png
     - assets/images/tray_icon_disconnected.ico
     - assets/images/tray_icon_disconnected.png
-    - assets/images/connect_norouz.PNG
-    - assets/images/disconnect_norouz.PNG
-    - assets/images/world_map.png
+    - assets/images/constellation_dark.png
+    - assets/images/constellation_light.png
     - assets/images/source/ic_launcher_border.png
 
   fonts:
     - family: Shabnam
       fonts:
         - asset: assets/fonts/Shabnam.ttf
-    # - family: Roboto
-    #   fonts:
-    #     - asset: assets/fonts/Roboto.ttf
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist-Regular.ttf
+        - asset: assets/fonts/Geist-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Geist-Bold.ttf
+          weight: 700
     - family: Emoji
       fonts:
         - asset: assets/fonts/Emoji.ttf

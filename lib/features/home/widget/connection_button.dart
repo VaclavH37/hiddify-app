@@ -31,7 +31,6 @@ class ConnectionButton extends HookConsumerWidget {
     final delay = activeProxy.valueOrNull?.urlTestDelay ?? 0;
 
     final requiresReconnect = ref.watch(configOptionNotifierProvider).valueOrNull;
-    final today = DateTime.now();
     // final animationController = useAnimationController(
     //   duration: const Duration(seconds: 1),
     // )..repeat(reverse: true); // Ensure the animation loops indefinitely
@@ -154,18 +153,16 @@ class ConnectionButton extends HookConsumerWidget {
       buttonColor: switch (connectionStatus) {
         AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
         AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color.fromARGB(255, 185, 176, 103),
-        AsyncData(value: Connected()) => buttonTheme.connectedColor!,
-        AsyncData(value: _) => buttonTheme.idleColor!,
+        AsyncData(value: Connected()) => const Color(0xFFF59E0B),
+        AsyncData(value: Connecting()) => const Color(0xFFF59E0B),
+        AsyncData(value: Disconnecting()) => const Color(0xFF1E3A8A),
+        AsyncData(value: Disconnected()) => const Color(0xFF1E3A8A),
+        AsyncData(value: _) => const Color(0xFF1E3A8A),
         _ => Colors.red,
       },
-      image: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => Assets.images.disconnectNorouz,
-        AsyncData(value: Connected()) => Assets.images.connectNorouz,
-        AsyncData(value: _) => Assets.images.disconnectNorouz,
-        _ => Assets.images.disconnectNorouz,
-        AsyncData(value: Disconnected()) || AsyncError() => Assets.images.disconnectNorouz,
-        AsyncData(value: Connected()) => Assets.images.connectNorouz,
-        _ => Assets.images.disconnectNorouz,
+      backgroundColor: switch (connectionStatus) {
+        AsyncData(value: Disconnected()) => const Color(0xFFF4F4F5),
+        _ => Colors.white,
       },
       newButtonColor: switch (connectionStatus) {
         AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
@@ -181,7 +178,6 @@ class ConnectionButton extends HookConsumerWidget {
         AsyncData(value: _) => true,
         _ => false,
       },
-      useImage: today.day >= 19 && today.day <= 23 && today.month == 3,
       secureLabel: secureLabel,
     );
   }
@@ -193,8 +189,7 @@ class _ConnectionButton extends StatelessWidget {
     required this.enabled,
     required this.label,
     required this.buttonColor,
-    required this.image,
-    required this.useImage,
+    required this.backgroundColor,
     required this.newButtonColor,
     required this.animated,
     required this.secureLabel,
@@ -204,8 +199,7 @@ class _ConnectionButton extends StatelessWidget {
   final bool enabled;
   final String label;
   final Color buttonColor;
-  final AssetGenImage image;
-  final bool useImage;
+  final Color backgroundColor;
   final String secureLabel;
 
   final Color newButtonColor;
@@ -233,22 +227,17 @@ class _ConnectionButton extends StatelessWidget {
             child: Material(
               key: const ValueKey("home_connection_button"),
               shape: const CircleBorder(),
-              color: Colors.white,
+              color: backgroundColor,
               child: InkWell(
                 focusColor: Colors.grey,
                 onTap: onTap,
                 child: Padding(
-                  padding: const EdgeInsets.all(36),
+                  padding: const EdgeInsets.all(12),
                   child: TweenAnimationBuilder(
                     tween: ColorTween(end: buttonColor),
-                    duration: const Duration(milliseconds: 250),
-                    builder: (context, value, child) {
-                      if (useImage) {
-                        return image.image();
-                      } else {
-                        return Assets.images.logo.svg(colorFilter: ColorFilter.mode(value!, BlendMode.srcIn));
-                      }
-                    },
+                    duration: const Duration(milliseconds: 600),
+                    builder: (context, value, child) =>
+                        Assets.images.logo.svg(colorFilter: ColorFilter.mode(value!, BlendMode.srcIn)),
                   ),
                 ),
               ),
