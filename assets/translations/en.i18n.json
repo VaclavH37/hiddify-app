@@ -519,7 +519,10 @@
       "remainingTraffic": "Remaining traffic",
       "remainingUsage": "Remaining",
       "profileSite": "Provider",
-      "profileSupport": "Support"
+      "profileSupport": "Support",
+      "monthlyQuota": "Monthly quota",
+      "percentUsed": "${percent}% used",
+      "daysLeft": "${days} days left"
     }
   },
   "dialogs": {

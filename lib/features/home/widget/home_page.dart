@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
 import 'package:hiddify/features/home/widget/home_bottom_actions.dart';
-import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
-import 'package:hiddify/features/profile/widget/profile_tile.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -14,7 +12,6 @@ class HomePage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final activeProfile = ref.watch(activeProfileProvider);
 
     return Scaffold(
       body: Container(
@@ -42,24 +39,21 @@ class HomePage extends HookConsumerWidget {
                   child: CustomScrollView(
                     slivers: [
                       MultiSliver(
-                        children: [
-                          switch (activeProfile) {
-                            AsyncData(value: final profile?) => ProfileTile(
-                              profile: profile,
-                              isMain: true,
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              color: Theme.of(context).colorScheme.surfaceContainer,
-                            ),
-                            _ => const Text(""),
-                          },
-                          const SliverFillRemaining(
+                        children: const [
+                          SliverFillRemaining(
                             hasScrollBody: false,
                             child: Stack(
                               children: [
                                 Center(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
-                                    children: [ConnectionButton(), ActiveProxyDelayIndicator()],
+                                    children: [
+                                      ConnectionButton(),
+                                      // Fixed-height slot so the button position stays
+                                      // constant whether the delay indicator is showing
+                                      // or not (it's empty pre-connect).
+                                      SizedBox(height: 48, child: ActiveProxyDelayIndicator()),
+                                    ],
                                   ),
                                 ),
                                 Align(
@@ -83,7 +77,7 @@ class HomePage extends HookConsumerWidget {
               ),
               const Align(
                 alignment: Alignment.bottomCenter,
-                child: HomeBottomActions(),
+                child: SafeArea(top: false, child: HomeBottomActions()),
               ),
             ],
           ),

@@ -40,16 +40,6 @@ abstract class BottomSheetConst {
   static const borderRadius = BorderRadius.vertical(top: Radius.circular(32));
 }
 
-abstract class ProfileTileConst {
-  static const radius = Radius.circular(16);
-  static const cardBorderRadius = BorderRadius.all(radius);
-  static const borderRadiusRight = BorderRadius.horizontal(right: radius);
-  static const borderRadiusLeft = BorderRadius.horizontal(left: radius);
-  static BorderRadius startBorderRadius(TextDirection direction) =>
-      direction == TextDirection.ltr ? borderRadiusLeft : borderRadiusRight;
-  static BorderRadius endBorderRadius(TextDirection direction) =>
-      direction == TextDirection.ltr ? borderRadiusRight : borderRadiusLeft;
-}
 
 abstract class IntroConst {
   static const maxwidth = 620;

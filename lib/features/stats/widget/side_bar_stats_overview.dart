@@ -7,6 +7,7 @@ import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/core/widget/animated_text.dart';
 import 'package:hiddify/features/stats/notifier/stats_notifier.dart';
 import 'package:hiddify/features/stats/widget/stats_card.dart';
+import 'package:hiddify/features/stats/widget/traffic_quota_card.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/number_formatters.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -103,6 +104,8 @@ class SideBarStatsOverview extends HookConsumerWidget {
               ],
             ),
           ),
+          const Gap(8),
+          const TrafficQuotaCard(),
         ],
       ),
     );
