@@ -70,4 +70,32 @@ void main() {
       expect(LinkParser.parse('rayn://something-else/$token'), isNull);
     });
   });
+
+  group('legacy schemes are rejected', () {
+    for (final scheme in const [
+      'hiddify',
+      'v2ray',
+      'v2rayn',
+      'v2rayng',
+      'clash',
+      'clashmeta',
+      'sing-box',
+    ]) {
+      test('$scheme:// is no longer accepted', () {
+        // Both the import-style path and the ?url= query-param form must
+        // return null now that only `rayn` is in `LinkParser.protocols`.
+        expect(LinkParser.parse('$scheme://import/https://example.com/sub'), isNull);
+        expect(LinkParser.parse('$scheme://x?url=https%3A%2F%2Fexample.com'), isNull);
+      });
+    }
+
+    test('bare https URL is rejected (no more simple() fallback)', () {
+      expect(LinkParser.parse('https://example.com/sub'), isNull);
+      expect(LinkParser.parse('https://subscription-api.example.com/abc?name=foo'), isNull);
+    });
+
+    test('protocols list contains only rayn', () {
+      expect(LinkParser.protocols, ['rayn']);
+    });
+  });
 }

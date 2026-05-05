@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/router/bottom_sheets/bottom_sheets_notifier.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/features/profile/add/widgets/fix_btn.dart';
 import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
@@ -82,17 +81,6 @@ class HomeBottomActions extends ConsumerWidget {
                       final cr = await Clipboard.getData(Clipboard.kTextPlain).then((v) => v?.text ?? '');
                       await ref.read(addProfileNotifierProvider.notifier).addClipboard(cr);
                     },
-                  ),
-                  const Gap(_gap),
-                  FixBtn(
-                    key: const ValueKey('home_add_manually_button'),
-                    height: _buttonHeight,
-                    title: t.common.manually,
-                    icon: Icons.add,
-                    color: accent,
-                    onTap: () => ref
-                        .read(bottomSheetsNotifierProvider.notifier)
-                        .showAddProfile(initialPage: AddProfilePages.manual),
                   ),
                 ],
               ),

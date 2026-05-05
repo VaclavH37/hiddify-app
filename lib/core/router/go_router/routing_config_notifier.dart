@@ -71,8 +71,6 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
         } else if (PlatformUtils.isDesktop && newUrlFromAppLink.isNotEmpty) {
           url = newUrlFromAppLink;
           newUrlFromAppLink = '';
-        } else if (state.uri.queryParameters['url'] != null) {
-          url = state.uri.queryParameters['url'];
         }
 
         if (!introCompleted) {

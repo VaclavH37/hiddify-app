@@ -53,13 +53,7 @@
   </keywords>
 
   <mime-types>
-    <mime-type>x-scheme-handler/hiddify</mime-type>
-    <mime-type>x-scheme-handler/v2ray</mime-type>
-    <mime-type>x-scheme-handler/v2rayn</mime-type>
-    <mime-type>x-scheme-handler/v2rayng</mime-type>
-    <mime-type>x-scheme-handler/clash</mime-type>
-    <mime-type>x-scheme-handler/clashmeta</mime-type>
-    <mime-type>x-scheme-handler/sing-box</mime-type>
+    <mime-type>x-scheme-handler/rayn</mime-type>
   </mime-types>
 
   <url type="homepage">https://hiddify.com</url>

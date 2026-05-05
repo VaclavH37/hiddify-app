@@ -60,20 +60,17 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
     if (state.isLoading) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      // final activeProfile = await ref.read(activeProfileProvider.future);
-      // final markAsActive = activeProfile == null || ref.read(Preferences.markNewProfileActive);
-      final TaskEither<ProfileFailure, Unit> task;
-      if (LinkParser.parse(rawInput) case (final rs)?) {
-        loggy.debug("adding profile, url: [${rs.url}]");
-        task = _profilesRepo.upsertRemote(
-          rs.url,
-          userOverride: rs.name.isNotEmpty ? UserOverride(name: rs.name) : null,
-          cancelToken: _cancelToken = CancelToken(),
-        );
-      } else {
-        loggy.debug("adding profile, content");
-        task = _profilesRepo.addLocal(safeDecodeBase64(rawInput));
+      final parsed = LinkParser.parse(rawInput);
+      if (parsed == null) {
+        loggy.warning("rejected import: not a valid rayn://import/<token> link");
+        throw const ProfileFailure.invalidUrl();
       }
+      loggy.debug("adding profile, url: [${parsed.url}]");
+      final task = _profilesRepo.upsertRemote(
+        parsed.url,
+        userOverride: parsed.name.isNotEmpty ? UserOverride(name: parsed.name) : null,
+        cancelToken: _cancelToken = CancelToken(),
+      );
       return await task
           .match(
             (err) {
@@ -83,26 +80,6 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
             (_) {
               loggy.info("successfully added profile");
               return unit;
-            },
-          )
-          .run();
-    });
-  }
-
-  Future<void> addManual({required String url, required UserOverride userOverride}) async {
-    if (state.isLoading) return;
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final task = _profilesRepo.upsertRemote(url, userOverride: userOverride);
-      return await task
-          .match(
-            (err) {
-              loggy.warning("failed to add profile", err);
-              throw err;
-            },
-            (r) {
-              loggy.info("successfully added profile, mark as active? [true]");
-              return r;
             },
           )
           .run();
@@ -159,14 +136,3 @@ class UpdateProfileNotifier extends _$UpdateProfileNotifier with AppLogger {
     });
   }
 }
-
-@riverpod
-class AddProfilePageNotifier extends _$AddProfilePageNotifier {
-  @override
-  AddProfilePages build() => AddProfilePages.options;
-
-  void goOptions() => state = AddProfilePages.options;
-  void goManual() => state = AddProfilePages.manual;
-}
-
-enum AddProfilePages { options, manual }
