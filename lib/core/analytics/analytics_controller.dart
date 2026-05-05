@@ -20,7 +20,9 @@ bool _testCrashReport = false;
 class AnalyticsController extends _$AnalyticsController with AppLogger {
   @override
   Future<bool> build() async {
-    return _preferences.getBool(enableAnalyticsPrefKey) ?? true;
+    // Default to false in this fork (per CLAUDE.md: Sentry disabled before
+    // shipping). Users can opt in via Settings → General.
+    return _preferences.getBool(enableAnalyticsPrefKey) ?? false;
   }
 
   SharedPreferences get _preferences => ref.read(sharedPreferencesProvider).requireValue;

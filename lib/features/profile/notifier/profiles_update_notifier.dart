@@ -1,10 +1,10 @@
 import 'package:dartx/dartx.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
-import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
+import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:meta/meta.dart';
 import 'package:neat_periodic_task/neat_periodic_task.dart';
@@ -37,11 +37,13 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       _scheduler = null;
     });
 
-    if (ref.watch(Preferences.introCompleted)) {
-      loggy.debug("intro done, starting");
+    // Only run the auto-update scheduler when the user has authenticated
+    // (i.e. a profile exists). Pre-auth there's nothing to refresh.
+    if (ref.watch(hasAnyProfileProvider).valueOrNull ?? false) {
+      loggy.debug("authenticated, starting profile auto-update");
       _scheduler?.start();
     } else {
-      loggy.debug("intro in process, skipping");
+      loggy.debug("not authenticated, skipping profile auto-update");
     }
     return const Stream.empty();
   }

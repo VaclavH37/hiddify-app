@@ -24,6 +24,9 @@ sealed class ProfileEntity with _$ProfileEntity {
     Map<String, dynamic>? populatedHeaders,
     String? profileOverride,
     UserOverride? userOverride,
+    // Original `rayn://import/<token>` captured at import — sensitive,
+    // exposed only via Settings → Account → Copy token.
+    String? sourceToken,
   }) = RemoteProfileEntity;
 
   const factory ProfileEntity.local({

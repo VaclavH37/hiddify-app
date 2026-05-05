@@ -38,6 +38,8 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
         case AsyncError(:final error):
           if (error case ProfileInvalidUrlFailure()) {
             notification.showErrorToast(t.pages.profiles.msg.invalidUrl);
+          } else if (error case ProfileAlreadyAuthenticatedFailure()) {
+            notification.showErrorToast(t.auth.alreadySignedIn);
           } else if (error case ProfileCancelByUserFailure()) {
             return;
           } else {
@@ -58,6 +60,14 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
 
   Future<void> addClipboard(String rawInput) async {
     if (state.isLoading) return;
+    // Single-profile rule: once a profile exists, the only way to switch is
+    // logout → re-auth. Reject any further import attempts.
+    final hasProfile = ref.read(hasAnyProfileProvider).valueOrNull ?? false;
+    if (hasProfile) {
+      loggy.warning("rejected import: already authenticated");
+      state = AsyncError(const ProfileFailure.alreadyAuthenticated(), StackTrace.current);
+      return;
+    }
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final parsed = LinkParser.parse(rawInput);
@@ -69,6 +79,7 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
       final task = _profilesRepo.upsertRemote(
         parsed.url,
         userOverride: parsed.name.isNotEmpty ? UserOverride(name: parsed.name) : null,
+        sourceToken: rawInput.trim(),
         cancelToken: _cancelToken = CancelToken(),
       );
       return await task

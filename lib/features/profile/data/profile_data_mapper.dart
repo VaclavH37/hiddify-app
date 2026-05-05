@@ -23,6 +23,7 @@ extension ProfileEntityMapper on ProfileEntity {
       expire: Value(rp.subInfo?.expire),
       webPageUrl: Value(rp.subInfo?.webPageUrl),
       supportUrl: Value(rp.subInfo?.supportUrl),
+      sourceToken: Value(rp.sourceToken),
     ),
     local: (lp) => ProfileEntriesCompanion.insert(
       id: lp.id,
@@ -50,6 +51,8 @@ extension ProfileEntityMapper on ProfileEntity {
       expire: Value(rp.subInfo?.expire),
       webPageUrl: Value(rp.subInfo?.webPageUrl),
       supportUrl: Value(rp.subInfo?.supportUrl),
+      // Deliberately omitted: sourceToken stays untouched on update so
+      // auto-refresh and `moved-permanently-to` migrations don't clear it.
     ),
     local: (lp) => ProfileEntriesCompanion(
       name: Value(lp.name),
@@ -98,6 +101,7 @@ extension ProfileEntryMapper on ProfileEntry {
         populatedHeaders: mPopulatedHeaders,
         profileOverride: profileOverride,
         userOverride: UserOverride.fromStr(userOverride),
+        sourceToken: sourceToken,
       ),
       ProfileType.local => LocalProfileEntity(
         id: id,

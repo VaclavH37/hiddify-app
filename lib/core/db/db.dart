@@ -14,7 +14,7 @@ class Db extends _$Db with InfraLogger {
   Db([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   static QueryExecutor _openConnection() {
     return LazyDatabase(
@@ -76,6 +76,15 @@ class Db extends _$Db with InfraLogger {
 
           await m.createTable(schema.appProxyEntries);
         },
+        from5To6: (m, schema) async {
+          final sourceTokenExists = await _columnExists(
+            schema.profileEntries.actualTableName,
+            schema.profileEntries.sourceToken.name,
+          );
+          if (!sourceTokenExists) {
+            await m.addColumn(schema.profileEntries, schema.profileEntries.sourceToken);
+          }
+        },
       ),
     );
   }
@@ -104,6 +113,9 @@ class ProfileEntries extends Table {
   TextColumn get populatedHeaders => text().nullable()();
   TextColumn get profileOverride => text().nullable()();
   TextColumn get userOverride => text().nullable()();
+  // Original `rayn://import/<token>` string captured at import time so the
+  // user can copy their token before logging out. Nullable for upgrade rows.
+  TextColumn get sourceToken => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

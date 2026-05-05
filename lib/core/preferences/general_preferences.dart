@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/model/environment.dart';
@@ -14,15 +13,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'general_preferences.g.dart';
 
-bool _debugIntroPage = false;
-
 abstract class Preferences {
-  static final introCompleted = PreferencesNotifier.create(
-    "intro_completed",
-    false,
-    overrideValue: _debugIntroPage && kDebugMode ? false : null,
-  );
-
   // Null means that auto selection has not been performed yet.
   static final autoAppsSelectionRegion = PreferencesNotifier.create<Region?, String?>(
     "auto_apps_selection_region",

@@ -90,6 +90,7 @@ class ProfileParser {
     required String url,
     required String tempFilePath,
     required UserOverride? userOverride,
+    String? sourceToken,
     CancelToken? cancelToken,
   }) => _downloadProfile(url, tempFilePath, cancelToken).flatMap(
     (remoteHeaders) =>
@@ -107,6 +108,7 @@ class ProfileParser {
                 lastUpdate: DateTime.now(),
                 userOverride: userOverride,
                 populatedHeaders: populatedHeaders,
+                sourceToken: sourceToken,
               ),
             ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected)),
           ),

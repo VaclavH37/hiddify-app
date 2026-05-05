@@ -120,10 +120,9 @@ class ConnectionButton extends HookConsumerWidget {
           return await ref.read(connectionNotifierProvider.notifier).reconnect(activeProfile);
         },
         AsyncData(value: Disconnected()) || AsyncError() => () async {
-          if (ref.read(activeProfileProvider).valueOrNull == null) {
-            await ref.read(dialogNotifierProvider.notifier).showNoActiveProfile();
-            return;
-          }
+          // Auth gate guarantees a profile exists by the time the home page
+          // is reachable; defensive null guard just no-ops.
+          if (ref.read(activeProfileProvider).valueOrNull == null) return;
           if (await ref.read(dialogNotifierProvider.notifier).showExperimentalFeatureNotice()) {
             return await ref.read(connectionNotifierProvider.notifier).toggleConnection();
           }

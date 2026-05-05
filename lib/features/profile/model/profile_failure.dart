@@ -18,6 +18,9 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
   const factory ProfileFailure.invalidUrl([String? message]) = ProfileInvalidUrlFailure;
 
   @With<ExpectedFailure>()
+  const factory ProfileFailure.alreadyAuthenticated() = ProfileAlreadyAuthenticatedFailure;
+
+  @With<ExpectedFailure>()
   const factory ProfileFailure.invalidConfig([String? message, ConfigOptionFailure? configOptionFailure]) =
       ProfileInvalidConfigFailure;
 
@@ -30,6 +33,7 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
       ProfileUnexpectedFailure() => (type: t.errors.profiles.unexpected, message: null),
       ProfileNotFoundFailure() => (type: t.errors.profiles.notFound, message: null),
       ProfileInvalidUrlFailure(:final message) => (type: t.errors.profiles.invalidUrl, message: message),
+      ProfileAlreadyAuthenticatedFailure() => (type: t.auth.alreadySignedIn, message: null),
       ProfileInvalidConfigFailure(:final message, :final configOptionFailure) =>
         configOptionFailure?.present(t) ?? (type: t.errors.profiles.invalidConfig, message: message),
       ProfileCancelByUserFailure(:final message) => (type: t.errors.profiles.canceledByUser, message: message),

@@ -124,6 +124,13 @@ class ProfileEntries extends Table with TableInfo {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  late final GeneratedColumn<String> sourceToken = GeneratedColumn<String>(
+    'source_token',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -142,6 +149,7 @@ class ProfileEntries extends Table with TableInfo {
     populatedHeaders,
     profileOverride,
     userOverride,
+    sourceToken,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -208,8 +216,8 @@ class AppProxyEntries extends Table with TableInfo {
   }
 }
 
-class DatabaseAtV5 extends GeneratedDatabase {
-  DatabaseAtV5(QueryExecutor e) : super(e);
+class DatabaseAtV6 extends GeneratedDatabase {
+  DatabaseAtV6(QueryExecutor e) : super(e);
   late final ProfileEntries profileEntries = ProfileEntries(this);
   late final AppProxyEntries appProxyEntries = AppProxyEntries(this);
   @override
@@ -221,7 +229,7 @@ class DatabaseAtV5 extends GeneratedDatabase {
     appProxyEntries,
   ];
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);

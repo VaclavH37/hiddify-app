@@ -90,6 +90,23 @@
     "termsAndPolicyCaution(rich)": "By continuing you agree to ${tap(@:pages.about.termsAndConditions)}",
     "info(rich)": "Made with ❤️ by Hiddify - ${tap_source(Open Source)} (${tap_license(License)})"
   },
+  "auth": {
+    "title": "Sign in with your token",
+    "subtitle": "Scan the QR code from your provider or paste your rayn:// link to continue.",
+    "scanQr": "Scan QR code",
+    "paste": "Paste from clipboard",
+    "pasteEmpty": "Clipboard is empty",
+    "alreadySignedIn": "You're already signed in. Log out first to use a different token.",
+    "account": "Account",
+    "copyToken": "Copy your token",
+    "tokenCopied": "Token copied to clipboard. Save it somewhere safe.",
+    "noTokenStored": "Token not available — re-import to make it copyable.",
+    "logout": "Log out",
+    "logoutConfirmTitle": "Log out?",
+    "logoutConfirmBody": "Logging out disconnects and removes your authentication token from this device.\nYour token will also be removed. If you don't have it saved, copy it first using the button above. Continue?",
+    "logoutConfirmAction": "Log out",
+    "logoutCancel": "Cancel"
+  },
   "pages": {
     "home": {
       "title": "Home",

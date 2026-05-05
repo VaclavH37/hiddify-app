@@ -5,6 +5,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
@@ -48,13 +49,14 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
         })
         .then((connection) => _modifyConnectionStatus(connection, urlTestDelay));
     final serviceMode = ref.watch(ConfigOptions.serviceMode);
+    final hasProfile = ref.watch(hasAnyProfileProvider).valueOrNull ?? false;
 
     await trayManager.setIcon(_trayIconPath(connection), isTemplate: PlatformUtils.isMacOS);
     if (!PlatformUtils.isLinux) await trayManager.setToolTip(_trayTooltip(connection, urlTestDelay, t));
-    await trayManager.setContextMenu(_trayMenu(connection, serviceMode, t));
+    await trayManager.setContextMenu(_trayMenu(connection, serviceMode, t, hasProfile));
   }
 
-  Menu _trayMenu(ConnectionStatus connection, ServiceMode serviceMode, Translations t) => Menu(
+  Menu _trayMenu(ConnectionStatus connection, ServiceMode serviceMode, Translations t, bool hasProfile) => Menu(
     items: [
       if (PlatformUtils.isLinux) ...[MenuItem(key: 'dashboard', label: t.common.dashboard), MenuItem.separator()],
       MenuItem(
@@ -65,7 +67,9 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
           Connected() => t.connection.disconnect,
           Disconnecting() => t.connection.disconnecting,
         },
-        disabled: connection.isSwitching,
+        // Disable Connect/Disconnect when no profile is imported — there's
+        // nothing to connect to and the connection notifier no-ops anyway.
+        disabled: connection.isSwitching || !hasProfile,
       ),
       MenuItem.submenu(
         label: t.pages.settings.inbound.serviceMode,

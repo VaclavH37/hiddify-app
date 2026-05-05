@@ -28,7 +28,12 @@ abstract interface class ProfileRepository {
     ProfilesSort sort = ProfilesSort.lastUpdate,
     SortMode sortMode = SortMode.ascending,
   });
-  TaskEither<ProfileFailure, Unit> upsertRemote(String url, {UserOverride? userOverride, CancelToken? cancelToken});
+  TaskEither<ProfileFailure, Unit> upsertRemote(
+    String url, {
+    UserOverride? userOverride,
+    String? sourceToken,
+    CancelToken? cancelToken,
+  });
   TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride});
   TaskEither<ProfileFailure, Unit> offlineUpdate(ProfileEntity nProfile, String nContent);
   TaskEither<ProfileFailure, Unit> validateConfig(String path, String tempPath, String? profileOverride, bool debug);
@@ -64,8 +69,43 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
         }
       }
 
+      await _enforceSingleProfileInvariant();
+
       return right(unit);
     }, ProfileUnexpectedFailure.new);
+  }
+
+  /// Reduces multi-profile installs to a single profile. Runs at every
+  /// bootstrap; idempotent. Picks the active profile (or, if none, the
+  /// most recently updated) and deletes the rest — both the Drift rows
+  /// and their JSON config files. The auth-gate model only ever creates
+  /// one profile, so this only matters once per upgrading user.
+  Future<void> _enforceSingleProfileInvariant() async {
+    final all = await _profileDataSource
+        .watchAll(sort: ProfilesSort.lastUpdate, sortMode: SortMode.descending)
+        .first;
+    if (all.length <= 1) {
+      if (all.length == 1 && !all.first.active) {
+        await _profileDataSource.edit(all.first.id, const ProfileEntriesCompanion(active: Value(true)));
+      }
+      return;
+    }
+
+    final keeper = all.firstWhere((p) => p.active, orElse: () => all.first);
+    loggy.info('reducing ${all.length} profiles to single-profile install; keeping [${keeper.id}]');
+    for (final p in all) {
+      if (p.id == keeper.id) continue;
+      await _profileDataSource.deleteById(p.id, false);
+      try {
+        final f = _profilePathResolver.file(p.id);
+        if (await f.exists()) await f.delete();
+      } catch (e, st) {
+        loggy.warning('failed to delete config file for [${p.id}]', e, st);
+      }
+    }
+    if (!keeper.active) {
+      await _profileDataSource.edit(keeper.id, const ProfileEntriesCompanion(active: Value(true)));
+    }
   }
 
   @override
@@ -124,56 +164,61 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
   }
 
   @override
-  TaskEither<ProfileFailure, Unit> upsertRemote(String url, {UserOverride? userOverride, CancelToken? cancelToken}) =>
-      TaskEither.tryCatch(
-        () async => await _profileDataSource.getByUrl(url).then((profEntry) => profEntry?.toEntity()),
-        ProfileFailure.unexpected,
-      ).flatMap((profEntity) {
-        // if profile is null, generate id
-        final id = profEntity?.id ?? const Uuid().v4();
-        final file = _profilePathResolver.file(id);
-        final tempFile = _profilePathResolver.tempFile(id);
-        try {
-          if (profEntity != null && profEntity is RemoteProfileEntity) {
-            // Update
-            if (userOverride != null) {
-              profEntity = profEntity.copyWith(userOverride: userOverride);
-            }
-            return _profileParser
-                .updateRemote(rp: profEntity, tempFilePath: tempFile.path, cancelToken: cancelToken)
-                .flatMap(
-                  (profEntity) =>
-                      validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
-                        (unit) => TaskEither.tryCatch(() async {
-                          await _profileDataSource.edit(id, profEntity);
-                          return unit;
-                        }, ProfileFailure.unexpected),
-                      ),
-                );
-          } else {
-            // Add
-            return _profileParser
-                .addRemote(
-                  id: id,
-                  url: url,
-                  tempFilePath: tempFile.path,
-                  userOverride: userOverride,
-                  cancelToken: cancelToken,
-                )
-                .flatMap(
-                  (profEntity) =>
-                      validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
-                        (unit) => TaskEither.tryCatch(() async {
-                          await _profileDataSource.insert(profEntity);
-                          return unit;
-                        }, ProfileFailure.unexpected),
-                      ),
-                );
-          }
-        } finally {
-          if (tempFile.existsSync()) tempFile.deleteSync();
+  TaskEither<ProfileFailure, Unit> upsertRemote(
+    String url, {
+    UserOverride? userOverride,
+    String? sourceToken,
+    CancelToken? cancelToken,
+  }) => TaskEither.tryCatch(
+    () async => await _profileDataSource.getByUrl(url).then((profEntry) => profEntry?.toEntity()),
+    ProfileFailure.unexpected,
+  ).flatMap((profEntity) {
+    // if profile is null, generate id
+    final id = profEntity?.id ?? const Uuid().v4();
+    final file = _profilePathResolver.file(id);
+    final tempFile = _profilePathResolver.tempFile(id);
+    try {
+      if (profEntity != null && profEntity is RemoteProfileEntity) {
+        // Update
+        if (userOverride != null) {
+          profEntity = profEntity.copyWith(userOverride: userOverride);
         }
-      });
+        return _profileParser
+            .updateRemote(rp: profEntity, tempFilePath: tempFile.path, cancelToken: cancelToken)
+            .flatMap(
+              (profEntity) =>
+                  validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
+                    (unit) => TaskEither.tryCatch(() async {
+                      await _profileDataSource.edit(id, profEntity);
+                      return unit;
+                    }, ProfileFailure.unexpected),
+                  ),
+            );
+      } else {
+        // Add
+        return _profileParser
+            .addRemote(
+              id: id,
+              url: url,
+              tempFilePath: tempFile.path,
+              userOverride: userOverride,
+              sourceToken: sourceToken,
+              cancelToken: cancelToken,
+            )
+            .flatMap(
+              (profEntity) =>
+                  validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
+                    (unit) => TaskEither.tryCatch(() async {
+                      await _profileDataSource.insert(profEntity);
+                      return unit;
+                    }, ProfileFailure.unexpected),
+                  ),
+            );
+      }
+    } finally {
+      if (tempFile.existsSync()) tempFile.deleteSync();
+    }
+  });
 
   @override
   TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride}) =>

@@ -5,7 +5,6 @@ import 'package:hiddify/core/router/dialog/widgets/confirmation_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/custom_alert_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/experimental_feature_notice.dart';
 import 'package:hiddify/core/router/dialog/widgets/new_version_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/no_active_profile_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/ok_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/proxy_info_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/save_dialog.dart';
@@ -15,7 +14,6 @@ import 'package:hiddify/core/router/dialog/widgets/setting_picker_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_radio_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_slider_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_text_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/sort_profiles_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/unknown_domains_warning_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/warp_license_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/window_closing_dialog.dart';
@@ -49,10 +47,6 @@ class DialogNotifier extends _$DialogNotifier {
 
   Future<String?> showQrScanner() async {
     return await _show<String?>(const QrCodeScannerDialog());
-  }
-
-  Future<void> showSortProfiles() async {
-    return await _show<void>(const SortProfilesDialog());
   }
 
   Future<bool> showWarpLicense() async {
@@ -120,10 +114,6 @@ class DialogNotifier extends _$DialogNotifier {
       return await _show<bool?>(const ExperimentalFeatureNoticeDialog()) ?? false;
     }
     return true;
-  }
-
-  Future<void> showNoActiveProfile() async {
-    return await _show<void>(const NoActiveProfileDialog());
   }
 
   Future<bool> showUnknownDomainsWarning({required String url}) async {
