@@ -156,7 +156,7 @@ class ProfileParser {
           cancelToken: cancelToken,
           userAgent: _ref.read(ConfigOptions.useXrayCoreWhenPossible)
               ? _httpClient.userAgent.replaceAll("HiddifyNext", "HiddifyNextX")
-              : null,
+              : "Rayn",
         )
         .catchError((err) {
           if (CancelToken.isCancel(err as DioException)) {
@@ -214,7 +214,7 @@ class ProfileParser {
             cancelToken: cancelToken,
             userAgent: ref.read(ConfigOptions.useXrayCoreWhenPossible)
                 ? httpClient.userAgent.replaceAll('HiddifyNext', 'HiddifyNextX')
-                : null,
+                : "Rayn",
           );
 
           results[currentIndex] = (await File(tmpPath).readAsString()).trim();

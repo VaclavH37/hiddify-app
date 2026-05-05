@@ -10,6 +10,7 @@ export 'mutation_state.dart';
 export 'number_formatters.dart';
 export 'placeholders.dart';
 export 'platform_utils.dart';
+export 'rayn_token.dart';
 export 'sentry_riverpod_observer.dart';
 export 'sentry_utils.dart';
 export 'text_utils.dart';

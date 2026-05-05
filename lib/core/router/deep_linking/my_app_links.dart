@@ -13,5 +13,7 @@ Stream<String> myAppLinks(Ref ref) async* {
       registerProtocolHandler(protocol);
     }
   }
-  yield* AppLinks().uriLinkStream.map((event) => event.toString());
+  // stringLinkStream preserves the raw URL bytes; uriLinkStream lowercases
+  // the authority, which corrupts case-sensitive payloads like base64url.
+  yield* AppLinks().stringLinkStream;
 }
