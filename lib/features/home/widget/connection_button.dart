@@ -12,10 +12,8 @@ import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/settings/notifier/config_option/config_option_notifier.dart';
 import 'package:hiddify/gen/assets.gen.dart';
-import 'package:hiddify/singbox/model/singbox_config_enum.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 // TODO: rewrite
@@ -106,13 +104,7 @@ class ConnectionButton extends HookConsumerWidget {
     //   //   animationValue: animationValue,
     //   // );
     // }
-    var secureLabel =
-        (ref.watch(ConfigOptions.enableWarp) && ref.watch(ConfigOptions.warpDetourMode) == WarpDetourMode.warpOverProxy)
-        ? t.connection.secure
-        : "";
-    if (delay <= 0 || delay > 65000 || connectionStatus.value != const Connected()) {
-      secureLabel = "";
-    }
+    const secureLabel = "";
     return _ConnectionButton(
       onTap: switch (connectionStatus) {
         AsyncData(value: Connected()) when requiresReconnect == true => () async {

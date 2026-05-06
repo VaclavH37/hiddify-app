@@ -117,22 +117,6 @@ class GeneralPage extends HookConsumerWidget {
                   await ref.read(ConfigOptions.urlTestInterval.notifier).update(Duration(minutes: value.toInt()));
                 }),
           ),
-          ValuePreferenceWidget(
-            value: ref.watch(ConfigOptions.clashApiPort),
-            preferences: ref.watch(ConfigOptions.clashApiPort.notifier),
-            title: t.pages.settings.general.clashApiPort,
-            icon: Icons.api_rounded,
-            validateInput: isPort,
-            digitsOnly: true,
-            inputToValue: int.tryParse,
-          ),
-          SwitchListTile.adaptive(
-            title: Text(t.pages.settings.general.useXrayCoreWhenPossible),
-            subtitle: Text(t.pages.settings.general.useXrayCoreWhenPossibleMsg),
-            secondary: const Icon(Icons.extension_rounded),
-            value: ref.watch(ConfigOptions.useXrayCoreWhenPossible),
-            onChanged: ref.read(ConfigOptions.useXrayCoreWhenPossible.notifier).update,
-          ),
         ],
       ),
     );

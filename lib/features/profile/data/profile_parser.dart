@@ -9,7 +9,6 @@ import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/features/profile/data/profile_data_mapper.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/singbox/model/singbox_proxy_type.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -35,9 +34,9 @@ class ProfileParser {
     'connection-test-url',
     'direct-dns-address',
     'remote-dns-address',
-    'warp',
-    'warp2',
     'tls-tricks',
+    'dns',
+    'route',
   ];
   static const allowedProfileHeaders = [
     'profile-title',
@@ -46,7 +45,6 @@ class ProfileParser {
     'profile-update-interval',
     'support-url',
     'profile-web-page-url',
-    'enable-warp',
     'enable-fragment',
   ];
 
@@ -171,14 +169,7 @@ class ProfileParser {
     //   throw const ProfileFailure.invalidUrl('HTTP is not supported. Please use HTTPS for secure connection.');
 
     final rs = await _httpClient
-        .download(
-          url.trim(),
-          tempFilePath,
-          cancelToken: cancelToken,
-          userAgent: _ref.read(ConfigOptions.useXrayCoreWhenPossible)
-              ? _httpClient.userAgent.replaceAll("HiddifyNext", "HiddifyNextX")
-              : "Rayn",
-        )
+        .download(url.trim(), tempFilePath, cancelToken: cancelToken, userAgent: "Rayn")
         .catchError((err) {
           if (CancelToken.isCancel(err as DioException)) {
             throw const ProfileFailure.cancelByUser('HTTP request for getting profile content canceled by user.');
@@ -255,14 +246,7 @@ class ProfileParser {
         try {
           final tmpPath = '$tempFilePath.$currentIndex';
 
-          await httpClient.download(
-            line,
-            tmpPath,
-            cancelToken: cancelToken,
-            userAgent: ref.read(ConfigOptions.useXrayCoreWhenPossible)
-                ? httpClient.userAgent.replaceAll('HiddifyNext', 'HiddifyNextX')
-                : "Rayn",
-          );
+          await httpClient.download(line, tmpPath, cancelToken: cancelToken, userAgent: "Rayn");
 
           results[currentIndex] = (await File(tmpPath).readAsString()).trim();
         } catch (err) {
@@ -383,12 +367,6 @@ class ProfileParser {
             case LocalProfileEntity():
               name = protocol(File(tempFilePath).readAsStringSync());
           }
-        }
-
-        if (headers['enable-warp'].toString() == 'true' || profile.userOverride?.enableWarp == true) {
-          final value = {'enable': true, 'mode': 'warp_over_proxy'};
-          headers['warp'] = value;
-          headers['warp2'] = value;
         }
 
         if (headers['enable-fragment'].toString() == 'true' || profile.userOverride?.enableFragment == true) {

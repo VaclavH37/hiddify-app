@@ -36,8 +36,7 @@ abstract class ConfigOptions {
     mapFrom: Region.values.byName,
     mapTo: (value) => value.name,
   );
-  static final useXrayCoreWhenPossible = PreferencesNotifier.create<bool, bool>("use-xray-core-when-possible", false);
-  static final blockAds = PreferencesNotifier.create<bool, bool>("block-ads", false);
+  static final blockAds = PreferencesNotifier.create<bool, bool>("block-ads", true);
   static final logLevel = PreferencesNotifier.create<LogLevel, String>(
     "log-level",
     LogLevel.warn,
@@ -56,12 +55,9 @@ abstract class ConfigOptions {
 
   static final remoteDnsAddress = PreferencesNotifier.create<String, String>(
     "remote-dns-address",
-    "tcp://8.8.8.8",
+    "https://1.1.1.1/dns-query",
     possibleValues: List.of([
       "local",
-      // "udp://223.5.5.5",
-      // "udp://1.1.1.1",
-      // "udp://1.1.1.2",
       "tcp://8.8.8.8",
       "tcp://1.1.1.1",
       "https://1.1.1.1/dns-query",
@@ -73,26 +69,22 @@ abstract class ConfigOptions {
 
   static final remoteDnsDomainStrategy = PreferencesNotifier.create<DomainStrategy, String>(
     "remote-dns-domain-strategy",
-    DomainStrategy.auto,
+    DomainStrategy.ipv4Only,
     mapFrom: (value) => DomainStrategy.values.firstWhere((e) => e.key == value),
     mapTo: (value) => value.key,
   );
 
   static final directDnsAddress = PreferencesNotifier.create<String, String>(
     "direct-dns-address",
-    "udp://1.1.1.1",
+    "https://dns.alidns.com/dns-query",
     possibleValues: List.of([
       "local",
-      "udp://223.5.5.5",
-      "udp://1.1.1.1",
-      "udp://1.1.1.2",
-      "tcp://1.1.1.1",
+      "https://dns.alidns.com/dns-query",
       "https://1.1.1.1/dns-query",
       "https://dns.cloudflare.com/dns-query",
-      "4.4.2.2",
-      "8.8.8.8",
+      "tcp://1.1.1.1",
+      "tcp://223.5.5.5",
     ]),
-    defaultValueFunction: (ref) => ref.read(region) == Region.cn ? "223.5.5.5" : "1.1.1.1",
     validator: (value) => value.isNotBlank,
   );
 
@@ -161,19 +153,13 @@ abstract class ConfigOptions {
     mapTo: const IntervalInSecondsConverter().toJson,
   );
 
-  static final enableClashApi = PreferencesNotifier.create<bool, bool>("enable-clash-api", true);
-
-  static final clashApiPort = PreferencesNotifier.create<int, int>(
-    "clash-api-port",
-    16756,
-    validator: (value) => isPort(value.toString()),
-  );
+  static const _kClashApiPort = 16756;
 
   static final bypassLan = PreferencesNotifier.create<bool, bool>("bypass-lan", false);
 
   static final allowConnectionFromLan = PreferencesNotifier.create<bool, bool>("allow-connection-from-lan", false);
 
-  static final enableFakeDns = PreferencesNotifier.create<bool, bool>("enable-fake-dns", false);
+  static final enableFakeDns = PreferencesNotifier.create<bool, bool>("enable-fake-dns", true);
 
   // static final enableDnsRouting = PreferencesNotifier.create<bool, bool>("enable-dns-routing", true);
 
@@ -229,55 +215,20 @@ abstract class ConfigOptions {
     mapTo: (value) => value.name,
   );
 
-  static final enableWarp = PreferencesNotifier.create<bool, bool>("enable-warp", false);
-
-  static final warpDetourMode = PreferencesNotifier.create<WarpDetourMode, String>(
-    "warp-detour-mode",
-    WarpDetourMode.warpOverProxy,
-    mapFrom: WarpDetourMode.values.byName,
-    mapTo: (value) => value.name,
+  static const _disabledWarp = SingboxWarpOption(
+    enable: false,
+    mode: WarpDetourMode.warpOverProxy,
+    wireguardConfig: "",
+    licenseKey: "",
+    accountId: "",
+    accessToken: "",
+    cleanIp: "auto",
+    cleanPort: 0,
+    noise: OptionalRange(min: 1, max: 3),
+    noiseMode: "m4",
+    noiseSize: OptionalRange(min: 10, max: 30),
+    noiseDelay: OptionalRange(min: 10, max: 30),
   );
-
-  static final warpLicenseKey = PreferencesNotifier.create<String, String>("warp-license-key", "");
-  static final warp2LicenseKey = PreferencesNotifier.create<String, String>("warp2s-license-key", "");
-
-  static final warpAccountId = PreferencesNotifier.create<String, String>("warp-account-id", "");
-  static final warp2AccountId = PreferencesNotifier.create<String, String>("warp2-account-id", "");
-
-  static final warpAccessToken = PreferencesNotifier.create<String, String>("warp-access-token", "");
-  static final warp2AccessToken = PreferencesNotifier.create<String, String>("warp2-access-token", "");
-
-  static final warpCleanIp = PreferencesNotifier.create<String, String>("warp-clean-ip", "auto");
-
-  static final warpPort = PreferencesNotifier.create<int, int>(
-    "warp-port",
-    0,
-    validator: (value) => isPort(value.toString()),
-  );
-
-  static final warpNoise = PreferencesNotifier.create<OptionalRange, String>(
-    "warp-noise",
-    const OptionalRange(min: 1, max: 3),
-    mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
-    mapTo: const OptionalRangeJsonConverter().toJson,
-  );
-  static final warpNoiseMode = PreferencesNotifier.create<String, String>("warp-noise-mode", "m4");
-
-  static final warpNoiseDelay = PreferencesNotifier.create<OptionalRange, String>(
-    "warp-noise-delay",
-    const OptionalRange(min: 10, max: 30),
-    mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
-    mapTo: const OptionalRangeJsonConverter().toJson,
-  );
-  static final warpNoiseSize = PreferencesNotifier.create<OptionalRange, String>(
-    "warp-noise-size",
-    const OptionalRange(min: 10, max: 30),
-    mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
-    mapTo: const OptionalRangeJsonConverter().toJson,
-  );
-
-  static final warpWireguardConfig = PreferencesNotifier.create<String, String>("warp-wireguard-config", "");
-  static final warp2WireguardConfig = PreferencesNotifier.create<String, String>("warp2-wireguard-config", "");
 
   static final hasExperimentalFeatures = Provider.autoDispose<bool>((ref) {
     // final mode = ref.watch(serviceMode);
@@ -292,22 +243,12 @@ abstract class ConfigOptions {
   });
 
   /// preferences to exclude from share and export
-  static final privatePreferencesKeys = {
-    "warp.license-key",
-    "warp.access-token",
-    "warp.account-id",
-    "warp.wireguard-config",
-    "warp2.license-key",
-    "warp2.access-token",
-    "warp2.account-id",
-    "warp2.wireguard-config",
-  };
+  static final privatePreferencesKeys = <String>{};
 
   static final Map<String, StateNotifierProvider<PreferencesNotifier, dynamic>> preferences = {
     "region": region,
     "balancer-strategy": balancerStrategy,
     "block-ads": blockAds,
-    "use-xray-core-when-possible": useXrayCoreWhenPossible,
     "service-mode": serviceMode,
     "log-level": logLevel,
     "resolve-destination": resolveDestination,
@@ -325,7 +266,6 @@ abstract class ConfigOptions {
     "strict-route": strictRoute,
     "connection-test-url": connectionTestUrl,
     "url-test-interval": urlTestInterval,
-    "clash-api-port": clashApiPort,
     "bypass-lan": bypassLan,
     "allow-connection-from-lan": allowConnectionFromLan,
     // "enable-dns-routing": enableDnsRouting,
@@ -344,24 +284,6 @@ abstract class ConfigOptions {
     "tls-tricks.mixed-sni-case": enableTlsMixedSniCase,
     "tls-tricks.enable-padding": enableTlsPadding,
     "tls-tricks.padding-size": tlsPaddingSize,
-
-    // warp
-    "warp.enable": enableWarp,
-    "warp.mode": warpDetourMode,
-    "warp.license-key": warpLicenseKey,
-    "warp.account-id": warpAccountId,
-    "warp.access-token": warpAccessToken,
-    "warp.clean-ip": warpCleanIp,
-    "warp.clean-port": warpPort,
-    "warp.noise": warpNoise,
-    "warp.noise-size": warpNoiseSize,
-    "warp.noise-mode": warpNoiseMode,
-    "warp.noise-delay": warpNoiseDelay,
-    "warp.wireguard-config": warpWireguardConfig,
-    "warp2.license-key": warp2LicenseKey,
-    "warp2.account-id": warp2AccountId,
-    "warp2.access-token": warp2AccessToken,
-    "warp2.wireguard-config": warp2WireguardConfig,
   };
 
   static final singboxConfigOptions = Provider<SingboxConfigOption>((ref) {
@@ -413,7 +335,7 @@ abstract class ConfigOptions {
       region: ref.watch(region).name,
       balancerStrategy: ref.watch(balancerStrategy),
       blockAds: ref.watch(blockAds),
-      useXrayCoreWhenPossible: ref.watch(useXrayCoreWhenPossible),
+      useXrayCoreWhenPossible: false,
       executeConfigAsIs: false,
       logLevel: ref.watch(logLevel),
       resolveDestination: ref.watch(resolveDestination),
@@ -431,8 +353,8 @@ abstract class ConfigOptions {
       strictRoute: ref.watch(strictRoute),
       connectionTestUrl: ref.watch(connectionTestUrl),
       urlTestInterval: ref.watch(urlTestInterval),
-      enableClashApi: ref.watch(enableClashApi),
-      clashApiPort: ref.watch(clashApiPort),
+      enableClashApi: true,
+      clashApiPort: _kClashApiPort,
       enableTun: mode == ServiceMode.tun,
       // enableTunService: mode == false, //ServiceMode.tunService,
       setSystemProxy: mode == ServiceMode.systemProxy,
@@ -455,34 +377,8 @@ abstract class ConfigOptions {
         enablePadding: ref.watch(enableTlsPadding),
         paddingSize: ref.watch(tlsPaddingSize),
       ),
-      warp: SingboxWarpOption(
-        enable: ref.watch(enableWarp),
-        mode: ref.watch(warpDetourMode),
-        wireguardConfig: ref.watch(warpWireguardConfig),
-        licenseKey: ref.watch(warpLicenseKey),
-        accountId: ref.watch(warpAccountId),
-        accessToken: ref.watch(warpAccessToken),
-        cleanIp: ref.watch(warpCleanIp),
-        cleanPort: ref.watch(warpPort),
-        noise: ref.watch(warpNoise),
-        noiseMode: ref.watch(warpNoiseMode),
-        noiseSize: ref.watch(warpNoiseSize),
-        noiseDelay: ref.watch(warpNoiseDelay),
-      ),
-      warp2: SingboxWarpOption(
-        enable: ref.watch(enableWarp),
-        mode: ref.watch(warpDetourMode),
-        wireguardConfig: ref.watch(warp2WireguardConfig),
-        licenseKey: ref.watch(warp2LicenseKey),
-        accountId: ref.watch(warp2AccountId),
-        accessToken: ref.watch(warp2AccessToken),
-        cleanIp: ref.watch(warpCleanIp),
-        cleanPort: ref.watch(warpPort),
-        noise: ref.watch(warpNoise),
-        noiseMode: ref.watch(warpNoiseMode),
-        noiseSize: ref.watch(warpNoiseSize),
-        noiseDelay: ref.watch(warpNoiseDelay),
-      ),
+      warp: _disabledWarp,
+      warp2: _disabledWarp,
       rules: rules,
     );
   });
