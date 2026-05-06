@@ -51,8 +51,11 @@ extension ProfileEntityMapper on ProfileEntity {
       expire: Value(rp.subInfo?.expire),
       webPageUrl: Value(rp.subInfo?.webPageUrl),
       supportUrl: Value(rp.subInfo?.supportUrl),
-      // Deliberately omitted: sourceToken stays untouched on update so
-      // auto-refresh and `moved-permanently-to` migrations don't clear it.
+      // url + sourceToken persist any backend-driven token rotation
+      // (`new-url` response header). When no rotation occurred, the values
+      // match the existing row so the write is a benign no-op.
+      url: Value(rp.url),
+      sourceToken: Value(rp.sourceToken),
     ),
     local: (lp) => ProfileEntriesCompanion(
       name: Value(lp.name),

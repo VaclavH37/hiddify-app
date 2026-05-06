@@ -13,6 +13,7 @@ import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/singbox/model/singbox_proxy_type.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:loggy/loggy.dart';
 import 'package:meta/meta.dart';
 
 /// parse profile subscription url and headers for data
@@ -51,6 +52,8 @@ class ProfileParser {
 
   final Ref _ref;
   final DioHttpClient _httpClient;
+
+  static final _log = Loggy('profile_parser');
 
   ProfileParser({required Ref ref, required DioHttpClient httpClient}) : _ref = ref, _httpClient = httpClient;
   TaskEither<ProfileFailure, ProfileEntriesCompanion> addLocal({
@@ -92,46 +95,62 @@ class ProfileParser {
     required UserOverride? userOverride,
     String? sourceToken,
     CancelToken? cancelToken,
-  }) => _downloadProfile(url, tempFilePath, cancelToken).flatMap(
-    (remoteHeaders) =>
-        TaskEither.fromEither(
-          populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
-        ).flatMap(
-          (populatedHeaders) => TaskEither.fromEither(
-            parse(
-              tempFilePath: tempFilePath,
-              profile: ProfileEntity.remote(
-                id: id,
-                active: true,
-                name: '',
-                url: url,
-                lastUpdate: DateTime.now(),
-                userOverride: userOverride,
-                populatedHeaders: populatedHeaders,
-                sourceToken: sourceToken,
-              ),
-            ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected)),
+  }) => _downloadProfile(url, tempFilePath, cancelToken).flatMap((remoteHeaders) {
+    final rotation = extractRotation(remoteHeaders);
+    final effectiveUrl = rotation?.url ?? url;
+    final effectiveSourceToken = rotation?.name ?? sourceToken;
+    if (rotation != null) {
+      _log.info(
+        'rotating subscription URL on import (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
+      );
+    }
+    return TaskEither.fromEither(
+      populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
+    ).flatMap(
+      (populatedHeaders) => TaskEither.fromEither(
+        parse(
+          tempFilePath: tempFilePath,
+          profile: ProfileEntity.remote(
+            id: id,
+            active: true,
+            name: '',
+            url: effectiveUrl,
+            lastUpdate: DateTime.now(),
+            userOverride: userOverride,
+            populatedHeaders: populatedHeaders,
+            sourceToken: effectiveSourceToken,
           ),
-        ),
-  );
+        ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected)),
+      ),
+    );
+  });
 
   TaskEither<ProfileFailure, ProfileEntriesCompanion> updateRemote({
     required RemoteProfileEntity rp,
     required String tempFilePath,
     CancelToken? cancelToken,
-  }) => _downloadProfile(rp.url, tempFilePath, cancelToken).flatMap(
-    (remoteHeaders) =>
-        TaskEither.fromEither(
-          populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
-        ).flatMap(
-          (populatedHeaders) => TaskEither.fromEither(
-            parse(
-              tempFilePath: tempFilePath,
-              profile: rp.copyWith(populatedHeaders: populatedHeaders),
-            ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected)),
-          ),
-        ),
-  );
+  }) => _downloadProfile(rp.url, tempFilePath, cancelToken).flatMap((remoteHeaders) {
+    final rotation = extractRotation(remoteHeaders);
+    final RemoteProfileEntity rotated;
+    if (rotation != null && rotation.name != rp.sourceToken) {
+      _log.info(
+        'rotating subscription URL on refresh (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
+      );
+      rotated = rp.copyWith(url: rotation.url, sourceToken: rotation.name);
+    } else {
+      rotated = rp;
+    }
+    return TaskEither.fromEither(
+      populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
+    ).flatMap(
+      (populatedHeaders) => TaskEither.fromEither(
+        parse(
+          tempFilePath: tempFilePath,
+          profile: rotated.copyWith(populatedHeaders: populatedHeaders),
+        ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected)),
+      ),
+    );
+  });
 
   Either<ProfileFailure, ProfileEntriesCompanion> offlineUpdate({
     required ProfileEntity profile,
@@ -178,6 +197,32 @@ class ProfileParser {
       return MapEntry(key, value);
     });
   }, (err, st) => err is ProfileFailure ? err : ProfileFailure.unexpected(err, st));
+
+  /// Reads the optional `new-url` rotation header on a subscription response,
+  /// validates it parses as a `rayn://import/<token>` deep link, and decrypts
+  /// to recover the underlying https URL. Returns the parsed link or null if
+  /// the header is absent or invalid for any reason — callers fall through to
+  /// using the existing URL/token unchanged.
+  ///
+  /// `result.url` is the decrypted https URL; `result.name` carries the raw
+  /// `rayn://import/<token>` string the caller persists as the new sourceToken.
+  static ProfileLink? extractRotation(Map<String, dynamic> headers) {
+    final raw = headers['new-url'];
+    final value = switch (raw) {
+      final String s => s,
+      final List l when l.isNotEmpty => l.first?.toString(),
+      _ => null,
+    };
+    if (value == null || value.trim().isEmpty) return null;
+    final trimmed = value.trim();
+    final parsed = LinkParser.parse(trimmed);
+    if (parsed == null) {
+      _log.warning('rotation header `new-url` rejected — not a valid rayn://import/<token> link');
+      return null;
+    }
+    return (url: parsed.url, name: trimmed);
+  }
+
   Future<void> expandRemoteLinesInParallel({
     required String tempFilePath,
     required DioHttpClient httpClient,
