@@ -102,6 +102,12 @@ class ProfileParser {
         'rotating subscription URL on import (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
       );
     }
+    final fallback = extractFallback(remoteHeaders);
+    if (fallback != null) {
+      _log.info(
+        'capturing fallback URL on import (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})',
+      );
+    }
     return TaskEither.fromEither(
       populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
     ).flatMap(
@@ -117,6 +123,8 @@ class ProfileParser {
             userOverride: userOverride,
             populatedHeaders: populatedHeaders,
             sourceToken: effectiveSourceToken,
+            fallbackUrl: fallback?.url,
+            fallbackSourceToken: fallback?.name,
           ),
         ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected)),
       ),
@@ -127,16 +135,21 @@ class ProfileParser {
     required RemoteProfileEntity rp,
     required String tempFilePath,
     CancelToken? cancelToken,
-  }) => _downloadProfile(rp.url, tempFilePath, cancelToken).flatMap((remoteHeaders) {
+  }) => _downloadWithFailover(rp, tempFilePath, cancelToken).flatMap((remoteHeaders) {
     final rotation = extractRotation(remoteHeaders);
-    final RemoteProfileEntity rotated;
+    var rotated = rp;
     if (rotation != null && rotation.name != rp.sourceToken) {
       _log.info(
         'rotating subscription URL on refresh (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
       );
-      rotated = rp.copyWith(url: rotation.url, sourceToken: rotation.name);
-    } else {
-      rotated = rp;
+      rotated = rotated.copyWith(url: rotation.url, sourceToken: rotation.name);
+    }
+    final fallback = extractFallback(remoteHeaders);
+    if (fallback != null && fallback.name != rp.fallbackSourceToken) {
+      _log.info(
+        'updating fallback URL on refresh (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})',
+      );
+      rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.name);
     }
     return TaskEither.fromEither(
       populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
@@ -189,6 +202,44 @@ class ProfileParser {
     });
   }, (err, st) => err is ProfileFailure ? err : ProfileFailure.unexpected(err, st));
 
+  /// Wraps [_downloadProfile] with the fallback-URL failover policy. Used by
+  /// [updateRemote] only — initial imports go through [_downloadProfile]
+  /// directly because there is no stored fallback to consult yet.
+  ///
+  /// Trigger: any [ProfileFailure] from the primary URL after dio's
+  /// RetryInterceptor exhausts (timeouts, DNS, connect refused, HTTP 4xx/5xx —
+  /// all wrapped uniformly as `ProfileFailure.unexpected` by `_downloadProfile`).
+  /// **Excludes** [ProfileCancelByUserFailure] — user cancellation propagates
+  /// immediately. If the fallback attempt itself is cancelled, the cancel
+  /// surfaces (most recent user intent); if it fails for any other reason, the
+  /// original primary failure surfaces so the user-facing toast describes what
+  /// they actually saw.
+  TaskEither<ProfileFailure, Map<String, dynamic>> _downloadWithFailover(
+    RemoteProfileEntity rp,
+    String tempFilePath,
+    CancelToken? cancelToken,
+  ) => TaskEither(() async {
+    final primary = await _downloadProfile(rp.url, tempFilePath, cancelToken).run();
+    final primaryFailure = primary.fold<ProfileFailure?>((l) => l, (_) => null);
+    if (primaryFailure == null) return primary;
+    if (primaryFailure is ProfileCancelByUserFailure) return primary;
+    final fallback = rp.fallbackUrl;
+    if (fallback == null || fallback.isEmpty) return primary;
+    _log.info(
+      'primary subscription URL failed (${Uri.tryParse(rp.url)?.host ?? "?"}); '
+      'attempting fallback (${Uri.tryParse(fallback)?.host ?? "?"})',
+    );
+    final secondary = await _downloadProfile(fallback, tempFilePath, cancelToken).run();
+    final secondaryFailure = secondary.fold<ProfileFailure?>((l) => l, (_) => null);
+    if (secondaryFailure == null) {
+      _log.info('fallback subscription URL succeeded');
+      return secondary;
+    }
+    if (secondaryFailure is ProfileCancelByUserFailure) return secondary;
+    _log.warning('fallback URL also failed; surfacing original primary failure');
+    return primary;
+  });
+
   /// Reads the optional `new-url` rotation header on a subscription response,
   /// validates it parses as a `rayn://import/<token>` deep link, and decrypts
   /// to recover the underlying https URL. Returns the parsed link or null if
@@ -209,6 +260,31 @@ class ProfileParser {
     final parsed = LinkParser.parse(trimmed);
     if (parsed == null) {
       _log.warning('rotation header `new-url` rejected — not a valid rayn://import/<token> link');
+      return null;
+    }
+    return (url: parsed.url, name: trimmed);
+  }
+
+  /// Reads the optional `fallback-url` response header on a subscription
+  /// response, validates it parses as `rayn://import/<token>`, and decrypts
+  /// to recover the underlying https URL. Returns the parsed link or null
+  /// if the header is absent or invalid for any reason — callers fall
+  /// through to keeping the existing fallback unchanged.
+  ///
+  /// `result.url` is the decrypted https URL; `result.name` carries the raw
+  /// `rayn://import/<token>` string the caller persists as `fallbackSourceToken`.
+  static ProfileLink? extractFallback(Map<String, dynamic> headers) {
+    final raw = headers['fallback-url'];
+    final value = switch (raw) {
+      final String s => s,
+      final List l when l.isNotEmpty => l.first?.toString(),
+      _ => null,
+    };
+    if (value == null || value.trim().isEmpty) return null;
+    final trimmed = value.trim();
+    final parsed = LinkParser.parse(trimmed);
+    if (parsed == null) {
+      _log.warning('fallback header `fallback-url` rejected — not a valid rayn://import/<token> link');
       return null;
     }
     return (url: parsed.url, name: trimmed);

@@ -24,6 +24,8 @@ extension ProfileEntityMapper on ProfileEntity {
       webPageUrl: Value(rp.subInfo?.webPageUrl),
       supportUrl: Value(rp.subInfo?.supportUrl),
       sourceToken: Value(rp.sourceToken),
+      fallbackUrl: Value(rp.fallbackUrl),
+      fallbackSourceToken: Value(rp.fallbackSourceToken),
     ),
     local: (lp) => ProfileEntriesCompanion.insert(
       id: lp.id,
@@ -52,10 +54,14 @@ extension ProfileEntityMapper on ProfileEntity {
       webPageUrl: Value(rp.subInfo?.webPageUrl),
       supportUrl: Value(rp.subInfo?.supportUrl),
       // url + sourceToken persist any backend-driven token rotation
-      // (`new-url` response header). When no rotation occurred, the values
-      // match the existing row so the write is a benign no-op.
+      // (`new-url` response header). fallbackUrl + fallbackSourceToken
+      // persist the optional `fallback-url` header. When neither header
+      // is present (or matches the existing value), the writes are
+      // benign no-ops.
       url: Value(rp.url),
       sourceToken: Value(rp.sourceToken),
+      fallbackUrl: Value(rp.fallbackUrl),
+      fallbackSourceToken: Value(rp.fallbackSourceToken),
     ),
     local: (lp) => ProfileEntriesCompanion(
       name: Value(lp.name),
@@ -105,6 +111,8 @@ extension ProfileEntryMapper on ProfileEntry {
         profileOverride: profileOverride,
         userOverride: UserOverride.fromStr(userOverride),
         sourceToken: sourceToken,
+        fallbackUrl: fallbackUrl,
+        fallbackSourceToken: fallbackSourceToken,
       ),
       ProfileType.local => LocalProfileEntity(
         id: id,

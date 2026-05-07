@@ -165,37 +165,15 @@ abstract class ConfigOptions {
 
   static final independentDnsCache = PreferencesNotifier.create<bool, bool>("independent-dns-cache", true);
 
-  static final enableTlsFragment = PreferencesNotifier.create<bool, bool>("enable-tls-fragment", false);
-
-  static final fragmentPackets = PreferencesNotifier.create<String, String>(
-    "fragment-packets",
-    "tlshello",
-    possibleValues: ["tlshello", "1-1", "1-2", "1-3", "1-4", "1-5"],
-  );
-
-  static final tlsFragmentSize = PreferencesNotifier.create<OptionalRange, String>(
-    "tls-fragment-size",
-    const OptionalRange(min: 10, max: 30),
-    mapFrom: OptionalRange.parse,
-    mapTo: const OptionalRangeJsonConverter().toJson,
-  );
-
-  static final tlsFragmentSleep = PreferencesNotifier.create<OptionalRange, String>(
-    "tls-fragment-sleep",
-    const OptionalRange(min: 2, max: 8),
-    mapFrom: OptionalRange.parse,
-    mapTo: const OptionalRangeJsonConverter().toJson,
-  );
-
-  static final enableTlsMixedSniCase = PreferencesNotifier.create<bool, bool>("enable-tls-mixed-sni-case", false);
-
-  static final enableTlsPadding = PreferencesNotifier.create<bool, bool>("enable-tls-padding", false);
-
-  static final tlsPaddingSize = PreferencesNotifier.create<OptionalRange, String>(
-    "tls-padding-size",
-    const OptionalRange(min: 1, max: 1500),
-    mapFrom: OptionalRange.parse,
-    mapTo: const OptionalRangeJsonConverter().toJson,
+  // TLS tricks (fragment / mixed-SNI / padding) are forced off — they conflict
+  // with REALITY-VISION-XTLS + uTLS fingerprinting.
+  static const _disabledTlsTricks = SingboxTlsTricks(
+    enableFragment: false,
+    fragmentSize: OptionalRange(min: 10, max: 30),
+    fragmentSleep: OptionalRange(min: 2, max: 8),
+    mixedSniCase: false,
+    enablePadding: false,
+    paddingSize: OptionalRange(min: 1, max: 1500),
   );
 
   static final enableMux = PreferencesNotifier.create<bool, bool>("enable-mux", false);
@@ -275,15 +253,6 @@ abstract class ConfigOptions {
     // "mux.padding": muxPadding,
     // "mux.max-streams": muxMaxStreams,
     // "mux.protocol": muxProtocol,
-
-    // tls-tricks
-    "tls-tricks.enable-fragment": enableTlsFragment,
-    "tls-tricks.fragment-packets": fragmentPackets,
-    "tls-tricks.fragment-size": tlsFragmentSize,
-    "tls-tricks.fragment-sleep": tlsFragmentSleep,
-    "tls-tricks.mixed-sni-case": enableTlsMixedSniCase,
-    "tls-tricks.enable-padding": enableTlsPadding,
-    "tls-tricks.padding-size": tlsPaddingSize,
   };
 
   static final singboxConfigOptions = Provider<SingboxConfigOption>((ref) {
@@ -369,14 +338,7 @@ abstract class ConfigOptions {
       //   maxStreams: ref.watch(muxMaxStreams),
       //   protocol: ref.watch(muxProtocol),
       // ),
-      tlsTricks: SingboxTlsTricks(
-        enableFragment: ref.watch(enableTlsFragment),
-        fragmentSize: ref.watch(tlsFragmentSize),
-        fragmentSleep: ref.watch(tlsFragmentSleep),
-        mixedSniCase: ref.watch(enableTlsMixedSniCase),
-        enablePadding: ref.watch(enableTlsPadding),
-        paddingSize: ref.watch(tlsPaddingSize),
-      ),
+      tlsTricks: _disabledTlsTricks,
       warp: _disabledWarp,
       warp2: _disabledWarp,
       rules: rules,

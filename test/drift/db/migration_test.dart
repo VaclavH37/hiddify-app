@@ -9,6 +9,7 @@ import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
 import 'generated/schema_v6.dart' as v6;
+import 'generated/schema_v7.dart' as v7;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -140,6 +141,79 @@ void main() {
             .get();
         expect(
           newColumns.where((row) => row.data['name'] == 'source_token'),
+          hasLength(1),
+        );
+        await newDb.close();
+      },
+    );
+
+    test(
+      'migration from v6 to v7 adds fallback_url and fallback_source_token when missing',
+      () async {
+        final schema = await verifier.schemaAt(6);
+        addTearDown(() => schema.rawDatabase.dispose());
+
+        final oldDb = v6.DatabaseAtV6(schema.newConnection());
+        final oldColumns = await oldDb
+            .customSelect('PRAGMA table_info(profile_entries);')
+            .get();
+        expect(
+          oldColumns.where((row) => row.data['name'] == 'fallback_url'),
+          isEmpty,
+        );
+        expect(
+          oldColumns.where((row) => row.data['name'] == 'fallback_source_token'),
+          isEmpty,
+        );
+        await oldDb.close();
+
+        final migratedDb = Db(schema.newConnection());
+        await verifier.migrateAndValidate(migratedDb, 7);
+        await migratedDb.close();
+
+        final newDb = v7.DatabaseAtV7(schema.newConnection());
+        final newColumns = await newDb
+            .customSelect('PRAGMA table_info(profile_entries);')
+            .get();
+        expect(
+          newColumns.where((row) => row.data['name'] == 'fallback_url'),
+          hasLength(1),
+        );
+        expect(
+          newColumns.where((row) => row.data['name'] == 'fallback_source_token'),
+          hasLength(1),
+        );
+        await newDb.close();
+      },
+    );
+
+    test(
+      'migration from v6 to v7 skips adding fallback columns when they already exist',
+      () async {
+        final schema = await verifier.schemaAt(6);
+        addTearDown(() => schema.rawDatabase.dispose());
+
+        schema.rawDatabase.execute(
+          'ALTER TABLE profile_entries ADD COLUMN fallback_url TEXT NULL;',
+        );
+        schema.rawDatabase.execute(
+          'ALTER TABLE profile_entries ADD COLUMN fallback_source_token TEXT NULL;',
+        );
+
+        final migratedDb = Db(schema.newConnection());
+        await verifier.migrateAndValidate(migratedDb, 7);
+        await migratedDb.close();
+
+        final newDb = v7.DatabaseAtV7(schema.newConnection());
+        final newColumns = await newDb
+            .customSelect('PRAGMA table_info(profile_entries);')
+            .get();
+        expect(
+          newColumns.where((row) => row.data['name'] == 'fallback_url'),
+          hasLength(1),
+        );
+        expect(
+          newColumns.where((row) => row.data['name'] == 'fallback_source_token'),
           hasLength(1),
         );
         await newDb.close();

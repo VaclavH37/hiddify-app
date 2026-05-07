@@ -14,7 +14,7 @@ class Db extends _$Db with InfraLogger {
   Db([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   static QueryExecutor _openConnection() {
     return LazyDatabase(
@@ -85,6 +85,22 @@ class Db extends _$Db with InfraLogger {
             await m.addColumn(schema.profileEntries, schema.profileEntries.sourceToken);
           }
         },
+        from6To7: (m, schema) async {
+          final fallbackUrlExists = await _columnExists(
+            schema.profileEntries.actualTableName,
+            schema.profileEntries.fallbackUrl.name,
+          );
+          if (!fallbackUrlExists) {
+            await m.addColumn(schema.profileEntries, schema.profileEntries.fallbackUrl);
+          }
+          final fallbackTokenExists = await _columnExists(
+            schema.profileEntries.actualTableName,
+            schema.profileEntries.fallbackSourceToken.name,
+          );
+          if (!fallbackTokenExists) {
+            await m.addColumn(schema.profileEntries, schema.profileEntries.fallbackSourceToken);
+          }
+        },
       ),
     );
   }
@@ -116,6 +132,15 @@ class ProfileEntries extends Table {
   // Original `rayn://import/<token>` string captured at import time so the
   // user can copy their token before logging out. Nullable for upgrade rows.
   TextColumn get sourceToken => text().nullable()();
+  // Decrypted https URL parsed from the optional `fallback-url` response
+  // header. Used by the parser failover path when the primary URL is
+  // unreachable. Independent channel from `url`/`sourceToken` — the
+  // primary is never overwritten.
+  TextColumn get fallbackUrl => text().nullable()();
+  // Raw `rayn://import/<token>` string the fallback header arrived as,
+  // persisted for parity with `sourceToken`. Decryption-as-validation
+  // already happened, so this is opaque ciphertext at rest.
+  TextColumn get fallbackSourceToken => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

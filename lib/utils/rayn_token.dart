@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:loggy/loggy.dart';
 import 'package:meta/meta.dart';
@@ -84,8 +85,13 @@ abstract class RaynTokenDecryptor {
       _log.warning('rayn token plaintext is not valid UTF-8');
       return null;
     }
-    if (!url.startsWith('https://')) {
-      _log.warning('rayn token plaintext is not an https URL');
+    // Release builds enforce https. Debug builds additionally accept http://
+    // so the local test-subscription-server can be exercised without TLS.
+    // Compile-time gate — the bypass is dead-code-eliminated in release.
+    final isHttps = url.startsWith('https://');
+    final isDebugHttp = kDebugMode && url.startsWith('http://');
+    if (!isHttps && !isDebugHttp) {
+      _log.warning('rayn token plaintext is not an http(s) URL');
       return null;
     }
     return url;

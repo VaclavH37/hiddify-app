@@ -18,7 +18,6 @@ import 'package:hiddify/features/settings/overview/sections/dns_options_page.dar
 import 'package:hiddify/features/settings/overview/sections/general_page.dart';
 import 'package:hiddify/features/settings/overview/sections/inbound_options_page.dart';
 import 'package:hiddify/features/settings/overview/sections/route_options_page.dart';
-import 'package:hiddify/features/settings/overview/sections/tls_tricks_page.dart';
 import 'package:hiddify/features/settings/overview/settings_page.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -159,12 +158,6 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                       path: '/inbound-options',
                       pageBuilder: (_, state) =>
                           customTransition(TransitionType.slide, state.pageKey, const InboundOptionsPage()),
-                    ),
-                    GoRoute(
-                      name: 'tlsTricks',
-                      path: '/tls-tricks',
-                      pageBuilder: (_, state) =>
-                          customTransition(TransitionType.slide, state.pageKey, const TlsTricksPage()),
                     ),
                     if (isMobileBreakpoint) ...[
                       GoRoute(

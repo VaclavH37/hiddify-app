@@ -27,6 +27,12 @@ sealed class ProfileEntity with _$ProfileEntity {
     // Original `rayn://import/<token>` captured at import — sensitive,
     // exposed only via Settings → Account → Copy token.
     String? sourceToken,
+    // Decrypted https URL from a `fallback-url` response header; used
+    // when the primary URL fails after dio's RetryInterceptor exhausts.
+    String? fallbackUrl,
+    // Raw `rayn://import/<token>` string the fallback header arrived as,
+    // persisted alongside `fallbackUrl` for parity with `sourceToken`.
+    String? fallbackSourceToken,
   }) = RemoteProfileEntity;
 
   const factory ProfileEntity.local({
