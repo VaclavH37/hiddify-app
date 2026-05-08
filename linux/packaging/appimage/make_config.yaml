@@ -51,4 +51,4 @@ supported_mime_type:
 #   - libcurl.so.4
 include: []
 
-metainfo: linux/packaging/app.hiddify.com.appdata.xml
+metainfo: linux/packaging/com.raynlabs.app.appdata.xml

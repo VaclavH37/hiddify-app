@@ -36,5 +36,10 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+# Suppress the linker's auto-generated UAC entry so runner.exe.manifest's
+# requireAdministrator declaration is the sole source of truth (otherwise
+# mt.exe fails LNK1327 trying to merge level=asInvoker with requireAdministrator).
+target_link_options(${BINARY_NAME} PRIVATE "/MANIFESTUAC:NO")
+
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)

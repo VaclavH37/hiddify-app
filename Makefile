@@ -125,7 +125,7 @@ generate_kotlin_protos:
 	# # Find .proto files and update package declarations
 	# find "./android/app/src/main/java/com/hiddify/hiddify/protos" -type f -name "*.java" | while read -r proto_file; do \
 	#     if grep -q "^package " "$$proto_file"; then \
-	#         $(SED) 's/^package \([\w\.]*\)/package com.hiddify.hiddify.protos.\1/g' "$$proto_file"; \
+	#         $(SED) 's/^package \([\w\.]*\)/package com.raynlabs.app.protos.\1/g' "$$proto_file"; \
 	#     fi \
 	# done
 
@@ -385,7 +385,7 @@ linux-appimage-release:
 	$(BLUE)Granting permissions$(DONE); \
 	chmod +x squashfs-root/AppRun; \
 	$(BLUE)Adding StartupWMClass to hiddify.desktop$(DONE); \
-	sed -i '/^\[Desktop Entry\]/a StartupWMClass=app.hiddify.com' "squashfs-root/hiddify.desktop"; \
+	sed -i '/^\[Desktop Entry\]/a StartupWMClass=com.raynlabs.app' "squashfs-root/hiddify.desktop"; \
 	$(BLUE)Removing old AppImage$(DONE); \
 	rm *.AppImage; \
 	$(BLUE)Deleting bundled libstdc++ to fix Arch Linux compatibility...$(DONE); \

@@ -474,7 +474,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: service_account.json
-          packageName: app.hiddify.com
+          packageName: com.raynlabs.app
           releaseName: ${{ env.TAG_NAME }}
           releaseFiles: ./hiddify-android-market.aab
           track: 'beta'
@@ -501,13 +501,13 @@ jobs:
 
       - uses: Apple-Actions/download-provisioning-profiles@v1
         with:
-          bundle-id: app.hiddify.com
+          bundle-id: com.raynlabs.app
           issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
           api-key-id: ${{ secrets.APPSTORE_API_KEY_ID }}
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
       - uses: Apple-Actions/download-provisioning-profiles@v1
         with:
-          bundle-id: app.hiddify.com.SingBoxPacketTunnel
+          bundle-id: com.raynlabs.app.HiddifyPacketTunnel
           issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
           api-key-id: ${{ secrets.APPSTORE_API_KEY_ID }}
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}

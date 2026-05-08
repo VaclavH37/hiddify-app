@@ -56,7 +56,7 @@ Name=Hiddify
 Exec="$APPIMAGE"
 Icon=hiddify
 Terminal=false
-StartupWMClass=app.hiddify.com
+StartupWMClass=com.raynlabs.app
 EOF
 
     chmod +x "$TARGET_DESKTOP"

@@ -34,7 +34,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.hiddify.ios</string>
+			<string>com.raynlabs.app</string>
 		</dict>
 	</array>
 	<key>FlutterDeepLinkingEnabled</key>
