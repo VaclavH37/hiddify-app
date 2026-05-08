@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/model/environment.dart';
-import 'package:hiddify/core/model/region.dart';
 import 'package:hiddify/core/preferences/actions_at_closing.dart';
 
 import 'package:hiddify/core/preferences/preferences_provider.dart';
@@ -14,26 +13,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'general_preferences.g.dart';
 
 abstract class Preferences {
-  // Null means that auto selection has not been performed yet.
-  static final autoAppsSelectionRegion = PreferencesNotifier.create<Region?, String?>(
-    "auto_apps_selection_region",
-    null,
-    mapFrom: (value) => value == null || value.isEmpty ? null : Region.values.byName(value),
-    mapTo: (value) => value == null ? '' : value.name,
-  );
-
-  static final autoAppsSelectionUpdateInterval = PreferencesNotifier.create<double, double>(
-    "auto_apps_selection_update_interval",
-    1.0,
-  );
-
-  static final autoAppsSelectionLastUpdate = PreferencesNotifier.create<DateTime?, String?>(
-    "auto_apps_selection_last_update",
-    null,
-    mapFrom: (value) => value == null ? null : DateTime.tryParse(value),
-    mapTo: (value) => value?.toIso8601String(),
-  );
-
   static final includeApps = PreferencesNotifier.create<List<String>, List<String>>(
     "per_app_proxy_include_list",
     <String>[],

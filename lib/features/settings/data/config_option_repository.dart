@@ -1,7 +1,6 @@
 import 'package:dartx/dartx.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/optional_range.dart';
-import 'package:hiddify/core/model/region.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
 import 'package:hiddify/core/utils/json_converters.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
@@ -30,12 +29,6 @@ abstract class ConfigOptions {
     mapTo: (value) => value.key,
   );
 
-  static final region = PreferencesNotifier.create<Region, String>(
-    "region",
-    Region.other,
-    mapFrom: Region.values.byName,
-    mapTo: (value) => value.name,
-  );
   static final blockAds = PreferencesNotifier.create<bool, bool>("block-ads", true);
   static final logLevel = PreferencesNotifier.create<LogLevel, String>(
     "log-level",
@@ -224,7 +217,6 @@ abstract class ConfigOptions {
   static final privatePreferencesKeys = <String>{};
 
   static final Map<String, StateNotifierProvider<PreferencesNotifier, dynamic>> preferences = {
-    "region": region,
     "balancer-strategy": balancerStrategy,
     "block-ads": blockAds,
     "service-mode": serviceMode,
@@ -256,52 +248,13 @@ abstract class ConfigOptions {
   };
 
   static final singboxConfigOptions = Provider<SingboxConfigOption>((ref) {
-    // final region = ref.watch(Preferences.region);
     final rules = <SingboxRule>[];
-    // final rules = switch (region) {
-    //   Region.ir => [
-    //       const SingboxRule(
-    //         domains: "domain:.ir,geosite:ir",
-    //         ip: "geoip:ir",
-    //         outbound: RuleOutbound.bypass,
-    //       ),
-    //     ],
-    //   Region.cn => [
-    //       const SingboxRule(
-    //         domains: "domain:.cn,geosite:cn",
-    //         ip: "geoip:cn",
-    //         outbound: RuleOutbound.bypass,
-    //       ),
-    //     ],
-    //   Region.ru => [
-    //       const SingboxRule(
-    //         domains: "domain:.ru",
-    //         ip: "geoip:ru",
-    //         outbound: RuleOutbound.bypass,
-    //       ),
-    //     ],
-    //   Region.af => [
-    //       const SingboxRule(
-    //         domains: "domain:.af,geosite:af",
-    //         ip: "geoip:af",
-    //         outbound: RuleOutbound.bypass,
-    //       ),
-    //     ],
-    //   Region.id => [
-    //       const SingboxRule(
-    //         domains: "domain:.id,geosite:id",
-    //         ip: "geoip:id",
-    //         outbound: RuleOutbound.bypass,
-    //       ),
-    //     ],
-    //   _ => <SingboxRule>[],
-    // };
-
     final mode = ref.watch(serviceMode);
-    // final reg = ref.watch(Preferences.region.notifier).raw();
 
     return SingboxConfigOption(
-      region: ref.watch(region).name,
+      // Region is locked to "other" — Go core's builder skips its geo-rule
+      // download / country-bypass injection branch when region == "other".
+      region: "other",
       balancerStrategy: ref.watch(balancerStrategy),
       blockAds: ref.watch(blockAds),
       useXrayCoreWhenPossible: false,

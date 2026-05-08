@@ -126,7 +126,6 @@
       "activeProfileName": "目前設定檔：「${name}」",
       "nonActiveProfileName": "選擇「${name}」作為目前設定檔",
       "freeSubNotFound": "未找到免費訂閱",
-      "freeSubNotFoundForRegion": "未找到「${region}」地區的免費訂閱",
       "failedToLoad": "載入失敗",
       "updateSubscriptions": "更新訂閱",
       "share": {
@@ -242,7 +241,6 @@
               "clipboard": "複製選擇到剪貼簿",
               "file": "匯出選擇到檔案"
             },
-            "shareToAll": "分享給所有人",
             "clearAllSelections": "清除所有選擇"
           },
           "modes": {
@@ -252,34 +250,7 @@
             "allMsg": "代理所有應用程式",
             "proxyMsg": "僅代理選定應用程式",
             "bypassMsg": "不代理選定應用程式"
-          },
-          "autoSelection": {
-            "title": "自動選擇",
-            "performNow": "立即執行",
-            "resetToDefault": "重設為預設",
-            "autoUpdateInterval": "自動更新間隔",
-            "toast": {
-              "success": "自動選擇應用程式成功完成",
-              "failure": "自動選擇失敗",
-              "regionNotFound": "未找到「${region}」地區的自動選擇",
-              "alreadyInAuto": "您的選擇已在自動清單中"
-            },
-            "dialog": {
-              "title": "自動選擇應用程式",
-              "msg": "由於地區更改為「${region}」，依應用程式代理的自動選擇功能已被停用"
-            }
           }
-        },
-        "region": "地區",
-        "regions": {
-          "ir": "伊朗 (ir)",
-          "cn": "中國 (cn)",
-          "ru": "俄羅斯 (ru)",
-          "af": "阿富汗 (af)",
-          "id": "印尼 (id)",
-          "tr": "土耳其 (tr)",
-          "br": "巴西 (br)",
-          "other": "其他"
         },
         "balancerStrategy": {
           "title": "Balancer 策略",
@@ -536,10 +507,6 @@
         }
       },
       "perAppProxy": {
-        "shareOnGithub": {
-          "title": "改進自動選擇",
-          "msg": "透過分享您選擇的應用程式，可以幫助完善「自動選擇」清單"
-        },
         "import": {
           "msg": "這將取代您目前所有的依應用程式代理選擇。您確定要繼續嗎？"
         }

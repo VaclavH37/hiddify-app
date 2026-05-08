@@ -126,7 +126,6 @@
       "activeProfileName": "Nama profil aktif: \"${name}\".",
       "nonActiveProfileName": "Pilih \"${name}\" sebagai profil aktif",
       "freeSubNotFound": "Tidak ada langganan gratis yang ditemukan",
-      "freeSubNotFoundForRegion": "Tidak ada langganan gratis yang ditemukan untuk wilayah \"${region}\"",
       "failedToLoad": "Gagal memuat",
       "updateSubscriptions": "Perbarui langganan",
       "share": {
@@ -242,7 +241,6 @@
               "clipboard": "Salin pilihan ke papan klip",
               "file": "Ekspor pilihan ke file"
             },
-            "shareToAll": "Bagikan ke semua",
             "clearAllSelections": "Hapus semua pilihan"
           },
           "modes": {
@@ -252,34 +250,7 @@
             "allMsg": "Proxy semua aplikasi",
             "proxyMsg": "Proxy hanya aplikasi yang dipilih",
             "bypassMsg": "Jangan proxy aplikasi yang dipilih"
-          },
-          "autoSelection": {
-            "title": "Pilihan otomatis",
-            "performNow": "Lakukan sekarang",
-            "resetToDefault": "Setel ulang ke default",
-            "autoUpdateInterval": "Interval pembaruan otomatis",
-            "toast": {
-              "success": "Pilihan aplikasi otomatis berhasil diselesaikan",
-              "failure": "Pilihan otomatis gagal",
-              "regionNotFound": "Pilihan otomatis tidak ditemukan untuk wilayah \"${region}\"",
-              "alreadyInAuto": "Pilihan Anda sudah ada dalam daftar otomatis"
-            },
-            "dialog": {
-              "title": "Pilihan aplikasi otomatis",
-              "msg": "Fitur pilihan otomatis untuk proxy per aplikasi dinonaktifkan karena perubahan wilayah menjadi \"${region}\""
-            }
           }
-        },
-        "region": "Wilayah",
-        "regions": {
-          "ir": "Iran (ir)",
-          "cn": "Tiongkok (cn)",
-          "ru": "Rusia (ru)",
-          "af": "Afghanistan (af)",
-          "id": "Indonesia (id)",
-          "tr": "Turki (tr)",
-          "br": "Brasil (br)",
-          "other": "Lainnya"
         },
         "balancerStrategy": {
           "title": "Strategi Balancer",
@@ -536,10 +507,6 @@
         }
       },
       "perAppProxy": {
-        "shareOnGithub": {
-          "title": "Meningkatkan pilihan otomatis",
-          "msg": "Dengan membagikan aplikasi yang dipilih, Anda membantu melengkapi daftar \"pilihan otomatis\""
-        },
         "import": {
           "msg": "Ini akan menggantikan semua pilihan proksi per aplikasi Anda saat ini. Anda yakin ingin melanjutkan?"
         }

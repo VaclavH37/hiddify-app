@@ -17,7 +17,7 @@ import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
 import 'package:hiddify/features/app_update/notifier/app_update_notifier.dart';
 import 'package:hiddify/features/connection/widget/connection_wrapper.dart';
-import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_service_notifier.dart';
+import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
 import 'package:hiddify/features/shortcut/shortcut_wrapper.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
@@ -49,7 +49,6 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     ref.read(hiddifyCoreServiceProvider).init();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (isOnPauseCalled && PlatformUtils.isAndroid) ref.invalidate(perAppProxyServiceProvider);
       isOnPauseCalled = false;
     });
   }
@@ -65,8 +64,10 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     final activeBreakpoint = Breakpoint(context).activeBreakpoint;
 
     ref.listen(foregroundProfilesUpdateNotifierProvider, (_, _) {});
-    if (PlatformUtils.isAndroid) ref.listen(perAppProxyServiceProvider, (_, _) {});
-    if (PlatformUtils.isDesktop) ref.listen(systemTrayNotifierProvider, (_, _) {});
+    // Tray init only when a profile is authenticated. Pre-auth, gRPC has
+    // nothing to report and the listener would hang on `serviceRunningProvider`.
+    final hasProfile = ref.watch(hasAnyProfileProvider).valueOrNull ?? false;
+    if (PlatformUtils.isDesktop && hasProfile) ref.listen(systemTrayNotifierProvider, (_, _) {});
 
     // updating ActiveBreakpointNotifier value
     useEffect(() {

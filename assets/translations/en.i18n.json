@@ -144,7 +144,6 @@
       "activeProfileName": "Active profile name: \"${name}\".",
       "nonActiveProfileName": "Select \"${name}\" as active profile",
       "freeSubNotFound": "No free subscription was found",
-      "freeSubNotFoundForRegion": "No free subscription was found for \"${region}\" region.",
       "failedToLoad": "Failed to load",
       "updateSubscriptions": "Update subscriptions",
       "share": {
@@ -260,7 +259,6 @@
               "clipboard": "Copy selection to clipboard",
               "file": "Export selection to file"
             },
-            "shareToAll": "Share to all",
             "clearAllSelections": "Clear all selections"
           },
           "modes": {
@@ -270,34 +268,7 @@
             "allMsg": "Proxy all apps",
             "proxyMsg": "Proxy only selected apps",
             "bypassMsg": "Do not proxy selected apps"
-          },
-          "autoSelection": {
-            "title": "Auto selection",
-            "performNow": "Perform now",
-            "resetToDefault": "Reset to default",
-            "autoUpdateInterval": "Auto update interval",
-            "toast": {
-              "success": "Auto apps selection completed successfully",
-              "failure": "Auto selection failed",
-              "regionNotFound": "Auto selection not found, region \"${region}\"",
-              "alreadyInAuto": "Your selections are already in the auto-list"
-            },
-            "dialog": {
-              "title": "Auto apps selection",
-              "msg": "The auto selection feature for per-app proxy was disabled due to the region change to \"${region}\""
-            }
           }
-        },
-        "region": "Region",
-        "regions": {
-          "ir": "Iran (ir)",
-          "cn": "China (cn)",
-          "ru": "Russia (ru)",
-          "af": "Afghanistan (af)",
-          "id": "Indonesia (id)",
-          "tr": "Türkiye (tr)",
-          "br": "Brazil (br)",
-          "other": "Other"
         },
         "balancerStrategy": {
           "title": "Balancer strategy",
@@ -557,10 +528,6 @@
         }
       },
       "perAppProxy": {
-        "shareOnGithub": {
-          "title": "Improving auto selection",
-          "msg": "By sharing selected apps, you help complete the \"auto selection\" list"
-        },
         "import": {
           "msg": "This will replace all your current per-app proxy selections. Are you sure you want to continue?"
         }

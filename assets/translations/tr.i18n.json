@@ -126,7 +126,6 @@
       "activeProfileName": "Aktif profil adı: \"${name}\".",
       "nonActiveProfileName": "Aktif profil olarak \"${name}\" seçin",
       "freeSubNotFound": "Ücretsiz abonelik bulunamadı",
-      "freeSubNotFoundForRegion": "\"${region}\" bölgesi için ücretsiz abonelik bulunamadı",
       "failedToLoad": "Yüklenemedi",
       "updateSubscriptions": "Abonelikleri güncelle",
       "share": {
@@ -242,7 +241,6 @@
               "clipboard": "Seçimi panoya kopyala",
               "file": "Seçimi dosyaya aktar"
             },
-            "shareToAll": "Herkesle paylaş",
             "clearAllSelections": "Tüm seçimleri temizle"
           },
           "modes": {
@@ -252,34 +250,7 @@
             "allMsg": "Tüm uygulamaları proxy'le",
             "proxyMsg": "Yalnızca seçili uygulamaları proxy'le",
             "bypassMsg": "Seçili uygulamaları proxy'leme"
-          },
-          "autoSelection": {
-            "title": "Otomatik seçim",
-            "performNow": "Şimdi gerçekleştir",
-            "resetToDefault": "Varsayılana sıfırla",
-            "autoUpdateInterval": "Otomatik güncelleme aralığı",
-            "toast": {
-              "success": "Otomatik uygulama seçimi başarıyla tamamlandı",
-              "failure": "Otomatik seçim başarısız oldu",
-              "regionNotFound": "\"${region}\" bölgesi için otomatik seçim bulunamadı",
-              "alreadyInAuto": "Seçimleriniz zaten otomatik listede"
-            },
-            "dialog": {
-              "title": "Otomatik uygulama seçimi",
-              "msg": "Uygulama bazlı proxy için otomatik seçim özelliği, bölge \"${region}\" olarak değiştirildiği için devre dışı bırakıldı"
-            }
           }
-        },
-        "region": "Bölge",
-        "regions": {
-          "ir": "İran (ir)",
-          "cn": "Çin (cn)",
-          "ru": "Rusya (ru)",
-          "af": "Afganistan (af)",
-          "id": "Endonezya (id)",
-          "tr": "Türkiye (tr)",
-          "br": "Brezilya (br)",
-          "other": "Diğer"
         },
         "balancerStrategy": {
           "title": "Balancer stratejisi",
@@ -536,10 +507,6 @@
         }
       },
       "perAppProxy": {
-        "shareOnGithub": {
-          "title": "Otomatik seçimi iyileştirme",
-          "msg": "Seçili uygulamaları paylaşarak \"otomatik seçim\" listesini tamamlamaya yardımcı olursunuz"
-        },
         "import": {
           "msg": "Bu işlem mevcut tüm uygulama bazlı proxy seçimlerinizi değiştirecektir. Devam etmek istediğinizden emin misiniz?"
         }

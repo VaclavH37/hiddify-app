@@ -7,20 +7,15 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:hiddify/core/analytics/analytics_controller.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
-import 'package:hiddify/core/localization/locale_preferences.dart';
-import 'package:hiddify/core/localization/region_detector.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/logger/logger.dart';
 import 'package:hiddify/core/logger/logger_controller.dart';
 import 'package:hiddify/core/model/environment.dart';
-import 'package:hiddify/core/model/region.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/preferences/preferences_migration.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/app/widget/app.dart';
 import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
-
 import 'package:hiddify/features/log/data/log_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -67,17 +62,6 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
     }
   });
 
-  // First-launch locale auto-detect (was previously gated inside the intro
-  // screen; intro is now gone). Only runs if the user hasn't manually set
-  // a region — Region.other is the unset default.
-  await _safeInit("locale auto-detect", () async {
-    if (container.read(ConfigOptions.region) != Region.other) return;
-    final guess = detectRegionLocale();
-    Logger.bootstrap.debug("auto-detected region [${guess.region}] locale [${guess.locale}]");
-    await container.read(ConfigOptions.region.notifier).update(guess.region);
-    await container.read(localePreferencesProvider.notifier).changeLocale(guess.locale);
-  });
-
   final debug = container.read(debugModeNotifierProvider) || kDebugMode;
 
   if (PlatformUtils.isDesktop) {
@@ -112,7 +96,16 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
     // );
 
     if (PlatformUtils.isDesktop) {
-      await _safeInit("system tray", () => container.read(systemTrayNotifierProvider.future), timeout: 1000);
+      // Skip eager tray init pre-auth: with no profile loaded, the tray's
+      // gRPC status query has nothing to wait on and will hit the timeout,
+      // logging spurious cancel errors. The App widget's conditional
+      // listener (gated on hasAnyProfile) picks it up after auth instead.
+      final hasProfile = container.read(hasAnyProfileProvider).valueOrNull ?? false;
+      if (hasProfile) {
+        await _safeInit("system tray", () => container.read(systemTrayNotifierProvider.future), timeout: 1000);
+      } else {
+        Logger.bootstrap.debug("system tray init deferred — no authenticated profile");
+      }
     }
 
     if (PlatformUtils.isAndroid) {

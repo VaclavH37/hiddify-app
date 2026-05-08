@@ -126,7 +126,6 @@
       "activeProfileName": "当前配置文件：\"${name}\"",
       "nonActiveProfileName": "选择 \"${name}\" 作为当前配置文件",
       "freeSubNotFound": "未找到免费订阅",
-      "freeSubNotFoundForRegion": "未找到 \"${region}\" 地区的免费订阅",
       "failedToLoad": "加载失败",
       "updateSubscriptions": "更新订阅",
       "share": {
@@ -242,7 +241,6 @@
               "clipboard": "复制选择到剪贴板",
               "file": "导出选择到文件"
             },
-            "shareToAll": "分享给所有人",
             "clearAllSelections": "清除所有选择"
           },
           "modes": {
@@ -252,34 +250,7 @@
             "allMsg": "代理所有应用",
             "proxyMsg": "仅代理选定应用",
             "bypassMsg": "不代理选定应用"
-          },
-          "autoSelection": {
-            "title": "自动选择",
-            "performNow": "立即执行",
-            "resetToDefault": "重置为默认",
-            "autoUpdateInterval": "自动更新间隔",
-            "toast": {
-              "success": "自动选择应用成功完成",
-              "failure": "自动选择失败",
-              "regionNotFound": "未找到 \"${region}\" 地区的自动选择",
-              "alreadyInAuto": "您的选择已在自动列表中"
-            },
-            "dialog": {
-              "title": "自动选择应用",
-              "msg": "由于地区更改为 \"${region}\"，分应用代理的自动选择功能已被禁用"
-            }
           }
-        },
-        "region": "地区",
-        "regions": {
-          "ir": "伊朗 (ir)",
-          "cn": "中国 (cn)",
-          "ru": "俄罗斯 (ru)",
-          "af": "阿富汗 (af)",
-          "id": "印度尼西亚 (id)",
-          "tr": "土耳其 (tr)",
-          "br": "巴西 (br)",
-          "other": "其他"
         },
         "balancerStrategy": {
           "title": "Balancer 策略",
@@ -536,10 +507,6 @@
         }
       },
       "perAppProxy": {
-        "shareOnGithub": {
-          "title": "改进自动选择",
-          "msg": "通过分享您选择的应用，可以帮助完善“自动选择”列表"
-        },
         "import": {
           "msg": "这将替换您当前所有的分应用代理选择。您确定要继续吗？"
         }

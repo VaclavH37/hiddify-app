@@ -5,16 +5,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/region.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
-import 'package:hiddify/core/router/bottom_sheets/bottom_sheets_notifier.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/features/per_app_proxy/model/app_package_info.dart';
 import 'package:hiddify/features/per_app_proxy/model/per_app_proxy_mode.dart';
 import 'package:hiddify/features/per_app_proxy/model/pkg_flag.dart';
 import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_loading_notifier.dart';
 import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_notifier.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:installed_apps/index.dart';
@@ -198,13 +195,6 @@ class PerAppProxyPage extends HookConsumerWidget with PresLogger {
                       ],
                       child: Text(t.common.export),
                     ),
-                    if (ref.watch(ConfigOptions.region) != Region.other)
-                      MenuItemButton(
-                        child: Text(t.pages.settings.routing.perAppProxy.options.shareToAll),
-                        onPressed: () async => await ref
-                            .read(appProxyLoadingProvider.notifier)
-                            .doAsync(ref.read(PerAppProxyProvider(mode).notifier).shareOnGithub),
-                      ),
                     const PopupMenuDivider(),
                     MenuItemButton(
                       child: Text(t.pages.settings.routing.perAppProxy.options.clearAllSelections),
@@ -244,8 +234,6 @@ class PerAppProxyPage extends HookConsumerWidget with PresLogger {
                         tooltip: (mode?.toPerAppProxy() ?? PerAppProxyMode.off).present(t).message,
                         initialValue: mode?.toPerAppProxy() ?? PerAppProxyMode.off,
                         onSelected: (e) async {
-                          if (ref.read(Preferences.autoAppsSelectionRegion) != null)
-                            await ref.read(PerAppProxyProvider(mode).notifier).clearAutoSelected();
                           if (e == PerAppProxyMode.off && context.mounted) context.pop();
                           await ref.read(Preferences.perAppProxyMode.notifier).update(e);
                         },
@@ -285,17 +273,6 @@ class PerAppProxyPage extends HookConsumerWidget with PresLogger {
               onPressed: () =>
                   scrollController.animateTo(0.0, duration: const Duration(milliseconds: 500), curve: Curves.easeOut),
               child: const Icon(Icons.keyboard_arrow_up_rounded),
-            )
-          : (ref.watch(ConfigOptions.region) != Region.other)
-          ? FloatingActionButton.extended(
-              onPressed: () async =>
-                  await ref.read(bottomSheetsNotifierProvider.notifier).showAutoAppsSelection(mode: mode!),
-              label: Text(t.pages.settings.routing.perAppProxy.autoSelection.title),
-              icon: Icon(
-                ref.watch(Preferences.autoAppsSelectionRegion) == null
-                    ? Icons.toggle_off_outlined
-                    : Icons.toggle_on_rounded,
-              ),
             )
           : null,
       body: displayedApps.when(

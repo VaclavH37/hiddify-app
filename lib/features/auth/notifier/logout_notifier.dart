@@ -2,8 +2,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
+import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'logout_notifier.g.dart';
@@ -48,6 +48,13 @@ class LogoutNotifier extends _$LogoutNotifier with AppLogger {
             throw err;
           }, (_) => unit)
           .run();
+
+      // 3. Invalidate the system tray so it rebuilds fresh on next auth.
+      // The tray's keepAlive=true would otherwise pin its last (post-auth)
+      // state in cache.
+      if (PlatformUtils.isDesktop) {
+        ref.invalidate(systemTrayNotifierProvider);
+      }
 
       loggy.info("logout complete");
     });

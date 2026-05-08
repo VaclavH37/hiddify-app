@@ -126,7 +126,6 @@
       "activeProfileName": "Nom du profil actif : \"${name}\".",
       "nonActiveProfileName": "Sélectionner \"${name}\" comme profil actif",
       "freeSubNotFound": "Aucun abonnement gratuit trouvé",
-      "freeSubNotFoundForRegion": "Aucun abonnement gratuit trouvé pour la région \"${region}\"",
       "failedToLoad": "Échec du chargement",
       "updateSubscriptions": "Mettre à jour les abonnements",
       "share": {
@@ -242,7 +241,6 @@
               "clipboard": "Copier la sélection dans le presse-papiers",
               "file": "Exporter la sélection vers un fichier"
             },
-            "shareToAll": "Partager avec tous",
             "clearAllSelections": "Effacer toutes les sélections"
           },
           "modes": {
@@ -252,34 +250,7 @@
             "allMsg": "Utiliser le proxy pour toutes les applications",
             "proxyMsg": "Utiliser le proxy uniquement pour les applications sélectionnées",
             "bypassMsg": "Ne pas utiliser le proxy pour les applications sélectionnées"
-          },
-          "autoSelection": {
-            "title": "Sélection automatique",
-            "performNow": "Exécuter maintenant",
-            "resetToDefault": "Réinitialiser par défaut",
-            "autoUpdateInterval": "Intervalle de mise à jour automatique",
-            "toast": {
-              "success": "Sélection automatique des applications terminée avec succès",
-              "failure": "Échec de la sélection automatique",
-              "regionNotFound": "Sélection automatique non trouvée pour la région \"${region}\"",
-              "alreadyInAuto": "Vos sélections sont déjà dans la liste automatique"
-            },
-            "dialog": {
-              "title": "Sélection automatique des applications",
-              "msg": "La fonction de sélection automatique pour le proxy par application a été désactivée en raison du changement de région vers \"${region}\""
-            }
           }
-        },
-        "region": "Région",
-        "regions": {
-          "ir": "Iran (ir)",
-          "cn": "Chine (cn)",
-          "ru": "Russie (ru)",
-          "af": "Afghanistan (af)",
-          "id": "Indonésie (id)",
-          "tr": "Turquie (tr)",
-          "br": "Brésil (br)",
-          "other": "Autre"
         },
         "balancerStrategy": {
           "title": "Stratégie de Balancer",
@@ -536,10 +507,6 @@
         }
       },
       "perAppProxy": {
-        "shareOnGithub": {
-          "title": "Améliorer la sélection automatique",
-          "msg": "En partageant les applications sélectionnées, vous aidez à compléter la liste de \"sélection automatique\""
-        },
         "import": {
           "msg": "Cette action remplacera toutes vos sélections actuelles de proxy par application. Êtes-vous sûr de vouloir continuer ?"
         }
