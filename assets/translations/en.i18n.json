@@ -88,7 +88,7 @@
   "intro": {
     "banner": "All you need for an unrestricted internet",
     "termsAndPolicyCaution(rich)": "By continuing you agree to ${tap(@:pages.about.termsAndConditions)}",
-    "info(rich)": "Made with ❤️ by Hiddify - ${tap_source(Open Source)} (${tap_license(License)})"
+    "info(rich)": "Made with ❤️ by Rayn VPN - ${tap_source(Open Source)} (${tap_license(License)})"
   },
   "auth": {
     "title": "Sign in with your token",
@@ -549,7 +549,7 @@
       "msg": "Let's get started by adding a connection profile that includes your VPN connection details.\n\nDon’t have a VPN server yet? No worries—just follow the tutorial below to set one up quickly and for free.",
       "helpBtn": {
         "label": "Show me how",
-        "url": "https://hiddify.com/manager/"
+        "url": "https://www.raynlabs.io/account"
       }
     },
     "unknownDomainsWarning": {
