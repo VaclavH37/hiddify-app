@@ -39,24 +39,21 @@ class HomePage extends HookConsumerWidget {
                   child: CustomScrollView(
                     slivers: [
                       MultiSliver(
-                        children: const [
+                        children: [
                           SliverFillRemaining(
                             hasScrollBody: false,
                             child: Stack(
                               children: [
+                                const Center(child: ConnectionButton()),
+                                // Below the circle (74) + label gap (16) + label (~28) +
+                                // gap (8) + half indicator (24) = 150.
                                 Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ConnectionButton(),
-                                      // Fixed-height slot so the button position stays
-                                      // constant whether the delay indicator is showing
-                                      // or not (it's empty pre-connect).
-                                      SizedBox(height: 48, child: ActiveProxyDelayIndicator()),
-                                    ],
+                                  child: Transform.translate(
+                                    offset: const Offset(0, 150),
+                                    child: const SizedBox(height: 48, child: ActiveProxyDelayIndicator()),
                                   ),
                                 ),
-                                Align(
+                                const Align(
                                   alignment: Alignment.bottomCenter,
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,

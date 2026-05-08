@@ -198,68 +198,79 @@ class _ConnectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // CircleDesignWidget(newButtonColor: newButtonColor, onTap: onTap, animated: animated),
-        Semantics(
-          button: true,
-          enabled: enabled,
-          label: label,
-          child: Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: .5))],
-            ),
-            width: 148,
-            height: 148,
-            child: Material(
-              key: const ValueKey("home_connection_button"),
-              shape: const CircleBorder(),
-              color: backgroundColor,
-              child: InkWell(
-                focusColor: Colors.grey,
-                onTap: onTap,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: TweenAnimationBuilder(
-                    tween: ColorTween(end: buttonColor),
-                    duration: const Duration(milliseconds: 600),
-                    builder: (context, value, child) =>
-                        Assets.images.logo.svg(colorFilter: ColorFilter.mode(value!, BlendMode.srcIn)),
-                  ),
+    // Layout box is the 148×148 circle so callers can center on the circle
+    // itself; the status label below is rendered as an overflow overlay.
+    return SizedBox(
+      width: 148,
+      height: 148,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: Semantics(
+              button: true,
+              enabled: enabled,
+              label: label,
+              child: Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: .5))],
                 ),
-              ),
-            ).animate(target: enabled ? 0 : 1).blurXY(end: 1),
-          ).animate(target: enabled ? 0 : 1).scaleXY(end: .88, curve: Curves.easeIn),
-        ),
-        const Gap(16),
-        ExcludeSemantics(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedText(label, style: Theme.of(context).textTheme.titleMedium),
-              if (secureLabel.isNotEmpty) ...[
-                Row(
+                child: Material(
+                  key: const ValueKey("home_connection_button"),
+                  shape: const CircleBorder(),
+                  color: backgroundColor,
+                  child: InkWell(
+                    focusColor: Colors.grey,
+                    onTap: onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: TweenAnimationBuilder(
+                        tween: ColorTween(end: buttonColor),
+                        duration: const Duration(milliseconds: 600),
+                        builder: (context, value, child) =>
+                            Assets.images.logo.svg(colorFilter: ColorFilter.mode(value!, BlendMode.srcIn)),
+                      ),
+                    ),
+                  ),
+                ).animate(target: enabled ? 0 : 1).blurXY(end: 1),
+              ).animate(target: enabled ? 0 : 1).scaleXY(end: .88, curve: Curves.easeIn),
+            ),
+          ),
+          Positioned(
+            top: 148 + 16,
+            left: -100,
+            right: -100,
+            child: Center(
+              child: ExcludeSemantics(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // const Gap(8),
-                    Icon(FontAwesomeIcons.shieldHalved, size: 16, color: Theme.of(context).colorScheme.secondary),
-                    const Gap(4),
-                    Text(
-                      secureLabel,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.secondary),
-                    ),
+                    AnimatedText(label, style: Theme.of(context).textTheme.titleMedium),
+                    if (secureLabel.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(FontAwesomeIcons.shieldHalved, size: 16, color: Theme.of(context).colorScheme.secondary),
+                          const Gap(4),
+                          Text(
+                            secureLabel,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.secondary),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
-              ],
-            ],
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
