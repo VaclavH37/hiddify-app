@@ -148,6 +148,7 @@ dev_dependencies:
   slang_build_runner: ^4.4.0
   flutter_gen_runner: ^5.4.0
   dart_mappable_builder: ^4.2.1
+  flutter_launcher_icons: ^0.14.1
   # protoc_builder: ^0.4.1
   # google_protobuf: ^3.20.1;
 
@@ -196,12 +197,20 @@ flutter_gen:
     flutter_svg: true
 
 flutter_native_splash:
-  color: "#ffffff"
-  image: assets/images/source/ic_launcher_splash.png
+  color: "#000000"
+  image: assets/images/source/logo_black_1024.png
   android_gravity: center
   android_12:
-    color: "#ffffff"
-    image: assets/images/source/ic_launcher_foreground.png
+    color: "#000000"
+    image: assets/images/source/logo_black_1024.png
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  image_path: "assets/images/source/logo_black_1024.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/source/logo_black_1024.png"
+  min_sdk_android: 21
 
 ffigen:
   name: "HiddifyCoreNativeLibrary"

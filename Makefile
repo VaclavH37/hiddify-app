@@ -38,6 +38,22 @@ else
 	endif
 endif
 
+# fastforge ships only as fastforge.bat on Windows (dart pub global activate
+# does not generate a no-extension wrapper), and GNU make on Windows uses
+# CreateProcess for simple recipes which won't auto-resolve PATHEXT. Call the
+# .bat explicitly on Windows; fall back to the bare name elsewhere.
+ifeq ($(OS),Windows_NT)
+    FASTFORGE := fastforge.bat
+else
+    FASTFORGE := fastforge
+endif
+
+# Override fastforge's pubspec-name default ("hiddify") for the rebrand. The
+# Dart package name in pubspec.yaml stays "hiddify" so package: imports keep
+# working; only the artifact filename changes. Mustache template — see
+# flutter_app_packager/lib/src/api/make_config.dart for available variables.
+FF_ARTIFACT_NAME := RaynVPN-{{build_name}}+{{build_number}}-{{platform}}.{{ext}}
+
 
 BINDIR=hiddify-core$(SEP)bin
 ANDROID_OUT=android$(SEP)app$(SEP)libs
@@ -62,7 +78,7 @@ else
 endif
 
 BUILD_ARGS=--dart-define sentry_dsn=$(SENTRY_DSN)
-DISTRIBUTOR_ARGS=--skip-clean --build-target $(TARGET) --build-dart-define sentry_dsn=$(SENTRY_DSN)
+DISTRIBUTOR_ARGS=--skip-clean --build-target $(TARGET) --build-dart-define sentry_dsn=$(SENTRY_DSN) --artifact-name=$(FF_ARTIFACT_NAME)
 
 
 
@@ -266,20 +282,22 @@ gen_translations: #generating missing translations using google translate
 android-release: android-apk-release android-aab-release
 
 android-apk-release:
-	fastforge package \
+	$(FASTFORGE) package \
 	  --platform android \
 	  --targets apk \
 	  --skip-clean \
+	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  --build-target-platform=android-arm,android-arm64,android-x64 \
 	  --build-dart-define=sentry_dsn=$(SENTRY_DSN)
 	ls -R build/app/outputs
 
 android-aab-release:
-	fastforge package \
+	$(FASTFORGE) package \
 	  --platform android \
 	  --targets aab \
 	  --skip-clean \
+	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  --build-dart-define=sentry_dsn=$(SENTRY_DSN) \
 	  --build-dart-define=release=google-play
@@ -287,10 +305,11 @@ android-aab-release:
 windows-release: windows-zip-release windows-exe-release windows-msix-release
 
 windows-zip-release:
-	fastforge package \
+	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets zip \
 	  --skip-clean \
+	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  --build-dart-define=sentry_dsn=$(SENTRY_DSN) \
 	  --build-dart-define=portable=true
@@ -301,26 +320,28 @@ windows-zip-release:
 	$(YELLOW)Post-processing Windows portable$(DONE); \
 	cd "$$ZIP_DIR"; \
 	$(BLUE)Extracting and Repacking...$(DONE); \
-	mkdir -p Hiddify; \
-	unzip -q "$$ZIP_FILE" -d Hiddify/; \
+	mkdir -p RaynVPN; \
+	unzip -q "$$ZIP_FILE" -d RaynVPN/; \
 	rm "$$ZIP_FILE"; \
-	tar -a -cf "$$FILE_NAME.zip" Hiddify; \
-	rm -rf Hiddify; \
+	tar -a -cf "$$FILE_NAME.zip" RaynVPN; \
+	rm -rf RaynVPN; \
 	$(GREEN)Successful$(DONE)
 
 windows-exe-release:
-	fastforge package \
+	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets exe \
 	  --skip-clean \
+	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  --build-dart-define=sentry_dsn=$(SENTRY_DSN)
 
 windows-msix-release:
-	fastforge package \
+	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets msix \
 	  --skip-clean \
+	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  --build-dart-define=sentry_dsn=$(SENTRY_DSN)
 
@@ -333,10 +354,11 @@ linux-arm64-musl-release: linux-release
 
 
 linux-deb-release:
-	fastforge package \
+	$(FASTFORGE) package \
 	--platform linux \
 	--targets deb \
 	--skip-clean \
+	--artifact-name=$(FF_ARTIFACT_NAME) \
 	--build-target=$(TARGET) \
 	--build-dart-define=sentry_dsn=$(SENTRY_DSN)
 
@@ -371,10 +393,11 @@ linux-deb-release:
 # runtime instability. Use only for specific edge cases where standard linking fails.
 # ==============================================================================
 linux-appimage-release:
-	fastforge package \
+	$(FASTFORGE) package \
 	--platform linux \
 	--targets appimage \
 	--skip-clean \
+	--artifact-name=$(FF_ARTIFACT_NAME) \
 	--build-target=$(TARGET) \
 	--build-dart-define=sentry_dsn=$(SENTRY_DSN)
 	@$(YELLOW)Post-processing AppImage$(DONE); \
@@ -384,24 +407,26 @@ linux-appimage-release:
 	cp ../../linux/packaging/appimage/AppRun squashfs-root/AppRun; \
 	$(BLUE)Granting permissions$(DONE); \
 	chmod +x squashfs-root/AppRun; \
-	$(BLUE)Adding StartupWMClass to hiddify.desktop$(DONE); \
-	sed -i '/^\[Desktop Entry\]/a StartupWMClass=com.raynlabs.app' "squashfs-root/hiddify.desktop"; \
+	$(BLUE)Renaming desktop file: hiddify.desktop -> RaynVPN.desktop$(DONE); \
+	mv squashfs-root/hiddify.desktop squashfs-root/RaynVPN.desktop; \
+	$(BLUE)Adding StartupWMClass to RaynVPN.desktop$(DONE); \
+	sed -i '/^\[Desktop Entry\]/a StartupWMClass=com.raynlabs.app' "squashfs-root/RaynVPN.desktop"; \
 	$(BLUE)Removing old AppImage$(DONE); \
 	rm *.AppImage; \
 	$(BLUE)Deleting bundled libstdc++ to fix Arch Linux compatibility...$(DONE); \
 	find squashfs-root/usr/lib -name "libstdc++.so.6" -delete; \
 	$(BLUE)Rebuilding AppImage$(DONE); \
-	ARCH=x86_64 appimagetool --no-appstream squashfs-root Hiddify.AppImage > /dev/null; \
+	ARCH=x86_64 appimagetool --no-appstream squashfs-root RaynVPN.AppImage > /dev/null; \
 	$(BLUE)Cleaning up squashfs$(DONE); \
 	rm -rf squashfs-root; \
 	$(YELLOW)Creating Portable Package$(DONE); \
-	PKG_DIR_NAME="hiddify-linux-appimage"; \
+	PKG_DIR_NAME="RaynVPN-linux-appimage"; \
 	$(BLUE)Creating dir: $$PKG_DIR_NAME$(DONE); \
 	mkdir -p "$$PKG_DIR_NAME"; \
-	$(BLUE)Moving Hiddify.AppImage$(DONE); \
-	cp -p "Hiddify.AppImage" "$$PKG_DIR_NAME/Hiddify.AppImage"; \
+	$(BLUE)Moving RaynVPN.AppImage$(DONE); \
+	cp -p "RaynVPN.AppImage" "$$PKG_DIR_NAME/RaynVPN.AppImage"; \
 	$(BLUE)Creating Portable Home directory$(DONE); \
-	mkdir -p "$$PKG_DIR_NAME/Hiddify.AppImage.home"; \
+	mkdir -p "$$PKG_DIR_NAME/RaynVPN.AppImage.home"; \
 	$(BLUE)Compressing to .tar.gz$(DONE); \
 	tar -czf "$$PKG_DIR_NAME.tar.gz" -C . "$$PKG_DIR_NAME"; \
 	$(BLUE)Removing intermediate directory$(DONE); \
@@ -462,10 +487,10 @@ linux-docker-release:
 	@$(GREEN)Successful. Output is in 'dist_docker' folder.$(DONE)
 
 macos-release:
-	fastforge package --platform macos --targets dmg,pkg $(DISTRIBUTOR_ARGS)
+	$(FASTFORGE) package --platform macos --targets dmg,pkg $(DISTRIBUTOR_ARGS)
 
 ios-release: #not tested
-	fastforge package --platform ios --targets ipa --build-export-options-plist  ios/exportOptions.plist $(DISTRIBUTOR_ARGS)
+	$(FASTFORGE) package --platform ios --targets ipa --build-export-options-plist  ios/exportOptions.plist $(DISTRIBUTOR_ARGS)
 
 android-libs:
 	$(MKDIR) $(ANDROID_OUT) || echo Folder already exists. Skipping...
