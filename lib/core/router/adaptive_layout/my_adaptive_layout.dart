@@ -4,10 +4,14 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
+import 'package:hiddify/core/router/adaptive_layout/rayn_navigation_rail.dart';
 import 'package:hiddify/core/router/adaptive_layout/shell_route_action.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/router/go_router/routing_config_notifier.dart';
-import 'package:hiddify/features/stats/widget/side_bar_stats_overview.dart';
+import 'package:hiddify/core/theme/rayn_colors.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
+import 'package:hiddify/features/home/widget/stats_column.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class MyAdaptiveLayout extends HookConsumerWidget {
@@ -56,22 +60,16 @@ class MyAdaptiveLayout extends HookConsumerWidget {
         body: isMobileBreakpoint
             ? navigationShell
             : Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   FocusScope(
                     node: navScopeNode,
-                    child: NavigationRail(
+                    child: RaynNavigationRail(
                       extended: Breakpoint(context).isDesktop(),
-                      destinations: _navRailDests(_actions(t, isMobileBreakpoint)),
+                      destinations: _raynNavRailDests(_actions(t, isMobileBreakpoint)),
                       selectedIndex: navigationShell.currentIndex,
                       onDestinationSelected: (index) => _onTap(context, index),
-                      trailing: Breakpoint(context).isDesktop()
-                          ? const Expanded(
-                              child: Align(
-                                alignment: Alignment.bottomCenter,
-                                child: SizedBox(width: 220, child: SideBarStatsOverview()),
-                              ),
-                            )
-                          : null,
+                      trailing: Breakpoint(context).isDesktop() ? const StatsColumn() : null,
                     ),
                   ),
                   Expanded(child: navigationShell),
@@ -80,7 +78,8 @@ class MyAdaptiveLayout extends HookConsumerWidget {
         bottomNavigationBar: isMobileBreakpoint
             ? FocusScope(
                 node: navScopeNode,
-                child: NavigationBar(
+                child: _raynBottomNavBar(
+                  context: context,
                   selectedIndex: navigationShell.currentIndex <= 1 ? navigationShell.currentIndex : 0,
                   destinations: _navDests(_actions(t, isMobileBreakpoint)),
                   onDestinationSelected: (index) => _onTap(context, index),
@@ -105,6 +104,44 @@ class MyAdaptiveLayout extends HookConsumerWidget {
 
   List<NavigationDestination> _navDests(List<ShellRouteAction> actions) =>
       actions.map((e) => NavigationDestination(icon: Icon(e.icon), label: e.title)).toList();
-  List<NavigationRailDestination> _navRailDests(List<ShellRouteAction> actions) =>
-      actions.map((e) => NavigationRailDestination(icon: Icon(e.icon), label: Text(e.title))).toList();
+
+  List<RaynNavRailDestination> _raynNavRailDests(List<ShellRouteAction> actions) =>
+      actions.map((e) => RaynNavRailDestination(icon: e.icon, label: e.title)).toList();
+
+  /// Mobile NavigationBar with Rayn token styling. Surface + active/inactive
+  /// colors come from the active palette so light mode picks up the cream +
+  /// warm-gray hierarchy.
+  Widget _raynBottomNavBar({
+    required BuildContext context,
+    required int selectedIndex,
+    required List<NavigationDestination> destinations,
+    required ValueChanged<int> onDestinationSelected,
+  }) {
+    final palette = context.rayn;
+    return NavigationBarTheme(
+      data: NavigationBarThemeData(
+        backgroundColor: palette.bgSurface,
+        indicatorColor: palette.navSelectedFill,
+        surfaceTintColor: Colors.transparent,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return RaynTypography.label.copyWith(
+            color: selected ? RaynColors.goldPrimary : palette.textSecondary,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            color: selected ? RaynColors.goldPrimary : palette.textSecondary,
+            size: 22,
+          );
+        }),
+      ),
+      child: NavigationBar(
+        selectedIndex: selectedIndex,
+        destinations: destinations,
+        onDestinationSelected: onDestinationSelected,
+      ),
+    );
+  }
 }

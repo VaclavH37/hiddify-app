@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 
 /// Rayn VPN design tokens — colors.
 ///
-/// These are the single source of truth for the redesigned UI. Existing
-/// Material `ColorScheme` callers continue to work via [AppTheme.brandAccent].
+/// LEGACY: prefer `context.rayn.<token>` from `rayn_palette.dart`. These
+/// constants only encode the dark-mode palette; light-mode equivalents live
+/// on [RaynPalette]. Retained because some always-dark or theme-agnostic
+/// surfaces (semantic gold/success/danger that read the same on both modes,
+/// `goldPrimary` for active sidebar items) reach for them directly.
 class RaynColors {
   const RaynColors._();
 
   // Background
-  static const Color bgPrimary = Color(0xFF0B0A0E);
+  static const Color bgPrimary = Color(0xFF101111);
   static const Color bgSecondary = Color(0xFF14131A);
 
   // Brand gold

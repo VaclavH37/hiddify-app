@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/theme/app_theme_mode.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/theme_extensions.dart';
 
 class AppTheme {
@@ -23,8 +24,12 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
+      scaffoldBackgroundColor: RaynPalette.light.bgPrimary,
       fontFamily: fontFamily,
-      extensions: const <ThemeExtension<dynamic>>{ConnectionButtonTheme.light},
+      extensions: const <ThemeExtension<dynamic>>{
+        ConnectionButtonTheme.light,
+        RaynPalette.light,
+      },
     );
   }
 
@@ -40,7 +45,10 @@ class AppTheme {
       scaffoldBackgroundColor: mode.trueBlack ? Colors.black : scheme.background,
       appBarTheme: const AppBarTheme(backgroundColor: darkSurface),
       fontFamily: fontFamily,
-      extensions: const <ThemeExtension<dynamic>>{ConnectionButtonTheme.light},
+      extensions: const <ThemeExtension<dynamic>>{
+        ConnectionButtonTheme.light,
+        RaynPalette.dark,
+      },
     );
   }
 

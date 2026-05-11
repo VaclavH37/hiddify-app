@@ -59,6 +59,7 @@ class ConnectionButton extends HookConsumerWidget {
     //   // );
 
     const buttonTheme = ConnectionButtonTheme.light;
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
     //   // return CircleDesignWidget(
     //   //   onTap: switch (connectionStatus) {
@@ -145,15 +146,17 @@ class ConnectionButton extends HookConsumerWidget {
         AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color.fromARGB(255, 185, 176, 103),
         AsyncData(value: Connected()) => const Color(0xFFF59E0B),
         AsyncData(value: Connecting()) => const Color(0xFFF59E0B),
-        AsyncData(value: Disconnecting()) => const Color(0xFF1E3A8A),
-        AsyncData(value: Disconnected()) => const Color(0xFF1E3A8A),
-        AsyncData(value: _) => const Color(0xFF1E3A8A),
+        AsyncData(value: Disconnecting()) => const Color(0xFF52525B),
+        AsyncData(value: Disconnected()) => const Color(0xFF52525B),
+        AsyncData(value: _) => const Color(0xFF52525B),
         _ => Colors.red,
       },
       backgroundColor: switch (connectionStatus) {
-        AsyncData(value: Disconnected()) => const Color(0xFFF4F4F5),
+        AsyncData(value: Disconnected()) => isLight ? Colors.white : const Color(0xFFF4F4F5),
         _ => Colors.white,
       },
+      borderSide: isLight ? const BorderSide(color: Color(0xFFEFE6D9)) : BorderSide.none,
+      glowAlpha: isLight ? 0.35 : 0.5,
       newButtonColor: switch (connectionStatus) {
         AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
         AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color.fromARGB(255, 185, 176, 103),
@@ -183,6 +186,8 @@ class _ConnectionButton extends StatelessWidget {
     required this.newButtonColor,
     required this.animated,
     required this.secureLabel,
+    this.borderSide = BorderSide.none,
+    this.glowAlpha = 0.5,
   });
 
   final VoidCallback onTap;
@@ -196,11 +201,19 @@ class _ConnectionButton extends StatelessWidget {
 
   final bool animated;
 
+  /// 1 px border around the orb. Used in light mode so the white circle
+  /// reads against cream.
+  final BorderSide borderSide;
+
+  /// Glow halo intensity. Softer on light to avoid blowing out cream.
+  final double glowAlpha;
+
   @override
   Widget build(BuildContext context) {
     // Layout box is the 148×148 circle so callers can center on the circle
     // itself; the status label below is rendered as an overflow overlay.
-    return SizedBox(
+    return RepaintBoundary(
+      child: SizedBox(
       width: 148,
       height: 148,
       child: Stack(
@@ -215,11 +228,11 @@ class _ConnectionButton extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: .5))],
+                  boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: glowAlpha))],
                 ),
                 child: Material(
                   key: const ValueKey("home_connection_button"),
-                  shape: const CircleBorder(),
+                  shape: CircleBorder(side: borderSide),
                   color: backgroundColor,
                   child: InkWell(
                     focusColor: Colors.grey,
@@ -270,6 +283,7 @@ class _ConnectionButton extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

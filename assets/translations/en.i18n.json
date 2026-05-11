@@ -92,7 +92,7 @@
   },
   "auth": {
     "title": "Sign in with your token",
-    "subtitle": "Scan the QR code from your provider or paste your rayn:// link to continue.",
+    "subtitle": "Scan the QR code from your account or paste your rayn:// link to continue.",
     "scanQr": "Scan QR code",
     "paste": "Paste from clipboard",
     "pasteEmpty": "Clipboard is empty",
@@ -110,7 +110,15 @@
   "pages": {
     "home": {
       "title": "Home",
-      "quickSettings": "Quick settings"
+      "quickSettings": "Quick settings",
+      "actions": {
+        "changeServer": "Change server",
+        "bestLocation": "Best location",
+        "killSwitch": "Kill switch",
+        "splitTunneling": "Split tunneling",
+        "on": "On",
+        "off": "Off"
+      }
     },
     "proxies": {
       "title": "Proxies",
@@ -593,7 +601,11 @@
     "disconnecting": "Disconnecting...",
     "reconnect": "Reconnect",
     "reconnectMsg": "Reconnecting for taking into account the changes...",
-    "secure": "Secured by WARP"
+    "secure": "Secured by WARP",
+    "protected": "Protected",
+    "unprotected": "Unprotected",
+    "secureSubtitle": "Your connection is secure",
+    "exposedSubtitle": "Your connection is exposed"
   },
   "errors": {
     "unexpected": "Unexpected error",
