@@ -2,7 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
 import 'package:hiddify/features/stats/model/stats_failure.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:hiddify/hiddifycore/hiddify_core_service.dart';
+import 'package:hiddify/hiddifycore/rayn_core_service.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 
 abstract interface class StatsRepository {
@@ -12,7 +12,7 @@ abstract interface class StatsRepository {
 class StatsRepositoryImpl with ExceptionHandler, InfraLogger implements StatsRepository {
   StatsRepositoryImpl({required this.singbox});
 
-  final HiddifyCoreService singbox;
+  final RaynCoreService singbox;
 
   @override
   Stream<Either<StatsFailure, SystemInfo>> watchStats() {

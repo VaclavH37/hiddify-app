@@ -23,7 +23,6 @@
     "addToClipboard": "Add to clipboard",
     "scanQr": "Scan QR",
     "free": "Free",
-    "warp": "WARP",
     "fragment": "Fragment",
     "help": "Help",
     "save": "Save",
@@ -198,8 +197,6 @@
     },
     "about": {
       "title": "About",
-      "notAvailableMsg": "Already using the latest version",
-      "checkForUpdate": "Check for update",
       "openWorkingDir": "Open working directory",
       "telegramChannel": "Telegram channel",
       "termsAndConditions": "Terms and conditions",
@@ -208,19 +205,6 @@
     "settings": {
       "title": "Settings",
       "resetTunnel": "Reset VPN profile",
-      "options": {
-        "import": {
-          "clipboard": "Import options from clipboard",
-          "file": "Import options from file"
-        },
-        "export": {
-          "anonymousToClipboard": "Copy anonymous options to clipboard",
-          "anonymousToFile": "Export anonymous options to file",
-          "allToClipboard": "Copy all options to clipboard",
-          "allToFile": "Export all options to file"
-        },
-        "reset": "Reset options"
-      },
       "general": {
         "title": "General",
         "locale": "Language",
@@ -247,8 +231,7 @@
         "debugModeMsg": "Restart the app for applying this change",
         "logLevel": "Log level",
         "connectionTestUrl": "Connection test URL",
-        "urlTestInterval": "URL test interval",
-        "clashApiPort": "Clash API port"
+        "urlTestInterval": "URL test interval"
       },
       "routing": {
         "title": "Routing",
@@ -510,23 +493,7 @@
         "lastUpdate": "Recently updated"
       }
     },
-    "warpLicense": {
-      "title": "Cloudflare WARP consent",
-      "description(rich)": "Cloudflare WARP is a free WireGuard VPN provider. By enabling this option you are agreeing to the Cloudflare WARP's ${tos(Terms of service)} and ${privacy(Privacy policy)}."
-    },
-    "newVersion": {
-      "title": "Update available",
-      "msg": "A new version of @:common.appTitle is available. Would you like to update now?",
-      "currentVersion": "Current version: ",
-      "newVersion": "New version: ",
-      "updateNow": "Update now"
-    },
     "confirmation": {
-      "settings": {
-        "import": {
-          "msg": "This will rewrite all config options with provided values. Are you sure?"
-        }
-      },
       "profile": {
         "delete": {
           "title": "Delete profile",
@@ -599,7 +566,6 @@
     "disconnecting": "Disconnecting...",
     "reconnect": "Reconnect",
     "reconnectMsg": "Reconnecting for taking into account the changes...",
-    "secure": "Secured by WARP",
     "protected": "Protected",
     "unprotected": "Unprotected",
     "secureSubtitle": "Your connection is secure",

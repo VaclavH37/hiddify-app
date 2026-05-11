@@ -6,7 +6,7 @@ import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/profile/data/profile_path_resolver.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
-import 'package:hiddify/hiddifycore/hiddify_core_service.dart';
+import 'package:hiddify/hiddifycore/rayn_core_service.dart';
 import 'package:hiddify/singbox/model/singbox_config_option.dart';
 import 'package:hiddify/singbox/model/core_status.dart';
 import 'package:hiddify/utils/utils.dart';
@@ -35,7 +35,7 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   final Ref ref;
 
   final Directories directories;
-  final HiddifyCoreService singbox;
+  final RaynCoreService singbox;
 
   final ConfigOptionRepository configOptionRepository;
   final ProfilePathResolver profilePathResolver;

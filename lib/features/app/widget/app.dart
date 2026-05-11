@@ -21,7 +21,7 @@ import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart'
 import 'package:hiddify/features/shortcut/shortcut_wrapper.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
 import 'package:hiddify/features/window/widget/window_wrapper.dart';
-import 'package:hiddify/hiddifycore/hiddify_core_service_provider.dart';
+import 'package:hiddify/hiddifycore/rayn_core_service_provider.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:toastification/toastification.dart';
@@ -39,12 +39,12 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
   void onPause(WidgetRef ref) {
     if (PlatformUtils.isDesktop) return;
     isOnPauseCalled = true;
-    ref.read(hiddifyCoreServiceProvider).closeFront();
+    ref.read(raynCoreServiceProvider).closeFront();
   }
 
   void onResume(WidgetRef ref) {
     // if (PlatformUtils.isDesktop) return;
-    ref.read(hiddifyCoreServiceProvider).init();
+    ref.read(raynCoreServiceProvider).init();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       isOnPauseCalled = false;

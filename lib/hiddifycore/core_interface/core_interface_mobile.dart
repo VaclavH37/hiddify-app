@@ -17,7 +17,7 @@ import 'package:hiddify/utils/utils.dart';
 import 'package:loggy/loggy.dart';
 import 'package:rxdart/rxdart.dart';
 
-final _logger = Loggy('FFIHiddifyCoreService');
+final _logger = Loggy('FFIRaynCoreService');
 
 class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   static const channelPrefix = "com.raynlabs.app";

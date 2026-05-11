@@ -23,7 +23,6 @@
     "addToClipboard": "إضافة إلى الحافظة",
     "scanQr": "مسح رمز QR",
     "free": "مجاني",
-    "warp": "WARP",
     "fragment": "Fragment",
     "help": "مساعدة",
     "save": "حفظ",
@@ -178,8 +177,6 @@
     },
     "about": {
       "title": "حول التطبيق",
-      "notAvailableMsg": "أنت تستخدم أحدث إصدار بالفعل",
-      "checkForUpdate": "التحقق من وجود تحديثات",
       "openWorkingDir": "فتح مجلد العمل",
       "telegramChannel": "قناة التيليجرام",
       "termsAndConditions": "الشروط والأحكام",
@@ -188,19 +185,6 @@
     "settings": {
       "title": "الإعدادات",
       "resetTunnel": "إعادة تعيين ملف VPN",
-      "options": {
-        "import": {
-          "clipboard": "استيراد الخيارات من الحافظة",
-          "file": "استيراد الخيارات من ملف"
-        },
-        "export": {
-          "anonymousToClipboard": "نسخ الخيارات المجهولة إلى الحافظة",
-          "anonymousToFile": "تصدير الخيارات المجهولة إلى ملف",
-          "allToClipboard": "نسخ جميع الخيارات إلى الحافظة",
-          "allToFile": "تصدير جميع الخيارات إلى ملف"
-        },
-        "reset": "إعادة تعيين الخيارات"
-      },
       "general": {
         "title": "عام",
         "locale": "اللغة",
@@ -227,8 +211,7 @@
         "debugModeMsg": "أعد تشغيل التطبيق لتطبيق هذا التغيير",
         "logLevel": "مستوى السجل",
         "connectionTestUrl": "رابط اختبار الاتصال",
-        "urlTestInterval": "فاصل اختبار الرابط",
-        "clashApiPort": "منفذ Clash API"
+        "urlTestInterval": "فاصل اختبار الرابط"
       },
       "routing": {
         "title": "التوجيه",
@@ -487,23 +470,7 @@
         "lastUpdate": "آخر تحديث"
       }
     },
-    "warpLicense": {
-      "title": "موافقة Cloudflare WARP",
-      "description(rich)": "Cloudflare WARP هو مزود VPN مجاني لـ WireGuard. بتفعيل هذا الخيار، فإنك توافق على ${tos(شروط الخدمة)} و ${privacy(سياسة الخصوصية)} الخاصة بـ Cloudflare WARP."
-    },
-    "newVersion": {
-      "title": "تحديث متاح",
-      "msg": "إصدار جديد من @:common.appTitle متاح. هل ترغب في التحديث الآن؟",
-      "currentVersion": "الإصدار الحالي: ",
-      "newVersion": "الإصدار الجديد: ",
-      "updateNow": "التحديث الآن"
-    },
     "confirmation": {
-      "settings": {
-        "import": {
-          "msg": "سيؤدي هذا إلى استبدال جميع إعداداتك الحالية. هل أنت متأكد؟"
-        }
-      },
       "profile": {
         "delete": {
           "title": "حذف الملف الشخصي",
@@ -573,8 +540,7 @@
     "disconnect": "قطع الاتصال",
     "disconnecting": "جاري قطع الاتصال...",
     "reconnect": "إعادة الاتصال",
-    "reconnectMsg": "جاري إعادة الاتصال لتطبيق التغييرات...",
-    "secure": "مُؤمَّن بواسطة WARP"
+    "reconnectMsg": "جاري إعادة الاتصال لتطبيق التغييرات..."
   },
   "errors": {
     "unexpected": "خطأ غير متوقع",

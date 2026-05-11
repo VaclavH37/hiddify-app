@@ -25,6 +25,7 @@
 
     <application
         android:name=".Application"
+        android:allowBackup="false"
         android:banner="@mipmap/ic_banner"
         android:icon="@mipmap/ic_launcher"
         android:label="Rayn VPN"
@@ -74,11 +75,6 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="rayn" />
-
-                <!-- <data android:host="import" />
-                <data android:host="install-config" />
-                <data android:host="import-remote-profile" />
-                <data android:host="install-sub" /> -->
             </intent-filter>
 
             <intent-filter>

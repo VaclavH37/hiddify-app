@@ -23,7 +23,6 @@
     "addToClipboard": "Tambah ke papan klip",
     "scanQr": "Pindai QR",
     "free": "Gratis",
-    "warp": "WARP",
     "fragment": "Fragmen",
     "help": "Bantuan",
     "save": "Simpan",
@@ -172,8 +171,6 @@
     },
     "about": {
       "title": "Tentang",
-      "notAvailableMsg": "Anda sudah menggunakan versi terbaru",
-      "checkForUpdate": "Periksa pembaruan",
       "openWorkingDir": "Buka direktori kerja",
       "telegramChannel": "Saluran Telegram",
       "termsAndConditions": "Syarat dan Ketentuan",
@@ -182,19 +179,6 @@
     "settings": {
       "title": "Pengaturan",
       "resetTunnel": "Setel ulang profil VPN",
-      "options": {
-        "import": {
-          "clipboard": "Impor opsi dari papan klip",
-          "file": "Impor opsi dari file"
-        },
-        "export": {
-          "anonymousToClipboard": "Salin opsi anonim ke papan klip",
-          "anonymousToFile": "Ekspor opsi anonim ke file",
-          "allToClipboard": "Salin semua opsi ke papan klip",
-          "allToFile": "Ekspor semua opsi ke file"
-        },
-        "reset": "Setel ulang opsi"
-      },
       "general": {
         "title": "Umum",
         "locale": "Bahasa",
@@ -221,8 +205,7 @@
         "debugModeMsg": "Mulai ulang aplikasi untuk menerapkan perubahan ini",
         "logLevel": "Level log",
         "connectionTestUrl": "URL uji koneksi",
-        "urlTestInterval": "Interval uji URL",
-        "clashApiPort": "Port API Clash"
+        "urlTestInterval": "Interval uji URL"
       },
       "routing": {
         "title": "Perutean",
@@ -481,23 +464,7 @@
         "lastUpdate": "Terakhir diperbarui"
       }
     },
-    "warpLicense": {
-      "title": "Persetujuan Cloudflare WARP",
-      "description(rich)": "Cloudflare WARP adalah penyedia VPN WireGuard gratis. Dengan mengaktifkan opsi ini, Anda menyetujui ${tos(Ketentuan Layanan)} dan ${privacy(Kebijakan Privasi)} Cloudflare WARP."
-    },
-    "newVersion": {
-      "title": "Pembaruan tersedia",
-      "msg": "Versi baru @:common.appTitle tersedia. Apakah Anda ingin memperbarui sekarang?",
-      "currentVersion": "Versi saat ini: ",
-      "newVersion": "Versi baru: ",
-      "updateNow": "Perbarui sekarang"
-    },
     "confirmation": {
-      "settings": {
-        "import": {
-          "msg": "Ini akan menimpa semua opsi konfigurasi dengan nilai yang diberikan. Anda yakin?"
-        }
-      },
       "profile": {
         "delete": {
           "title": "Hapus profil",
@@ -567,8 +534,7 @@
     "disconnect": "Putuskan",
     "disconnecting": "Memutuskan...",
     "reconnect": "Sambungkan kembali",
-    "reconnectMsg": "Menyambungkan kembali untuk menerapkan perubahan...",
-    "secure": "Diamankan oleh WARP"
+    "reconnectMsg": "Menyambungkan kembali untuk menerapkan perubahan..."
   },
   "errors": {
     "unexpected": "Kesalahan tak terduga",

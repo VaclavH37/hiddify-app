@@ -23,7 +23,6 @@
     "addToClipboard": "افزودن به کلیپ‌بورد",
     "scanQr": "اسکن QR",
     "free": "رایگان",
-    "warp": "WARP",
     "fragment": "Fragment",
     "help": "راهنما",
     "save": "ذخیره",
@@ -172,8 +171,6 @@
     },
     "about": {
       "title": "درباره",
-      "notAvailableMsg": "شما در حال استفاده از آخرین نسخه هستید",
-      "checkForUpdate": "بررسی برای به‌روزرسانی",
       "openWorkingDir": "باز کردن پوشه کاری",
       "telegramChannel": "کانال تلگرام",
       "termsAndConditions": "شرایط و ضوابط",
@@ -182,19 +179,6 @@
     "settings": {
       "title": "تنظیمات",
       "resetTunnel": "بازنشانی پروفایل VPN",
-      "options": {
-        "import": {
-          "clipboard": "وارد کردن تنظیمات از کلیپ‌بورد",
-          "file": "وارد کردن تنظیمات از فایل"
-        },
-        "export": {
-          "anonymousToClipboard": "کپی تنظیمات ناشناس به کلیپ‌بورد",
-          "anonymousToFile": "خروجی تنظیمات ناشناس به فایل",
-          "allToClipboard": "کپی تمام تنظیمات به کلیپ‌بورد",
-          "allToFile": "خروجی تمام تنظیمات به فایل"
-        },
-        "reset": "بازنشانی تنظیمات"
-      },
       "general": {
         "title": "عمومی",
         "locale": "زبان",
@@ -221,8 +205,7 @@
         "debugModeMsg": "برای اعمال این تغییر، برنامه را مجدداً راه‌اندازی کنید",
         "logLevel": "سطح گزارش‌گیری",
         "connectionTestUrl": "URL تست اتصال",
-        "urlTestInterval": "فاصله زمانی تست URL",
-        "clashApiPort": "پورت Clash API"
+        "urlTestInterval": "فاصله زمانی تست URL"
       },
       "routing": {
         "title": "مسیریابی",
@@ -481,23 +464,7 @@
         "lastUpdate": "آخرین به‌روزرسانی"
       }
     },
-    "warpLicense": {
-      "title": "رضایت‌نامه Cloudflare WARP",
-      "description(rich)": "Cloudflare WARP یک ارائه‌دهنده رایگان WireGuard VPN است. با فعال کردن این گزینه، شما با ${tos(شرایط خدمات)} و ${privacy(سیاست حفظ حریم خصوصی)} Cloudflare WARP موافقت می‌کنید."
-    },
-    "newVersion": {
-      "title": "به‌روزرسانی موجود است",
-      "msg": "نسخه جدیدی از @:common.appTitle در دسترس است. آیا مایل به به‌روزرسانی هستید؟",
-      "currentVersion": "نسخه فعلی: ",
-      "newVersion": "نسخه جدید: ",
-      "updateNow": "اکنون به‌روزرسانی کن"
-    },
     "confirmation": {
-      "settings": {
-        "import": {
-          "msg": "این عمل تمام تنظیمات فعلی شما را بازنویسی خواهد کرد. آیا مطمئن هستید؟"
-        }
-      },
       "profile": {
         "delete": {
           "title": "حذف پروفایل",
@@ -567,8 +534,7 @@
     "disconnect": "قطع اتصال",
     "disconnecting": "در حال قطع اتصال...",
     "reconnect": "اتصال مجدد",
-    "reconnectMsg": "در حال اتصال مجدد برای اعمال تغییرات...",
-    "secure": "ایمن شده با WARP"
+    "reconnectMsg": "در حال اتصال مجدد برای اعمال تغییرات..."
   },
   "errors": {
     "unexpected": "خطای غیرمنتظره",

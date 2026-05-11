@@ -23,7 +23,6 @@
     "addToClipboard": "Adicionar à área de transferência",
     "scanQr": "Escanear QR",
     "free": "Grátis",
-    "warp": "WARP",
     "fragment": "Fragmento",
     "help": "Ajuda",
     "save": "Salvar",
@@ -172,8 +171,6 @@
     },
     "about": {
       "title": "Sobre",
-      "notAvailableMsg": "Você já está usando a versão mais recente",
-      "checkForUpdate": "Verificar atualizações",
       "openWorkingDir": "Abrir diretório de trabalho",
       "telegramChannel": "Canal do Telegram",
       "termsAndConditions": "Termos e Condições",
@@ -182,19 +179,6 @@
     "settings": {
       "title": "Configurações",
       "resetTunnel": "Redefinir perfil de VPN",
-      "options": {
-        "import": {
-          "clipboard": "Importar opções da área de transferência",
-          "file": "Importar opções de um arquivo"
-        },
-        "export": {
-          "anonymousToClipboard": "Copiar opções anônimas para a área de transferência",
-          "anonymousToFile": "Exportar opções anônimas para um arquivo",
-          "allToClipboard": "Copiar todas as opções para a área de transferência",
-          "allToFile": "Exportar todas as opções para um arquivo"
-        },
-        "reset": "Redefinir opções"
-      },
       "general": {
         "title": "Geral",
         "locale": "Idioma",
@@ -221,8 +205,7 @@
         "debugModeMsg": "Reinicie o aplicativo para aplicar esta alteração",
         "logLevel": "Nível de registro",
         "connectionTestUrl": "URL de teste de conexão",
-        "urlTestInterval": "Intervalo de teste de URL",
-        "clashApiPort": "Porta da API do Clash"
+        "urlTestInterval": "Intervalo de teste de URL"
       },
       "routing": {
         "title": "Roteamento",
@@ -481,23 +464,7 @@
         "lastUpdate": "Última atualização"
       }
     },
-    "warpLicense": {
-      "title": "Consentimento do Cloudflare WARP",
-      "description(rich)": "O Cloudflare WARP é um provedor de VPN WireGuard gratuito. Ao ativar esta opção, você concorda com os ${tos(Termos de Serviço)} e a ${privacy(Política de Privacidade)} do Cloudflare WARP."
-    },
-    "newVersion": {
-      "title": "Atualização disponível",
-      "msg": "Uma nova versão do @:common.appTitle está disponível. Deseja atualizar agora?",
-      "currentVersion": "Versão atual: ",
-      "newVersion": "Nova versão: ",
-      "updateNow": "Atualizar agora"
-    },
     "confirmation": {
-      "settings": {
-        "import": {
-          "msg": "Isso substituirá todas as opções de configuração pelos valores fornecidos. Você tem certeza?"
-        }
-      },
       "profile": {
         "delete": {
           "title": "Excluir perfil",
@@ -567,8 +534,7 @@
     "disconnect": "Desconectar",
     "disconnecting": "Desconectando...",
     "reconnect": "Reconectar",
-    "reconnectMsg": "Reconectando para aplicar as alterações...",
-    "secure": "Protegido por WARP"
+    "reconnectMsg": "Reconectando para aplicar as alterações..."
   },
   "errors": {
     "unexpected": "Erro inesperado",

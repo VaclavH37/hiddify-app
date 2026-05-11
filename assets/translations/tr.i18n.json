@@ -23,7 +23,6 @@
     "addToClipboard": "Panoya ekle",
     "scanQr": "QR Tara",
     "free": "Ücretsiz",
-    "warp": "WARP",
     "fragment": "Fragment",
     "help": "Yardım",
     "save": "Kaydet",
@@ -172,8 +171,6 @@
     },
     "about": {
       "title": "Hakkında",
-      "notAvailableMsg": "Zaten en son sürümü kullanıyorsunuz",
-      "checkForUpdate": "Güncellemeleri kontrol et",
       "openWorkingDir": "Çalışma dizinini aç",
       "telegramChannel": "Telegram kanalı",
       "termsAndConditions": "Şartlar ve Koşullar",
@@ -182,19 +179,6 @@
     "settings": {
       "title": "Ayarlar",
       "resetTunnel": "VPN profilini sıfırla",
-      "options": {
-        "import": {
-          "clipboard": "Seçenekleri panodan içe aktar",
-          "file": "Seçenekleri dosyadan içe aktar"
-        },
-        "export": {
-          "anonymousToClipboard": "Anonim seçenekleri panoya kopyala",
-          "anonymousToFile": "Anonim seçenekleri dosyaya aktar",
-          "allToClipboard": "Tüm seçenekleri panoya kopyala",
-          "allToFile": "Tüm seçenekleri dosyaya aktar"
-        },
-        "reset": "Seçenekleri sıfırla"
-      },
       "general": {
         "title": "Genel",
         "locale": "Dil",
@@ -221,8 +205,7 @@
         "debugModeMsg": "Bu değişikliği uygulamak için uygulamayı yeniden başlatın",
         "logLevel": "Log seviyesi",
         "connectionTestUrl": "Bağlantı testi URL'si",
-        "urlTestInterval": "URL testi aralığı",
-        "clashApiPort": "Clash API portu"
+        "urlTestInterval": "URL testi aralığı"
       },
       "routing": {
         "title": "Yönlendirme",
@@ -481,23 +464,7 @@
         "lastUpdate": "Son güncelleme"
       }
     },
-    "warpLicense": {
-      "title": "Cloudflare WARP onayı",
-      "description(rich)": "Cloudflare WARP ücretsiz bir WireGuard VPN sağlayıcısıdır. Bu seçeneği etkinleştirerek Cloudflare WARP'ın ${tos(Hizmet Şartları)}'nı ve ${privacy(Gizlilik Politikası)}'nı kabul etmiş olursunuz."
-    },
-    "newVersion": {
-      "title": "Güncelleme mevcut",
-      "msg": "@:common.appTitle'ın yeni bir sürümü mevcut. Şimdi güncellemek ister misiniz?",
-      "currentVersion": "Mevcut sürüm: ",
-      "newVersion": "Yeni sürüm: ",
-      "updateNow": "Şimdi güncelle"
-    },
     "confirmation": {
-      "settings": {
-        "import": {
-          "msg": "Bu işlem tüm yapılandırma seçeneklerini verilen değerlerle yeniden yazacaktır. Emin misiniz?"
-        }
-      },
       "profile": {
         "delete": {
           "title": "Profili sil",
@@ -567,8 +534,7 @@
     "disconnect": "Bağlantıyı kes",
     "disconnecting": "Bağlantı kesiliyor...",
     "reconnect": "Yeniden bağlan",
-    "reconnectMsg": "Değişiklikleri uygulamak için yeniden bağlanılıyor...",
-    "secure": "WARP ile güvende"
+    "reconnectMsg": "Değişiklikleri uygulamak için yeniden bağlanılıyor..."
   },
   "errors": {
     "unexpected": "Beklenmeyen hata",

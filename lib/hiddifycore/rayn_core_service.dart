@@ -29,11 +29,11 @@ import 'package:loggy/loggy.dart' as loggyl;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 
-class HiddifyCoreService with InfraLogger {
-  HiddifyCoreService(this.ref);
+class RaynCoreService with InfraLogger {
+  RaynCoreService(this.ref);
   final Ref ref;
 
-  // CoreHiddifyCoreService() {}
+  // CoreRaynCoreService() {}
   final core = getCoreInterface();
 
   CoreStatus currentState = const CoreStatus.stopped();

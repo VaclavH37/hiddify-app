@@ -56,7 +56,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     return EXIT_SUCCESS;
   }
 
-  HANDLE hMutexInstance = CreateMutex(NULL, TRUE, L"HiddifyMutex");
+  HANDLE hMutexInstance = CreateMutex(NULL, TRUE, L"RaynVPNMutex");
   HWND handle = FindWindowA(NULL, "Rayn VPN");
 
   if (GetLastError() == ERROR_ALREADY_EXISTS)

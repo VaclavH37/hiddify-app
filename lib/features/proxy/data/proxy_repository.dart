@@ -6,11 +6,10 @@ import 'package:hiddify/features/proxy/model/ip_info_entity.dart' as oldipinfo;
 
 import 'package:hiddify/features/proxy/model/proxy_failure.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:hiddify/hiddifycore/hiddify_core_service.dart';
+import 'package:hiddify/hiddifycore/rayn_core_service.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 
 abstract interface class ProxyRepository {
-  // Stream<Either<ProxyFailure, List<OutboundGroup>>> watchProxies();
   Stream<Either<ProxyFailure, OutboundGroup?>> watchProxies();
   Stream<Either<ProxyFailure, List<OutboundGroup>>> watchActiveProxies();
   TaskEither<ProxyFailure, oldipinfo.IpInfo> getCurrentIpInfo(CancelToken cancelToken);
@@ -21,43 +20,8 @@ abstract interface class ProxyRepository {
 class ProxyRepositoryImpl with ExceptionHandler, InfraLogger implements ProxyRepository {
   ProxyRepositoryImpl({required this.singbox, required this.client});
 
-  final HiddifyCoreService singbox;
+  final RaynCoreService singbox;
   final DioHttpClient client;
-
-  // @override
-  // Stream<Either<ProxyFailure, List<OutboundGroup>>> watchProxies() {
-  //   return singbox.watchGroups().map((event) {
-  //     // final groupWithSelected = {
-  //     //   for (final group in event) group.tag: group.selected,
-  //     // };
-
-  //     return event;
-  //     // .map(
-  //     //   (e) => ProxyGroupEntity(
-  //     //     tag: e.tag,
-  //     //     type: e.type,
-  //     //     selected: e.selected,
-  //     //     items: e.items
-  //     //         .map(
-  //     //           (e) => ProxyItemEntity(
-  //     //             tag: e.tag,
-  //     //             type: e.type,
-  //     //             urlTestDelay: e.urlTestDelay,
-  //     //             selectedTag: groupWithSelected[e.tag],
-  //     //           ),
-  //     //         )
-  //     //         .filter((t) => t.isVisible)
-  //     //         .toList(),
-  //     //   ),
-  //     // )
-  //     // .toList();
-  //   }).handleExceptions(
-  //     (error, stackTrace) {
-  //       loggy.error("error watching proxies", error, stackTrace);
-  //       return ProxyUnexpectedFailure(error, stackTrace);
-  //     },
-  //   );
-  // }
 
   @override
   Stream<Either<ProxyFailure, OutboundGroup?>> watchProxies() {

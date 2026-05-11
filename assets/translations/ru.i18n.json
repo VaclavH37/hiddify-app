@@ -23,7 +23,6 @@
     "addToClipboard": "Добавить в буфер обмена",
     "scanQr": "Сканировать QR",
     "free": "Бесплатно",
-    "warp": "WARP",
     "fragment": "Фрагмент",
     "help": "Справка",
     "save": "Сохранить",
@@ -176,8 +175,6 @@
     },
     "about": {
       "title": "О программе",
-      "notAvailableMsg": "Вы уже используете последнюю версию",
-      "checkForUpdate": "Проверить обновления",
       "openWorkingDir": "Открыть рабочую папку",
       "telegramChannel": "Канал в Telegram",
       "termsAndConditions": "Условия использования",
@@ -186,19 +183,6 @@
     "settings": {
       "title": "Настройки",
       "resetTunnel": "Сбросить профиль VPN",
-      "options": {
-        "import": {
-          "clipboard": "Импортировать настройки из буфера обмена",
-          "file": "Импортировать настройки из файла"
-        },
-        "export": {
-          "anonymousToClipboard": "Копировать анонимные настройки в буфер обмена",
-          "anonymousToFile": "Экспортировать анонимные настройки в файл",
-          "allToClipboard": "Копировать все настройки в буфер обмена",
-          "allToFile": "Экспортировать все настройки в файл"
-        },
-        "reset": "Сбросить настройки"
-      },
       "general": {
         "title": "Общие",
         "locale": "Язык",
@@ -225,8 +209,7 @@
         "debugModeMsg": "Перезапустите приложение, чтобы применить это изменение",
         "logLevel": "Уровень логирования",
         "connectionTestUrl": "URL для теста соединения",
-        "urlTestInterval": "Интервал теста URL",
-        "clashApiPort": "Порт Clash API"
+        "urlTestInterval": "Интервал теста URL"
       },
       "routing": {
         "title": "Маршрутизация",
@@ -485,23 +468,7 @@
         "lastUpdate": "Последнему обновлению"
       }
     },
-    "warpLicense": {
-      "title": "Соглашение о WARP от Cloudflare",
-      "description(rich)": "Cloudflare WARP - это бесплатный провайдер WireGuard VPN. Включая эту опцию, вы соглашаетесь с ${tos(Условиями обслуживания)} и ${privacy(Политикой конфиденциальности)} Cloudflare WARP."
-    },
-    "newVersion": {
-      "title": "Доступно обновление",
-      "msg": "Доступна новая версия @:common.appTitle. Хотите обновить сейчас?",
-      "currentVersion": "Текущая версия: ",
-      "newVersion": "Новая версия: ",
-      "updateNow": "Обновить сейчас"
-    },
     "confirmation": {
-      "settings": {
-        "import": {
-          "msg": "Это перезапишет все параметры конфигурации предоставленными значениями. Вы уверены?"
-        }
-      },
       "profile": {
         "delete": {
           "title": "Удалить профиль",
@@ -571,8 +538,7 @@
     "disconnect": "Отключить",
     "disconnecting": "Отключение...",
     "reconnect": "Переподключить",
-    "reconnectMsg": "Переподключение для учета изменений...",
-    "secure": "Защищено с помощью WARP"
+    "reconnectMsg": "Переподключение для учета изменений..."
   },
   "errors": {
     "unexpected": "Непредвиденная ошибка",

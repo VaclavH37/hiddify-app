@@ -23,7 +23,6 @@
     "addToClipboard": "新增至剪貼簿",
     "scanQr": "掃描 QR Code",
     "free": "免費",
-    "warp": "WARP",
     "fragment": "Fragment",
     "help": "說明",
     "save": "儲存",
@@ -172,8 +171,6 @@
     },
     "about": {
       "title": "關於",
-      "notAvailableMsg": "已是最新版本",
-      "checkForUpdate": "檢查更新",
       "openWorkingDir": "開啟工作目錄",
       "telegramChannel": "Telegram 頻道",
       "termsAndConditions": "條款與條件",
@@ -182,19 +179,6 @@
     "settings": {
       "title": "設定",
       "resetTunnel": "重設 VPN 設定檔",
-      "options": {
-        "import": {
-          "clipboard": "從剪貼簿匯入選項",
-          "file": "從檔案匯入選項"
-        },
-        "export": {
-          "anonymousToClipboard": "複製匿名選項到剪貼簿",
-          "anonymousToFile": "匯出匿名選項到檔案",
-          "allToClipboard": "複製所有選項到剪貼簿",
-          "allToFile": "匯出所有選項到檔案"
-        },
-        "reset": "重設選項"
-      },
       "general": {
         "title": "一般",
         "locale": "語言",
@@ -221,8 +205,7 @@
         "debugModeMsg": "重新啟動應用程式以套用此變更",
         "logLevel": "日誌級別",
         "connectionTestUrl": "連線測試 URL",
-        "urlTestInterval": "URL 測試間隔",
-        "clashApiPort": "Clash API 連接埠"
+        "urlTestInterval": "URL 測試間隔"
       },
       "routing": {
         "title": "路由",
@@ -481,23 +464,7 @@
         "lastUpdate": "最近更新"
       }
     },
-    "warpLicense": {
-      "title": "Cloudflare WARP 同意書",
-      "description(rich)": "Cloudflare WARP 是一個免費的 WireGuard VPN 提供商。啟用此選項即表示您同意 Cloudflare WARP 的 ${tos(服務條款)} 和 ${privacy(隱私權政策)}。"
-    },
-    "newVersion": {
-      "title": "有可用更新",
-      "msg": "@:common.appTitle 的新版本已發布。您想立即更新嗎？",
-      "currentVersion": "目前版本：",
-      "newVersion": "新版本：",
-      "updateNow": "立即更新"
-    },
     "confirmation": {
-      "settings": {
-        "import": {
-          "msg": "這會使用提供的值覆蓋所有設定選項。您確定嗎？"
-        }
-      },
       "profile": {
         "delete": {
           "title": "刪除設定檔",
@@ -567,8 +534,7 @@
     "disconnect": "中斷連線",
     "disconnecting": "中斷連線中...",
     "reconnect": "重新連線",
-    "reconnectMsg": "正在重新連線以套用變更...",
-    "secure": "由 WARP 保護"
+    "reconnectMsg": "正在重新連線以套用變更..."
   },
   "errors": {
     "unexpected": "意外錯誤",

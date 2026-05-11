@@ -3,16 +3,9 @@ import 'package:flutter/services.dart';
 
 abstract class Constants {
   static const appName = "Rayn VPN";
-  static const githubUrl = "https://github.com/hiddify/hiddify-next";
-  static const licenseUrl = "https://github.com/hiddify/hiddify-next?tab=License-1-ov-file#readme";
-  static const githubReleasesApiUrl = "https://api.github.com/repos/hiddify/hiddify-next/releases";
-  static const githubLatestReleaseUrl = "https://github.com/hiddify/hiddify-app/releases/latest";
-  static const appCastUrl = "https://raw.githubusercontent.com/hiddify/hiddify-next/main/appcast.xml";
   static const telegramChannelUrl = "https://t.me/raynlabs";
   static const privacyPolicyUrl = "https://www.raynlabs.io/legal/privacy";
   static const termsAndConditionsUrl = "https://www.raynlabs.io/legal/terms";
-  static const cfWarpPrivacyPolicy = "https://www.cloudflare.com/application/privacypolicy/";
-  static const cfWarpTermsOfService = "https://www.cloudflare.com/application/terms/";
 }
 
 const kAnimationDuration = Duration(milliseconds: 250);
@@ -40,23 +33,6 @@ abstract class BottomSheetConst {
   static const borderRadius = BorderRadius.vertical(top: Radius.circular(32));
 }
 
-
-abstract class IntroConst {
-  static const maxwidth = 620;
-  static const termsAndConditionsKey = 'terms-and-conditions';
-  static const githubKey = 'github';
-  static const licenseKey = 'license';
-  static const url = <String, String>{IntroConst.termsAndConditionsKey: Constants.termsAndConditionsUrl, IntroConst.githubKey: Constants.githubUrl, IntroConst.licenseKey: Constants.licenseUrl};
-}
-
-abstract class WarpConst {
-  static const warpAccountId = 'warp-account-id';
-  static const warpAccessToken = "warp-access-token";
-  static const warpConsentGiven = "warp-consent-given";
-  static const warpTermsOfServiceKey = 'warp-terms-of-service';
-  static const warpPrivacyPolicyKey = 'warp-privacy-policy';
-  static const url = <String, String>{WarpConst.warpTermsOfServiceKey: Constants.cfWarpTermsOfService, WarpConst.warpPrivacyPolicyKey: Constants.cfWarpPrivacyPolicy};
-}
 
 abstract class KeyboardConst {
   static final allArrows = {LogicalKeyboardKey.arrowUp, LogicalKeyboardKey.arrowDown, LogicalKeyboardKey.arrowLeft, LogicalKeyboardKey.arrowRight};
