@@ -1015,14 +1015,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
-  iregexp:
-    dependency: transitive
-    description:
-      name: iregexp
-      sha256: "143859dcaeecf6f683102786762d70a47ef8441a0d2287a158172d32d38799cf"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.2"
   jni:
     dependency: transitive
     description:
@@ -1055,14 +1047,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.9.0"
-  json_path:
-    dependency: "direct main"
-    description:
-      name: json_path
-      sha256: ba1904c4425dbe6230b824ed5b8b1684e87dbce2be5316e145584a6c46e750c1
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.6"
   json_serializable:
     dependency: "direct dev"
     description:
@@ -1151,14 +1135,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.13.0"
-  maybe_just_nothing:
-    dependency: transitive
-    description:
-      name: maybe_just_nothing
-      sha256: "0c06326e26d08f6ed43247404376366dc4d756cef23a4f1db765f546224c35e0"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.3"
   menu_base:
     dependency: transitive
     description:
@@ -1519,14 +1495,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
-  rfc_6901:
-    dependency: transitive
-    description:
-      name: rfc_6901
-      sha256: "6a43b1858dca2febaf93e15639aa6b0c49ccdfd7647775f15a499f872b018154"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.1"
   riverpod:
     dependency: transitive
     description:

@@ -86,10 +86,6 @@ object Settings {
         set(value) =
             preferences.edit().putBoolean(SettingsKey.SYSTEM_PROXY_ENABLED, value).apply()
 
-    var startedByUser: Boolean
-        get() = preferences.getBoolean(SettingsKey.STARTED_BY_USER, false)
-        set(value) = preferences.edit().putBoolean(SettingsKey.STARTED_BY_USER, value).apply()
-
     fun serviceClass(): Class<*> {
         return when (serviceMode) {
             ServiceMode.VPN -> VPNService::class.java

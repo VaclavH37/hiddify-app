@@ -293,7 +293,6 @@ class BoxService(
 //                Seq.destroyRef(refnum)
 //            }
 //            commandServer = null
-            Settings.startedByUser = false
             withContext(Dispatchers.Main) {
                 Mobile.close(4L)
                 status.value = Status.Stopped
@@ -304,7 +303,6 @@ class BoxService(
     }
 
     private suspend fun stopAndAlert(type: Alert, message: String? = null) {
-        Settings.startedByUser = false
         withContext(Dispatchers.Main) {
             if (receiverRegistered) {
                 service.unregisterReceiver(receiver)
@@ -335,7 +333,6 @@ class BoxService(
         }
 
         GlobalScope.launch(Dispatchers.IO) {
-            Settings.startedByUser = true
             initialize()
 //            try {
 //                startCommandServer()

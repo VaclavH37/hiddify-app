@@ -81,7 +81,6 @@ class MainActivity : FlutterFragmentActivity(), ServiceConnection.Callback {
             withContext(Dispatchers.Main) {
                 ContextCompat.startForegroundService(this@MainActivity, intent)
             }
-            Settings.startedByUser = true
         }
     }
 
