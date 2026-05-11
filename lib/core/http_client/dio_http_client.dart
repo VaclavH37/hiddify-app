@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 
 import 'package:hiddify/utils/custom_loggers.dart';
 
@@ -33,13 +32,6 @@ class DioHttpClient with InfraLogger {
       _dio[mode]!.httpClientAdapter = IOHttpClientAdapter(
         createHttpClient: () {
           final client = HttpClient();
-          // Accept self-signed / untrusted certs in debug builds so the
-          // local test-subscription-server can be hit without installing
-          // its cert into the OS trust store. Compile-time gated; release
-          // builds keep default OS-trust validation.
-          if (kDebugMode) {
-            client.badCertificateCallback = (cert, host, port) => true;
-          }
           client.findProxy = (url) {
             if (mode == "proxy") {
               return "PROXY localhost:$port";

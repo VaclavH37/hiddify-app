@@ -63,13 +63,9 @@ void main() {
     expect(RaynTokenDecryptor.decryptToUrl(token), null);
   });
 
-  test('accepts plain http in debug mode (dev bypass for local test server)', () {
-    // Tests always run in debug mode (kDebugMode == true). This is a flipped
-    // version of the prior "rejects plaintext that is plain http" assertion;
-    // release builds still reject http:// — see rayn_token.dart for the gate.
-    const url = 'http://localhost:8080/sub';
-    final token = _encrypt(url, _testKey.publicKey as RSAPublicKey);
-    expect(RaynTokenDecryptor.decryptToUrl(token), url);
+  test('rejects plaintext that is plain http', () {
+    final token = _encrypt('http://localhost:8080/sub', _testKey.publicKey as RSAPublicKey);
+    expect(RaynTokenDecryptor.decryptToUrl(token), null);
   });
 
   test('returns null when key has not been loaded', () {
