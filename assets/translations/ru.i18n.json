@@ -406,29 +406,6 @@
           "enable": "Включить дополнение",
           "size": "Размер дополнения"
         }
-      },
-      "warp": {
-        "title": "WARP",
-        "enable": "Включить WARP",
-        "generateConfig": "Сгенерировать конфигурацию WARP",
-        "configGenerated": "Конфигурация Warp сгенерирована",
-        "missingConfig": "Отсутствует конфигурация WARP",
-        "detourMode": "Режим маршрутизации WARP",
-        "detourModes": {
-          "proxyOverWarp": "Направлять прокси через WARP",
-          "warpOverProxy": "Направлять WARP через прокси",
-          "proxyOverWarpExplain": "Разблокировать прокси с помощью WARP",
-          "warpOverProxyExplain": "Дополнительная безопасность с WARP"
-        },
-        "licenseKey": "Лицензионный ключ",
-        "cleanIp": "Чистый IP",
-        "port": "Порт",
-        "noise": {
-          "count": "Количество шума",
-          "mode": "Режим шума",
-          "size": "Размер шума",
-          "delay": "Задержка шума"
-        }
       }
     }
   },
@@ -568,10 +545,6 @@
       "missingPrivilegeMsg": "Режим VPN требует прав администратора. Либо перезапустите приложение от имени администратора, либо измените режим службы.",
       "invalidConfigOptions": "Неверные параметры конфигурации",
       "invalidConfig": "Неверная конфигурация"
-    },
-    "warp": {
-      "missingLicense": "Отсутствует лицензия Warp",
-      "missingLicenseMsg": "Выбранный профиль использует функцию WARP; для использования этой функции необходимо принять лицензию WARP."
     }
   }
 }

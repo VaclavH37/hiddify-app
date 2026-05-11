@@ -428,29 +428,6 @@
           "enable": "Enable padding",
           "size": "Padding size"
         }
-      },
-      "warp": {
-        "title": "WARP",
-        "enable": "Enable WARP",
-        "generateConfig": "Generate WARP config",
-        "configGenerated": "Warp config is generated",
-        "missingConfig": "Missing WARP config",
-        "detourMode": "Detour mode",
-        "detourModes": {
-          "proxyOverWarp": "Detour proxies through WARP ",
-          "warpOverProxy": "Detour WARP through proxies",
-          "proxyOverWarpExplain": "Unblock proxies by WARP",
-          "warpOverProxyExplain": "Extra security by WARP"
-        },
-        "licenseKey": "License key",
-        "cleanIp": "Clean IP",
-        "port": "Port",
-        "noise": {
-          "count": "Noise count",
-          "mode": "Noise mode",
-          "size": "Noise size",
-          "delay": "Noise delay"
-        }
       }
     }
   },
@@ -599,10 +576,6 @@
       "missingPrivilegeMsg": "VPN mode requires administrator privileges. Either relaunch the app as administrator or change service mode.",
       "invalidConfigOptions": "Invalid configuration options",
       "invalidConfig": "Invalid configuration"
-    },
-    "warp": {
-      "missingLicense": "Warp license",
-      "missingLicenseMsg": "The selected profile uses the WARP feature; to use this feature, the WARP license must be agreed to."
     }
   }
 }

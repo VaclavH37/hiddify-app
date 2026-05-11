@@ -1,18 +1,13 @@
-display_name: Hiddify
+display_name: Rayn VPN
 
 icon: ..\..\assets\images\windows.ico
 
 keywords:
-  - Hiddify
+  - Rayn
   - Proxy
   - VPN
-  - V2ray
-  - Nekoray
-  - Xray
-  - Psiphon
-  - OpenVPN
 
-generic_name: Hiddify
+generic_name: Rayn VPN
 
 actions:
   - name: Start

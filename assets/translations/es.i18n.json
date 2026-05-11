@@ -402,29 +402,6 @@
           "enable": "Habilitar relleno",
           "size": "Tamaño de relleno"
         }
-      },
-      "warp": {
-        "title": "WARP",
-        "enable": "Habilitar WARP",
-        "generateConfig": "Generar configuración de WARP",
-        "configGenerated": "Configuración de WARP generada",
-        "missingConfig": "Falta la configuración de WARP",
-        "detourMode": "Modo de desvío",
-        "detourModes": {
-          "proxyOverWarp": "Desviar proxies a través de WARP",
-          "warpOverProxy": "Desviar WARP a través de proxies",
-          "proxyOverWarpExplain": "Desbloquear proxies con WARP",
-          "warpOverProxyExplain": "Seguridad extra con WARP"
-        },
-        "licenseKey": "Clave de licencia",
-        "cleanIp": "IP limpia",
-        "port": "Puerto",
-        "noise": {
-          "count": "Cantidad de ruido",
-          "mode": "Modo de ruido",
-          "size": "Tamaño de ruido",
-          "delay": "Retraso de ruido"
-        }
       }
     }
   },
@@ -564,10 +541,6 @@
       "missingPrivilegeMsg": "El modo VPN requiere privilegios de administrador. Reinicia la aplicación como administrador o cambia el modo de servicio.",
       "invalidConfigOptions": "Opciones de configuración no válidas",
       "invalidConfig": "Configuración no válida"
-    },
-    "warp": {
-      "missingLicense": "Falta la licencia de WARP",
-      "missingLicenseMsg": "El perfil seleccionado utiliza la función WARP. Para usar esta función, debes aceptar la licencia de WARP."
     }
   }
 }

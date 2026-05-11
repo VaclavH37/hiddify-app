@@ -402,29 +402,6 @@
           "enable": "Dolguyu etkinleştir",
           "size": "Dolgu boyutu"
         }
-      },
-      "warp": {
-        "title": "WARP",
-        "enable": "WARP'ı etkinleştir",
-        "generateConfig": "WARP yapılandırması oluştur",
-        "configGenerated": "WARP yapılandırması oluşturuldu",
-        "missingConfig": "WARP yapılandırması eksik",
-        "detourMode": "Yönlendirme modu",
-        "detourModes": {
-          "proxyOverWarp": "Proxy'leri WARP üzerinden yönlendir",
-          "warpOverProxy": "WARP'ı proxy'ler üzerinden yönlendir",
-          "proxyOverWarpExplain": "Proxy'lerin engelini WARP ile kaldır",
-          "warpOverProxyExplain": "WARP ile ekstra güvenlik"
-        },
-        "licenseKey": "Lisans anahtarı",
-        "cleanIp": "Temiz IP",
-        "port": "Port",
-        "noise": {
-          "count": "Gürültü sayısı",
-          "mode": "Gürültü modu",
-          "size": "Gürültü boyutu",
-          "delay": "Gürültü gecikmesi"
-        }
       }
     }
   },
@@ -564,10 +541,6 @@
       "missingPrivilegeMsg": "VPN modu yönetici yetkisi gerektirir. Lütfen uygulamayı yönetici olarak yeniden başlatın veya servis modunu değiştirin.",
       "invalidConfigOptions": "Geçersiz yapılandırma seçenekleri",
       "invalidConfig": "Geçersiz yapılandırma"
-    },
-    "warp": {
-      "missingLicense": "WARP lisansı eksik",
-      "missingLicenseMsg": "Seçili profil WARP özelliğini kullanıyor. Bu özelliği kullanmak için WARP lisansını kabul etmeniz gerekir."
     }
   }
 }

@@ -129,14 +129,4 @@ enum WarpDetourMode {
   const WarpDetourMode(this.key);
 
   final String key;
-
-  String present(TranslationsEn t) => switch (this) {
-    proxyOverWarp => t.pages.settings.warp.detourModes.proxyOverWarp,
-    warpOverProxy => t.pages.settings.warp.detourModes.warpOverProxy,
-  };
-
-  String presentExplain(TranslationsEn t) => switch (this) {
-    proxyOverWarp => t.pages.settings.warp.detourModes.proxyOverWarpExplain,
-    warpOverProxy => t.pages.settings.warp.detourModes.warpOverProxyExplain,
-  };
 }

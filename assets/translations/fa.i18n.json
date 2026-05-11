@@ -402,29 +402,6 @@
           "enable": "فعال‌سازی padding",
           "size": "اندازه padding"
         }
-      },
-      "warp": {
-        "title": "WARP",
-        "enable": "فعال‌سازی WARP",
-        "generateConfig": "ایجاد کانفیگ WARP",
-        "configGenerated": "کانفیگ Warp ایجاد شد",
-        "missingConfig": "کانفیگ WARP موجود نیست",
-        "detourMode": "حالت مسیریابی WARP",
-        "detourModes": {
-          "proxyOverWarp": "عبور پروکسی‌ها از طریق WARP",
-          "warpOverProxy": "عبور WARP از طریق پروکسی‌ها",
-          "proxyOverWarpExplain": "رفع انسداد پروکسی‌ها با WARP",
-          "warpOverProxyExplain": "امنیت بیشتر با WARP"
-        },
-        "licenseKey": "کلید لایسنس",
-        "cleanIp": "IP تمیز",
-        "port": "پورت",
-        "noise": {
-          "count": "تعداد نویز",
-          "mode": "حالت نویز",
-          "size": "اندازه نویز",
-          "delay": "تأخیر نویز"
-        }
       }
     }
   },
@@ -564,10 +541,6 @@
       "missingPrivilegeMsg": "حالت VPN به دسترسی ادمین نیاز دارد. یا برنامه را به عنوان ادمین مجدداً راه‌اندازی کنید یا حالت سرویس را تغییر دهید.",
       "invalidConfigOptions": "گزینه‌های پیکربندی نامعتبر",
       "invalidConfig": "پیکربندی نامعتبر"
-    },
-    "warp": {
-      "missingLicense": "لایسنس Warp",
-      "missingLicenseMsg": "پروفایل انتخاب‌شده از ویژگی WARP استفاده می‌کند؛ برای استفاده از این قابلیت، باید با لایسنس WARP موافقت شود."
     }
   }
 }

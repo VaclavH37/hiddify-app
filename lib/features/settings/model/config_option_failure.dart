@@ -11,14 +11,10 @@ sealed class ConfigOptionFailure with _$ConfigOptionFailure, Failure {
   @With<UnexpectedFailure>()
   const factory ConfigOptionFailure.unexpected([Object? error, StackTrace? stackTrace]) = ConfigOptionUnexpectedFailure;
 
-  @With<ExpectedFailure>()
-  const factory ConfigOptionFailure.missingWarp() = MissingWarpConfigFailure;
-
   @override
   ({String type, String? message}) present(TranslationsEn t) {
     return switch (this) {
       ConfigOptionUnexpectedFailure() => (type: t.errors.unexpected, message: null),
-      MissingWarpConfigFailure() => (type: t.pages.settings.warp.missingConfig, message: null),
     };
   }
 }

@@ -402,29 +402,6 @@
           "enable": "启用填充",
           "size": "填充大小"
         }
-      },
-      "warp": {
-        "title": "WARP",
-        "enable": "启用 WARP",
-        "generateConfig": "生成 WARP 配置",
-        "configGenerated": "WARP 配置已生成",
-        "missingConfig": "WARP 配置缺失",
-        "detourMode": "WARP 路由模式",
-        "detourModes": {
-          "proxyOverWarp": "通过 WARP 路由代理",
-          "warpOverProxy": "通过代理路由 WARP",
-          "proxyOverWarpExplain": "通过 WARP 解锁代理",
-          "warpOverProxyExplain": "通过 WARP 增强安全性"
-        },
-        "licenseKey": "许可证密钥",
-        "cleanIp": "优选 IP",
-        "port": "端口",
-        "noise": {
-          "count": "噪声数量",
-          "mode": "噪声模式",
-          "size": "噪声大小",
-          "delay": "噪声延迟"
-        }
       }
     }
   },
@@ -564,10 +541,6 @@
       "missingPrivilegeMsg": "VPN 模式需要管理员权限。请以管理员身份重新启动应用，或更改服务模式。",
       "invalidConfigOptions": "配置选项无效",
       "invalidConfig": "配置无效"
-    },
-    "warp": {
-      "missingLicense": "WARP 许可证缺失",
-      "missingLicenseMsg": "所选配置文件使用 WARP 功能；要使用此功能，必须同意 WARP 许可证。"
     }
   }
 }

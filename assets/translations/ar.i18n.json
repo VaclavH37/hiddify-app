@@ -408,29 +408,6 @@
           "enable": "تفعيل padding",
           "size": "حجم padding"
         }
-      },
-      "warp": {
-        "title": "WARP",
-        "enable": "تفعيل WARP",
-        "generateConfig": "إنشاء تكوين WARP",
-        "configGenerated": "تم إنشاء تكوين WARP",
-        "missingConfig": "تكوين WARP مفقود",
-        "detourMode": "وضع توجيه WARP",
-        "detourModes": {
-          "proxyOverWarp": "توجيه البروكسيات عبر WARP",
-          "warpOverProxy": "توجيه WARP عبر البروكسيات",
-          "proxyOverWarpExplain": "لإلغاء حظر البروكسيات بواسطة WARP",
-          "warpOverProxyExplain": "لأمان إضافي بواسطة WARP"
-        },
-        "licenseKey": "مفتاح الترخيص",
-        "cleanIp": "IP نظيف",
-        "port": "المنفذ",
-        "noise": {
-          "count": "عدد الضوضاء",
-          "mode": "وضع الضوضاء",
-          "size": "حجم الضوضاء",
-          "delay": "تأخير الضوضاء"
-        }
       }
     }
   },
@@ -570,10 +547,6 @@
       "missingPrivilegeMsg": "وضع الـ VPN يتطلب صلاحيات المسؤول. يرجى إعادة تشغيل التطبيق كمسؤول أو تغيير وضع الخدمة.",
       "invalidConfigOptions": "خيارات تكوين غير صالحة",
       "invalidConfig": "تكوين غير صالح"
-    },
-    "warp": {
-      "missingLicense": "رخصة WARP مفقودة",
-      "missingLicenseMsg": "الملف الشخصي المحدد يستخدم ميزة WARP. لاستخدام هذه الميزة، يجب الموافقة على شروط رخصة WARP."
     }
   }
 }

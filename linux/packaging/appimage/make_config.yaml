@@ -7,7 +7,7 @@ keywords:
   - Proxy
   - VPN
 
-generic_name: Hiddify
+generic_name: Rayn VPN
 
 actions:
   - name: Start

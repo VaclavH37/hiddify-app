@@ -20,10 +20,6 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
     final proxies = ref.watch(proxiesOverviewNotifierProvider);
     final sortBy = ref.watch(proxiesSortNotifierProvider);
 
-    // final selectActiveProxyMutation = useMutation(
-    //   initialOnFailure: (error) => CustomToast.error(t.presentShortError(error)).show(context),
-    // );
-
     return Scaffold(
       appBar: AppBar(
         title: Text(t.pages.proxies.title),

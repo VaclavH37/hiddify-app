@@ -402,29 +402,6 @@
           "enable": "Aktifkan padding",
           "size": "Ukuran padding"
         }
-      },
-      "warp": {
-        "title": "WARP",
-        "enable": "Aktifkan WARP",
-        "generateConfig": "Buat konfigurasi WARP",
-        "configGenerated": "Konfigurasi WARP dibuat",
-        "missingConfig": "Konfigurasi WARP hilang",
-        "detourMode": "Mode Rute WARP",
-        "detourModes": {
-          "proxyOverWarp": "Alihkan proksi melalui WARP",
-          "warpOverProxy": "Alihkan WARP melalui proksi",
-          "proxyOverWarpExplain": "Buka blokir proksi dengan WARP",
-          "warpOverProxyExplain": "Keamanan ekstra dengan WARP"
-        },
-        "licenseKey": "Kunci lisensi",
-        "cleanIp": "IP bersih",
-        "port": "Port",
-        "noise": {
-          "count": "Jumlah kebisingan",
-          "mode": "Mode kebisingan",
-          "size": "Ukuran kebisingan",
-          "delay": "Penundaan kebisingan"
-        }
       }
     }
   },
@@ -564,10 +541,6 @@
       "missingPrivilegeMsg": "Mode VPN memerlukan izin administrator. Harap mulai ulang aplikasi sebagai administrator atau ubah mode layanan.",
       "invalidConfigOptions": "Opsi konfigurasi tidak valid",
       "invalidConfig": "Konfigurasi tidak valid"
-    },
-    "warp": {
-      "missingLicense": "Lisensi WARP hilang",
-      "missingLicenseMsg": "Profil yang dipilih menggunakan fitur WARP. Untuk menggunakan fitur ini, Anda harus menyetujui lisensi WARP."
     }
   }
 }
