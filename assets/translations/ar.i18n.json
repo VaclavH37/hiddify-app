@@ -228,9 +228,7 @@
         "logLevel": "مستوى السجل",
         "connectionTestUrl": "رابط اختبار الاتصال",
         "urlTestInterval": "فاصل اختبار الرابط",
-        "clashApiPort": "منفذ Clash API",
-        "useXrayCoreWhenPossible": "استخدام xray-core عند الإمكان",
-        "useXrayCoreWhenPossibleMsg": "استخدم xray-core عند تحليل روابط الاشتراك. تحتاج إلى إعادة استيراد الرابط لتفعيل هذا الخيار"
+        "clashApiPort": "منفذ Clash API"
       },
       "routing": {
         "title": "التوجيه",

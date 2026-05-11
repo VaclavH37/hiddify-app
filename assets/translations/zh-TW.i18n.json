@@ -222,9 +222,7 @@
         "logLevel": "日誌級別",
         "connectionTestUrl": "連線測試 URL",
         "urlTestInterval": "URL 測試間隔",
-        "clashApiPort": "Clash API 連接埠",
-        "useXrayCoreWhenPossible": "盡可能使用 xray-core",
-        "useXrayCoreWhenPossibleMsg": "解析訂閱連結時使用 xray-core。您需要重新匯入訂閱連結才能啟用此選項"
+        "clashApiPort": "Clash API 連接埠"
       },
       "routing": {
         "title": "路由",

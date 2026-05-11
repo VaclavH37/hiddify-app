@@ -222,9 +222,7 @@
         "logLevel": "Level log",
         "connectionTestUrl": "URL uji koneksi",
         "urlTestInterval": "Interval uji URL",
-        "clashApiPort": "Port API Clash",
-        "useXrayCoreWhenPossible": "Gunakan xray-core jika memungkinkan",
-        "useXrayCoreWhenPossibleMsg": "Gunakan xray-core saat mengurai tautan langganan. Anda perlu mengimpor ulang tautan untuk mengaktifkan opsi ini."
+        "clashApiPort": "Port API Clash"
       },
       "routing": {
         "title": "Perutean",

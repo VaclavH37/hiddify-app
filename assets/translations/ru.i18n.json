@@ -226,9 +226,7 @@
         "logLevel": "Уровень логирования",
         "connectionTestUrl": "URL для теста соединения",
         "urlTestInterval": "Интервал теста URL",
-        "clashApiPort": "Порт Clash API",
-        "useXrayCoreWhenPossible": "Использовать xray-core, если возможно",
-        "useXrayCoreWhenPossibleMsg": "Использовать xray-core при обработке ссылок на подписку. Необходимо повторно импортировать ссылку, чтобы включить эту опцию."
+        "clashApiPort": "Порт Clash API"
       },
       "routing": {
         "title": "Маршрутизация",

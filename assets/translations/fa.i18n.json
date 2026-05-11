@@ -222,9 +222,7 @@
         "logLevel": "سطح گزارش‌گیری",
         "connectionTestUrl": "URL تست اتصال",
         "urlTestInterval": "فاصله زمانی تست URL",
-        "clashApiPort": "پورت Clash API",
-        "useXrayCoreWhenPossible": "استفاده از xray-core در صورت امکان",
-        "useXrayCoreWhenPossibleMsg": "هنگام پردازش لینک‌های اشتراک از xray-core استفاده شود. برای فعال‌سازی این گزینه باید لینک اشتراک را مجدداً وارد کنید."
+        "clashApiPort": "پورت Clash API"
       },
       "routing": {
         "title": "مسیریابی",

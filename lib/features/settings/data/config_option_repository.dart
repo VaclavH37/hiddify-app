@@ -257,7 +257,6 @@ abstract class ConfigOptions {
       region: "other",
       balancerStrategy: ref.watch(balancerStrategy),
       blockAds: ref.watch(blockAds),
-      useXrayCoreWhenPossible: false,
       executeConfigAsIs: false,
       logLevel: ref.watch(logLevel),
       resolveDestination: ref.watch(resolveDestination),

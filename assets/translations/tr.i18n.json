@@ -222,9 +222,7 @@
         "logLevel": "Log seviyesi",
         "connectionTestUrl": "Bağlantı testi URL'si",
         "urlTestInterval": "URL testi aralığı",
-        "clashApiPort": "Clash API portu",
-        "useXrayCoreWhenPossible": "Mümkün olduğunda xray-core kullan",
-        "useXrayCoreWhenPossibleMsg": "Abonelik bağlantılarını ayrıştırırken xray-core kullanın. Bu seçeneği etkinleştirmek için bağlantıyı yeniden içe aktarmanız gerekir."
+        "clashApiPort": "Clash API portu"
       },
       "routing": {
         "title": "Yönlendirme",

@@ -16,13 +16,7 @@
 
   <description>
     <p>
-      Hiddify is an advanced proxy and VPN client built for privacy and control. 
-      It supports multiple backend protocols including V2Ray, Xray, Clash, and Sing-box, 
-      providing flexibility and performance for all kinds of network configurations.
-    </p>
-    <p>
-      Designed with simplicity in mind, Hiddify helps users connect securely and 
-      manage complex proxy configurations through a clean graphical interface.
+      Rayn VPN is a secure VPN client built on the sing-box core.
     </p>
   </description>
 
@@ -42,14 +36,9 @@
   </categories>
 
   <keywords>
-    <keyword>Hiddify</keyword>
+    <keyword>Rayn</keyword>
     <keyword>Proxy</keyword>
     <keyword>VPN</keyword>
-    <keyword>V2Ray</keyword>
-    <keyword>Nekoray</keyword>
-    <keyword>Xray</keyword>
-    <keyword>Psiphon</keyword>
-    <keyword>OpenVPN</keyword>
   </keywords>
 
   <mime-types>

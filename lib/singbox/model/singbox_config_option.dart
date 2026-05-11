@@ -19,7 +19,6 @@ class SingboxConfigOption with _$SingboxConfigOption {
     required String region,
     required BalancerStrategy balancerStrategy,
     required bool blockAds,
-    required bool useXrayCoreWhenPossible,
     required bool executeConfigAsIs,
     required LogLevel logLevel,
     required bool resolveDestination,

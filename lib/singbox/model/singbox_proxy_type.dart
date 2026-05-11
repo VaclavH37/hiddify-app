@@ -25,12 +25,6 @@ enum ProxyType {
   balancer("Balancer"),
   warp("Warp"),
 
-  xvless("xVLESS"),
-  xvmess("xVMess"),
-  xtrojan("xTrojan"),
-  xfreedom("xFragment"),
-  xshadowsocks("xShadowsocks"),
-  xsocks("xSocks"),
   invalid("Invalid"),
   unknown("Unknown");
 

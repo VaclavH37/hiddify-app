@@ -222,9 +222,7 @@
         "logLevel": "Nível de registro",
         "connectionTestUrl": "URL de teste de conexão",
         "urlTestInterval": "Intervalo de teste de URL",
-        "clashApiPort": "Porta da API do Clash",
-        "useXrayCoreWhenPossible": "Usar xray-core quando possível",
-        "useXrayCoreWhenPossibleMsg": "Use o xray-core ao analisar links de assinatura. Você precisa reimportar o link para ativar esta opção"
+        "clashApiPort": "Porta da API do Clash"
       },
       "routing": {
         "title": "Roteamento",

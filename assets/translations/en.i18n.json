@@ -248,9 +248,7 @@
         "logLevel": "Log level",
         "connectionTestUrl": "Connection test URL",
         "urlTestInterval": "URL test interval",
-        "clashApiPort": "Clash API port",
-        "useXrayCoreWhenPossible": "Use xray-core when possible",
-        "useXrayCoreWhenPossibleMsg": "Use xray-core during parsing sub links. You need to reimport the sub link to enable this option."
+        "clashApiPort": "Clash API port"
       },
       "routing": {
         "title": "Routing",
