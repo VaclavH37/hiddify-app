@@ -171,7 +171,6 @@
     },
     "about": {
       "title": "Tentang",
-      "openWorkingDir": "Buka direktori kerja",
       "telegramChannel": "Saluran Telegram",
       "termsAndConditions": "Syarat dan Ketentuan",
       "privacyPolicy": "Kebijakan Privasi"
@@ -380,8 +379,7 @@
         "mixedPort": "Port campuran",
         "tproxyPort": "Port proksi transparan",
         "directPort": "Port direct",
-        "redirectPort": "Port pengalihan",
-        "allowConnectionFromLan": "Bagikan VPN di jaringan lokal"
+        "redirectPort": "Port pengalihan"
       },
       "tlsTricks": {
         "title": "Trik TLS",

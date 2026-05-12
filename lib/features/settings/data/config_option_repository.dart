@@ -150,8 +150,6 @@ abstract class ConfigOptions {
 
   static final bypassLan = PreferencesNotifier.create<bool, bool>("bypass-lan", false);
 
-  static final allowConnectionFromLan = PreferencesNotifier.create<bool, bool>("allow-connection-from-lan", false);
-
   static final enableFakeDns = PreferencesNotifier.create<bool, bool>("enable-fake-dns", true);
 
   // static final enableDnsRouting = PreferencesNotifier.create<bool, bool>("enable-dns-routing", true);
@@ -206,7 +204,7 @@ abstract class ConfigOptions {
     // if (PlatformUtils.isDesktop && mode == ServiceMode.tun) {
     //   return true;
     // }
-    // if (ref.watch(enableTlsFragment) || ref.watch(enableTlsMixedSniCase) || ref.watch(enableTlsPadding) || ref.watch(enableMux) || ref.watch(enableWarp) || ref.watch(bypassLan) || ref.watch(allowConnectionFromLan)) {
+    // if (ref.watch(enableTlsFragment) || ref.watch(enableTlsMixedSniCase) || ref.watch(enableTlsPadding) || ref.watch(enableMux) || ref.watch(enableWarp) || ref.watch(bypassLan)) {
     //   return true;
     // }
 
@@ -237,7 +235,6 @@ abstract class ConfigOptions {
     "connection-test-url": connectionTestUrl,
     "url-test-interval": urlTestInterval,
     "bypass-lan": bypassLan,
-    "allow-connection-from-lan": allowConnectionFromLan,
     // "enable-dns-routing": enableDnsRouting,
 
     // mux
@@ -280,7 +277,8 @@ abstract class ConfigOptions {
       // enableTunService: mode == false, //ServiceMode.tunService,
       setSystemProxy: mode == ServiceMode.systemProxy,
       bypassLan: ref.watch(bypassLan),
-      allowConnectionFromLan: ref.watch(allowConnectionFromLan),
+      // Hardcoded false — UI toggle removed; LAN sharing kept off by default.
+      allowConnectionFromLan: false,
       enableFakeDns: ref.watch(enableFakeDns),
       // enableDnsRouting: ref.watch(enableDnsRouting),
       independentDnsCache: ref.watch(independentDnsCache),

@@ -175,7 +175,6 @@
     },
     "about": {
       "title": "О программе",
-      "openWorkingDir": "Открыть рабочую папку",
       "telegramChannel": "Канал в Telegram",
       "termsAndConditions": "Условия использования",
       "privacyPolicy": "Политика конфиденциальности"
@@ -384,8 +383,7 @@
         "mixedPort": "Смешанный порт",
         "tproxyPort": "Порт прозрачного прокси",
         "directPort": "Локальный порт direct",
-        "redirectPort": "Порт перенаправления",
-        "allowConnectionFromLan": "Поделиться VPN в локальной сети"
+        "redirectPort": "Порт перенаправления"
       },
       "tlsTricks": {
         "title": "Трюки TLS",

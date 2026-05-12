@@ -171,7 +171,6 @@
     },
     "about": {
       "title": "Hakkında",
-      "openWorkingDir": "Çalışma dizinini aç",
       "telegramChannel": "Telegram kanalı",
       "termsAndConditions": "Şartlar ve Koşullar",
       "privacyPolicy": "Gizlilik Politikası"
@@ -380,8 +379,7 @@
         "mixedPort": "Karışık port",
         "tproxyPort": "Şeffaf proxy portu",
         "directPort": "Direct portu",
-        "redirectPort": "Yönlendirme portu",
-        "allowConnectionFromLan": "VPN'i yerel ağda paylaş"
+        "redirectPort": "Yönlendirme portu"
       },
       "tlsTricks": {
         "title": "TLS hileleri",

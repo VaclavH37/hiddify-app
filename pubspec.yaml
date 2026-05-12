@@ -127,7 +127,6 @@ dependencies:
   # Working with Wifi(get LAN IP address)
   # Web platform not supported
   # platform-specific settings
-  network_info_plus: ^6.1.4
   humanizer: ^3.0.1
   dependency_validator: ^5.0.2
 

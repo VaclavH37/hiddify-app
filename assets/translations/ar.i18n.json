@@ -177,7 +177,6 @@
     },
     "about": {
       "title": "حول التطبيق",
-      "openWorkingDir": "فتح مجلد العمل",
       "telegramChannel": "قناة التيليجرام",
       "termsAndConditions": "الشروط والأحكام",
       "privacyPolicy": "سياسة الخصوصية"
@@ -386,8 +385,7 @@
         "mixedPort": "منفذ مختلط",
         "tproxyPort": "منفذ البروكسي الشفاف",
         "directPort": "منفذ مباشر",
-        "redirectPort": "منفذ إعادة التوجيه",
-        "allowConnectionFromLan": "مشاركة VPN على الشبكة المحلية"
+        "redirectPort": "منفذ إعادة التوجيه"
       },
       "tlsTricks": {
         "title": "حيل TLS",

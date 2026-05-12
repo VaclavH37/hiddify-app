@@ -171,7 +171,6 @@
     },
     "about": {
       "title": "درباره",
-      "openWorkingDir": "باز کردن پوشه کاری",
       "telegramChannel": "کانال تلگرام",
       "termsAndConditions": "شرایط و ضوابط",
       "privacyPolicy": "سیاست حفظ حریم خصوصی"
@@ -380,8 +379,7 @@
         "mixedPort": "پورت ترکیبی",
         "tproxyPort": "پورت پروکسی شفاف",
         "directPort": "پورت مستقیم",
-        "redirectPort": "پورت تغییر مسیر",
-        "allowConnectionFromLan": "اشتراک VPN در شبکه محلی"
+        "redirectPort": "پورت تغییر مسیر"
       },
       "tlsTricks": {
         "title": "ترفندهای TLS",

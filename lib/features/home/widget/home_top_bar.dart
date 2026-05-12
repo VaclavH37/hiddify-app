@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
-import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
-import 'package:hiddify/core/widget/glass_surface.dart';
+import 'package:hiddify/core/widget/rayn_notification_bell.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 
 /// Desktop overlay: a single glass-wrapped bell pinned to the top-right of
@@ -21,7 +20,7 @@ class HomeTopBarBell extends StatelessWidget {
         padding: EdgeInsets.all(RaynSpacing.lg),
         child: Align(
           alignment: Alignment.topRight,
-          child: _NotificationBell(),
+          child: RaynNotificationBell(),
         ),
       ),
     );
@@ -68,37 +67,9 @@ class HomeMobileAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: const [
         Padding(
           padding: EdgeInsets.only(right: RaynSpacing.md),
-          child: _NotificationBell(),
+          child: RaynNotificationBell(),
         ),
       ],
-    );
-  }
-}
-
-class _NotificationBell extends StatelessWidget {
-  const _NotificationBell();
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassSurface(
-      padding: EdgeInsets.zero,
-      radius: RaynRadius.button,
-      child: Semantics(
-        button: true,
-        label: 'Notifications',
-        child: IconButton(
-          icon: Icon(Icons.notifications_none_rounded, color: context.rayn.textPrimary),
-          tooltip: 'Notifications',
-          onPressed: () {
-            // TODO(notifications): wire to inbox (open item §8 — bell is
-            // visual-only stub for this PR).
-          },
-          style: IconButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RaynRadius.button)),
-            padding: const EdgeInsets.all(RaynSpacing.sm),
-          ),
-        ),
-      ),
     );
   }
 }

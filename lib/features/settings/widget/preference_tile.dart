@@ -1,9 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
+import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/settings/notifier/battery_optimization/battery_optimizations_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+class _ValueLabel extends StatelessWidget {
+  const _ValueLabel(this.value);
+  final String value;
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.rayn;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 200),
+      child: Text(
+        value,
+        textAlign: TextAlign.end,
+        overflow: TextOverflow.ellipsis,
+        style: RaynTypography.body.copyWith(color: palette.textMuted),
+      ),
+    );
+  }
+}
 
 class ValuePreferenceWidget<T> extends HookConsumerWidget {
   const ValuePreferenceWidget({
@@ -33,14 +55,11 @@ class ValuePreferenceWidget<T> extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      title: Text(title),
-      subtitle: Text(presentValue?.call(value) ?? value.toString()),
-      leading: icon != null ? Icon(icon) : null,
-      // material: (context, platform) => MaterialListTileData(
+    return RaynSettingsTile(
+      leading: icon,
+      title: title,
       enabled: enabled,
-
-      // ),
+      trailing: _ValueLabel(presentValue?.call(value) ?? value.toString()),
       onTap: () async {
         final inputValue = await ref
             .read(dialogNotifierProvider.notifier)
@@ -88,13 +107,14 @@ class ChoicePreferenceWidget<T> extends HookConsumerWidget {
   final String Function(T value) presentChoice;
   final bool Function(String value)? validateInput;
   final ValueChanged<T>? onChanged;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      title: Text(title),
-      subtitle: Text(presentChoice(selected)),
-      leading: icon != null ? Icon(icon) : null,
+    return RaynSettingsTile(
+      leading: icon,
+      title: title,
       enabled: enabled,
+      trailing: _ValueLabel(presentChoice(selected)),
       onTap: () async {
         final selection = await ref
             .read(dialogNotifierProvider.notifier)
@@ -121,26 +141,27 @@ class BatteryOptimizationWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-
     final isIgnoringBatteryOptimizations = ref.watch(batteryOptimizationNotifierProvider);
 
     return isIgnoringBatteryOptimizations.when(
       data: (isIgnored) => isIgnored
-          ? const SizedBox()
-          : ListTile(
-              title: Text(t.pages.settings.general.ignoreBatteryOptimizations),
-              subtitle: Text(t.pages.settings.general.ignoreBatteryOptimizationsMsg),
-              leading: const Icon(Icons.battery_saver_rounded),
+          ? const SizedBox.shrink()
+          : RaynSettingsTile(
+              leading: Icons.battery_saver_rounded,
+              title: t.pages.settings.general.ignoreBatteryOptimizations,
+              subtitle: t.pages.settings.general.ignoreBatteryOptimizationsMsg,
+              trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () async {
                 await ref.read(batteryOptimizationNotifierProvider.notifier).requestToIgnore();
               },
             ),
-      error: (_, _) => const SizedBox(),
-      loading: () => const SizedBox(
-        height: 48,
-        child: Center(
-          child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: LinearProgressIndicator()),
+      error: (_, _) => const SizedBox.shrink(),
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: RaynSpacing.lg,
+          vertical: RaynSpacing.md,
         ),
+        child: LinearProgressIndicator(),
       ),
     );
   }

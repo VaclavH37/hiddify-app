@@ -6,8 +6,30 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/app_theme_mode.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
+import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+/// Right-aligned current-value label used by picker rows.
+class _ValueLabel extends StatelessWidget {
+  const _ValueLabel(this.value);
+  final String value;
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.rayn;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 180),
+      child: Text(
+        value,
+        textAlign: TextAlign.end,
+        overflow: TextOverflow.ellipsis,
+        style: RaynTypography.body.copyWith(color: palette.textMuted),
+      ),
+    );
+  }
+}
 
 class LocalePrefTile extends ConsumerWidget {
   const LocalePrefTile({super.key});
@@ -15,12 +37,11 @@ class LocalePrefTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-
     final locale = ref.watch(localePreferencesProvider);
-    return ListTile(
-      title: Text(t.pages.settings.general.locale),
-      subtitle: Text(locale.localeName),
-      leading: const Icon(Icons.translate_rounded),
+    return RaynSettingsTile(
+      leading: Icons.translate_rounded,
+      title: t.pages.settings.general.locale,
+      trailing: _ValueLabel(locale.localeName),
       onTap: () async {
         final selectedLocale = await ref
             .read(dialogNotifierProvider.notifier)
@@ -47,24 +68,25 @@ class EnableAnalyticsPrefTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-
     final enabled = ref.watch(analyticsControllerProvider).requireValue;
 
-    return SwitchListTile.adaptive(
-      title: Text(t.pages.settings.general.enableAnalytics),
-      subtitle: Text(t.pages.settings.general.enableAnalyticsMsg, style: Theme.of(context).textTheme.bodySmall),
-      secondary: const Icon(Icons.analytics_rounded),
-      value: enabled,
-      onChanged: (value) async {
-        if (onChanged != null) {
-          return onChanged!(value);
-        }
-        if (enabled) {
-          await ref.read(analyticsControllerProvider.notifier).disableAnalytics();
-        } else {
-          await ref.read(analyticsControllerProvider.notifier).enableAnalytics();
-        }
-      },
+    Future<void> toggle(bool value) async {
+      if (onChanged != null) {
+        return onChanged!(value);
+      }
+      if (enabled) {
+        await ref.read(analyticsControllerProvider.notifier).disableAnalytics();
+      } else {
+        await ref.read(analyticsControllerProvider.notifier).enableAnalytics();
+      }
+    }
+
+    return RaynSettingsTile(
+      leading: Icons.analytics_rounded,
+      title: t.pages.settings.general.enableAnalytics,
+      subtitle: t.pages.settings.general.enableAnalyticsMsg,
+      trailing: Switch.adaptive(value: enabled, onChanged: toggle),
+      onTap: () => toggle(!enabled),
     );
   }
 }
@@ -75,25 +97,24 @@ class ThemeModePrefTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-
     final themeMode = ref.watch(themePreferencesProvider);
-
-    return ListTile(
-      title: Text(t.pages.settings.general.themeMode),
-      subtitle: Text(themeMode.present(t)),
-      leading: Icon(switch (ref.watch(themePreferencesProvider)) {
+    return RaynSettingsTile(
+      leading: switch (themeMode) {
         AppThemeMode.system => Icons.auto_awesome_rounded,
         AppThemeMode.light => Icons.light_mode_rounded,
         AppThemeMode.dark => Icons.dark_mode_rounded,
         AppThemeMode.black => Icons.contrast_rounded,
-      }),
+      },
+      title: t.pages.settings.general.themeMode,
+      trailing: _ValueLabel(themeMode.present(t)),
       onTap: () async {
         final selectedThemeMode = await ref
             .read(dialogNotifierProvider.notifier)
             .showSettingPicker<AppThemeMode>(
               title: t.pages.settings.general.themeMode,
               selected: themeMode,
-              onReset: () => ref.read(themePreferencesProvider.notifier).changeThemeMode(AppThemeMode.system),
+              onReset: () =>
+                  ref.read(themePreferencesProvider.notifier).changeThemeMode(AppThemeMode.system),
               options: AppThemeMode.values,
               getTitle: (e) => e.present(t),
             );
@@ -111,13 +132,11 @@ class ClosingPrefTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-
     final action = ref.watch(Preferences.actionAtClose);
-
-    return ListTile(
-      title: Text(t.pages.settings.general.actionAtClosing),
-      subtitle: Text(action.present(t)),
-      leading: const Icon(Icons.logout_rounded),
+    return RaynSettingsTile(
+      leading: Icons.logout_rounded,
+      title: t.pages.settings.general.actionAtClosing,
+      trailing: _ValueLabel(action.present(t)),
       onTap: () async {
         final selectedAction = await ref.read(dialogNotifierProvider.notifier).showActionAtClosing(selected: action);
         if (selectedAction != null) {
@@ -127,3 +146,41 @@ class ClosingPrefTile extends ConsumerWidget {
     );
   }
 }
+
+/// Inline switch row used for `Preferences.<bool>` toggles inside a
+/// [RaynPreferenceGroup]. Composes a [RaynSettingsTile] with a [Switch] in
+/// the trailing slot — the whole row is tappable.
+class RaynSwitchTile extends StatelessWidget {
+  const RaynSwitchTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.value,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return RaynSettingsTile(
+      leading: icon,
+      title: title,
+      subtitle: subtitle,
+      enabled: enabled,
+      trailing: Switch.adaptive(
+        value: value,
+        onChanged: enabled ? onChanged : null,
+      ),
+      onTap: enabled ? () => onChanged(!value) : null,
+    );
+  }
+}
+

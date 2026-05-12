@@ -1,12 +1,20 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gap/gap.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
-import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/adaptive_icon.dart';
+import 'package:hiddify/core/widget/glass_surface.dart';
+import 'package:hiddify/core/widget/rayn_notification_bell.dart';
+import 'package:hiddify/core/widget/rayn_page_header.dart';
+import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
+import 'package:hiddify/core/widget/rayn_section_header.dart';
+import 'package:hiddify/core/widget/rayn_settings_tile.dart';
+import 'package:hiddify/features/settings/widget/sub_page_back_button.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -18,87 +26,96 @@ class AboutPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final appInfo = ref.watch(appInfoProvider).requireValue;
+    final palette = context.rayn;
 
-    final conditionalTiles = [
-      if (PlatformUtils.isDesktop)
-        ListTile(
-          title: Text(t.pages.about.openWorkingDir),
-          trailing: const Icon(FluentIcons.open_folder_24_regular),
-          onTap: () async {
-            final path = ref.watch(appDirectoriesProvider).requireValue.workingDir.uri;
-            await UriUtils.tryLaunch(path);
-          },
-        ),
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t.pages.about.title),
-        actions: [
-          PopupMenuButton(
-            icon: Icon(AdaptiveIcon(context).more),
-            itemBuilder: (context) {
-              return [
-                PopupMenuItem(
-                  child: Text(t.common.addToClipboard),
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: appInfo.format()));
-                  },
-                ),
-              ];
+    final trailing = <Widget>[
+      PopupMenuButton(
+        icon: Icon(AdaptiveIcon(context).more, color: palette.textPrimary),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            child: Text(t.common.addToClipboard),
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: appInfo.format()));
             },
           ),
-          const Gap(8),
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+      const RaynNotificationBell(),
+    ];
+
+    return RaynPageScaffold(
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: RaynSpacing.xl),
+        children: [
+          RaynPageHeader(
+            title: t.pages.about.title,
+            subtitle: t.pages.about.subtitle,
+            leading: const SubPageBackButton(),
+            trailing: trailing,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+            child: GlassSurface(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Assets.images.logo.svg(width: 64, height: 64),
-                  const Gap(16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(t.common.appTitle, style: Theme.of(context).textTheme.titleLarge),
-                      const Gap(4),
-                      Text("${t.common.version} ${appInfo.presentVersion}"),
-                    ],
+                  Assets.images.logo.svg(width: 56, height: 56),
+                  const SizedBox(width: RaynSpacing.lg),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          t.common.appTitle,
+                          style: RaynTypography.title.copyWith(color: palette.textPrimary),
+                        ),
+                        const SizedBox(height: RaynSpacing.xs),
+                        Text(
+                          "${t.common.version} ${appInfo.presentVersion}",
+                          style: RaynTypography.caption.copyWith(color: palette.textMuted),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              ...conditionalTiles,
-              if (conditionalTiles.isNotEmpty) const Divider(),
-              ListTile(
-                title: Text(t.pages.about.telegramChannel),
-                trailing: const Icon(FluentIcons.open_24_regular),
-                onTap: () async {
-                  await UriUtils.tryLaunch(Uri.parse(Constants.telegramChannelUrl));
-                },
-              ),
-              ListTile(
-                title: Text(t.pages.about.termsAndConditions),
-                trailing: const Icon(FluentIcons.open_24_regular),
-                onTap: () async {
-                  await UriUtils.tryLaunch(Uri.parse(Constants.termsAndConditionsUrl));
-                },
-              ),
-              ListTile(
-                title: Text(t.pages.about.privacyPolicy),
-                trailing: const Icon(FluentIcons.open_24_regular),
-                onTap: () async {
-                  await UriUtils.tryLaunch(Uri.parse(Constants.privacyPolicyUrl));
-                },
-              ),
-            ]),
+          RaynSectionHeader(t.pages.about.links),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+            child: RaynSettingsTile(
+              leading: FluentIcons.chat_24_regular,
+              title: t.pages.about.telegramChannel,
+              trailing: const Icon(FluentIcons.open_24_regular),
+              onTap: () async {
+                await UriUtils.tryLaunch(Uri.parse(Constants.telegramChannelUrl));
+              },
+            ),
+          ),
+          const SizedBox(height: RaynSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+            child: RaynSettingsTile(
+              leading: FluentIcons.document_24_regular,
+              title: t.pages.about.termsAndConditions,
+              trailing: const Icon(FluentIcons.open_24_regular),
+              onTap: () async {
+                await UriUtils.tryLaunch(Uri.parse(Constants.termsAndConditionsUrl));
+              },
+            ),
+          ),
+          const SizedBox(height: RaynSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+            child: RaynSettingsTile(
+              leading: FluentIcons.shield_24_regular,
+              title: t.pages.about.privacyPolicy,
+              trailing: const Icon(FluentIcons.open_24_regular),
+              onTap: () async {
+                await UriUtils.tryLaunch(Uri.parse(Constants.privacyPolicyUrl));
+              },
+            ),
           ),
         ],
       ),

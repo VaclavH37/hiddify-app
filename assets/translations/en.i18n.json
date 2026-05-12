@@ -192,21 +192,26 @@
     },
     "logs": {
       "title": "Logs",
+      "subtitle": "Live diagnostic output from the core and app.",
       "shareCoreLogs": "Share core logs",
       "shareAppLogs": "Share app logs"
     },
     "about": {
       "title": "About",
-      "openWorkingDir": "Open working directory",
+      "subtitle": "App version, links, and legal information.",
+      "links": "Links",
       "telegramChannel": "Telegram channel",
       "termsAndConditions": "Terms and conditions",
       "privacyPolicy": "Privacy policy"
     },
     "settings": {
       "title": "Settings",
+      "subtitle": "Configure your account, network and application preferences.",
+      "network": "Network",
       "resetTunnel": "Reset VPN profile",
       "general": {
         "title": "General",
+        "subtitle": "Manage general application preferences and behavior.",
         "locale": "Language",
         "themeMode": "Theme mode",
         "themeModes": {
@@ -235,6 +240,7 @@
       },
       "routing": {
         "title": "Routing",
+        "subtitle": "Configure traffic routing rules and per-app proxy.",
         "perAppProxy": {
           "title": "Per-app proxy",
           "hideSysApps": "Hide system apps",
@@ -367,6 +373,7 @@
       },
       "dns": {
         "title": "DNS",
+        "subtitle": "Configure primary and direct DNS resolvers.",
         "remoteDns": "Remote DNS",
         "remoteDnsDomainStrategy": "Remote DNS domain strategy",
         "directDns": "Outbound server resolver (direct)",
@@ -383,6 +390,7 @@
       },
       "inbound": {
         "title": "Inbound",
+        "subtitle": "Local listener ports and TUN settings.",
         "serviceMode": "Service mode",
         "serviceModes": {
           "proxy": "Proxy service only",
@@ -406,8 +414,7 @@
         "mixedPort": "Mixed port",
         "tproxyPort": "Transparent proxy port",
         "directPort": "Direct port",
-        "redirectPort": "Redirect port",
-        "allowConnectionFromLan": "Share VPN in local network"
+        "redirectPort": "Redirect port"
       },
       "tlsTricks": {
         "title": "TLS tricks",

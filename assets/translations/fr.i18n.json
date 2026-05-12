@@ -171,7 +171,6 @@
     },
     "about": {
       "title": "À propos",
-      "openWorkingDir": "Ouvrir le répertoire de travail",
       "telegramChannel": "Canal Telegram",
       "termsAndConditions": "Conditions d'utilisation",
       "privacyPolicy": "Politique de confidentialité"
@@ -380,8 +379,7 @@
         "mixedPort": "Port mixte",
         "tproxyPort": "Port de proxy transparent",
         "directPort": "Port direct local",
-        "redirectPort": "Port de redirection",
-        "allowConnectionFromLan": "Partager le VPN sur le réseau local"
+        "redirectPort": "Port de redirection"
       },
       "tlsTricks": {
         "title": "Astuces TLS",

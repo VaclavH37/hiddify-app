@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/widget/rayn_notification_bell.dart';
+import 'package:hiddify/core/widget/rayn_page_header.dart';
+import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
+import 'package:hiddify/core/widget/rayn_section_header.dart';
+import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auth/widget/account_section.dart';
 import 'package:hiddify/features/settings/notifier/reset_tunnel/reset_tunnel_notifier.dart';
 import 'package:hiddify/utils/utils.dart';
@@ -26,75 +33,63 @@ class SettingsPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-    // final scrollController = useScrollController();
+    final isMobile = Breakpoint(context).isMobile();
 
-    // useMemoized(
-    //   () {
-    //     if (section != null) {
-    //       WidgetsBinding.instance.addPostFrameCallback(
-    //         (_) {
-    //           final box = section!.key.currentContext?.findRenderObject() as RenderBox?;
-
-    //           final offset = box?.localToGlobal(Offset.zero);
-    //           if (offset == null) return;
-    //           final height = scrollController.offset + offset.dy - MediaQueryData.fromView(View.of(context)).padding.top - kToolbarHeight;
-    //           scrollController.animateTo(
-    //             height,
-    //             duration: const Duration(milliseconds: 500),
-    //             curve: Curves.decelerate,
-    //           );
-    //         },
-    //       );
-    //     }
-    //   },
-    // );
-
-    return Scaffold(
-      appBar: AppBar(title: Text(t.pages.settings.title)),
+    return RaynPageScaffold(
       body: ListView(
+        padding: const EdgeInsets.only(bottom: RaynSpacing.xl),
         children: [
+          RaynPageHeader(
+            title: t.pages.settings.title,
+            subtitle: t.pages.settings.subtitle,
+            trailing: const [RaynNotificationBell()],
+          ),
+          RaynSectionHeader(t.auth.account),
           const AccountSection(),
-          const Divider(indent: 16, endIndent: 16),
-          SettingsSection(
+          const _SectionDivider(),
+          RaynSectionHeader(t.pages.settings.general.title),
+          _Tile(
             title: t.pages.settings.general.title,
             icon: Icons.layers_rounded,
-            namedLocation: context.namedLocation('general'),
+            location: context.namedLocation('general'),
           ),
-          SettingsSection(
+          const _SectionDivider(),
+          RaynSectionHeader(t.pages.settings.network),
+          _Tile(
             title: t.pages.settings.routing.title,
             icon: Icons.route_rounded,
-            namedLocation: context.namedLocation('routeOptions'),
+            location: context.namedLocation('routeOptions'),
           ),
-          SettingsSection(
+          _Tile(
             title: t.pages.settings.dns.title,
             icon: Icons.dns_rounded,
-            namedLocation: context.namedLocation('dnsOptions'),
+            location: context.namedLocation('dnsOptions'),
           ),
-          SettingsSection(
+          _Tile(
             title: t.pages.settings.inbound.title,
             icon: Icons.input_rounded,
-            namedLocation: context.namedLocation('inboundOptions'),
+            location: context.namedLocation('inboundOptions'),
           ),
           if (PlatformUtils.isIOS)
-            Material(
-              child: ListTile(
-                title: Text(t.pages.settings.resetTunnel),
-                leading: const Icon(Icons.autorenew_rounded),
-                onTap: () async {
-                  await ref.read(resetTunnelNotifierProvider.notifier).run();
-                },
-              ),
+            _Tile(
+              title: t.pages.settings.resetTunnel,
+              icon: Icons.autorenew_rounded,
+              onTap: () async {
+                await ref.read(resetTunnelNotifierProvider.notifier).run();
+              },
             ),
-          if (Breakpoint(context).isMobile()) ...[
-            SettingsSection(
+          if (isMobile) ...[
+            const _SectionDivider(),
+            RaynSectionHeader(t.pages.about.title),
+            _Tile(
               title: t.pages.logs.title,
               icon: Icons.description_rounded,
-              namedLocation: context.namedLocation('logs'),
+              location: context.namedLocation('logs'),
             ),
-            SettingsSection(
+            _Tile(
               title: t.pages.about.title,
               icon: Icons.info_rounded,
-              namedLocation: context.namedLocation('about'),
+              location: context.namedLocation('about'),
             ),
           ],
         ],
@@ -103,20 +98,45 @@ class SettingsPage extends HookConsumerWidget {
   }
 }
 
-class SettingsSection extends HookConsumerWidget {
-  const SettingsSection({super.key, required this.title, required this.icon, required this.namedLocation});
+/// Hairline divider between top-level section groups (Account → General →
+/// Network → About on mobile). Indented to align with tile content rather
+/// than running edge-to-edge.
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        RaynSpacing.xl,
+        RaynSpacing.md,
+        RaynSpacing.xl,
+        0,
+      ),
+      child: Divider(height: 1, thickness: 1, color: context.rayn.glassBorder),
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({required this.title, required this.icon, this.location, this.onTap})
+    : assert(location != null || onTap != null);
 
   final String title;
   final IconData icon;
-  final String namedLocation;
+  final String? location;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: () => context.go(namedLocation),
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+      child: RaynSettingsTile(
+        leading: icon,
+        title: title,
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap ?? () => context.go(location!),
+      ),
     );
   }
 }

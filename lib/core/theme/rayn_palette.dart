@@ -13,6 +13,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   const RaynPalette({
     required this.bgPrimary,
     required this.bgSurface,
+    required this.pageBackground,
+    required this.groupFill,
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
@@ -33,6 +35,16 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
 
   /// Sidebar (NavigationRail) and mobile NavigationBar surface.
   final Color bgSurface;
+
+  /// Background of Settings, Logs, and About pages (the area to the right of
+  /// the sidebar). One step lighter / brighter than [bgSurface] in both
+  /// themes so the content area sits visually above the rail.
+  final Color pageBackground;
+
+  /// Fill color of [RaynPreferenceGroup] — the bordered container that
+  /// wraps a column of rows on settings sub-pages. One step further from
+  /// the page background.
+  final Color groupFill;
 
   /// Default body-text color. Inherited via DefaultTextStyle.
   final Color textPrimary;
@@ -70,7 +82,9 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
 
   static const RaynPalette dark = RaynPalette(
     bgPrimary: Color(0xFF101111),
-    bgSurface: Color(0xFF101111),
+    bgSurface: Color(0xFF111111),
+    pageBackground: Color(0xFF1A1816),
+    groupFill: Color(0xFF1E1B15),
     textPrimary: Color(0xFFFFFFFF),
     textSecondary: Color(0xB3FFFFFF),
     textMuted: Color(0x80FFFFFF),
@@ -91,6 +105,11 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   static const RaynPalette light = RaynPalette(
     bgPrimary: Color(0xFFFCF6EF),
     bgSurface: Color(0xFFF2ECE3),
+    // Sidebar (#F2ECE3) → page (#FAF4EB) → group (#FFFCF6): each surface
+    // is one step lighter / warmer as the user "descends" into the UI,
+    // mirroring the dark-theme hierarchy.
+    pageBackground: Color(0xFFFAF4EB),
+    groupFill: Color(0xFFFFFCF6),
     textPrimary: Color(0xFF2A241F),
     textSecondary: Color(0xFF6D5A4F),
     textMuted: Color(0xFF8C7A6E),
@@ -110,6 +129,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   RaynPalette copyWith({
     Color? bgPrimary,
     Color? bgSurface,
+    Color? pageBackground,
+    Color? groupFill,
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
@@ -127,6 +148,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     return RaynPalette(
       bgPrimary: bgPrimary ?? this.bgPrimary,
       bgSurface: bgSurface ?? this.bgSurface,
+      pageBackground: pageBackground ?? this.pageBackground,
+      groupFill: groupFill ?? this.groupFill,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textMuted: textMuted ?? this.textMuted,
@@ -149,6 +172,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     return RaynPalette(
       bgPrimary: Color.lerp(bgPrimary, other.bgPrimary, t)!,
       bgSurface: Color.lerp(bgSurface, other.bgSurface, t)!,
+      pageBackground: Color.lerp(pageBackground, other.pageBackground, t)!,
+      groupFill: Color.lerp(groupFill, other.groupFill, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
