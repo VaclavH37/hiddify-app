@@ -169,16 +169,24 @@ interface PlatformInterfaceWrapper : PlatformInterface {
     @OptIn(ExperimentalEncodingApi::class)
     override fun systemCertificates(): StringIterator {
         val certificates = mutableListOf<String>()
-        val keyStore = KeyStore.getInstance("AndroidCAStore")
-        if (keyStore != null) {
-            keyStore.load(null, null)
-            val aliases = keyStore.aliases()
-            while (aliases.hasMoreElements()) {
-                val cert = keyStore.getCertificate(aliases.nextElement())
-                certificates.add(
-                    "-----BEGIN CERTIFICATE-----\n" + Base64.encode(cert.encoded) + "\n-----END CERTIFICATE-----",
-                )
+        try {
+            val keyStore = KeyStore.getInstance("AndroidCAStore")
+            if (keyStore != null) {
+                keyStore.load(null, null)
+                val aliases = keyStore.aliases()
+                while (aliases.hasMoreElements()) {
+                    try {
+                        val cert = keyStore.getCertificate(aliases.nextElement()) ?: continue
+                        certificates.add(
+                            "-----BEGIN CERTIFICATE-----\n" + Base64.encode(cert.encoded) + "\n-----END CERTIFICATE-----",
+                        )
+                    } catch (e: Exception) {
+                        Log.w("PlatformInterface", "systemCertificates: skipping cert", e)
+                    }
+                }
             }
+        } catch (e: Exception) {
+            Log.e("PlatformInterface", "systemCertificates: keystore load failed", e)
         }
         return StringArray(certificates.iterator())
     }
