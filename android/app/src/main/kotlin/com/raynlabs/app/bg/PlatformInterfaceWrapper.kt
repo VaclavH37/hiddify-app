@@ -149,8 +149,11 @@ interface PlatformInterfaceWrapper : PlatformInterface {
 
     override fun readWIFIState(): WIFIState? {
         @Suppress("DEPRECATION")
-        val wifiInfo =
+        val wifiInfo = try {
             Application.wifiManager.connectionInfo ?: return null
+        } catch (_: SecurityException) {
+            return null
+        }
         var ssid = wifiInfo.ssid
         if (ssid == "<unknown ssid>") {
             return WIFIState("", "")
