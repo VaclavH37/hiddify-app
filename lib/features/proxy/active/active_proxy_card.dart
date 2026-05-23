@@ -15,6 +15,7 @@ import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/proxy/active/ip_widget.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
+import 'package:hiddify/singbox/model/singbox_proxy_type.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -33,6 +34,26 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
       return const SizedBox.shrink();
     }
 
+    final proxyType = ProxyType.fromJson(activeProxy.type);
+    final isAutoSelected =
+        proxyType == ProxyType.urltest || proxyType == ProxyType.balancer;
+    // Balancer rotates across multiple outbounds and the core does not
+    // populate `groupSelectedTagDisplay`, so falling back to `tagDisplay`
+    // would just print the group's name ("round-robin"). Derive a location
+    // from the exit IP info instead — that's what the user actually wants
+    // to see for an auto-rotated connection.
+    final String rawName;
+    if (proxyType == ProxyType.balancer) {
+      rawName = _balancerLocationName(activeProxy);
+    } else if (activeProxy.groupSelectedTagDisplay.isNotEmpty) {
+      rawName = activeProxy.groupSelectedTagDisplay;
+    } else {
+      rawName = activeProxy.tagDisplay;
+    }
+    final displayName = _stripTrailingFlag(rawName);
+    final modeLabel =
+        isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct;
+
     Future<void> handleUrlTest() async {
       try {
         if (!context.mounted) return;
@@ -46,7 +67,7 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
       padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
       child: Semantics(
         button: true,
-        label: '${t.pages.proxies.activeProxy}: ${activeProxy.tagDisplay}',
+        label: '${t.pages.proxies.activeProxy}: $displayName',
         child: GlassSurface(
           padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
           child: Material(
@@ -82,17 +103,19 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
                       Semantics(
                         label: t.pages.proxies.activeProxy,
                         child: Text(
-                          activeProxy.tagDisplay,
+                          displayName,
                           style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      if (activeProxy.ipinfo.ip.isNotEmpty)
-                        IPText(ip: activeProxy.ipinfo.ip, onLongPress: handleUrlTest, constrained: true)
-                      else
-                        UnknownIPText(text: t.pages.proxies.unknownIp, onTap: handleUrlTest, constrained: true),
+                      Text(
+                        modeLabel,
+                        style: RaynTypography.caption.copyWith(
+                          color: context.rayn.textMuted,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -116,6 +139,32 @@ String getRealOutboundTag(OutboundInfo group) {
     tag = "$tag → ${group.groupSelectedTagDisplay}";
   }
   return tag;
+}
+
+/// Builds a location label for a balancer outbound from its exit IP info.
+/// Prefers `city, countryCode`, then `city`, then `region`, then
+/// `countryCode`; falls back to the group's `tagDisplay` ("round-robin"
+/// etc.) only when no geo info is available.
+String _balancerLocationName(OutboundInfo proxy) {
+  final ip = proxy.ipinfo;
+  final city = ip.city;
+  final cc = ip.countryCode;
+  if (city.isNotEmpty && cc.isNotEmpty) return '$city, $cc';
+  if (city.isNotEmpty) return city;
+  if (ip.region.isNotEmpty) return ip.region;
+  if (cc.isNotEmpty) return cc;
+  return proxy.tagDisplay;
+}
+
+/// Strips a trailing flag emoji (pair of Regional Indicator Symbols, U+1F1E6
+/// – U+1F1FF) from [name] along with any whitespace that immediately
+/// preceded it. Returns [name] unchanged if the last grapheme isn't a flag.
+String _stripTrailingFlag(String name) {
+  final runes = name.runes.toList();
+  if (runes.length < 2) return name;
+  bool isRI(int r) => r >= 0x1F1E6 && r <= 0x1F1FF;
+  if (!isRI(runes.last) || !isRI(runes[runes.length - 2])) return name;
+  return String.fromCharCodes(runes.sublist(0, runes.length - 2)).trimRight();
 }
 
 /// Renders 4 ascending bars whose active count is derived from the active

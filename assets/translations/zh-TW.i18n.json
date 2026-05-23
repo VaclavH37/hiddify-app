@@ -96,6 +96,7 @@
     },
     "proxies": {
       "title": "代理",
+      "subtitle": "Choose a server to route your traffic through.",
       "sort": "排序代理",
       "testDelay": "測試延遲",
       "empty": "無可用代理",

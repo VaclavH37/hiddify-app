@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
 import 'package:hiddify/features/home/widget/home_top_bar.dart';
+import 'package:hiddify/features/home/widget/per_app_proxy_home_tile.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
+import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
@@ -127,6 +130,21 @@ class _HomeMobileBody extends StatelessWidget {
               child: const ActiveProxyFooter(),
             ),
           ),
+          if (PlatformUtils.isAndroid)
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  RaynSpacing.lg,
+                  0,
+                  RaynSpacing.lg,
+                  RaynSpacing.lg,
+                ),
+                child: PerAppProxyHomeTile(),
+              ),
+            ),
         ],
       ),
     );

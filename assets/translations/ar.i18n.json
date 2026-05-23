@@ -102,6 +102,7 @@
     },
     "proxies": {
       "title": "البروكسيات",
+      "subtitle": "Choose a server to route your traffic through.",
       "sort": "فرز البروكسيات",
       "testDelay": "اختبار التأخير",
       "empty": "لا توجد بروكسيات متاحة",

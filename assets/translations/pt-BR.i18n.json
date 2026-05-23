@@ -96,6 +96,7 @@
     },
     "proxies": {
       "title": "Proxies",
+      "subtitle": "Choose a server to route your traffic through.",
       "sort": "Ordenar proxies",
       "testDelay": "Testar latência",
       "empty": "Nenhum proxy disponível",

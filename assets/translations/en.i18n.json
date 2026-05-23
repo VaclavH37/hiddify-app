@@ -116,16 +116,28 @@
         "killSwitch": "Kill switch",
         "splitTunneling": "Split tunneling",
         "on": "On",
-        "off": "Off"
+        "off": "Off",
+        "routingMode": {
+          "title": "Routing Mode",
+          "active": "Active",
+          "disabled": "Disabled",
+          "subtitleActive": "Selected apps use direct connection",
+          "subtitleDisabled": "All apps protected",
+          "hintActive": "Some apps may connect outside the protected tunnel.",
+          "hintDisabled": "Traffic from all apps is routed through the VPN."
+        }
       }
     },
     "proxies": {
       "title": "Proxies",
+      "subtitle": "Choose a server to route your traffic through.",
       "sort": "Sort proxies",
       "testDelay": "Test delay",
       "empty": "No proxies available",
       "activeProxy": "Active proxy",
       "unknownIp": "Unknown IP",
+      "autoSelected": "Auto-selected",
+      "direct": "Direct",
       "sortOptions": {
         "unsorted": "Default",
         "name": "Alphabetically",

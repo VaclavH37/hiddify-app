@@ -96,6 +96,7 @@
     },
     "proxies": {
       "title": "Proxy",
+      "subtitle": "Choose a server to route your traffic through.",
       "sort": "Urutkan proksi",
       "testDelay": "Uji latensi",
       "empty": "Tidak ada proksi yang tersedia",
