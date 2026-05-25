@@ -281,7 +281,7 @@ gen_translations: #generating missing translations using google translate
 
 android-release: android-apk-release android-aab-release
 
-android-apk-release:
+android-apk-release: check-rulesets-fresh
 	$(FASTFORGE) package \
 	  --platform android \
 	  --targets apk \
@@ -292,7 +292,7 @@ android-apk-release:
 	  --build-dart-define=sentry_dsn=$(SENTRY_DSN)
 	ls -R build/app/outputs
 
-android-aab-release:
+android-aab-release: check-rulesets-fresh
 	$(FASTFORGE) package \
 	  --platform android \
 	  --targets aab \
@@ -535,6 +535,38 @@ get-geo-assets:
 	echo ""
 	# curl -L https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db -o $(GEO_ASSETS_DIR)/geoip.db
 	# curl -L https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db -o $(GEO_ASSETS_DIR)/geosite.db
+
+# CN routing rule-sets are bundled into the AAB so they're available on first
+# launch inside the GFW (where raw.githubusercontent.com is unreachable). The
+# Dart extractor in lib/core/rulesets/ copies these from assets/ to the Go
+# core's BasePath on first launch / app update. See RULESETS.md for the human
+# workflow.
+RULESETS_DIR := assets$(SEP)rulesets
+RULESETS_GEOSITE_BASE := https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set
+RULESETS_GEOIP_BASE := https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set
+
+.PHONY: fetch-rulesets check-rulesets-fresh
+
+fetch-rulesets:
+	@$(BLUE)Fetching CN routing rule-sets from SagerNet$(DONE)
+	$(MKDIR) $(RULESETS_DIR)
+	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-private.srs           -o $(RULESETS_DIR)/geosite-private.srs
+	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-apple@cn.srs"        -o $(RULESETS_DIR)/geosite-apple-cn.srs
+	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-cn.srs                -o $(RULESETS_DIR)/geosite-cn.srs
+	curl -fSL $(RULESETS_GEOIP_BASE)/geoip-cn.srs                    -o $(RULESETS_DIR)/geoip-cn.srs
+	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-geolocation-!cn.srs" -o $(RULESETS_DIR)/geosite-geolocation-not-cn.srs
+	@$(BLUE)Regenerating MANIFEST$(DONE)
+	bash scripts/regen_rulesets_manifest.sh
+	@$(GREEN)Rule-sets refreshed. Commit assets/rulesets/ before cutting a release.$(DONE)
+
+# Soft warning hook for release builds — does not fail the build, just nags if
+# the bundled rule-sets look stale (>30 days since last `make fetch-rulesets`).
+check-rulesets-fresh:
+	@if [ ! -f "$(RULESETS_DIR)/MANIFEST" ]; then \
+	  $(YELLOW)WARNING: $(RULESETS_DIR)/MANIFEST missing — run 'make fetch-rulesets' before release$(DONE); \
+	elif find "$(RULESETS_DIR)/MANIFEST" -mtime +30 -print 2>/dev/null | grep -q MANIFEST; then \
+	  $(YELLOW)WARNING: rule-set MANIFEST is older than 30 days — consider 'make fetch-rulesets'$(DONE); \
+	fi
 
 build-headers:
 	make -C hiddify-core -f Makefile headers && mv $(BINDIR)/$(CORE_NAME)-headers.h $(BINDIR)/hiddify-core.h

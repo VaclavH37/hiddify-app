@@ -14,6 +14,7 @@ import 'package:hiddify/core/model/environment.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/preferences/preferences_migration.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
+import 'package:hiddify/core/rulesets/ruleset_extractor.dart';
 import 'package:hiddify/features/app/widget/app.dart';
 import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
 import 'package:hiddify/features/log/data/log_data_providers.dart';
@@ -41,6 +42,13 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
 
   await _init("directories", () => container.read(appDirectoriesProvider.future));
   LoggerController.init(container.read(logPathResolverProvider).appFile().path);
+
+  // Extract bundled CN rule-sets onto the Go core's BasePath. Must run before
+  // the Go core boots so `Type: Local` rule-sets in builder.go can load.
+  await _safeInit("rulesets", () async {
+    final dirs = await container.read(appDirectoriesProvider.future);
+    await RulesetExtractor.ensureExtracted(dirs.baseDir);
+  });
 
   final appInfo = await _init("app info", () => container.read(appInfoProvider.future));
   await _init("preferences", () => container.read(sharedPreferencesProvider.future));

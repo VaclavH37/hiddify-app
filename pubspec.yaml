@@ -169,6 +169,7 @@ flutter:
     - assets/images/constellation_light.png
     - assets/images/source/ic_launcher_border.png
     - assets/keys/rayn_private_key.pem
+    - assets/rulesets/
 
   fonts:
     - family: Shabnam

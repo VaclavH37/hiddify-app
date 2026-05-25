@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Regenerates assets/rulesets/MANIFEST after `make fetch-rulesets`. The MANIFEST
+# is consumed by lib/core/rulesets/ruleset_extractor.dart: only `version` is
+# compared at runtime to decide whether to re-extract, but `fetched_at`,
+# `upstream_commit`, and per-file sha256s are useful for audit / CI hygiene.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+RULESETS_DIR="assets/rulesets"
+MANIFEST="${RULESETS_DIR}/MANIFEST"
+VERSION="$(date -u +%Y-%m-%d)"
+FETCHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Best-effort upstream commit lookup; falls back to "unknown" if jq is missing
+# or the GitHub API is rate-limited (unauthenticated requests get 60/hr).
+fetch_commit() {
+  local repo="$1"
+  local sha
+  sha="$(curl -sf "https://api.github.com/repos/${repo}/commits/rule-set" 2>/dev/null \
+        | sed -n 's/^[[:space:]]*"sha":[[:space:]]*"\([^"]*\)".*/\1/p' \
+        | head -n1)"
+  if [ -z "${sha}" ]; then
+    echo "unknown"
+  else
+    echo "${sha}"
+  fi
+}
+
+GEOSITE_COMMIT="$(fetch_commit SagerNet/sing-geosite)"
+GEOIP_COMMIT="$(fetch_commit SagerNet/sing-geoip)"
+
+FILES=(
+  "geosite-private.srs"
+  "geosite-apple-cn.srs"
+  "geosite-cn.srs"
+  "geoip-cn.srs"
+  "geosite-geolocation-not-cn.srs"
+)
+
+files_json=""
+for f in "${FILES[@]}"; do
+  path="${RULESETS_DIR}/${f}"
+  if [ ! -f "${path}" ]; then
+    echo "missing: ${path}" >&2
+    exit 1
+  fi
+  sha="$(sha256sum "${path}" | awk '{print $1}')"
+  size="$(wc -c < "${path}" | tr -d ' ')"
+  [ -z "${files_json}" ] || files_json+=","
+  files_json+="
+    {\"name\": \"${f}\", \"sha256\": \"${sha}\", \"size\": ${size}}"
+done
+
+cat > "${MANIFEST}" <<EOF
+{
+  "version": "${VERSION}",
+  "fetched_at": "${FETCHED_AT}",
+  "upstream_commit": {
+    "sing-geosite": "${GEOSITE_COMMIT}",
+    "sing-geoip": "${GEOIP_COMMIT}"
+  },
+  "files": [${files_json}
+  ]
+}
+EOF
+
+echo "wrote ${MANIFEST} (version ${VERSION})"

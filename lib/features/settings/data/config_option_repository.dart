@@ -70,12 +70,13 @@ abstract class ConfigOptions {
   static final directDnsAddress = PreferencesNotifier.create<String, String>(
     "direct-dns-address",
     "https://dns.alidns.com/dns-query",
+    // Restricted to CN-reachable resolvers. Cloudflare endpoints (1.1.1.1,
+    // dns.cloudflare.com) were removed because they are GFW-throttled and
+    // would silently poison direct lookups inside mainland China.
     possibleValues: List.of([
       "local",
       "https://dns.alidns.com/dns-query",
-      "https://1.1.1.1/dns-query",
-      "https://dns.cloudflare.com/dns-query",
-      "tcp://1.1.1.1",
+      "https://doh.pub/dns-query",
       "tcp://223.5.5.5",
     ]),
     validator: (value) => value.isNotBlank,
@@ -249,9 +250,10 @@ abstract class ConfigOptions {
     final mode = ref.watch(serviceMode);
 
     return SingboxConfigOption(
-      // Region is locked to "other" — Go core's builder skips its geo-rule
-      // download / country-bypass injection branch when region == "other".
-      region: "other",
+      // Region is locked to "cn" — this app is exclusively optimized for
+      // travellers / professionals in mainland China. The Go core's Region
+      // branch consumes this to wire geosite-cn / geoip-cn direct routing.
+      region: "cn",
       balancerStrategy: ref.watch(balancerStrategy),
       blockAds: ref.watch(blockAds),
       executeConfigAsIs: false,
