@@ -550,11 +550,20 @@ RULESETS_GEOIP_BASE := https://raw.githubusercontent.com/SagerNet/sing-geoip/rul
 fetch-rulesets:
 	@$(BLUE)Fetching CN routing rule-sets from SagerNet$(DONE)
 	$(MKDIR) $(RULESETS_DIR)
-	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-private.srs           -o $(RULESETS_DIR)/geosite-private.srs
-	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-apple@cn.srs"        -o $(RULESETS_DIR)/geosite-apple-cn.srs
-	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-cn.srs                -o $(RULESETS_DIR)/geosite-cn.srs
-	curl -fSL $(RULESETS_GEOIP_BASE)/geoip-cn.srs                    -o $(RULESETS_DIR)/geoip-cn.srs
-	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-geolocation-!cn.srs" -o $(RULESETS_DIR)/geosite-geolocation-not-cn.srs
+	# Bundled files are saved under neutral names so the region they target is not
+	# revealed by `strings libcore.so` or the AAB asset listing. The upstream
+	# source name is on the left of each line; the local name (matching the Go
+	# rule-set tag in builder.go) is the -o target on the right:
+	#   geosite-private        -> direct-private
+	#   geosite-apple@cn       -> direct-apple
+	#   geosite-cn             -> direct-regional-sites
+	#   geoip-cn               -> direct-regional-ips
+	#   geosite-geolocation-!cn-> fakeip-remote-sites
+	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-private.srs           -o $(RULESETS_DIR)/direct-private.srs
+	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-apple@cn.srs"        -o $(RULESETS_DIR)/direct-apple.srs
+	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-cn.srs                -o $(RULESETS_DIR)/direct-regional-sites.srs
+	curl -fSL $(RULESETS_GEOIP_BASE)/geoip-cn.srs                    -o $(RULESETS_DIR)/direct-regional-ips.srs
+	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-geolocation-!cn.srs" -o $(RULESETS_DIR)/fakeip-remote-sites.srs
 	@$(BLUE)Regenerating MANIFEST$(DONE)
 	bash scripts/regen_rulesets_manifest.sh
 	@$(GREEN)Rule-sets refreshed. Commit assets/rulesets/ before cutting a release.$(DONE)

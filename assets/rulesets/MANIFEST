@@ -6,10 +6,10 @@
     "sing-geoip": "86ae2ec85f07e08140bd0638588e42055c2cd731"
   },
   "files": [
-    {"name": "geosite-private.srs", "sha256": "260491243e0266e5ba543f509ca7f13b07d6f4c2c26ade3f675ddea1661f3213", "size": 754},
-    {"name": "geosite-apple-cn.srs", "sha256": "d8a6e7584ff5132c9f1a0bdafc2f504afdb28f2271f7fae739b609a6198c3c11", "size": 2300},
-    {"name": "geosite-cn.srs", "sha256": "147c63417e6e9631fc5601ada46b448ae549677967c46e9962c4119a47fe27fa", "size": 50162},
-    {"name": "geoip-cn.srs", "sha256": "8e9901a24dffa44982b7c6ff2ba20e63b8ee5fd7ea30410607e61eb0cc6a844d", "size": 33849},
-    {"name": "geosite-geolocation-not-cn.srs", "sha256": "33bf35947a253a83e0ad38e3df873fe0c0b2a427a736a44ce68bee2c218d796e", "size": 163379}
+    {"name": "direct-private.srs", "sha256": "260491243e0266e5ba543f509ca7f13b07d6f4c2c26ade3f675ddea1661f3213", "size": 754},
+    {"name": "direct-apple.srs", "sha256": "d8a6e7584ff5132c9f1a0bdafc2f504afdb28f2271f7fae739b609a6198c3c11", "size": 2300},
+    {"name": "direct-regional-sites.srs", "sha256": "147c63417e6e9631fc5601ada46b448ae549677967c46e9962c4119a47fe27fa", "size": 50162},
+    {"name": "direct-regional-ips.srs", "sha256": "8e9901a24dffa44982b7c6ff2ba20e63b8ee5fd7ea30410607e61eb0cc6a844d", "size": 33849},
+    {"name": "fakeip-remote-sites.srs", "sha256": "33bf35947a253a83e0ad38e3df873fe0c0b2a427a736a44ce68bee2c218d796e", "size": 163379}
   ]
 }

@@ -30,12 +30,21 @@ fetch_commit() {
 GEOSITE_COMMIT="$(fetch_commit SagerNet/sing-geosite)"
 GEOIP_COMMIT="$(fetch_commit SagerNet/sing-geoip)"
 
+# Local (neutral) names — must match the -o targets in the Makefile
+# fetch-rulesets target and the Path: literals in builder.go. The names are
+# deliberately region-agnostic so they don't reveal the targeted region in
+# `strings libcore.so` or the AAB asset listing. Upstream source -> local:
+#   geosite-private         -> direct-private
+#   geosite-apple@cn        -> direct-apple
+#   geosite-cn              -> direct-regional-sites
+#   geoip-cn                -> direct-regional-ips
+#   geosite-geolocation-!cn -> fakeip-remote-sites
 FILES=(
-  "geosite-private.srs"
-  "geosite-apple-cn.srs"
-  "geosite-cn.srs"
-  "geoip-cn.srs"
-  "geosite-geolocation-not-cn.srs"
+  "direct-private.srs"
+  "direct-apple.srs"
+  "direct-regional-sites.srs"
+  "direct-regional-ips.srs"
+  "fakeip-remote-sites.srs"
 )
 
 files_json=""
