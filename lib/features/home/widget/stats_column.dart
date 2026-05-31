@@ -37,10 +37,7 @@ class StatsColumn extends ConsumerWidget {
         const _ProtectedCard(),
         const SizedBox(height: RaynSpacing.md),
         const _TrafficCard(),
-        if (showQuota) ...[
-          const SizedBox(height: RaynSpacing.md),
-          const _QuotaCard(),
-        ],
+        if (showQuota) ...[const SizedBox(height: RaynSpacing.md), const _QuotaCard()],
       ],
     );
   }
@@ -72,7 +69,10 @@ class _ProtectedCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: RaynTypography.body.copyWith(color: accent, fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: RaynTypography.body.copyWith(color: accent, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 2),
                 Text(subtitle, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
               ],
@@ -102,10 +102,7 @@ class _TrafficCard extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            t.components.stats.trafficLive,
-            style: RaynTypography.label.copyWith(color: palette.textSecondary),
-          ),
+          Text(t.components.stats.trafficLive, style: RaynTypography.label.copyWith(color: palette.textSecondary)),
           const SizedBox(height: RaynSpacing.xs),
           _SpeedRow(
             icon: FluentIcons.arrow_up_16_filled,
@@ -134,12 +131,7 @@ class _TrafficCard extends ConsumerWidget {
 }
 
 class _SpeedRow extends StatelessWidget {
-  const _SpeedRow({
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.semanticLabel,
-  });
+  const _SpeedRow({required this.icon, required this.iconColor, required this.value, required this.semanticLabel});
 
   final IconData icon;
   final Color iconColor;
@@ -162,12 +154,7 @@ class _SpeedRow extends StatelessWidget {
 }
 
 class _TrafficRow extends StatelessWidget {
-  const _TrafficRow({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.value,
-  });
+  const _TrafficRow({required this.icon, required this.iconColor, required this.label, required this.value});
 
   final IconData icon;
   final Color iconColor;
@@ -182,10 +169,7 @@ class _TrafficRow extends StatelessWidget {
         Icon(icon, size: 16, color: iconColor),
         const SizedBox(width: RaynSpacing.sm),
         Expanded(
-          child: Text(
-            label,
-            style: RaynTypography.label.copyWith(color: palette.textSecondary),
-          ),
+          child: Text(label, style: RaynTypography.label.copyWith(color: palette.textSecondary)),
         ),
         Text(value, style: RaynTypography.body),
       ],
@@ -261,9 +245,7 @@ class _QuotaCard extends ConsumerWidget {
                 isExpired
                     ? t.components.subscriptionInfo.expired
                     : t.components.subscriptionInfo.daysLeft(days: daysLeft),
-                style: RaynTypography.caption.copyWith(
-                  color: isExpired ? palette.danger : RaynColors.goldPrimary,
-                ),
+                style: RaynTypography.caption.copyWith(color: isExpired ? palette.danger : RaynColors.goldPrimary),
               ),
             ],
           ),

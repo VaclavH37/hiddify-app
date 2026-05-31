@@ -49,12 +49,9 @@ class GlassSurface extends StatelessWidget {
     final palette = context.rayn;
     final BorderRadius borderRadius = BorderRadius.circular(radius);
     final double? opacity = this.opacity;
-    final Color effectiveFill = fillColor ??
-        (opacity != null
-            ? palette.textPrimary.withValues(alpha: opacity)
-            : palette.glassFill);
-    final Border effectiveBorder =
-        border ?? Border.all(color: palette.glassBorder);
+    final Color effectiveFill =
+        fillColor ?? (opacity != null ? palette.textPrimary.withValues(alpha: opacity) : palette.glassFill);
+    final Border effectiveBorder = border ?? Border.all(color: palette.glassBorder);
     final double effectiveBlur = blur ?? palette.glassBlurSigma;
 
     Widget content = ClipRRect(
@@ -62,11 +59,7 @@ class GlassSurface extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: effectiveBlur, sigmaY: effectiveBlur),
         child: Container(
-          decoration: BoxDecoration(
-            color: effectiveFill,
-            borderRadius: borderRadius,
-            border: effectiveBorder,
-          ),
+          decoration: BoxDecoration(color: effectiveFill, borderRadius: borderRadius, border: effectiveBorder),
           padding: padding,
           child: child,
         ),
@@ -77,9 +70,7 @@ class GlassSurface extends StatelessWidget {
       content = DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
-          boxShadow: [
-            BoxShadow(color: glowColor!, blurRadius: 32, spreadRadius: 2),
-          ],
+          boxShadow: [BoxShadow(color: glowColor!, blurRadius: 32, spreadRadius: 2)],
         ),
         child: content,
       );

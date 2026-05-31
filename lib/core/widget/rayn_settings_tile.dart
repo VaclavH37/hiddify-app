@@ -41,10 +41,7 @@ class RaynSettingsTile extends StatelessWidget {
     final content = Opacity(
       opacity: disabledOpacity,
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: RaynSpacing.lg,
-          vertical: RaynSpacing.md,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
         child: Row(
           children: [
             if (leading != null) ...[
@@ -65,24 +62,15 @@ class RaynSettingsTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    title,
-                    style: RaynTypography.body.copyWith(color: titleColor),
-                  ),
+                  Text(title, style: RaynTypography.body.copyWith(color: titleColor)),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: RaynTypography.caption.copyWith(color: palette.textMuted),
-                    ),
+                    Text(subtitle!, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
                   ],
                 ],
               ),
             ),
-            if (trailing != null) ...[
-              const SizedBox(width: RaynSpacing.md),
-              trailing!,
-            ],
+            if (trailing != null) ...[const SizedBox(width: RaynSpacing.md), trailing!],
           ],
         ),
       ),
@@ -94,10 +82,7 @@ class RaynSettingsTile extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: content,
-      ),
+      child: InkWell(onTap: onTap, child: content),
     );
   }
 }

@@ -20,7 +20,9 @@ class LoggerController extends LoggyPrinter with InfraLogger {
   }
 
   static void init(String appLogPath) {
-    _instance = LoggerController(const ConsolePrinter(), {"app": kIsWeb ? const ConsolePrinter() : FileLogPrinter(appLogPath)});
+    _instance = LoggerController(const ConsolePrinter(), {
+      "app": kIsWeb ? const ConsolePrinter() : FileLogPrinter(appLogPath),
+    });
     Loggy.initLoggy(logPrinter: _instance);
   }
 

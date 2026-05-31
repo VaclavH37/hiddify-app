@@ -112,17 +112,9 @@ class LogsPage extends HookConsumerWidget with PresLogger {
                     child: DecoratedBox(
                       decoration: BoxDecoration(color: palette.pageBackground),
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          RaynSpacing.xl,
-                          0,
-                          RaynSpacing.xl,
-                          RaynSpacing.md,
-                        ),
+                        padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.md),
                         child: GlassSurface(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: RaynSpacing.lg,
-                            vertical: RaynSpacing.sm,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.sm),
                           child: Row(
                             children: [
                               Flexible(
@@ -152,8 +144,7 @@ class LogsPage extends HookConsumerWidget with PresLogger {
                                 style: TextStyle(color: palette.textPrimary),
                                 items: [
                                   DropdownMenuItem(value: none(), child: Text(t.common.all)),
-                                  ...LogLevel.choices
-                                      .map((e) => DropdownMenuItem(value: some(e), child: Text(e.name))),
+                                  ...LogLevel.choices.map((e) => DropdownMenuItem(value: some(e), child: Text(e.name))),
                                 ],
                               ),
                             ],
@@ -183,10 +174,7 @@ class LogsPage extends HookConsumerWidget with PresLogger {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: RaynSpacing.xl,
-                              vertical: RaynSpacing.xs,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl, vertical: RaynSpacing.xs),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -196,27 +184,22 @@ class LogsPage extends HookConsumerWidget with PresLogger {
                                     children: [
                                       Text(
                                         log.level!.name.toUpperCase(),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                            ?.copyWith(color: log.level!.color),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.labelMedium?.copyWith(color: log.level!.color),
                                       ),
                                       if (log.time != null)
                                         Text(
                                           log.time!.toString(),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
-                                              ?.copyWith(color: palette.textMuted),
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.labelSmall?.copyWith(color: palette.textMuted),
                                         ),
                                     ],
                                   ),
                                 Text(
                                   extractMessage(log.message),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(color: palette.textPrimary),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: palette.textPrimary),
                                 ),
                               ],
                             ),

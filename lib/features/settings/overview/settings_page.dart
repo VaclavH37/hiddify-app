@@ -81,16 +81,8 @@ class SettingsPage extends HookConsumerWidget {
           if (isMobile) ...[
             const _SectionDivider(),
             RaynSectionHeader(t.pages.about.title),
-            _Tile(
-              title: t.pages.logs.title,
-              icon: Icons.description_rounded,
-              location: context.namedLocation('logs'),
-            ),
-            _Tile(
-              title: t.pages.about.title,
-              icon: Icons.info_rounded,
-              location: context.namedLocation('about'),
-            ),
+            _Tile(title: t.pages.logs.title, icon: Icons.description_rounded, location: context.namedLocation('logs')),
+            _Tile(title: t.pages.about.title, icon: Icons.info_rounded, location: context.namedLocation('about')),
           ],
         ],
       ),
@@ -107,12 +99,7 @@ class _SectionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        RaynSpacing.xl,
-        RaynSpacing.md,
-        RaynSpacing.xl,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, RaynSpacing.md, RaynSpacing.xl, 0),
       child: Divider(height: 1, thickness: 1, color: context.rayn.glassBorder),
     );
   }

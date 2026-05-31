@@ -157,10 +157,7 @@ class BatteryOptimizationWidget extends HookConsumerWidget {
             ),
       error: (_, _) => const SizedBox.shrink(),
       loading: () => const Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: RaynSpacing.lg,
-          vertical: RaynSpacing.md,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
         child: LinearProgressIndicator(),
       ),
     );

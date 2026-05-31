@@ -26,12 +26,7 @@ class RaynPreferenceGroup extends StatelessWidget {
     final rows = <Widget>[];
     for (int i = 0; i < children.length; i++) {
       if (i > 0) {
-        rows.add(Divider(
-          height: 1,
-          thickness: 1,
-          indent: 60,
-          color: palette.glassBorder,
-        ));
+        rows.add(Divider(height: 1, thickness: 1, indent: 60, color: palette.glassBorder));
       }
       rows.add(children[i]);
     }
@@ -44,11 +39,7 @@ class RaynPreferenceGroup extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: radius,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: rows,
-        ),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: rows),
       ),
     );
   }

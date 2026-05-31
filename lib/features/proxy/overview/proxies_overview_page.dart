@@ -40,11 +40,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
         icon: Icon(FluentIcons.arrow_sort_24_regular, color: palette.textPrimary),
         tooltip: t.pages.proxies.sort,
         itemBuilder: (context) {
-          return [
-            ...ProxiesSort.values.map(
-              (e) => PopupMenuItem(value: e, child: Text(e.present(t))),
-            ),
-          ];
+          return [...ProxiesSort.values.map((e) => PopupMenuItem(value: e, child: Text(e.present(t))))];
         },
       ),
       const RaynNotificationBell(),
@@ -64,10 +60,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
               data: (group) {
                 if (group == null || group.items.isEmpty) {
                   return Center(
-                    child: Text(
-                      t.pages.proxies.empty,
-                      style: TextStyle(color: palette.textMuted),
-                    ),
+                    child: Text(t.pages.proxies.empty, style: TextStyle(color: palette.textMuted)),
                   );
                 }
                 final groupItems = group.items.where((p) => p.isGroup).toList();
@@ -90,11 +83,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                   children.add(
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: RaynSpacing.md),
-                      child: Divider(
-                        color: palette.glassBorder,
-                        height: 1,
-                        thickness: 1,
-                      ),
+                      child: Divider(color: palette.glassBorder, height: 1, thickness: 1),
                     ),
                   );
                 }
@@ -112,20 +101,12 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                   );
                 }
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    RaynSpacing.xl,
-                    0,
-                    RaynSpacing.xl,
-                    RaynSpacing.xl,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),
                   children: children,
                 );
               },
               error: (error, stackTrace) => Center(
-                child: Text(
-                  t.presentShortError(error),
-                  style: TextStyle(color: palette.danger),
-                ),
+                child: Text(t.presentShortError(error), style: TextStyle(color: palette.danger)),
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
             ),

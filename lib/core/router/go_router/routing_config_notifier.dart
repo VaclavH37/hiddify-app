@@ -11,7 +11,6 @@ import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
 import 'package:hiddify/features/auth/widget/auth_page.dart';
 import 'package:hiddify/features/home/widget/home_page.dart';
 import 'package:hiddify/features/log/overview/logs_page.dart';
-import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_page.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_page.dart';
 import 'package:hiddify/features/settings/overview/sections/dns_options_page.dart';
@@ -37,13 +36,11 @@ final loadingConfig = RoutingConfig(
   routes: <RouteBase>[GoRoute(path: '/home', builder: (context, state) => const Material())],
 );
 
-String getNameOfBranch(bool isMobileBreakpoint, int index) => isMobileBreakpoint
-    ? ['home', 'settings'][index]
-    : ['home', 'settings', 'logs', 'about'][index];
+String getNameOfBranch(bool isMobileBreakpoint, int index) =>
+    isMobileBreakpoint ? ['home', 'settings'][index] : ['home', 'settings', 'logs', 'about'][index];
 
-int getIndexOfBranch(bool isMobileBreakpoint, String name) => isMobileBreakpoint
-    ? ['home', 'settings'].indexOf(name)
-    : ['home', 'settings', 'logs', 'about'].indexOf(name);
+int getIndexOfBranch(bool isMobileBreakpoint, String name) =>
+    isMobileBreakpoint ? ['home', 'settings'].indexOf(name) : ['home', 'settings', 'logs', 'about'].indexOf(name);
 
 @Riverpod(keepAlive: true)
 class RoutingConfigNotifier extends _$RoutingConfigNotifier {
@@ -91,10 +88,8 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
       },
       routes: <RouteBase>[
         StatefulShellRoute.indexedStack(
-          builder: (_, _, navigationShell) => MyAdaptiveLayout(
-            navigationShell: navigationShell,
-            isMobileBreakpoint: isMobileBreakpoint,
-          ),
+          builder: (_, _, navigationShell) =>
+              MyAdaptiveLayout(navigationShell: navigationShell, isMobileBreakpoint: isMobileBreakpoint),
           branches: <StatefulShellBranch>[
             StatefulShellBranch(
               routes: <GoRoute>[
@@ -138,14 +133,6 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                       path: '/route-options',
                       pageBuilder: (_, state) =>
                           customTransition(TransitionType.slide, state.pageKey, const RouteOptionsPage()),
-                      routes: <GoRoute>[
-                        GoRoute(
-                          name: 'perAppProxy',
-                          path: '/per-app-proxy',
-                          pageBuilder: (_, state) =>
-                              customTransition(TransitionType.slide, state.pageKey, const PerAppProxyPage()),
-                        ),
-                      ],
                     ),
                     GoRoute(
                       name: 'dnsOptions',

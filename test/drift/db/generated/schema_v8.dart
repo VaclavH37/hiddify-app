@@ -104,13 +104,49 @@ class ProfileEntries extends Table
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  late final GeneratedColumn<String> testUrl = GeneratedColumn<String>(
-    'test_url',
+  late final GeneratedColumn<String> populatedHeaders = GeneratedColumn<String>(
+    'populated_headers',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  late final GeneratedColumn<String> profileOverride = GeneratedColumn<String>(
+    'profile_override',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  late final GeneratedColumn<String> userOverride = GeneratedColumn<String>(
+    'user_override',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  late final GeneratedColumn<String> sourceToken = GeneratedColumn<String>(
+    'source_token',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  late final GeneratedColumn<String> fallbackUrl = GeneratedColumn<String>(
+    'fallback_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  late final GeneratedColumn<String> fallbackSourceToken =
+      GeneratedColumn<String>(
+        'fallback_source_token',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -126,7 +162,12 @@ class ProfileEntries extends Table
     expire,
     webPageUrl,
     supportUrl,
-    testUrl,
+    populatedHeaders,
+    profileOverride,
+    userOverride,
+    sourceToken,
+    fallbackUrl,
+    fallbackSourceToken,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -191,9 +232,29 @@ class ProfileEntries extends Table
         DriftSqlType.string,
         data['${effectivePrefix}support_url'],
       ),
-      testUrl: attachedDatabase.typeMapping.read(
+      populatedHeaders: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}test_url'],
+        data['${effectivePrefix}populated_headers'],
+      ),
+      profileOverride: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_override'],
+      ),
+      userOverride: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_override'],
+      ),
+      sourceToken: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_token'],
+      ),
+      fallbackUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fallback_url'],
+      ),
+      fallbackSourceToken: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fallback_source_token'],
       ),
     );
   }
@@ -219,7 +280,12 @@ class ProfileEntriesData extends DataClass
   final DateTime? expire;
   final String? webPageUrl;
   final String? supportUrl;
-  final String? testUrl;
+  final String? populatedHeaders;
+  final String? profileOverride;
+  final String? userOverride;
+  final String? sourceToken;
+  final String? fallbackUrl;
+  final String? fallbackSourceToken;
   const ProfileEntriesData({
     required this.id,
     required this.type,
@@ -234,7 +300,12 @@ class ProfileEntriesData extends DataClass
     this.expire,
     this.webPageUrl,
     this.supportUrl,
-    this.testUrl,
+    this.populatedHeaders,
+    this.profileOverride,
+    this.userOverride,
+    this.sourceToken,
+    this.fallbackUrl,
+    this.fallbackSourceToken,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -268,8 +339,23 @@ class ProfileEntriesData extends DataClass
     if (!nullToAbsent || supportUrl != null) {
       map['support_url'] = Variable<String>(supportUrl);
     }
-    if (!nullToAbsent || testUrl != null) {
-      map['test_url'] = Variable<String>(testUrl);
+    if (!nullToAbsent || populatedHeaders != null) {
+      map['populated_headers'] = Variable<String>(populatedHeaders);
+    }
+    if (!nullToAbsent || profileOverride != null) {
+      map['profile_override'] = Variable<String>(profileOverride);
+    }
+    if (!nullToAbsent || userOverride != null) {
+      map['user_override'] = Variable<String>(userOverride);
+    }
+    if (!nullToAbsent || sourceToken != null) {
+      map['source_token'] = Variable<String>(sourceToken);
+    }
+    if (!nullToAbsent || fallbackUrl != null) {
+      map['fallback_url'] = Variable<String>(fallbackUrl);
+    }
+    if (!nullToAbsent || fallbackSourceToken != null) {
+      map['fallback_source_token'] = Variable<String>(fallbackSourceToken);
     }
     return map;
   }
@@ -303,9 +389,24 @@ class ProfileEntriesData extends DataClass
       supportUrl: supportUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(supportUrl),
-      testUrl: testUrl == null && nullToAbsent
+      populatedHeaders: populatedHeaders == null && nullToAbsent
           ? const Value.absent()
-          : Value(testUrl),
+          : Value(populatedHeaders),
+      profileOverride: profileOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(profileOverride),
+      userOverride: userOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userOverride),
+      sourceToken: sourceToken == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceToken),
+      fallbackUrl: fallbackUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fallbackUrl),
+      fallbackSourceToken: fallbackSourceToken == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fallbackSourceToken),
     );
   }
 
@@ -328,7 +429,14 @@ class ProfileEntriesData extends DataClass
       expire: serializer.fromJson<DateTime?>(json['expire']),
       webPageUrl: serializer.fromJson<String?>(json['webPageUrl']),
       supportUrl: serializer.fromJson<String?>(json['supportUrl']),
-      testUrl: serializer.fromJson<String?>(json['testUrl']),
+      populatedHeaders: serializer.fromJson<String?>(json['populatedHeaders']),
+      profileOverride: serializer.fromJson<String?>(json['profileOverride']),
+      userOverride: serializer.fromJson<String?>(json['userOverride']),
+      sourceToken: serializer.fromJson<String?>(json['sourceToken']),
+      fallbackUrl: serializer.fromJson<String?>(json['fallbackUrl']),
+      fallbackSourceToken: serializer.fromJson<String?>(
+        json['fallbackSourceToken'],
+      ),
     );
   }
   @override
@@ -348,7 +456,12 @@ class ProfileEntriesData extends DataClass
       'expire': serializer.toJson<DateTime?>(expire),
       'webPageUrl': serializer.toJson<String?>(webPageUrl),
       'supportUrl': serializer.toJson<String?>(supportUrl),
-      'testUrl': serializer.toJson<String?>(testUrl),
+      'populatedHeaders': serializer.toJson<String?>(populatedHeaders),
+      'profileOverride': serializer.toJson<String?>(profileOverride),
+      'userOverride': serializer.toJson<String?>(userOverride),
+      'sourceToken': serializer.toJson<String?>(sourceToken),
+      'fallbackUrl': serializer.toJson<String?>(fallbackUrl),
+      'fallbackSourceToken': serializer.toJson<String?>(fallbackSourceToken),
     };
   }
 
@@ -366,7 +479,12 @@ class ProfileEntriesData extends DataClass
     Value<DateTime?> expire = const Value.absent(),
     Value<String?> webPageUrl = const Value.absent(),
     Value<String?> supportUrl = const Value.absent(),
-    Value<String?> testUrl = const Value.absent(),
+    Value<String?> populatedHeaders = const Value.absent(),
+    Value<String?> profileOverride = const Value.absent(),
+    Value<String?> userOverride = const Value.absent(),
+    Value<String?> sourceToken = const Value.absent(),
+    Value<String?> fallbackUrl = const Value.absent(),
+    Value<String?> fallbackSourceToken = const Value.absent(),
   }) => ProfileEntriesData(
     id: id ?? this.id,
     type: type ?? this.type,
@@ -383,7 +501,18 @@ class ProfileEntriesData extends DataClass
     expire: expire.present ? expire.value : this.expire,
     webPageUrl: webPageUrl.present ? webPageUrl.value : this.webPageUrl,
     supportUrl: supportUrl.present ? supportUrl.value : this.supportUrl,
-    testUrl: testUrl.present ? testUrl.value : this.testUrl,
+    populatedHeaders: populatedHeaders.present
+        ? populatedHeaders.value
+        : this.populatedHeaders,
+    profileOverride: profileOverride.present
+        ? profileOverride.value
+        : this.profileOverride,
+    userOverride: userOverride.present ? userOverride.value : this.userOverride,
+    sourceToken: sourceToken.present ? sourceToken.value : this.sourceToken,
+    fallbackUrl: fallbackUrl.present ? fallbackUrl.value : this.fallbackUrl,
+    fallbackSourceToken: fallbackSourceToken.present
+        ? fallbackSourceToken.value
+        : this.fallbackSourceToken,
   );
   ProfileEntriesData copyWithCompanion(ProfileEntriesCompanion data) {
     return ProfileEntriesData(
@@ -408,7 +537,24 @@ class ProfileEntriesData extends DataClass
       supportUrl: data.supportUrl.present
           ? data.supportUrl.value
           : this.supportUrl,
-      testUrl: data.testUrl.present ? data.testUrl.value : this.testUrl,
+      populatedHeaders: data.populatedHeaders.present
+          ? data.populatedHeaders.value
+          : this.populatedHeaders,
+      profileOverride: data.profileOverride.present
+          ? data.profileOverride.value
+          : this.profileOverride,
+      userOverride: data.userOverride.present
+          ? data.userOverride.value
+          : this.userOverride,
+      sourceToken: data.sourceToken.present
+          ? data.sourceToken.value
+          : this.sourceToken,
+      fallbackUrl: data.fallbackUrl.present
+          ? data.fallbackUrl.value
+          : this.fallbackUrl,
+      fallbackSourceToken: data.fallbackSourceToken.present
+          ? data.fallbackSourceToken.value
+          : this.fallbackSourceToken,
     );
   }
 
@@ -428,7 +574,12 @@ class ProfileEntriesData extends DataClass
           ..write('expire: $expire, ')
           ..write('webPageUrl: $webPageUrl, ')
           ..write('supportUrl: $supportUrl, ')
-          ..write('testUrl: $testUrl')
+          ..write('populatedHeaders: $populatedHeaders, ')
+          ..write('profileOverride: $profileOverride, ')
+          ..write('userOverride: $userOverride, ')
+          ..write('sourceToken: $sourceToken, ')
+          ..write('fallbackUrl: $fallbackUrl, ')
+          ..write('fallbackSourceToken: $fallbackSourceToken')
           ..write(')'))
         .toString();
   }
@@ -448,7 +599,12 @@ class ProfileEntriesData extends DataClass
     expire,
     webPageUrl,
     supportUrl,
-    testUrl,
+    populatedHeaders,
+    profileOverride,
+    userOverride,
+    sourceToken,
+    fallbackUrl,
+    fallbackSourceToken,
   );
   @override
   bool operator ==(Object other) =>
@@ -467,7 +623,12 @@ class ProfileEntriesData extends DataClass
           other.expire == this.expire &&
           other.webPageUrl == this.webPageUrl &&
           other.supportUrl == this.supportUrl &&
-          other.testUrl == this.testUrl);
+          other.populatedHeaders == this.populatedHeaders &&
+          other.profileOverride == this.profileOverride &&
+          other.userOverride == this.userOverride &&
+          other.sourceToken == this.sourceToken &&
+          other.fallbackUrl == this.fallbackUrl &&
+          other.fallbackSourceToken == this.fallbackSourceToken);
 }
 
 class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
@@ -484,7 +645,12 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
   final Value<DateTime?> expire;
   final Value<String?> webPageUrl;
   final Value<String?> supportUrl;
-  final Value<String?> testUrl;
+  final Value<String?> populatedHeaders;
+  final Value<String?> profileOverride;
+  final Value<String?> userOverride;
+  final Value<String?> sourceToken;
+  final Value<String?> fallbackUrl;
+  final Value<String?> fallbackSourceToken;
   final Value<int> rowid;
   const ProfileEntriesCompanion({
     this.id = const Value.absent(),
@@ -500,7 +666,12 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
     this.expire = const Value.absent(),
     this.webPageUrl = const Value.absent(),
     this.supportUrl = const Value.absent(),
-    this.testUrl = const Value.absent(),
+    this.populatedHeaders = const Value.absent(),
+    this.profileOverride = const Value.absent(),
+    this.userOverride = const Value.absent(),
+    this.sourceToken = const Value.absent(),
+    this.fallbackUrl = const Value.absent(),
+    this.fallbackSourceToken = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProfileEntriesCompanion.insert({
@@ -517,7 +688,12 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
     this.expire = const Value.absent(),
     this.webPageUrl = const Value.absent(),
     this.supportUrl = const Value.absent(),
-    this.testUrl = const Value.absent(),
+    this.populatedHeaders = const Value.absent(),
+    this.profileOverride = const Value.absent(),
+    this.userOverride = const Value.absent(),
+    this.sourceToken = const Value.absent(),
+    this.fallbackUrl = const Value.absent(),
+    this.fallbackSourceToken = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type),
@@ -538,7 +714,12 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
     Expression<DateTime>? expire,
     Expression<String>? webPageUrl,
     Expression<String>? supportUrl,
-    Expression<String>? testUrl,
+    Expression<String>? populatedHeaders,
+    Expression<String>? profileOverride,
+    Expression<String>? userOverride,
+    Expression<String>? sourceToken,
+    Expression<String>? fallbackUrl,
+    Expression<String>? fallbackSourceToken,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -555,7 +736,13 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
       if (expire != null) 'expire': expire,
       if (webPageUrl != null) 'web_page_url': webPageUrl,
       if (supportUrl != null) 'support_url': supportUrl,
-      if (testUrl != null) 'test_url': testUrl,
+      if (populatedHeaders != null) 'populated_headers': populatedHeaders,
+      if (profileOverride != null) 'profile_override': profileOverride,
+      if (userOverride != null) 'user_override': userOverride,
+      if (sourceToken != null) 'source_token': sourceToken,
+      if (fallbackUrl != null) 'fallback_url': fallbackUrl,
+      if (fallbackSourceToken != null)
+        'fallback_source_token': fallbackSourceToken,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -574,7 +761,12 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
     Value<DateTime?>? expire,
     Value<String?>? webPageUrl,
     Value<String?>? supportUrl,
-    Value<String?>? testUrl,
+    Value<String?>? populatedHeaders,
+    Value<String?>? profileOverride,
+    Value<String?>? userOverride,
+    Value<String?>? sourceToken,
+    Value<String?>? fallbackUrl,
+    Value<String?>? fallbackSourceToken,
     Value<int>? rowid,
   }) {
     return ProfileEntriesCompanion(
@@ -591,7 +783,12 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
       expire: expire ?? this.expire,
       webPageUrl: webPageUrl ?? this.webPageUrl,
       supportUrl: supportUrl ?? this.supportUrl,
-      testUrl: testUrl ?? this.testUrl,
+      populatedHeaders: populatedHeaders ?? this.populatedHeaders,
+      profileOverride: profileOverride ?? this.profileOverride,
+      userOverride: userOverride ?? this.userOverride,
+      sourceToken: sourceToken ?? this.sourceToken,
+      fallbackUrl: fallbackUrl ?? this.fallbackUrl,
+      fallbackSourceToken: fallbackSourceToken ?? this.fallbackSourceToken,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -638,8 +835,25 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
     if (supportUrl.present) {
       map['support_url'] = Variable<String>(supportUrl.value);
     }
-    if (testUrl.present) {
-      map['test_url'] = Variable<String>(testUrl.value);
+    if (populatedHeaders.present) {
+      map['populated_headers'] = Variable<String>(populatedHeaders.value);
+    }
+    if (profileOverride.present) {
+      map['profile_override'] = Variable<String>(profileOverride.value);
+    }
+    if (userOverride.present) {
+      map['user_override'] = Variable<String>(userOverride.value);
+    }
+    if (sourceToken.present) {
+      map['source_token'] = Variable<String>(sourceToken.value);
+    }
+    if (fallbackUrl.present) {
+      map['fallback_url'] = Variable<String>(fallbackUrl.value);
+    }
+    if (fallbackSourceToken.present) {
+      map['fallback_source_token'] = Variable<String>(
+        fallbackSourceToken.value,
+      );
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -663,413 +877,28 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntriesData> {
           ..write('expire: $expire, ')
           ..write('webPageUrl: $webPageUrl, ')
           ..write('supportUrl: $supportUrl, ')
-          ..write('testUrl: $testUrl, ')
+          ..write('populatedHeaders: $populatedHeaders, ')
+          ..write('profileOverride: $profileOverride, ')
+          ..write('userOverride: $userOverride, ')
+          ..write('sourceToken: $sourceToken, ')
+          ..write('fallbackUrl: $fallbackUrl, ')
+          ..write('fallbackSourceToken: $fallbackSourceToken, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
 }
 
-class GeoAssetEntries extends Table
-    with TableInfo<GeoAssetEntries, GeoAssetEntriesData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  GeoAssetEntries(this.attachedDatabase, [this._alias]);
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  late final GeneratedColumn<String> type = GeneratedColumn<String>(
-    'type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
-    'active',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("active" IN (0, 1))',
-    ),
-  );
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  late final GeneratedColumn<String> providerName = GeneratedColumn<String>(
-    'provider_name',
-    aliasedName,
-    false,
-    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  late final GeneratedColumn<String> version = GeneratedColumn<String>(
-    'version',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  late final GeneratedColumn<DateTime> lastCheck = GeneratedColumn<DateTime>(
-    'last_check',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    type,
-    active,
-    name,
-    providerName,
-    version,
-    lastCheck,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'geo_asset_entries';
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  List<Set<GeneratedColumn>> get uniqueKeys => [
-    {name, providerName},
-  ];
-  @override
-  GeoAssetEntriesData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return GeoAssetEntriesData(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      type: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}type'],
-      )!,
-      active: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}active'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-      providerName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}provider_name'],
-      )!,
-      version: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}version'],
-      ),
-      lastCheck: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}last_check'],
-      ),
-    );
-  }
-
-  @override
-  GeoAssetEntries createAlias(String alias) {
-    return GeoAssetEntries(attachedDatabase, alias);
-  }
-}
-
-class GeoAssetEntriesData extends DataClass
-    implements Insertable<GeoAssetEntriesData> {
-  final String id;
-  final String type;
-  final bool active;
-  final String name;
-  final String providerName;
-  final String? version;
-  final DateTime? lastCheck;
-  const GeoAssetEntriesData({
-    required this.id,
-    required this.type,
-    required this.active,
-    required this.name,
-    required this.providerName,
-    this.version,
-    this.lastCheck,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['type'] = Variable<String>(type);
-    map['active'] = Variable<bool>(active);
-    map['name'] = Variable<String>(name);
-    map['provider_name'] = Variable<String>(providerName);
-    if (!nullToAbsent || version != null) {
-      map['version'] = Variable<String>(version);
-    }
-    if (!nullToAbsent || lastCheck != null) {
-      map['last_check'] = Variable<DateTime>(lastCheck);
-    }
-    return map;
-  }
-
-  GeoAssetEntriesCompanion toCompanion(bool nullToAbsent) {
-    return GeoAssetEntriesCompanion(
-      id: Value(id),
-      type: Value(type),
-      active: Value(active),
-      name: Value(name),
-      providerName: Value(providerName),
-      version: version == null && nullToAbsent
-          ? const Value.absent()
-          : Value(version),
-      lastCheck: lastCheck == null && nullToAbsent
-          ? const Value.absent()
-          : Value(lastCheck),
-    );
-  }
-
-  factory GeoAssetEntriesData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return GeoAssetEntriesData(
-      id: serializer.fromJson<String>(json['id']),
-      type: serializer.fromJson<String>(json['type']),
-      active: serializer.fromJson<bool>(json['active']),
-      name: serializer.fromJson<String>(json['name']),
-      providerName: serializer.fromJson<String>(json['providerName']),
-      version: serializer.fromJson<String?>(json['version']),
-      lastCheck: serializer.fromJson<DateTime?>(json['lastCheck']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'type': serializer.toJson<String>(type),
-      'active': serializer.toJson<bool>(active),
-      'name': serializer.toJson<String>(name),
-      'providerName': serializer.toJson<String>(providerName),
-      'version': serializer.toJson<String?>(version),
-      'lastCheck': serializer.toJson<DateTime?>(lastCheck),
-    };
-  }
-
-  GeoAssetEntriesData copyWith({
-    String? id,
-    String? type,
-    bool? active,
-    String? name,
-    String? providerName,
-    Value<String?> version = const Value.absent(),
-    Value<DateTime?> lastCheck = const Value.absent(),
-  }) => GeoAssetEntriesData(
-    id: id ?? this.id,
-    type: type ?? this.type,
-    active: active ?? this.active,
-    name: name ?? this.name,
-    providerName: providerName ?? this.providerName,
-    version: version.present ? version.value : this.version,
-    lastCheck: lastCheck.present ? lastCheck.value : this.lastCheck,
-  );
-  GeoAssetEntriesData copyWithCompanion(GeoAssetEntriesCompanion data) {
-    return GeoAssetEntriesData(
-      id: data.id.present ? data.id.value : this.id,
-      type: data.type.present ? data.type.value : this.type,
-      active: data.active.present ? data.active.value : this.active,
-      name: data.name.present ? data.name.value : this.name,
-      providerName: data.providerName.present
-          ? data.providerName.value
-          : this.providerName,
-      version: data.version.present ? data.version.value : this.version,
-      lastCheck: data.lastCheck.present ? data.lastCheck.value : this.lastCheck,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('GeoAssetEntriesData(')
-          ..write('id: $id, ')
-          ..write('type: $type, ')
-          ..write('active: $active, ')
-          ..write('name: $name, ')
-          ..write('providerName: $providerName, ')
-          ..write('version: $version, ')
-          ..write('lastCheck: $lastCheck')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(id, type, active, name, providerName, version, lastCheck);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is GeoAssetEntriesData &&
-          other.id == this.id &&
-          other.type == this.type &&
-          other.active == this.active &&
-          other.name == this.name &&
-          other.providerName == this.providerName &&
-          other.version == this.version &&
-          other.lastCheck == this.lastCheck);
-}
-
-class GeoAssetEntriesCompanion extends UpdateCompanion<GeoAssetEntriesData> {
-  final Value<String> id;
-  final Value<String> type;
-  final Value<bool> active;
-  final Value<String> name;
-  final Value<String> providerName;
-  final Value<String?> version;
-  final Value<DateTime?> lastCheck;
-  final Value<int> rowid;
-  const GeoAssetEntriesCompanion({
-    this.id = const Value.absent(),
-    this.type = const Value.absent(),
-    this.active = const Value.absent(),
-    this.name = const Value.absent(),
-    this.providerName = const Value.absent(),
-    this.version = const Value.absent(),
-    this.lastCheck = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  GeoAssetEntriesCompanion.insert({
-    required String id,
-    required String type,
-    required bool active,
-    required String name,
-    required String providerName,
-    this.version = const Value.absent(),
-    this.lastCheck = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       type = Value(type),
-       active = Value(active),
-       name = Value(name),
-       providerName = Value(providerName);
-  static Insertable<GeoAssetEntriesData> custom({
-    Expression<String>? id,
-    Expression<String>? type,
-    Expression<bool>? active,
-    Expression<String>? name,
-    Expression<String>? providerName,
-    Expression<String>? version,
-    Expression<DateTime>? lastCheck,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (type != null) 'type': type,
-      if (active != null) 'active': active,
-      if (name != null) 'name': name,
-      if (providerName != null) 'provider_name': providerName,
-      if (version != null) 'version': version,
-      if (lastCheck != null) 'last_check': lastCheck,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  GeoAssetEntriesCompanion copyWith({
-    Value<String>? id,
-    Value<String>? type,
-    Value<bool>? active,
-    Value<String>? name,
-    Value<String>? providerName,
-    Value<String?>? version,
-    Value<DateTime?>? lastCheck,
-    Value<int>? rowid,
-  }) {
-    return GeoAssetEntriesCompanion(
-      id: id ?? this.id,
-      type: type ?? this.type,
-      active: active ?? this.active,
-      name: name ?? this.name,
-      providerName: providerName ?? this.providerName,
-      version: version ?? this.version,
-      lastCheck: lastCheck ?? this.lastCheck,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (type.present) {
-      map['type'] = Variable<String>(type.value);
-    }
-    if (active.present) {
-      map['active'] = Variable<bool>(active.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (providerName.present) {
-      map['provider_name'] = Variable<String>(providerName.value);
-    }
-    if (version.present) {
-      map['version'] = Variable<String>(version.value);
-    }
-    if (lastCheck.present) {
-      map['last_check'] = Variable<DateTime>(lastCheck.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('GeoAssetEntriesCompanion(')
-          ..write('id: $id, ')
-          ..write('type: $type, ')
-          ..write('active: $active, ')
-          ..write('name: $name, ')
-          ..write('providerName: $providerName, ')
-          ..write('version: $version, ')
-          ..write('lastCheck: $lastCheck, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class DatabaseAtV4 extends GeneratedDatabase {
-  DatabaseAtV4(QueryExecutor e) : super(e);
+class DatabaseAtV8 extends GeneratedDatabase {
+  DatabaseAtV8(QueryExecutor e) : super(e);
   late final ProfileEntries profileEntries = ProfileEntries(this);
-  late final GeoAssetEntries geoAssetEntries = GeoAssetEntries(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [
-    profileEntries,
-    geoAssetEntries,
-  ];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [profileEntries];
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 8;
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);

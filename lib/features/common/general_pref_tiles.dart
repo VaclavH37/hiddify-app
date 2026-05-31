@@ -113,8 +113,7 @@ class ThemeModePrefTile extends ConsumerWidget {
             .showSettingPicker<AppThemeMode>(
               title: t.pages.settings.general.themeMode,
               selected: themeMode,
-              onReset: () =>
-                  ref.read(themePreferencesProvider.notifier).changeThemeMode(AppThemeMode.system),
+              onReset: () => ref.read(themePreferencesProvider.notifier).changeThemeMode(AppThemeMode.system),
               options: AppThemeMode.values,
               getTitle: (e) => e.present(t),
             );
@@ -175,12 +174,8 @@ class RaynSwitchTile extends StatelessWidget {
       title: title,
       subtitle: subtitle,
       enabled: enabled,
-      trailing: Switch.adaptive(
-        value: value,
-        onChanged: enabled ? onChanged : null,
-      ),
+      trailing: Switch.adaptive(value: value, onChanged: enabled ? onChanged : null),
       onTap: enabled ? () => onChanged(!value) : null,
     );
   }
 }
-

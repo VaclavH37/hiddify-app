@@ -35,8 +35,7 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
     }
 
     final proxyType = ProxyType.fromJson(activeProxy.type);
-    final isAutoSelected =
-        proxyType == ProxyType.urltest || proxyType == ProxyType.balancer;
+    final isAutoSelected = proxyType == ProxyType.urltest || proxyType == ProxyType.balancer;
     // Balancer rotates across multiple outbounds and the core does not
     // populate `groupSelectedTagDisplay`, so falling back to `tagDisplay`
     // would just print the group's name ("round-robin"). Derive a location
@@ -51,8 +50,7 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
       rawName = activeProxy.tagDisplay;
     }
     final displayName = _stripTrailingFlag(rawName);
-    final modeLabel =
-        isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct;
+    final modeLabel = isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct;
 
     Future<void> handleUrlTest() async {
       try {
@@ -76,58 +74,53 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
               onTap: () => context.goNamed('proxies'),
               borderRadius: BorderRadius.circular(RaynRadius.card),
               child: Row(
-              children: [
-                InkWell(
-                  onTap: () async {
-                    await handleUrlTest();
-                    if (!context.mounted) return;
-                    await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: activeProxy);
-                  },
-                  borderRadius: BorderRadius.circular(RaynRadius.button),
-                  child: Padding(
-                    padding: const EdgeInsets.all(RaynSpacing.xs),
-                    child: IPCountryFlag(
-                      countryCode: activeProxy.ipinfo.countryCode,
-                      organization: activeProxy.ipinfo.org,
-                      size: 40,
+                children: [
+                  InkWell(
+                    onTap: () async {
+                      await handleUrlTest();
+                      if (!context.mounted) return;
+                      await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: activeProxy);
+                    },
+                    borderRadius: BorderRadius.circular(RaynRadius.button),
+                    child: Padding(
+                      padding: const EdgeInsets.all(RaynSpacing.xs),
+                      child: IPCountryFlag(
+                        countryCode: activeProxy.ipinfo.countryCode,
+                        organization: activeProxy.ipinfo.org,
+                        size: 40,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: RaynSpacing.md),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Semantics(
-                        label: t.pages.proxies.activeProxy,
-                        child: Text(
-                          displayName,
-                          style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: RaynSpacing.md),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Semantics(
+                          label: t.pages.proxies.activeProxy,
+                          child: Text(
+                            displayName,
+                            style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        modeLabel,
-                        style: RaynTypography.caption.copyWith(
-                          color: context.rayn.textMuted,
-                        ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(modeLabel, style: RaynTypography.caption.copyWith(color: context.rayn.textMuted)),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: RaynSpacing.sm),
-                const _SignalBars(),
-                const SizedBox(width: RaynSpacing.sm),
-                Icon(Icons.chevron_right_rounded, size: 22, color: context.rayn.textSecondary),
-              ],
+                  const SizedBox(width: RaynSpacing.sm),
+                  const _SignalBars(),
+                  const SizedBox(width: RaynSpacing.sm),
+                  Icon(Icons.chevron_right_rounded, size: 22, color: context.rayn.textSecondary),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -176,9 +169,7 @@ class _SignalBars extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final delay = ref.watch(
-      activeProxyNotifierProvider.select((v) => v.valueOrNull?.urlTestDelay ?? 0),
-    );
+    final delay = ref.watch(activeProxyNotifierProvider.select((v) => v.valueOrNull?.urlTestDelay ?? 0));
     final displayed = useState<int>(delay);
 
     useEffect(() {

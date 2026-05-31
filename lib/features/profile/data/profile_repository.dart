@@ -81,9 +81,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
   /// and their JSON config files. The auth-gate model only ever creates
   /// one profile, so this only matters once per upgrading user.
   Future<void> _enforceSingleProfileInvariant() async {
-    final all = await _profileDataSource
-        .watchAll(sort: ProfilesSort.lastUpdate, sortMode: SortMode.descending)
-        .first;
+    final all = await _profileDataSource.watchAll(sort: ProfilesSort.lastUpdate, sortMode: SortMode.descending).first;
     if (all.length <= 1) {
       if (all.length == 1 && !all.first.active) {
         await _profileDataSource.edit(all.first.id, const ProfileEntriesCompanion(active: Value(true)));
@@ -169,56 +167,57 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     UserOverride? userOverride,
     String? sourceToken,
     CancelToken? cancelToken,
-  }) => TaskEither.tryCatch(
-    () async => await _profileDataSource.getByUrl(url).then((profEntry) => profEntry?.toEntity()),
-    ProfileFailure.unexpected,
-  ).flatMap((profEntity) {
-    // if profile is null, generate id
-    final id = profEntity?.id ?? const Uuid().v4();
-    final file = _profilePathResolver.file(id);
-    final tempFile = _profilePathResolver.tempFile(id);
-    try {
-      if (profEntity != null && profEntity is RemoteProfileEntity) {
-        // Update
-        if (userOverride != null) {
-          profEntity = profEntity.copyWith(userOverride: userOverride);
+  }) =>
+      TaskEither.tryCatch(
+        () async => await _profileDataSource.getByUrl(url).then((profEntry) => profEntry?.toEntity()),
+        ProfileFailure.unexpected,
+      ).flatMap((profEntity) {
+        // if profile is null, generate id
+        final id = profEntity?.id ?? const Uuid().v4();
+        final file = _profilePathResolver.file(id);
+        final tempFile = _profilePathResolver.tempFile(id);
+        try {
+          if (profEntity != null && profEntity is RemoteProfileEntity) {
+            // Update
+            if (userOverride != null) {
+              profEntity = profEntity.copyWith(userOverride: userOverride);
+            }
+            return _profileParser
+                .updateRemote(rp: profEntity, tempFilePath: tempFile.path, cancelToken: cancelToken)
+                .flatMap(
+                  (profEntity) =>
+                      validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
+                        (unit) => TaskEither.tryCatch(() async {
+                          await _profileDataSource.edit(id, profEntity);
+                          return unit;
+                        }, ProfileFailure.unexpected),
+                      ),
+                );
+          } else {
+            // Add
+            return _profileParser
+                .addRemote(
+                  id: id,
+                  url: url,
+                  tempFilePath: tempFile.path,
+                  userOverride: userOverride,
+                  sourceToken: sourceToken,
+                  cancelToken: cancelToken,
+                )
+                .flatMap(
+                  (profEntity) =>
+                      validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
+                        (unit) => TaskEither.tryCatch(() async {
+                          await _profileDataSource.insert(profEntity);
+                          return unit;
+                        }, ProfileFailure.unexpected),
+                      ),
+                );
+          }
+        } finally {
+          if (tempFile.existsSync()) tempFile.deleteSync();
         }
-        return _profileParser
-            .updateRemote(rp: profEntity, tempFilePath: tempFile.path, cancelToken: cancelToken)
-            .flatMap(
-              (profEntity) =>
-                  validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
-                    (unit) => TaskEither.tryCatch(() async {
-                      await _profileDataSource.edit(id, profEntity);
-                      return unit;
-                    }, ProfileFailure.unexpected),
-                  ),
-            );
-      } else {
-        // Add
-        return _profileParser
-            .addRemote(
-              id: id,
-              url: url,
-              tempFilePath: tempFile.path,
-              userOverride: userOverride,
-              sourceToken: sourceToken,
-              cancelToken: cancelToken,
-            )
-            .flatMap(
-              (profEntity) =>
-                  validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
-                    (unit) => TaskEither.tryCatch(() async {
-                      await _profileDataSource.insert(profEntity);
-                      return unit;
-                    }, ProfileFailure.unexpected),
-                  ),
-            );
-      }
-    } finally {
-      if (tempFile.existsSync()) tempFile.deleteSync();
-    }
-  });
+      });
 
   @override
   TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride}) =>

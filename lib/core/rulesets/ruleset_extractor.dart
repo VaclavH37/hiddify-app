@@ -6,15 +6,23 @@ import 'package:hiddify/core/rulesets/ruleset_manifest.dart';
 import 'package:loggy/loggy.dart';
 import 'package:path/path.dart' as p;
 
-/// Extracts bundled CN routing rule-sets (`assets/rulesets/*.srs`) onto the
-/// Go core's BasePath so sing-box can load them as `Type: Local` rule-sets.
+/// Extracts bundled CN routing rule-sets (`assets/rulesets/*.srs`) into the
+/// Go core's working directory so sing-box can load them as `Type: Local`
+/// rule-sets.
 ///
-/// Rule-sets must be on disk before the first VPN start: the Go core resolves
-/// the configured path via `filemanager.BasePath(ctx, ...)` at config-load
-/// time, and a missing file makes the entire `RuleSet:`-keyed DNS / route rule
-/// inert. Bundling + extracting avoids the chicken-and-egg of trying to
-/// download rule-sets from `raw.githubusercontent.com` on first launch inside
-/// the GFW.
+/// [basePath] MUST be the core's working dir (CWD), not the app support dir:
+/// in the gRPC service mode the core `os.Chdir()`s to the working path and the
+/// `filemanager.WithDefault` base is unset, so relative Local rule-set paths
+/// (`rulesets/*.srs`) resolve against CWD. On Android the internal filesDir
+/// (baseDir) and external files dir (workingDir) are different directories —
+/// extracting to the wrong one makes every `RuleSet:`-keyed rule fail to open
+/// and the core refuses to start. See bootstrap.dart for the call site.
+///
+/// Rule-sets must be on disk before the first VPN start: the Go core opens the
+/// file at config-load time, and a missing file makes the entire `RuleSet:`-
+/// keyed DNS / route rule inert. Bundling + extracting avoids the chicken-and-
+/// egg of trying to download rule-sets from `raw.githubusercontent.com` on
+/// first launch inside the GFW.
 ///
 /// Re-extraction is gated by a one-field version compare against
 /// `<basePath>/rulesets/MANIFEST`: when the bundle MANIFEST in the AAB has a
@@ -52,9 +60,7 @@ abstract class RulesetExtractor {
       return false;
     }
 
-    _log.info(
-      'extracting rule-sets: on-disk=${onDiskManifest?.version ?? "<none>"} bundle=${bundleManifest.version}',
-    );
+    _log.info('extracting rule-sets: on-disk=${onDiskManifest?.version ?? "<none>"} bundle=${bundleManifest.version}');
 
     if (!await targetDir.exists()) {
       await targetDir.create(recursive: true);

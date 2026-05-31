@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import com.hiddify.core.libbox.Notification
-import com.raynlabs.app.constant.PerAppProxyMode
 import com.raynlabs.app.ktx.toIpPrefix
 import com.hiddify.core.libbox.TunOptions
 import kotlinx.coroutines.Dispatchers
@@ -160,37 +159,19 @@ class VPNService : VpnService(), PlatformInterfaceWrapper {
                 }
             }
 
-            if (Settings.perAppProxyEnabled) {
-                val appList = Settings.perAppProxyList
-                if (Settings.perAppProxyMode == PerAppProxyMode.INCLUDE) {
-                    appList.forEach {
-                        addIncludePackage(builder,it)
-                    }
-//                    addIncludePackage(builder,packageName)
-                } else {
-                    appList.forEach {
-                        addExcludePackage(builder,it)
-                    }
-                    addExcludePackage(builder,packageName)
+            val includePackage = options.includePackage
+            if (includePackage.hasNext()) {
+                while (includePackage.hasNext()) {
+                    addIncludePackage(builder, includePackage.next())
                 }
             } else {
-                val includePackage = options.includePackage
-                if (includePackage.hasNext()) {
-                    while (includePackage.hasNext()) {
-                        addIncludePackage(builder,includePackage.next())
+                val excludePackage = options.excludePackage
+                if (excludePackage.hasNext()) {
+                    while (excludePackage.hasNext()) {
+                        addExcludePackage(builder, excludePackage.next())
                     }
-                    //                    addIncludePackage(builder,packageName)
-                }else {
-                    val excludePackage = options.excludePackage
-                    if (excludePackage.hasNext()) {
-                        while (excludePackage.hasNext()) {
-                            addExcludePackage(builder, excludePackage.next())
-                        }
-                    }
-
-                    addExcludePackage(builder, packageName)
                 }
-                
+                addExcludePackage(builder, packageName)
             }
         }
 

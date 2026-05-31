@@ -61,16 +61,13 @@ abstract class RaynTokenDecryptor {
       return null;
     }
     if (ciphertext.length != _expectedCiphertextBytes) {
-      _log.warning(
-        'rayn token ciphertext is ${ciphertext.length} bytes, expected $_expectedCiphertextBytes',
-      );
+      _log.warning('rayn token ciphertext is ${ciphertext.length} bytes, expected $_expectedCiphertextBytes');
       return null;
     }
 
     final Uint8List plaintext;
     try {
-      final cipher = OAEPEncoding.withSHA256(RSAEngine())
-        ..init(false, PrivateKeyParameter<RSAPrivateKey>(key));
+      final cipher = OAEPEncoding.withSHA256(RSAEngine())..init(false, PrivateKeyParameter<RSAPrivateKey>(key));
       plaintext = cipher.process(ciphertext);
     } catch (e) {
       _log.warning('rayn token OAEP decryption failed: $e');

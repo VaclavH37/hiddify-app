@@ -7,12 +7,10 @@ import 'package:hiddify/core/router/dialog/widgets/experimental_feature_notice.d
 import 'package:hiddify/core/router/dialog/widgets/ok_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/proxy_info_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/save_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/setting_checkbox_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_input_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_picker_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_radio_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_slider_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/setting_text_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/unknown_domains_warning_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/window_closing_dialog.dart';
 import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
@@ -20,7 +18,6 @@ import 'package:hiddify/features/common/qr_code_dialog.dart';
 import 'package:hiddify/features/common/qr_code_scanner_screen.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:protobuf/protobuf.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dialog_notifier.g.dart';
@@ -107,35 +104,6 @@ class DialogNotifier extends _$DialogNotifier {
 
   Future<void> showProxyInfo({required OutboundInfo outboundInfo}) async {
     return await _show<void>(ProxyInfoDialog(outboundInfo: outboundInfo));
-  }
-
-  Future<String?> showSettingText({
-    required String lable,
-    String value = '',
-    String? defaultValue,
-    FormFieldValidator<String>? validator,
-  }) async {
-    return await _show<String?>(
-      SettingTextDialog(lable: lable, value: value, defaultValue: defaultValue, validator: validator),
-    );
-  }
-
-  Future<List<ProtobufEnum>?> showSettingCheckbox({
-    required String title,
-    required List<ProtobufEnum> values,
-    required List<ProtobufEnum> selectedValues,
-    List<ProtobufEnum>? defaultValue,
-    Map<String, String>? t,
-  }) async {
-    return await _show<List<ProtobufEnum>?>(
-      SettingCheckboxDialog(
-        title: title,
-        values: values,
-        selectedValues: selectedValues,
-        defaultValue: defaultValue,
-        t: t,
-      ),
-    );
   }
 
   Future<T?> showSettingRadio<T>({

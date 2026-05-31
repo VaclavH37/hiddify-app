@@ -3,18 +3,17 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:hiddify/core/db/converters/duration_converter.dart';
 import 'package:hiddify/core/db/db.steps.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
-import 'package:hiddify/features/per_app_proxy/model/per_app_proxy_mode.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 
 part 'db.g.dart';
 
-@DriftDatabase(tables: [ProfileEntries, AppProxyEntries])
+@DriftDatabase(tables: [ProfileEntries])
 class Db extends _$Db with InfraLogger {
   Db([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   static QueryExecutor _openConnection() {
     return LazyDatabase(
@@ -101,6 +100,11 @@ class Db extends _$Db with InfraLogger {
             await m.addColumn(schema.profileEntries, schema.profileEntries.fallbackSourceToken);
           }
         },
+        from7To8: (m, schema) async {
+          // Per-app proxy feature removed (Play Store Finding #1) — drop its
+          // now-unused table. Created in from4To5; harmless if already absent.
+          await m.deleteTable('app_proxy_entries');
+        },
       ),
     );
   }
@@ -144,14 +148,4 @@ class ProfileEntries extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
-}
-
-@DataClassName('AppProxyEntry')
-class AppProxyEntries extends Table {
-  TextColumn get mode => textEnum<AppProxyMode>()();
-  TextColumn get pkgName => text()();
-  IntColumn get flags => integer().withDefault(const Constant(0))();
-
-  @override
-  Set<Column> get primaryKey => {mode, pkgName};
 }

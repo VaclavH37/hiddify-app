@@ -27,5 +27,4 @@ class RaynMotion {
 ///
 /// Animation controllers should bail (skip `.repeat()`, render the static end
 /// state) when this returns true.
-bool reduceMotion(BuildContext context) =>
-    MediaQuery.of(context).disableAnimations;
+bool reduceMotion(BuildContext context) => MediaQuery.of(context).disableAnimations;

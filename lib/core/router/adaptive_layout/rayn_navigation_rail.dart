@@ -47,10 +47,7 @@ class RaynNavigationRail extends StatelessWidget {
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: IntrinsicHeight(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: RaynSpacing.md,
-                    vertical: RaynSpacing.lg,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -65,10 +62,7 @@ class RaynNavigationRail extends StatelessWidget {
                         ),
                         if (i != destinations.length - 1) const SizedBox(height: RaynSpacing.xs),
                       ],
-                      if (trailing != null) ...[
-                        const Spacer(),
-                        trailing!,
-                      ],
+                      if (trailing != null) ...[const Spacer(), trailing!],
                     ],
                   ),
                 ),
@@ -108,10 +102,7 @@ class _BrandBlock extends StatelessWidget {
           const SizedBox(width: RaynSpacing.md),
           Text(
             'Rayn VPN',
-            style: RaynTypography.body.copyWith(
-              fontWeight: FontWeight.w600,
-              color: context.rayn.textPrimary,
-            ),
+            style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600, color: context.rayn.textPrimary),
           ),
         ],
       ),
@@ -120,12 +111,7 @@ class _BrandBlock extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.destination,
-    required this.selected,
-    required this.extended,
-    required this.onTap,
-  });
+  const _NavItem({required this.destination, required this.selected, required this.extended, required this.onTap});
 
   final RaynNavRailDestination destination;
   final bool selected;
@@ -135,8 +121,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.rayn;
-    final Color foreground =
-        selected ? RaynColors.goldPrimary : palette.textSecondary;
+    final Color foreground = selected ? RaynColors.goldPrimary : palette.textSecondary;
     final BorderRadius radius = BorderRadius.circular(RaynRadius.button);
 
     final Widget content = extended
@@ -170,9 +155,7 @@ class _NavItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: selected ? palette.navSelectedFill : Colors.transparent,
               borderRadius: radius,
-              border: selected
-                  ? Border.all(color: palette.navSelectedBorder)
-                  : null,
+              border: selected ? Border.all(color: palette.navSelectedBorder) : null,
             ),
             padding: EdgeInsets.symmetric(
               horizontal: extended ? RaynSpacing.lg : RaynSpacing.sm,

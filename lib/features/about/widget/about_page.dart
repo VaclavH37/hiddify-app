@@ -65,10 +65,7 @@ class AboutPage extends HookConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          t.common.appTitle,
-                          style: RaynTypography.title.copyWith(color: palette.textPrimary),
-                        ),
+                        Text(t.common.appTitle, style: RaynTypography.title.copyWith(color: palette.textPrimary)),
                         const SizedBox(height: RaynSpacing.xs),
                         Text(
                           "${t.common.version} ${appInfo.presentVersion}",

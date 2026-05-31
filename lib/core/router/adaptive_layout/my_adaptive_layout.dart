@@ -15,11 +15,7 @@ import 'package:hiddify/features/home/widget/stats_column.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class MyAdaptiveLayout extends HookConsumerWidget {
-  const MyAdaptiveLayout({
-    super.key,
-    required this.navigationShell,
-    required this.isMobileBreakpoint,
-  });
+  const MyAdaptiveLayout({super.key, required this.navigationShell, required this.isMobileBreakpoint});
   // managed by go router(Shell Route)
   final StatefulNavigationShell navigationShell;
   final bool isMobileBreakpoint;
@@ -42,8 +38,7 @@ class MyAdaptiveLayout extends HookConsumerWidget {
             if (branchesScope.values.any((node) => node.hasFocus)) {
               navScopeNode.requestFocus();
             } else if (navScopeNode.hasFocus) {
-              branchesScope[getNameOfBranch(isMobileBreakpoint, navigationShell.currentIndex)]
-                  ?.requestFocus();
+              branchesScope[getNameOfBranch(isMobileBreakpoint, navigationShell.currentIndex)]?.requestFocus();
             }
           }
         }
@@ -125,16 +120,11 @@ class MyAdaptiveLayout extends HookConsumerWidget {
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return RaynTypography.label.copyWith(
-            color: selected ? RaynColors.goldPrimary : palette.textSecondary,
-          );
+          return RaynTypography.label.copyWith(color: selected ? RaynColors.goldPrimary : palette.textSecondary);
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            color: selected ? RaynColors.goldPrimary : palette.textSecondary,
-            size: 22,
-          );
+          return IconThemeData(color: selected ? RaynColors.goldPrimary : palette.textSecondary, size: 22);
         }),
       ),
       child: NavigationBar(

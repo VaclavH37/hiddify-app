@@ -14,19 +14,10 @@ class RaynSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.rayn;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        RaynSpacing.xl,
-        RaynSpacing.lg,
-        RaynSpacing.xl,
-        RaynSpacing.sm,
-      ),
+      padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, RaynSpacing.lg, RaynSpacing.xl, RaynSpacing.sm),
       child: Text(
         label.toUpperCase(),
-        style: RaynTypography.label.copyWith(
-          color: palette.textMuted,
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.w600,
-        ),
+        style: RaynTypography.label.copyWith(color: palette.textMuted, letterSpacing: 1.2, fontWeight: FontWeight.w600),
       ),
     );
   }

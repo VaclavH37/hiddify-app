@@ -98,15 +98,11 @@ class ProfileParser {
     final effectiveUrl = rotation?.url ?? url;
     final effectiveSourceToken = rotation?.name ?? sourceToken;
     if (rotation != null) {
-      _log.info(
-        'rotating subscription URL on import (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
-      );
+      _log.info('rotating subscription URL on import (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})');
     }
     final fallback = extractFallback(remoteHeaders);
     if (fallback != null) {
-      _log.info(
-        'capturing fallback URL on import (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})',
-      );
+      _log.info('capturing fallback URL on import (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
     }
     return TaskEither.fromEither(
       populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
@@ -139,16 +135,12 @@ class ProfileParser {
     final rotation = extractRotation(remoteHeaders);
     var rotated = rp;
     if (rotation != null && rotation.name != rp.sourceToken) {
-      _log.info(
-        'rotating subscription URL on refresh (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
-      );
+      _log.info('rotating subscription URL on refresh (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})');
       rotated = rotated.copyWith(url: rotation.url, sourceToken: rotation.name);
     }
     final fallback = extractFallback(remoteHeaders);
     if (fallback != null && fallback.name != rp.fallbackSourceToken) {
-      _log.info(
-        'updating fallback URL on refresh (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})',
-      );
+      _log.info('updating fallback URL on refresh (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
       rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.name);
     }
     return TaskEither.fromEither(

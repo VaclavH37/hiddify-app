@@ -4,13 +4,10 @@ import android.content.Context
 import android.util.Base64
 import com.raynlabs.app.bg.ProxyService
 import com.raynlabs.app.bg.VPNService
-import com.raynlabs.app.constant.PerAppProxyMode
 import com.raynlabs.app.constant.ServiceMode
 import com.raynlabs.app.constant.SettingsKey
 import org.json.JSONObject
-import java.io.ByteArrayInputStream
 import java.io.File
-import java.io.ObjectInputStream
 
 
 object Settings {
@@ -18,37 +15,6 @@ object Settings {
     private val preferences by lazy {
         val context = Application.application.applicationContext
         context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-    }
-
-    private const val LIST_IDENTIFIER = "VGhpcyBpcyB0aGUgcHJlZml4IGZvciBhIGxpc3Qu"
-
-    var perAppProxyMode: String
-        get() = preferences.getString(SettingsKey.PER_APP_PROXY_MODE, PerAppProxyMode.OFF)!!
-        set(value) = preferences.edit().putString(SettingsKey.PER_APP_PROXY_MODE, value).apply()
-
-    val perAppProxyEnabled: Boolean
-        get() = perAppProxyMode != PerAppProxyMode.OFF
-
-    val perAppProxyList: List<String>
-        get() {
-            val stringValue = if (perAppProxyMode == PerAppProxyMode.INCLUDE) {
-                preferences.getString(SettingsKey.PER_APP_PROXY_INCLUDE_LIST, "")!!
-            } else {
-                preferences.getString(SettingsKey.PER_APP_PROXY_EXCLUDE_LIST, "")!!
-            }
-            if (!stringValue.startsWith(LIST_IDENTIFIER)) {
-                return stringValue.split(";")
-            }
-            return try {
-                decodeListString(stringValue.substring(LIST_IDENTIFIER.length))
-            } catch (e: java.lang.Exception) {
-                emptyList()
-            }
-        }
-
-    private fun decodeListString(listString: String): List<String> {
-        val stream = ObjectInputStream(ByteArrayInputStream(Base64.decode(listString, 0)))
-        return stream.readObject() as List<String>
     }
 
     var activeConfigPath: String

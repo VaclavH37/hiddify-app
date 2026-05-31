@@ -19,17 +19,13 @@ class AppTheme {
   static const Color lightPrimary = Color(0xFF09090B);
 
   ThemeData lightTheme(ColorScheme? _) {
-    final ColorScheme scheme =
-        ColorScheme.fromSeed(seedColor: brandAccent).copyWith(primary: lightPrimary);
+    final ColorScheme scheme = ColorScheme.fromSeed(seedColor: brandAccent).copyWith(primary: lightPrimary);
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: RaynPalette.light.bgPrimary,
       fontFamily: fontFamily,
-      extensions: const <ThemeExtension<dynamic>>{
-        ConnectionButtonTheme.light,
-        RaynPalette.light,
-      },
+      extensions: const <ThemeExtension<dynamic>>{ConnectionButtonTheme.light, RaynPalette.light},
     );
   }
 
@@ -45,10 +41,7 @@ class AppTheme {
       scaffoldBackgroundColor: mode.trueBlack ? Colors.black : scheme.background,
       appBarTheme: const AppBarTheme(backgroundColor: darkSurface),
       fontFamily: fontFamily,
-      extensions: const <ThemeExtension<dynamic>>{
-        ConnectionButtonTheme.light,
-        RaynPalette.dark,
-      },
+      extensions: const <ThemeExtension<dynamic>>{ConnectionButtonTheme.light, RaynPalette.dark},
     );
   }
 

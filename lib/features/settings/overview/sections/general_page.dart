@@ -75,8 +75,7 @@ class GeneralPage extends HookConsumerWidget {
         title: t.pages.settings.general.memoryLimit,
         subtitle: t.pages.settings.general.memoryLimitMsg,
         value: !ref.watch(Preferences.disableMemoryLimit),
-        onChanged: (value) async =>
-            await ref.read(Preferences.disableMemoryLimit.notifier).update(!value),
+        onChanged: (value) async => await ref.read(Preferences.disableMemoryLimit.notifier).update(!value),
       ),
       RaynSwitchTile(
         icon: Icons.bug_report_rounded,
@@ -149,14 +148,11 @@ class _UrlTestIntervalTile extends ConsumerWidget {
             min: 1,
             max: 60,
             divisions: 60,
-            labelGen: (value) =>
-                Duration(minutes: value.toInt()).toApproximateTime(isRelativeToNow: false),
+            labelGen: (value) => Duration(minutes: value.toInt()).toApproximateTime(isRelativeToNow: false),
           )
           .then((value) async {
             if (value == null) return;
-            await ref
-                .read(ConfigOptions.urlTestInterval.notifier)
-                .update(Duration(minutes: value.toInt()));
+            await ref.read(ConfigOptions.urlTestInterval.notifier).update(Duration(minutes: value.toInt()));
           }),
     );
   }

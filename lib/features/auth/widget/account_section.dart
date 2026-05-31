@@ -44,8 +44,7 @@ class AccountSection extends ConsumerWidget {
             trailing: IconButton(
               tooltip: t.pages.profiles.update,
               icon: const Icon(Icons.refresh_rounded),
-              onPressed: () =>
-                  ref.read(foregroundProfilesUpdateNotifierProvider.notifier).trigger(),
+              onPressed: () => ref.read(foregroundProfilesUpdateNotifierProvider.notifier).trigger(),
             ),
           ),
           const SizedBox(height: RaynSpacing.sm),
@@ -59,9 +58,7 @@ class AccountSection extends ConsumerWidget {
                 : () async {
                     await Clipboard.setData(ClipboardData(text: sourceToken));
                     if (!context.mounted) return;
-                    ref
-                        .read(inAppNotificationControllerProvider)
-                        .showSuccessToast(t.auth.tokenCopied);
+                    ref.read(inAppNotificationControllerProvider).showSuccessToast(t.auth.tokenCopied);
                   },
           ),
           const SizedBox(height: RaynSpacing.sm),
@@ -89,10 +86,7 @@ class AccountSection extends ConsumerWidget {
         title: Text(t.auth.logoutConfirmTitle),
         content: Text(t.auth.logoutConfirmBody),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(t.auth.logoutCancel),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(t.auth.logoutCancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.of(ctx).pop(true),

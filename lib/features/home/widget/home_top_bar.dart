@@ -18,10 +18,7 @@ class HomeTopBarBell extends StatelessWidget {
     return const SafeArea(
       child: Padding(
         padding: EdgeInsets.all(RaynSpacing.lg),
-        child: Align(
-          alignment: Alignment.topRight,
-          child: RaynNotificationBell(),
-        ),
+        child: Align(alignment: Alignment.topRight, child: RaynNotificationBell()),
       ),
     );
   }
@@ -57,10 +54,7 @@ class HomeMobileAppBar extends StatelessWidget implements PreferredSizeWidget {
           const SizedBox(width: RaynSpacing.sm),
           Text(
             'Rayn VPN',
-            style: RaynTypography.body.copyWith(
-              fontWeight: FontWeight.w600,
-              color: palette.textPrimary,
-            ),
+            style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600, color: palette.textPrimary),
           ),
         ],
       ),

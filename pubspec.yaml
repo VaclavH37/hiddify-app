@@ -111,8 +111,6 @@ dependencies:
   # platform-specific  settings
   # https://github.com/miguelpruivo/flutter_file_picker/wiki/Setup
   file_picker: ^8.1.7
-  installed_apps: # ^1.5.2
-    git: https://github.com/VB10/installed_apps
 
   # change case of text
   # for example camelCase to snake_case

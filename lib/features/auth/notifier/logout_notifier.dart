@@ -41,13 +41,10 @@ class LogoutNotifier extends _$LogoutNotifier with AppLogger {
 
       // 2. Delete row + JSON config file.
       final repo = ref.read(profileRepositoryProvider).requireValue;
-      await repo
-          .deleteById(profile.id, profile.active)
-          .match((err) {
-            loggy.error("failed to delete profile during logout", err);
-            throw err;
-          }, (_) => unit)
-          .run();
+      await repo.deleteById(profile.id, profile.active).match((err) {
+        loggy.error("failed to delete profile during logout", err);
+        throw err;
+      }, (_) => unit).run();
 
       // 3. Invalidate the system tray so it rebuilds fresh on next auth.
       // The tray's keepAlive=true would otherwise pin its last (post-auth)

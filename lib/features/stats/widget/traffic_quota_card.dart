@@ -49,10 +49,7 @@ class TrafficQuotaCard extends HookConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text(
-                  consumedText,
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w400),
-                ),
+                Text(consumedText, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w400)),
                 const Gap(4),
                 Flexible(
                   child: Text(
@@ -75,17 +72,12 @@ class TrafficQuotaCard extends HookConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  t.components.subscriptionInfo.percentUsed(percent: percentUsed),
-                  style: theme.textTheme.bodySmall,
-                ),
+                Text(t.components.subscriptionInfo.percentUsed(percent: percentUsed), style: theme.textTheme.bodySmall),
                 Text(
                   isExpired
                       ? t.components.subscriptionInfo.expired
                       : t.components.subscriptionInfo.daysLeft(days: daysLeft),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: isExpired ? theme.colorScheme.error : accent,
-                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(color: isExpired ? theme.colorScheme.error : accent),
                 ),
               ],
             ),

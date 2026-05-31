@@ -966,15 +966,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  installed_apps:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "395d51876f9b5b4bc620d8549b05755c6f1966ba"
-      url: "https://github.com/VB10/installed_apps"
-    source: git
-    version: "1.5.2"
   intl:
     dependency: "direct main"
     description:

@@ -195,6 +195,5 @@ extension RaynPaletteContext on BuildContext {
   /// Shorthand for the active [RaynPalette] (light or dark) registered on
   /// the inherited [Theme]. Falls back to [RaynPalette.dark] if no extension
   /// is registered, so widgets used in Material previews still render.
-  RaynPalette get rayn =>
-      Theme.of(this).extension<RaynPalette>() ?? RaynPalette.dark;
+  RaynPalette get rayn => Theme.of(this).extension<RaynPalette>() ?? RaynPalette.dark;
 }

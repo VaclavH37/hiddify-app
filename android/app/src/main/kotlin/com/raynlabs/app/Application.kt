@@ -3,13 +3,10 @@ package com.raynlabs.app
 import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.PowerManager
 import androidx.core.content.getSystemService
-import com.raynlabs.app.bg.AppChangeReceiver
 import go.Seq
 import com.raynlabs.app.Application as BoxApplication
 
@@ -24,11 +21,6 @@ class Application : Application() {
         super.onCreate()
 
         Seq.setContext(this)
-
-        registerReceiver(AppChangeReceiver(), IntentFilter().apply {
-            addAction(Intent.ACTION_PACKAGE_ADDED)
-            addDataScheme("package")
-        })
     }
 
     companion object {

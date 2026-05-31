@@ -15,10 +15,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 /// indicator symbols U+1F1E6–U+1F1FF) plus any surrounding whitespace, so we
 /// can strip the redundant flag the backend appends to `tagDisplay` — the
 /// flag is already shown as the leading icon.
-final RegExp _trailingFlagPattern = RegExp(
-  r'\s*(?:[\u{1F1E6}-\u{1F1FF}]{2}\s*)+$',
-  unicode: true,
-);
+final RegExp _trailingFlagPattern = RegExp(r'\s*(?:[\u{1F1E6}-\u{1F1FF}]{2}\s*)+$', unicode: true);
 
 class ProxyTile extends HookConsumerWidget with PresLogger {
   const ProxyTile(this.proxy, {super.key, required this.selected, required this.onTap});
@@ -46,25 +43,15 @@ class ProxyTile extends HookConsumerWidget with PresLogger {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        onLongPress: () async =>
-            await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: proxy),
+        onLongPress: () async => await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: proxy),
         borderRadius: BorderRadius.circular(RaynRadius.card),
         child: GlassSurface(
-          padding: const EdgeInsets.symmetric(
-            horizontal: RaynSpacing.lg,
-            vertical: RaynSpacing.md,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
           fillColor: selected ? AppTheme.brandAccent.withValues(alpha: 0.16) : null,
-          border: selected
-              ? Border.all(color: AppTheme.brandAccent.withValues(alpha: 0.55))
-              : null,
+          border: selected ? Border.all(color: AppTheme.brandAccent.withValues(alpha: 0.55)) : null,
           child: Row(
             children: [
-              IPCountryFlag(
-                countryCode: proxy.ipinfo.countryCode,
-                organization: proxy.ipinfo.org,
-                size: 40,
-              ),
+              IPCountryFlag(countryCode: proxy.ipinfo.countryCode, organization: proxy.ipinfo.org, size: 40),
               const SizedBox(width: RaynSpacing.md),
               Expanded(
                 child: Text(displayName, overflow: TextOverflow.ellipsis, style: titleStyle),
@@ -73,9 +60,7 @@ class ProxyTile extends HookConsumerWidget with PresLogger {
                 const SizedBox(width: RaynSpacing.md),
                 Text(
                   proxy.urlTestDelay > 65000 ? "×" : proxy.urlTestDelay.toString(),
-                  style: RaynTypography.caption.copyWith(
-                    color: _delayColor(palette, proxy.urlTestDelay),
-                  ),
+                  style: RaynTypography.caption.copyWith(color: _delayColor(palette, proxy.urlTestDelay)),
                 ),
               ],
             ],

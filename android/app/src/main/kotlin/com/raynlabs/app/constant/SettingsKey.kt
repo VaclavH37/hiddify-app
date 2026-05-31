@@ -7,10 +7,6 @@ object SettingsKey {
     const val ACTIVE_CONFIG_PATH = "${KEY_PREFIX}active_config_path"
     const val ACTIVE_PROFILE_NAME = "${KEY_PREFIX}active_profile_name"
 
-    const val PER_APP_PROXY_MODE = "${KEY_PREFIX}per_app_proxy_mode"
-    const val PER_APP_PROXY_INCLUDE_LIST = "${KEY_PREFIX}per_app_proxy_include_list"
-    const val PER_APP_PROXY_EXCLUDE_LIST = "${KEY_PREFIX}per_app_proxy_exclude_list"
-
     const val DEBUG_MODE = "${KEY_PREFIX}debug_mode"
     const val DISABLE_MEMORY_LIMIT = "${KEY_PREFIX}disable_memory_limit"
     const val DYNAMIC_NOTIFICATION = "${KEY_PREFIX}dynamic_notification"

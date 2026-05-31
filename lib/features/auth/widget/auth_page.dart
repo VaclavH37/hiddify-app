@@ -56,11 +56,7 @@ class AuthPage extends HookConsumerWidget {
                     },
                   ),
                   const Gap(24),
-                  Text(
-                    t.auth.title,
-                    style: theme.textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(t.auth.title, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
                   const Gap(8),
                   Text(
                     t.auth.subtitle,
@@ -99,10 +95,7 @@ class AuthPage extends HookConsumerWidget {
                       await ref.read(addProfileNotifierProvider.notifier).addClipboard(raw);
                     },
                   ),
-                  if (isLoading) ...[
-                    const Gap(24),
-                    const CircularProgressIndicator(),
-                  ],
+                  if (isLoading) ...[const Gap(24), const CircularProgressIndicator()],
                 ],
               ),
             ),

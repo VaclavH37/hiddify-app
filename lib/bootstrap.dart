@@ -43,11 +43,16 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
   await _init("directories", () => container.read(appDirectoriesProvider.future));
   LoggerController.init(container.read(logPathResolverProvider).appFile().path);
 
-  // Extract bundled CN rule-sets onto the Go core's BasePath. Must run before
-  // the Go core boots so `Type: Local` rule-sets in builder.go can load.
+  // Extract bundled CN rule-sets into the Go core's working directory. Must
+  // run before the Go core boots so `Type: Local` rule-sets in builder.go can
+  // load. NOTE: this is workingDir, NOT baseDir — the core os.Chdir()s to the
+  // working path and resolves relative Local rule-set paths against it (CWD).
+  // On Android baseDir (internal filesDir) and workingDir (external files dir)
+  // diverge, so writing to baseDir leaves the .srs files where the core never
+  // looks → "failed to start background core". On desktop the two are equal.
   await _safeInit("rulesets", () async {
     final dirs = await container.read(appDirectoriesProvider.future);
-    await RulesetExtractor.ensureExtracted(dirs.baseDir);
+    await RulesetExtractor.ensureExtracted(dirs.workingDir);
   });
 
   final appInfo = await _init("app info", () => container.read(appInfoProvider.future));

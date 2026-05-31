@@ -12,13 +12,7 @@ import 'package:hiddify/core/theme/rayn_typography.dart';
 /// bell). Both align to the top of the title so a multi-line subtitle does
 /// not push them down.
 class RaynPageHeader extends StatelessWidget {
-  const RaynPageHeader({
-    super.key,
-    required this.title,
-    this.subtitle,
-    this.leading,
-    this.trailing = const [],
-  });
+  const RaynPageHeader({super.key, required this.title, this.subtitle, this.leading, this.trailing = const []});
 
   final String title;
   final String? subtitle;
@@ -29,34 +23,20 @@ class RaynPageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.rayn;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        RaynSpacing.xl,
-        RaynSpacing.xl,
-        RaynSpacing.xl,
-        RaynSpacing.lg,
-      ),
+      padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, RaynSpacing.xl, RaynSpacing.xl, RaynSpacing.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (leading != null) ...[
-            leading!,
-            const SizedBox(width: RaynSpacing.md),
-          ],
+          if (leading != null) ...[leading!, const SizedBox(width: RaynSpacing.md)],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  style: RaynTypography.display.copyWith(color: palette.textPrimary),
-                ),
+                Text(title, style: RaynTypography.display.copyWith(color: palette.textPrimary)),
                 if (subtitle != null) ...[
                   const SizedBox(height: RaynSpacing.xs),
-                  Text(
-                    subtitle!,
-                    style: RaynTypography.caption.copyWith(color: palette.textMuted),
-                  ),
+                  Text(subtitle!, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
                 ],
               ],
             ),

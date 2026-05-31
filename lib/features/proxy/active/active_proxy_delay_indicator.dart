@@ -85,51 +85,49 @@ class ActiveProxyDelayIndicator extends HookConsumerWidget with InfraLogger {
             }
           },
           borderRadius: BorderRadius.circular(RaynRadius.pill),
-        child: AnimatedBuilder(
-          animation: glow,
-          builder: (context, child) {
-            // Light cream needs a quieter halo than dark — scale the
-            // breathing range by the palette's pre-mixed glow alpha.
-            final glowMax = palette.goldGlow.a;
-            final glowMin = glowMax * 0.6;
-            final glowAlpha = reduceMotionFlag
-                ? (glowMax + glowMin) / 2
-                : glowMin + (glowMax - glowMin) * glow.value;
-            return DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(RaynRadius.pill),
-                boxShadow: [
-                  BoxShadow(
-                    color: RaynColors.goldPrimary.withValues(alpha: glowAlpha),
-                    blurRadius: 32,
-                    spreadRadius: 2,
-                  ),
+          child: AnimatedBuilder(
+            animation: glow,
+            builder: (context, child) {
+              // Light cream needs a quieter halo than dark — scale the
+              // breathing range by the palette's pre-mixed glow alpha.
+              final glowMax = palette.goldGlow.a;
+              final glowMin = glowMax * 0.6;
+              final glowAlpha = reduceMotionFlag ? (glowMax + glowMin) / 2 : glowMin + (glowMax - glowMin) * glow.value;
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(RaynRadius.pill),
+                  boxShadow: [
+                    BoxShadow(
+                      color: RaynColors.goldPrimary.withValues(alpha: glowAlpha),
+                      blurRadius: 32,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: child,
+              );
+            },
+            child: GlassSurface(
+              radius: RaynRadius.pill,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(FluentIcons.wifi_1_24_regular, size: 18, color: palette.textPrimary),
+                  const SizedBox(width: 8),
+                  _StatusDot(color: statusColor, pulse: pulse, animate: shouldPulseDot),
+                  const SizedBox(width: 8),
+                  if (hasValue)
+                    _DelayValue(timeout: timeout, delay: delay, t: t, animate: !reduceMotionFlag, palette: palette)
+                  else
+                    Semantics(
+                      label: t.pages.proxies.delay.testing,
+                      child: const ShimmerSkeleton(width: 48, height: 18),
+                    ),
                 ],
               ),
-              child: child,
-            );
-          },
-          child: GlassSurface(
-            radius: RaynRadius.pill,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(FluentIcons.wifi_1_24_regular, size: 18, color: palette.textPrimary),
-                const SizedBox(width: 8),
-                _StatusDot(color: statusColor, pulse: pulse, animate: shouldPulseDot),
-                const SizedBox(width: 8),
-                if (hasValue)
-                  _DelayValue(timeout: timeout, delay: delay, t: t, animate: !reduceMotionFlag, palette: palette)
-                else
-                  Semantics(
-                    label: t.pages.proxies.delay.testing,
-                    child: const ShimmerSkeleton(width: 48, height: 18),
-                  ),
-              ],
             ),
           ),
-        ),
         ),
       ),
     );
@@ -151,11 +149,7 @@ class ActiveProxyDelayIndicator extends HookConsumerWidget with InfraLogger {
 }
 
 class _StatusDot extends StatelessWidget {
-  const _StatusDot({
-    required this.color,
-    required this.pulse,
-    required this.animate,
-  });
+  const _StatusDot({required this.color, required this.pulse, required this.animate});
 
   final Color color;
   final AnimationController pulse;
@@ -170,9 +164,7 @@ class _StatusDot extends StatelessWidget {
     );
     if (!animate) return dot;
     return ScaleTransition(
-      scale: Tween<double>(begin: 1.0, end: 1.15).animate(
-        CurvedAnimation(parent: pulse, curve: RaynMotion.ambient),
-      ),
+      scale: Tween<double>(begin: 1.0, end: 1.15).animate(CurvedAnimation(parent: pulse, curve: RaynMotion.ambient)),
       child: dot,
     );
   }
@@ -198,10 +190,7 @@ class _DelayValue extends StatelessWidget {
     if (timeout) {
       return Semantics(
         label: t.pages.proxies.delay.timeout,
-        child: Text(
-          t.common.timeout,
-          style: RaynTypography.metric.copyWith(color: palette.danger),
-        ),
+        child: Text(t.common.timeout, style: RaynTypography.metric.copyWith(color: palette.danger)),
       );
     }
     final semanticsLabel = t.pages.proxies.delay.result(delay: delay);
