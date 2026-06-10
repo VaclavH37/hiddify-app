@@ -82,14 +82,23 @@ OPTIND=1
 # Resetting OPTIND is necessary if getopts was used previously in the script.
 # It is a good idea to make OPTIND local if you process options in a function.
 
-# if no arg is provided, execute hiddify app
+# Filter out invalid environment arguments like %u before processing
+CLEANED_ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        %u|%U|%f|%F) ;; # Drop these arguments
+        *) CLEANED_ARGS+=("$arg") ;;
+    esac
+done
+set -- "${CLEANED_ARGS[@]}"
+
+# If no arg is provided, execute hiddify app
 if [[ $# == 0 ]];then 
     install_integration
     exec ./RaynVPN
 else
 
-# processing arguments
-
+# Processing arguments
     case $1 in
         HiddifyCli)  
             exec ./HiddifyCli ${@:3}
@@ -103,11 +112,9 @@ else
             exit 0
             ;;
         *)
-            show_help >&2
-            exit 1
+            # Pass deep-links or valid arguments to the UI app
+            install_integration
+            exec ./RaynVPN "$@"
             ;;
     esac
-
-
-
 fi
