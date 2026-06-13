@@ -7,6 +7,7 @@ import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.
 import 'package:hiddify/core/router/go_router/helper/custom_transition.dart';
 import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
 import 'package:hiddify/features/about/widget/about_page.dart';
+import 'package:hiddify/features/auth/login/widget/login_page.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
 import 'package:hiddify/features/auth/widget/auth_page.dart';
 import 'package:hiddify/features/home/widget/home_page.dart';
@@ -50,7 +51,9 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
     if (isMobileBreakpoint == null) return loadingConfig;
     return RoutingConfig(
       redirect: (context, state) {
-        final isAuthRoute = state.matchedLocation == '/auth';
+        // `/auth` and its sub-routes (e.g. `/auth/login`) are all pre-auth
+        // surfaces — none should be bounced while unauthenticated.
+        final isAuthRoute = state.matchedLocation.startsWith('/auth');
 
         // Capture an incoming rayn:// URL from either the direct deep-link
         // path or the desktop app-links surface.
@@ -186,7 +189,14 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
             ],
           ],
         ),
-        GoRoute(name: 'auth', path: '/auth', builder: (_, _) => const AuthPage()),
+        GoRoute(
+          name: 'auth',
+          path: '/auth',
+          builder: (_, _) => const AuthPage(),
+          routes: <GoRoute>[
+            GoRoute(name: 'login', path: 'login', builder: (_, _) => const LoginPage()),
+          ],
+        ),
       ],
     );
   }

@@ -104,7 +104,27 @@
     "logoutConfirmTitle": "Log out?",
     "logoutConfirmBody": "Logging out disconnects and removes your authentication token from this device.\nYour token will also be removed. If you don't have it saved, copy it first using the button above. Continue?",
     "logoutConfirmAction": "Log out",
-    "logoutCancel": "Cancel"
+    "logoutCancel": "Cancel",
+    "login": {
+      "signInWithEmail": "Sign in with email",
+      "title": "Sign in",
+      "subtitle": "Enter your account email and password to fetch your token automatically.",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "emailEmpty": "Enter your email",
+      "passwordEmpty": "Enter your password",
+      "signInButton": "Sign in",
+      "invalidCredentials": "Email or password is incorrect.",
+      "emailNotVerified": "Please verify your email to continue, then sign in again.",
+      "accountSuspended": "Your account isn't active. Visit your account page to renew.",
+      "accountDeactivated": "This account has been disabled. Please contact support.",
+      "pendingPayment": "Your account isn't active yet. Finish setting it up on your account page.",
+      "pendingActivation": "Your account is activating. Please check back in a few minutes.",
+      "verifyFailed": "Couldn't verify the app. Please try again.",
+      "unreachable": "Couldn't reach the sign-in service. You can paste your token instead.",
+      "generic": "Something went wrong. Please try again later.",
+      "openWebsite": "Open account page"
+    }
   },
   "pages": {
     "home": {

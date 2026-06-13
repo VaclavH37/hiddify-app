@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
@@ -94,6 +95,16 @@ class AuthPage extends HookConsumerWidget {
                       if (!context.mounted) return;
                       await ref.read(addProfileNotifierProvider.notifier).addClipboard(raw);
                     },
+                  ),
+                  const Gap(12),
+                  // Secondary path: fetch the token via email/password sign-in.
+                  // Token import (above) stays primary — it works even when the
+                  // account API host is unreachable.
+                  _AuthAction(
+                    icon: Icons.alternate_email,
+                    label: t.auth.login.signInWithEmail,
+                    enabled: !isLoading,
+                    onTap: () => context.push('/auth/login'),
                   ),
                   if (isLoading) ...[const Gap(24), const CircularProgressIndicator()],
                 ],

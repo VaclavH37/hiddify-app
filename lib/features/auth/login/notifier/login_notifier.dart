@@ -1,0 +1,161 @@
+import 'dart:async';
+
+import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
+import 'package:hiddify/features/auth/login/model/account_status.dart';
+import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
+import 'package:hiddify/features/auth/login/model/login_state.dart';
+import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
+import 'package:hiddify/utils/utils.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'login_notifier.g.dart';
+
+/// Orchestrates the optional email/password sign-in. Its only job is to acquire
+/// the `rayn://import/<token>` subscription URL and feed it into the EXISTING
+/// import path ([AddProfileNotifier.addClipboard]); the router's
+/// `hasAnyProfileProvider` gate then routes the app to `/home`.
+///
+/// The session is intentionally ephemeral: the 24h `session_token` lives only
+/// in local scope for the duration of one login → fetch → import flow, then is
+/// discarded (with a best-effort `POST /logout`). Nothing is persisted — the
+/// durable auth state remains the single imported profile.
+@riverpod
+class LoginNotifier extends _$LoginNotifier with AppLogger {
+  @override
+  LoginState build() => LoginState.idle;
+
+  AuthApiClient get _client => ref.read(authApiClientProvider);
+
+  Future<void> login(String email, String password) async {
+    if (state.isSubmitting) return;
+    state = LoginState.submitting;
+
+    try {
+      final resp = await _loginWith429Retry(email, password);
+
+      final sessionToken = resp['session_token'] as String?;
+      final accountStatus = AccountStatus.fromApi(resp['account_status'] as String?);
+      final inlineUrl = resp['subscription_url'] as String?;
+
+      // Happy path: native (PoW) login returns the cryptolink inline — import
+      // it directly, no second round-trip.
+      if (inlineUrl != null && inlineUrl.isNotEmpty) {
+        await _import(inlineUrl, sessionToken);
+        return;
+      }
+
+      switch (accountStatus) {
+        case AccountStatus.active:
+          // Token wasn't ready inline; fall back to the subscription endpoint.
+          await _fetchAndImport(sessionToken, password);
+        case AccountStatus.pendingPayment:
+          state = LoginState.fail(LoginOutcome.pendingPayment);
+        case AccountStatus.pendingActivation:
+          state = LoginState.fail(LoginOutcome.pendingActivation);
+        default:
+          state = LoginState.fail(LoginOutcome.generic);
+      }
+    } on AuthApiException catch (e) {
+      state = LoginState.fail(_mapError(e));
+    } catch (e, st) {
+      loggy.warning("unexpected login failure", e, st);
+      state = LoginState.fail(LoginOutcome.generic);
+    }
+  }
+
+  Future<Map<String, dynamic>> _loginWith429Retry(String email, String password) async {
+    final body = {'email': email, 'password': password};
+    try {
+      return await _client.gatedPost('/api/public/login', body);
+    } on AuthApiException catch (e) {
+      if (e.status != 429) rethrow;
+      // Rate limited — back off briefly and retry once.
+      await Future<void>.delayed(const Duration(seconds: 2));
+      return await _client.gatedPost('/api/public/login', body);
+    }
+  }
+
+  /// Fallback + refresh path: `GET /account/subscription`, handling the lazy
+  /// re-auth window and the "link still being prepared" retry.
+  Future<void> _fetchAndImport(String? bearer, String password) async {
+    if (bearer == null) {
+      state = LoginState.fail(LoginOutcome.generic);
+      return;
+    }
+
+    var reauthed = false;
+    var cryptolinkRetries = 0;
+    const maxCryptolinkRetries = 3;
+
+    while (true) {
+      try {
+        final r = await _client.get('/api/public/account/subscription', bearer: bearer);
+        final url = r['subscription_url'] as String?;
+        if (url == null || url.isEmpty) {
+          state = LoginState.fail(LoginOutcome.generic);
+          return;
+        }
+        await _import(url, bearer);
+        return;
+      } on AuthApiException catch (e) {
+        if (e.code == 'REAUTH_REQUIRED' && !reauthed) {
+          reauthed = true;
+          await _client.gatedPost('/api/public/reauth', {'password': password}, bearer: bearer);
+          continue;
+        }
+        if (e.code == 'CRYPTOLINK_UNAVAILABLE' && cryptolinkRetries < maxCryptolinkRetries) {
+          cryptolinkRetries++;
+          await Future<void>.delayed(e.retryAfter ?? const Duration(seconds: 5));
+          continue;
+        }
+        if (e.status == 403) {
+          // "subscription not available" — account isn't active yet.
+          state = LoginState.fail(LoginOutcome.pendingActivation);
+          return;
+        }
+        state = LoginState.fail(_mapError(e));
+        return;
+      }
+    }
+  }
+
+  /// Hand the acquired cryptolink to the existing import path. On success the
+  /// router redirect (driven by `hasAnyProfileProvider`) replaces this screen
+  /// with `/home`.
+  Future<void> _import(String subscriptionUrl, String? bearer) async {
+    await ref.read(addProfileNotifierProvider.notifier).addClipboard(subscriptionUrl);
+
+    // Best-effort, fire-and-forget server-side session teardown — we never keep
+    // the session. Not awaited so a torn-down screen doesn't strand the future.
+    if (bearer != null) {
+      unawaited(
+        _client.post('/api/public/logout', const {}, bearer: bearer).catchError((_) => <String, dynamic>{}),
+      );
+    }
+
+    final importState = ref.read(addProfileNotifierProvider);
+    if (importState.hasError) {
+      // addClipboard already surfaced its own toast; reflect failure in-form.
+      state = LoginState.fail(LoginOutcome.generic);
+      return;
+    }
+    state = LoginState.success;
+  }
+
+  LoginOutcome _mapError(AuthApiException e) {
+    if (e.isUnreachable) return LoginOutcome.unreachable;
+    switch (e.code) {
+      case 'EMAIL_NOT_VERIFIED':
+        return LoginOutcome.emailNotVerified;
+      case 'ACCOUNT_SUSPENDED':
+        return LoginOutcome.accountSuspended;
+      case 'ACCOUNT_DEACTIVATED':
+        return LoginOutcome.accountDeactivated;
+    }
+    if (e.status == 401) return LoginOutcome.invalidCredentials;
+    // 403 with no code is the PoW "challenge verification failed" terminal case
+    // (the client already retried once with a fresh challenge).
+    if (e.status == 403) return LoginOutcome.verifyFailed;
+    return LoginOutcome.generic;
+  }
+}

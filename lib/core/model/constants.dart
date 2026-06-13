@@ -6,6 +6,17 @@ abstract class Constants {
   static const telegramChannelUrl = "https://t.me/raynlabs";
   static const privacyPolicyUrl = "https://www.raynlabs.io/legal/privacy";
   static const termsAndConditionsUrl = "https://www.raynlabs.io/legal/terms";
+
+  /// Base URL of the account/auth API used by the optional email/password
+  /// sign-in path. Overridable per build via `--dart-define=api_base_url=...`.
+  /// This host may be unreachable on a censored network — login is only a
+  /// convenience for obtaining the `rayn://import/<token>`; token import via
+  /// QR/clipboard remains the primary, always-available auth path.
+  static const apiBaseUrl = String.fromEnvironment("api_base_url", defaultValue: "https://api.raynlabs.io");
+
+  /// Website landing pages the client points users to for flows that complete
+  /// out-of-app (account creation, email verification, payment, support).
+  static const accountUrl = "https://www.raynlabs.io/account";
 }
 
 const kAnimationDuration = Duration(milliseconds: 250);
