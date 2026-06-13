@@ -203,7 +203,9 @@
         "debugModeMsg": "重新啟動應用程式以套用此變更",
         "logLevel": "日誌級別",
         "connectionTestUrl": "連線測試 URL",
-        "urlTestInterval": "URL 測試間隔"
+        "urlTestInterval": "URL 測試間隔",
+        "ignoreBatteryOptimizationsDialogTitle": "讓 VPN 在背景保持執行？",
+        "ignoreBatteryOptimizationsDialogBody": "為了穩定且不中斷的連線，Rayn VPN 需要在螢幕關閉時保持執行。下一個畫面可讓您將應用程式排除在電池最佳化之外。此為選用項目——您可以隨時在系統設定中變更。"
       },
       "routing": {
         "title": "路由",
@@ -538,6 +540,28 @@
       "missingPrivilegeMsg": "VPN 模式需要管理員權限。請以管理員身份重新啟動應用，或更改服務模式。",
       "invalidConfigOptions": "設定選項無效",
       "invalidConfig": "設定無效"
+    }
+  },
+  "auth": {
+    "login": {
+      "signInWithEmail": "使用電子郵件登入",
+      "title": "登入",
+      "subtitle": "輸入您的帳戶電子郵件和密碼以自動取得您的權杖。",
+      "emailLabel": "電子郵件",
+      "passwordLabel": "密碼",
+      "emailEmpty": "請輸入您的電子郵件",
+      "passwordEmpty": "請輸入您的密碼",
+      "signInButton": "登入",
+      "invalidCredentials": "電子郵件或密碼不正確。",
+      "emailNotVerified": "請先驗證您的電子郵件以繼續，然後重新登入。",
+      "accountSuspended": "您的帳戶未啟用。請前往您的帳戶頁面續訂。",
+      "accountDeactivated": "此帳戶已被停用。請聯絡支援。",
+      "pendingPayment": "您的帳戶尚未啟用。請在您的帳戶頁面完成設定。",
+      "pendingActivation": "您的帳戶正在啟用中。請於幾分鐘後再試。",
+      "verifyFailed": "無法驗證應用程式。請再試一次。",
+      "unreachable": "無法連線到登入服務。您可以改為貼上您的權杖。",
+      "generic": "發生錯誤。請稍後再試。",
+      "openWebsite": "開啟帳戶頁面"
     }
   }
 }

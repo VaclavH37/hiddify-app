@@ -203,7 +203,9 @@
         "debugModeMsg": "Mulai ulang aplikasi untuk menerapkan perubahan ini",
         "logLevel": "Level log",
         "connectionTestUrl": "URL uji koneksi",
-        "urlTestInterval": "Interval uji URL"
+        "urlTestInterval": "Interval uji URL",
+        "ignoreBatteryOptimizationsDialogTitle": "Biarkan VPN berjalan di latar belakang?",
+        "ignoreBatteryOptimizationsDialogBody": "Untuk koneksi yang stabil dan tanpa gangguan, Rayn VPN perlu terus berjalan saat layar mati. Layar berikutnya memungkinkan Anda mengecualikan aplikasi dari pengoptimalan baterai. Ini opsional — Anda dapat mengubahnya kapan saja di pengaturan sistem."
       },
       "routing": {
         "title": "Perutean",
@@ -538,6 +540,28 @@
       "missingPrivilegeMsg": "Mode VPN memerlukan izin administrator. Harap mulai ulang aplikasi sebagai administrator atau ubah mode layanan.",
       "invalidConfigOptions": "Opsi konfigurasi tidak valid",
       "invalidConfig": "Konfigurasi tidak valid"
+    }
+  },
+  "auth": {
+    "login": {
+      "signInWithEmail": "Masuk dengan email",
+      "title": "Masuk",
+      "subtitle": "Masukkan email dan kata sandi akun Anda untuk mengambil token secara otomatis.",
+      "emailLabel": "Email",
+      "passwordLabel": "Kata sandi",
+      "emailEmpty": "Masukkan email Anda",
+      "passwordEmpty": "Masukkan kata sandi Anda",
+      "signInButton": "Masuk",
+      "invalidCredentials": "Email atau kata sandi salah.",
+      "emailNotVerified": "Harap verifikasi email Anda untuk melanjutkan, lalu masuk lagi.",
+      "accountSuspended": "Akun Anda tidak aktif. Kunjungi halaman akun Anda untuk memperbarui.",
+      "accountDeactivated": "Akun ini telah dinonaktifkan. Silakan hubungi dukungan.",
+      "pendingPayment": "Akun Anda belum aktif. Selesaikan penyiapannya di halaman akun Anda.",
+      "pendingActivation": "Akun Anda sedang diaktifkan. Silakan periksa kembali dalam beberapa menit.",
+      "verifyFailed": "Tidak dapat memverifikasi aplikasi. Silakan coba lagi.",
+      "unreachable": "Tidak dapat menjangkau layanan masuk. Anda dapat menempelkan token Anda sebagai gantinya.",
+      "generic": "Terjadi kesalahan. Silakan coba lagi nanti.",
+      "openWebsite": "Buka halaman akun"
     }
   }
 }

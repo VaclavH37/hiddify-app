@@ -152,6 +152,27 @@ class BatteryOptimizationWidget extends HookConsumerWidget {
               subtitle: t.pages.settings.general.ignoreBatteryOptimizationsMsg,
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () async {
+                // Explain why before launching the system exemption prompt, so
+                // the user gives informed consent rather than being dropped
+                // straight onto an opaque "allow?" system dialog.
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: Text(t.pages.settings.general.ignoreBatteryOptimizationsDialogTitle),
+                    content: Text(t.pages.settings.general.ignoreBatteryOptimizationsDialogBody),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: Text(t.common.cancel),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        child: Text(t.common.kContinue),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
                 await ref.read(batteryOptimizationNotifierProvider.notifier).requestToIgnore();
               },
             ),

@@ -36,9 +36,17 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
           await ref.read(hapticServiceProvider.notifier).heavyImpact();
 
           if (Platform.isAndroid && !ref.read(Preferences.storeReviewedByUser)) {
-            if (await InAppReview.instance.isAvailable()) {
-              InAppReview.instance.requestReview();
-              ref.read(Preferences.storeReviewedByUser.notifier).update(true);
+            // Track successful connections and only ask for a review once the
+            // user has connected enough times to have formed an opinion.
+            // Google's In-App Review guidance discourages prompting after a
+            // first/trivial interaction. Ask at most once, and don't consume
+            // the single attempt if the API isn't currently available (it's
+            // quota-limited) — retry on a later connection instead.
+            final connectionCount = ref.read(Preferences.successfulConnectionCount) + 1;
+            await ref.read(Preferences.successfulConnectionCount.notifier).update(connectionCount);
+            if (connectionCount >= 3 && await InAppReview.instance.isAvailable()) {
+              await InAppReview.instance.requestReview();
+              await ref.read(Preferences.storeReviewedByUser.notifier).update(true);
             }
           }
         }

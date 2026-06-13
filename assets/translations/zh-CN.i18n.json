@@ -203,7 +203,9 @@
         "debugModeMsg": "重启应用以应用此更改",
         "logLevel": "日志级别",
         "connectionTestUrl": "连接测试 URL",
-        "urlTestInterval": "URL 测试间隔"
+        "urlTestInterval": "URL 测试间隔",
+        "ignoreBatteryOptimizationsDialogTitle": "让 VPN 在后台保持运行？",
+        "ignoreBatteryOptimizationsDialogBody": "为了稳定、不中断的连接，Rayn VPN 需要在屏幕关闭时保持运行。下一个屏幕可让您将应用排除在电池优化之外。此为可选项——您可以随时在系统设置中更改。"
       },
       "routing": {
         "title": "路由",
@@ -538,6 +540,28 @@
       "missingPrivilegeMsg": "VPN 模式需要管理员权限。请以管理员身份重新启动应用，或更改服务模式。",
       "invalidConfigOptions": "配置选项无效",
       "invalidConfig": "配置无效"
+    }
+  },
+  "auth": {
+    "login": {
+      "signInWithEmail": "使用邮箱登录",
+      "title": "登录",
+      "subtitle": "输入您的账户邮箱和密码以自动获取您的令牌。",
+      "emailLabel": "邮箱",
+      "passwordLabel": "密码",
+      "emailEmpty": "请输入您的邮箱",
+      "passwordEmpty": "请输入您的密码",
+      "signInButton": "登录",
+      "invalidCredentials": "邮箱或密码不正确。",
+      "emailNotVerified": "请先验证您的邮箱以继续，然后重新登录。",
+      "accountSuspended": "您的账户未激活。请访问您的账户页面以续订。",
+      "accountDeactivated": "此账户已被停用。请联系支持。",
+      "pendingPayment": "您的账户尚未激活。请在您的账户页面完成设置。",
+      "pendingActivation": "您的账户正在激活中。请稍后几分钟再试。",
+      "verifyFailed": "无法验证应用。请重试。",
+      "unreachable": "无法连接登录服务。您可以改为粘贴您的令牌。",
+      "generic": "出了点问题。请稍后重试。",
+      "openWebsite": "打开账户页面"
     }
   }
 }

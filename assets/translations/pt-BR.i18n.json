@@ -203,7 +203,9 @@
         "debugModeMsg": "Reinicie o aplicativo para aplicar esta alteração",
         "logLevel": "Nível de registro",
         "connectionTestUrl": "URL de teste de conexão",
-        "urlTestInterval": "Intervalo de teste de URL"
+        "urlTestInterval": "Intervalo de teste de URL",
+        "ignoreBatteryOptimizationsDialogTitle": "Manter a VPN ativa em segundo plano?",
+        "ignoreBatteryOptimizationsDialogBody": "Para uma conexão estável e ininterrupta, o Rayn VPN precisa continuar funcionando com a tela desligada. A próxima tela permite excluir o aplicativo da otimização de bateria. Isso é opcional — você pode alterar a qualquer momento nas configurações do sistema."
       },
       "routing": {
         "title": "Roteamento",
@@ -538,6 +540,28 @@
       "missingPrivilegeMsg": "O modo VPN requer privilégios de administrador. Reinicie o aplicativo como administrador ou altere o modo de serviço.",
       "invalidConfigOptions": "Opções de configuração inválidas",
       "invalidConfig": "Configuração inválida"
+    }
+  },
+  "auth": {
+    "login": {
+      "signInWithEmail": "Entrar com e-mail",
+      "title": "Entrar",
+      "subtitle": "Digite o e-mail e a senha da sua conta para obter seu token automaticamente.",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Senha",
+      "emailEmpty": "Digite seu e-mail",
+      "passwordEmpty": "Digite sua senha",
+      "signInButton": "Entrar",
+      "invalidCredentials": "E-mail ou senha incorretos.",
+      "emailNotVerified": "Verifique seu e-mail para continuar e entre novamente.",
+      "accountSuspended": "Sua conta não está ativa. Acesse a página da sua conta para renovar.",
+      "accountDeactivated": "Esta conta foi desativada. Entre em contato com o suporte.",
+      "pendingPayment": "Sua conta ainda não está ativa. Conclua a configuração na página da sua conta.",
+      "pendingActivation": "Sua conta está sendo ativada. Tente novamente em alguns minutos.",
+      "verifyFailed": "Não foi possível verificar o aplicativo. Tente novamente.",
+      "unreachable": "Não foi possível acessar o serviço de login. Você pode colar seu token em vez disso.",
+      "generic": "Algo deu errado. Tente novamente mais tarde.",
+      "openWebsite": "Abrir página da conta"
     }
   }
 }

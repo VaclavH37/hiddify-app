@@ -56,6 +56,11 @@ abstract class Preferences {
 
   static final storeReviewedByUser = PreferencesNotifier.create<bool, bool>("store_reviewed_by_user", false);
 
+  // Counts successful connections so the in-app review prompt can wait until
+  // the user has connected enough times to form an opinion (see
+  // ConnectionNotifier) rather than firing on the first-ever connection.
+  static final successfulConnectionCount = PreferencesNotifier.create<int, int>("successful_connection_count", 0);
+
   static final actionAtClose = PreferencesNotifier.create<ActionsAtClosing, String>(
     "action_at_close",
     ActionsAtClosing.ask,

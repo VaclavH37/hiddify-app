@@ -203,7 +203,9 @@
         "debugModeMsg": "Bu değişikliği uygulamak için uygulamayı yeniden başlatın",
         "logLevel": "Log seviyesi",
         "connectionTestUrl": "Bağlantı testi URL'si",
-        "urlTestInterval": "URL testi aralığı"
+        "urlTestInterval": "URL testi aralığı",
+        "ignoreBatteryOptimizationsDialogTitle": "VPN arka planda çalışmaya devam etsin mi?",
+        "ignoreBatteryOptimizationsDialogBody": "Kararlı, kesintisiz bir bağlantı için Rayn VPN, ekran kapalıyken çalışmaya devam etmelidir. Sonraki ekran, uygulamayı pil optimizasyonundan hariç tutmanıza olanak tanır. Bu isteğe bağlıdır — istediğiniz zaman sistem ayarlarından değiştirebilirsiniz."
       },
       "routing": {
         "title": "Yönlendirme",
@@ -538,6 +540,28 @@
       "missingPrivilegeMsg": "VPN modu yönetici yetkisi gerektirir. Lütfen uygulamayı yönetici olarak yeniden başlatın veya servis modunu değiştirin.",
       "invalidConfigOptions": "Geçersiz yapılandırma seçenekleri",
       "invalidConfig": "Geçersiz yapılandırma"
+    }
+  },
+  "auth": {
+    "login": {
+      "signInWithEmail": "E-posta ile oturum aç",
+      "title": "Oturum aç",
+      "subtitle": "Jetonunuzu otomatik olarak almak için hesap e-postanızı ve parolanızı girin.",
+      "emailLabel": "E-posta",
+      "passwordLabel": "Parola",
+      "emailEmpty": "E-postanızı girin",
+      "passwordEmpty": "Parolanızı girin",
+      "signInButton": "Oturum aç",
+      "invalidCredentials": "E-posta veya parola hatalı.",
+      "emailNotVerified": "Devam etmek için lütfen e-postanızı doğrulayın, ardından tekrar oturum açın.",
+      "accountSuspended": "Hesabınız etkin değil. Yenilemek için hesap sayfanızı ziyaret edin.",
+      "accountDeactivated": "Bu hesap devre dışı bırakıldı. Lütfen destek ile iletişime geçin.",
+      "pendingPayment": "Hesabınız henüz etkin değil. Kurulumunu hesap sayfanızda tamamlayın.",
+      "pendingActivation": "Hesabınız etkinleştiriliyor. Lütfen birkaç dakika sonra tekrar kontrol edin.",
+      "verifyFailed": "Uygulama doğrulanamadı. Lütfen tekrar deneyin.",
+      "unreachable": "Oturum açma hizmetine ulaşılamadı. Bunun yerine jetonunuzu yapıştırabilirsiniz.",
+      "generic": "Bir şeyler ters gitti. Lütfen daha sonra tekrar deneyin.",
+      "openWebsite": "Hesap sayfasını aç"
     }
   }
 }

@@ -260,6 +260,8 @@
         "silentStart": "Start minimized",
         "ignoreBatteryOptimizations": "Disable battery optimization",
         "ignoreBatteryOptimizationsMsg": "Remove restrictions for optimal VPN performance",
+        "ignoreBatteryOptimizationsDialogTitle": "Keep the VPN running in the background?",
+        "ignoreBatteryOptimizationsDialogBody": "For a stable, uninterrupted connection, Rayn VPN needs to keep running while the screen is off. The next screen lets you exempt the app from battery optimization. This is optional — you can change it anytime in system settings.",
         "memoryLimit": "Memory limit",
         "memoryLimitMsg": "Enable if you're experiencing out of memory errors or frequent app crashes",
         "debugMode": "Debug mode",

@@ -203,7 +203,9 @@
         "debugModeMsg": "Redémarrez l'application pour appliquer cette modification",
         "logLevel": "Niveau de journalisation",
         "connectionTestUrl": "URL de test de connexion",
-        "urlTestInterval": "Intervalle de test de l'URL"
+        "urlTestInterval": "Intervalle de test de l'URL",
+        "ignoreBatteryOptimizationsDialogTitle": "Maintenir le VPN actif en arrière-plan ?",
+        "ignoreBatteryOptimizationsDialogBody": "Pour une connexion stable et ininterrompue, Rayn VPN doit continuer à fonctionner lorsque l'écran est éteint. L'écran suivant vous permet d'exclure l'application de l'optimisation de la batterie. C'est facultatif : vous pouvez le modifier à tout moment dans les paramètres du système."
       },
       "routing": {
         "title": "Routage",
@@ -538,6 +540,28 @@
       "missingPrivilegeMsg": "Le mode VPN nécessite des droits d'administrateur. Veuillez relancer l'application en tant qu'administrateur ou changer le mode de service.",
       "invalidConfigOptions": "Options de configuration invalides",
       "invalidConfig": "Configuration invalide"
+    }
+  },
+  "auth": {
+    "login": {
+      "signInWithEmail": "Se connecter par e-mail",
+      "title": "Connexion",
+      "subtitle": "Saisissez l'e-mail et le mot de passe de votre compte pour récupérer automatiquement votre jeton.",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Mot de passe",
+      "emailEmpty": "Saisissez votre e-mail",
+      "passwordEmpty": "Saisissez votre mot de passe",
+      "signInButton": "Se connecter",
+      "invalidCredentials": "L'e-mail ou le mot de passe est incorrect.",
+      "emailNotVerified": "Veuillez vérifier votre e-mail pour continuer, puis reconnectez-vous.",
+      "accountSuspended": "Votre compte n'est pas actif. Consultez la page de votre compte pour le renouveler.",
+      "accountDeactivated": "Ce compte a été désactivé. Veuillez contacter le support.",
+      "pendingPayment": "Votre compte n'est pas encore actif. Terminez sa configuration sur la page de votre compte.",
+      "pendingActivation": "Votre compte est en cours d'activation. Veuillez réessayer dans quelques minutes.",
+      "verifyFailed": "Impossible de vérifier l'application. Veuillez réessayer.",
+      "unreachable": "Impossible de joindre le service de connexion. Vous pouvez coller votre jeton à la place.",
+      "generic": "Une erreur s'est produite. Veuillez réessayer plus tard.",
+      "openWebsite": "Ouvrir la page du compte"
     }
   }
 }

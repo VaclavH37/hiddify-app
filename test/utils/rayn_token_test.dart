@@ -79,4 +79,24 @@ void main() {
     // RSA-4096 ciphertext = 512 bytes; base64 of 512 bytes = ceil(512/3)*4 = 684, minus padding
     expect(token.length, inInclusiveRange(680, 684));
   });
+
+  group('bundled obfuscated key', () {
+    setUp(() => RaynTokenDecryptor.debugSetKey(null));
+
+    test('load() reconstructs a 4096-bit RSA key from the in-binary DER', () async {
+      await RaynTokenDecryptor.load();
+      expect(RaynTokenDecryptor.isLoaded, isTrue);
+      expect(RaynTokenDecryptor.debugKey!.modulus!.bitLength, inInclusiveRange(4090, 4096));
+    });
+
+    test('reconstructed key decrypts a token encrypted with its matching public key', () async {
+      await RaynTokenDecryptor.load();
+      final modulus = RaynTokenDecryptor.debugKey!.modulus!;
+      // Standard RSA public exponent; the backend uses the matching public key.
+      final publicKey = RSAPublicKey(modulus, BigInt.from(65537));
+      const url = 'https://subscription-api.example.com/round-trip';
+      final token = _encrypt(url, publicKey);
+      expect(RaynTokenDecryptor.decryptToUrl(token), url);
+    });
+  });
 }

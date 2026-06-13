@@ -11,6 +11,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+upload-cert.pem
 
 /app/libs/*
 !/app/libs/.gitkeep

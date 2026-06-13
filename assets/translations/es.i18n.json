@@ -203,7 +203,9 @@
         "debugModeMsg": "Reinicia la aplicación para aplicar este cambio",
         "logLevel": "Nivel de registro",
         "connectionTestUrl": "URL de prueba de conexión",
-        "urlTestInterval": "Intervalo de prueba de URL"
+        "urlTestInterval": "Intervalo de prueba de URL",
+        "ignoreBatteryOptimizationsDialogTitle": "¿Mantener la VPN activa en segundo plano?",
+        "ignoreBatteryOptimizationsDialogBody": "Para una conexión estable e ininterrumpida, Rayn VPN necesita seguir funcionando con la pantalla apagada. La siguiente pantalla te permite excluir la aplicación de la optimización de batería. Es opcional: puedes cambiarlo cuando quieras en los ajustes del sistema."
       },
       "routing": {
         "title": "Enrutamiento",
@@ -538,6 +540,28 @@
       "missingPrivilegeMsg": "El modo VPN requiere privilegios de administrador. Reinicia la aplicación como administrador o cambia el modo de servicio.",
       "invalidConfigOptions": "Opciones de configuración no válidas",
       "invalidConfig": "Configuración no válida"
+    }
+  },
+  "auth": {
+    "login": {
+      "signInWithEmail": "Iniciar sesión con correo",
+      "title": "Iniciar sesión",
+      "subtitle": "Introduce el correo y la contraseña de tu cuenta para obtener tu token automáticamente.",
+      "emailLabel": "Correo electrónico",
+      "passwordLabel": "Contraseña",
+      "emailEmpty": "Introduce tu correo",
+      "passwordEmpty": "Introduce tu contraseña",
+      "signInButton": "Iniciar sesión",
+      "invalidCredentials": "El correo o la contraseña son incorrectos.",
+      "emailNotVerified": "Verifica tu correo para continuar y luego inicia sesión de nuevo.",
+      "accountSuspended": "Tu cuenta no está activa. Visita la página de tu cuenta para renovarla.",
+      "accountDeactivated": "Esta cuenta ha sido deshabilitada. Ponte en contacto con soporte.",
+      "pendingPayment": "Tu cuenta aún no está activa. Termina de configurarla en la página de tu cuenta.",
+      "pendingActivation": "Tu cuenta se está activando. Vuelve a intentarlo en unos minutos.",
+      "verifyFailed": "No se pudo verificar la aplicación. Inténtalo de nuevo.",
+      "unreachable": "No se pudo conectar con el servicio de inicio de sesión. Puedes pegar tu token en su lugar.",
+      "generic": "Algo salió mal. Inténtalo de nuevo más tarde.",
+      "openWebsite": "Abrir página de la cuenta"
     }
   }
 }
