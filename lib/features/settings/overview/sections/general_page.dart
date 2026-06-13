@@ -31,7 +31,6 @@ class GeneralPage extends HookConsumerWidget {
     final tiles = <Widget>[
       const LocalePrefTile(),
       const ThemeModePrefTile(),
-      const EnableAnalyticsPrefTile(),
       RaynSwitchTile(
         icon: Icons.flag_rounded,
         title: t.pages.settings.general.autoIpCheck,

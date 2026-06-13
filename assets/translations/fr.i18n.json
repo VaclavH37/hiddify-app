@@ -189,8 +189,6 @@
           "light": "Mode clair",
           "black": "Mode noir"
         },
-        "enableAnalytics": "Activer les statistiques",
-        "enableAnalyticsMsg": "Autoriser la collecte de statistiques et de rapports d'erreurs pour améliorer l'application",
         "autoIpCheck": "Vérifier automatiquement l'IP de connexion",
         "dynamicNotification": "Afficher la vitesse dans la notification",
         "hapticFeedback": "Retour haptique",

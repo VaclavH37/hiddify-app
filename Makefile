@@ -77,8 +77,8 @@ else
 	TARGET=lib/main.dart
 endif
 
-BUILD_ARGS=--dart-define sentry_dsn=$(SENTRY_DSN)
-DISTRIBUTOR_ARGS=--skip-clean --build-target $(TARGET) --build-dart-define sentry_dsn=$(SENTRY_DSN) --artifact-name=$(FF_ARTIFACT_NAME)
+BUILD_ARGS=
+DISTRIBUTOR_ARGS=--skip-clean --build-target $(TARGET) --artifact-name=$(FF_ARTIFACT_NAME)
 
 
 
@@ -288,8 +288,7 @@ android-apk-release: check-rulesets-fresh
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
-	  --build-target-platform=android-arm,android-arm64,android-x64 \
-	  --build-dart-define=sentry_dsn=$(SENTRY_DSN)
+	  --build-target-platform=android-arm,android-arm64,android-x64
 	ls -R build/app/outputs
 
 android-aab-release: check-rulesets-fresh
@@ -299,7 +298,6 @@ android-aab-release: check-rulesets-fresh
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
-	  --build-dart-define=sentry_dsn=$(SENTRY_DSN) \
 	  --build-dart-define=release=google-play
 
 windows-release: windows-zip-release windows-exe-release windows-msix-release
@@ -311,7 +309,6 @@ windows-zip-release:
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
-	  --build-dart-define=sentry_dsn=$(SENTRY_DSN) \
 	  --build-dart-define=portable=true
 	@FULL_PATH=$$(ls dist/*/*.zip | head -n 1); \
 	ZIP_DIR=$$(dirname "$$FULL_PATH"); \
@@ -333,8 +330,7 @@ windows-exe-release:
 	  --targets exe \
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
-	  --build-target=$(TARGET) \
-	  --build-dart-define=sentry_dsn=$(SENTRY_DSN)
+	  --build-target=$(TARGET)
 
 windows-msix-release:
 	$(FASTFORGE) package \
@@ -342,8 +338,7 @@ windows-msix-release:
 	  --targets msix \
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
-	  --build-target=$(TARGET) \
-	  --build-dart-define=sentry_dsn=$(SENTRY_DSN)
+	  --build-target=$(TARGET)
 
 linux-release: linux-deb-release linux-appimage-release
 
@@ -359,8 +354,7 @@ linux-deb-release:
 	--targets deb \
 	--skip-clean \
 	--artifact-name=$(FF_ARTIFACT_NAME) \
-	--build-target=$(TARGET) \
-	--build-dart-define=sentry_dsn=$(SENTRY_DSN)
+	--build-target=$(TARGET)
 
 
 # ==============================================================================
@@ -398,8 +392,7 @@ linux-appimage-release:
 	--targets appimage \
 	--skip-clean \
 	--artifact-name=$(FF_ARTIFACT_NAME) \
-	--build-target=$(TARGET) \
-	--build-dart-define=sentry_dsn=$(SENTRY_DSN)
+	--build-target=$(TARGET)
 	@$(YELLOW)Post-processing AppImage$(DONE); \
 	$(BLUE)Extracting AppImage$(DONE); \
 	cd dist/* && ./*.AppImage --appimage-extract > /dev/null; \

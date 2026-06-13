@@ -189,8 +189,6 @@
           "light": "Açık mod",
           "black": "Siyah mod"
         },
-        "enableAnalytics": "Analizi etkinleştir",
-        "enableAnalyticsMsg": "Uygulamayı iyileştirmek için analiz ve kilitlenme raporları toplanmasına izin verin",
         "autoIpCheck": "Bağlantı IP'sini otomatik kontrol et",
         "dynamicNotification": "Hızı bildirimde göster",
         "hapticFeedback": "Dokunsal geri bildirim",

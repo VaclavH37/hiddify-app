@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/analytics/analytics_controller.dart';
 import 'package:hiddify/core/localization/locale_extensions.dart';
 import 'package:hiddify/core/localization/locale_preferences.dart';
 import 'package:hiddify/core/localization/translations.dart';
@@ -56,37 +55,6 @@ class LocalePrefTile extends ConsumerWidget {
           await ref.read(localePreferencesProvider.notifier).changeLocale(selectedLocale);
         }
       },
-    );
-  }
-}
-
-class EnableAnalyticsPrefTile extends ConsumerWidget {
-  const EnableAnalyticsPrefTile({super.key, this.onChanged});
-
-  final ValueChanged<bool>? onChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = ref.watch(translationsProvider).requireValue;
-    final enabled = ref.watch(analyticsControllerProvider).requireValue;
-
-    Future<void> toggle(bool value) async {
-      if (onChanged != null) {
-        return onChanged!(value);
-      }
-      if (enabled) {
-        await ref.read(analyticsControllerProvider.notifier).disableAnalytics();
-      } else {
-        await ref.read(analyticsControllerProvider.notifier).enableAnalytics();
-      }
-    }
-
-    return RaynSettingsTile(
-      leading: Icons.analytics_rounded,
-      title: t.pages.settings.general.enableAnalytics,
-      subtitle: t.pages.settings.general.enableAnalyticsMsg,
-      trailing: Switch.adaptive(value: enabled, onChanged: toggle),
-      onTap: () => toggle(!enabled),
     );
   }
 }
