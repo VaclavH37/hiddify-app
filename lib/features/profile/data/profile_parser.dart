@@ -51,7 +51,22 @@ typedef _ResolvedSubscription = ({Map<String, dynamic> headers, String url, Stri
 typedef ParsedProfile = ({ProfileEntriesCompanion entry, String content});
 
 class ProfileParser {
-  static const infiniteTrafficThreshold = 920_233_720_368;
+  // Synthetic sentinel assigned to `total` for "unlimited" traffic
+  // (subscription-userinfo total=0 or missing); see [_parseSubInfo], which stores
+  // `infiniteTrafficThreshold + 1`.
+  //
+  // It doubles as the *test* for unlimited, and that is what makes its magnitude
+  // load-bearing: notification_evaluator.dart gates the 80/90/100% quota alerts on
+  // `subInfo.total > infiniteTrafficThreshold`. The previous value (~857 GiB) was
+  // small enough that any ordinary plan above it was classified unlimited, so those
+  // users received no quota notifications at all. 1000 TiB is above any real plan.
+  //
+  // Upstream raised it for a different reason — its `isInfinitSize()` gate renders
+  // "∞" above 10 TB, and the old sentinel fell below that, so unlimited plans showed
+  // a finite cap (hiddify/hiddify-app#1974). That half does not apply here:
+  // isInfinitSize() has no callers in this fork and profile_tile.dart is deleted.
+  // Kept aligned with upstream anyway, since both failures share this one constant.
+  static const infiniteTrafficThreshold = 1_099_511_627_776_000;
   static const infiniteTimeThreshold = 92_233_720_368;
   // Max `new-url` hops to follow in one resolve before giving up (defensive;
   // the API guarantees a renewed token never bounces back to "expired").
