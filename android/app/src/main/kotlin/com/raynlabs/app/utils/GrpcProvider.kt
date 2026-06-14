@@ -16,7 +16,7 @@ package com.raynlabs.app.utils
  * limitations under the License.
  */
 
-import com.hiddify.core.api.v2.hcore.CoreClient
+import com.raynlabs.core.api.v2.hcore.CoreClient
 import com.raynlabs.app.Settings
 import com.squareup.wire.GrpcClient
 import io.grpc.CallOptions
