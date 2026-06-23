@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
 import 'package:hiddify/features/home/widget/home_top_bar.dart';
+import 'package:hiddify/features/notifications/widget/notification_banner.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -84,6 +86,15 @@ class _HomeDesktopBody extends StatelessWidget {
             ),
           ),
         ),
+        const Align(
+          alignment: Alignment.topCenter,
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(RaynSpacing.md),
+              child: NotificationBanner(),
+            ),
+          ),
+        ),
         const HomeTopBarBell(),
       ],
     );
@@ -115,6 +126,14 @@ class _HomeMobileBody extends StatelessWidget {
           // Pill bottom (+174) + 16 gap + half card (~50) = 240.
           Center(
             child: Transform.translate(offset: const Offset(0, 240), child: const ActiveProxyFooter()),
+          ),
+          // Below the app bar (the mobile bell lives in HomeMobileAppBar).
+          const Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(RaynSpacing.md, kToolbarHeight, RaynSpacing.md, 0),
+              child: NotificationBanner(),
+            ),
           ),
         ],
       ),

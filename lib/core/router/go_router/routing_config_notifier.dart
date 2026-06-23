@@ -12,6 +12,7 @@ import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
 import 'package:hiddify/features/auth/widget/auth_page.dart';
 import 'package:hiddify/features/home/widget/home_page.dart';
 import 'package:hiddify/features/log/overview/logs_page.dart';
+import 'package:hiddify/features/notifications/widget/notifications_inbox_page.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_page.dart';
 import 'package:hiddify/features/settings/overview/sections/dns_options_page.dart';
@@ -106,6 +107,12 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                       path: '/proxies',
                       pageBuilder: (_, state) =>
                           customTransition(TransitionType.fade, state.pageKey, const ProxiesOverviewPage()),
+                    ),
+                    GoRoute(
+                      name: 'notifications',
+                      path: '/notifications',
+                      pageBuilder: (_, state) =>
+                          customTransition(TransitionType.slide, state.pageKey, const NotificationsInboxPage()),
                     ),
                   ],
                 ),

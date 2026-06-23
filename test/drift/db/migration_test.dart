@@ -12,6 +12,7 @@ import 'generated/schema_v6.dart' as v6;
 import 'generated/schema_v7.dart' as v7;
 import 'generated/schema_v8.dart' as v8;
 import 'generated/schema_v9.dart' as v9;
+import 'generated/schema_v10.dart' as v10;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -276,5 +277,34 @@ void main() {
         await newDb.close();
       },
     );
+
+    test('migration from v9 to v10 creates the app_notifications table', () async {
+      final schema = await verifier.schemaAt(9);
+      addTearDown(() => schema.rawDatabase.dispose());
+
+      final oldDb = v9.DatabaseAtV9(schema.newConnection());
+      final oldTables = await oldDb
+          .customSelect("SELECT name FROM sqlite_master WHERE type='table';")
+          .get();
+      expect(
+        oldTables.where((row) => row.data['name'] == 'app_notifications'),
+        isEmpty,
+      );
+      await oldDb.close();
+
+      final migratedDb = Db(schema.newConnection());
+      await verifier.migrateAndValidate(migratedDb, 10);
+      await migratedDb.close();
+
+      final newDb = v10.DatabaseAtV10(schema.newConnection());
+      final newTables = await newDb
+          .customSelect("SELECT name FROM sqlite_master WHERE type='table';")
+          .get();
+      expect(
+        newTables.where((row) => row.data['name'] == 'app_notifications'),
+        hasLength(1),
+      );
+      await newDb.close();
+    });
   });
 }

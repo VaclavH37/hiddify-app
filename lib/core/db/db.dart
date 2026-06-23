@@ -3,17 +3,18 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:hiddify/core/db/converters/duration_converter.dart';
 import 'package:hiddify/core/db/db.steps.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
+import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 
 part 'db.g.dart';
 
-@DriftDatabase(tables: [ProfileEntries])
+@DriftDatabase(tables: [ProfileEntries, AppNotifications])
 class Db extends _$Db with InfraLogger {
   Db([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   static QueryExecutor _openConnection() {
     return LazyDatabase(
@@ -115,6 +116,10 @@ class Db extends _$Db with InfraLogger {
             await m.addColumn(schema.profileEntries, schema.profileEntries.refillDate);
           }
         },
+        from9To10: (m, schema) async {
+          // In-app notifications inbox (quota + expiry alerts). New table.
+          await m.createTable(schema.appNotifications);
+        },
       ),
     );
   }
@@ -158,6 +163,22 @@ class ProfileEntries extends Table {
   // persisted for parity with `sourceToken`. Decryption-as-validation
   // already happened, so this is opaque ciphertext at rest.
   TextColumn get fallbackSourceToken => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// In-app notifications shown as a swipe-away banner on the connection page and
+/// kept in the bell inbox. Rows store a semantic [kind] + numeric
+/// [thresholdValue] (never rendered strings) so copy stays localizable.
+@DataClassName('AppNotificationEntry')
+class AppNotifications extends Table {
+  TextColumn get id => text()();
+  TextColumn get kind => textEnum<NotificationKind>()();
+  IntColumn get thresholdValue => integer().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  BoolColumn get seen => boolean().withDefault(const Constant(false))();
+  BoolColumn get dismissed => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

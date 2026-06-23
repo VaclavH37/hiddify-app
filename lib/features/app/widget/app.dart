@@ -16,6 +16,7 @@ import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.
 import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
 import 'package:hiddify/features/connection/widget/connection_wrapper.dart';
+import 'package:hiddify/features/notifications/notifier/notification_monitor.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
 import 'package:hiddify/features/shortcut/shortcut_wrapper.dart';
@@ -65,6 +66,10 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     // nothing to report and the listener would hang on `serviceRunningProvider`.
     final hasProfile = ref.watch(hasAnyProfileProvider).valueOrNull ?? false;
     if (PlatformUtils.isDesktop && hasProfile) ref.listen(systemTrayNotifierProvider, (_, _) {});
+    // Start the notification monitor once authenticated — it watches the active
+    // profile's subscription to raise quota/expiry alerts. Pre-auth there is no
+    // profile to evaluate.
+    if (hasProfile) ref.listen(notificationMonitorProvider, (_, _) {});
 
     // updating ActiveBreakpointNotifier value
     useEffect(() {

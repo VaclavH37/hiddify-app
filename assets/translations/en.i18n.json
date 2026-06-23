@@ -506,6 +506,19 @@
       "planExpiryNever": "Never"
     }
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You're all caught up",
+    "clearAll": "Clear all",
+    "quota": {
+      "title": "Data usage",
+      "body": "You've used ${percent}% of your monthly data."
+    },
+    "expiry": {
+      "title": "Subscription expiring",
+      "body": "Your subscription expires in ${days} day(s). Renew to stay connected."
+    }
+  },
   "dialogs": {
     "sortProfiles": {
       "title": "Sort by",
