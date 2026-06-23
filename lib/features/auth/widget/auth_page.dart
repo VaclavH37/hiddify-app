@@ -6,9 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
 import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
-import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -23,6 +24,7 @@ class AuthPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final theme = Theme.of(context);
+    final palette = context.rayn;
     final isLoading = ref.watch(addProfileNotifierProvider).isLoading;
 
     // Cold-start deep link consumption: if a `rayn://` URL was captured by
@@ -41,72 +43,83 @@ class AuthPage extends HookConsumerWidget {
     }, const []);
 
     return Scaffold(
+      // Match the connection page canvas (palette.bgPrimary).
+      backgroundColor: palette.bgPrimary,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final size = (constraints.maxWidth * 0.4).clamp(96.0, 200.0);
-                      return Assets.images.logo.svg(width: size, height: size);
-                    },
-                  ),
-                  const Gap(24),
-                  Text(t.auth.title, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
-                  const Gap(8),
-                  Text(
-                    t.auth.subtitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    textAlign: TextAlign.center,
-                  ),
-                  const Gap(32),
-                  if (!PlatformUtils.isDesktop) ...[
-                    _AuthAction(
-                      icon: Icons.qr_code_scanner,
-                      label: t.auth.scanQr,
-                      enabled: !isLoading,
-                      onTap: () async {
-                        final result = await ref.read(dialogNotifierProvider.notifier).showQrScanner();
-                        if (result == null || !context.mounted) return;
-                        await ref.read(addProfileNotifierProvider.notifier).addClipboard(result);
-                      },
+                  const Spacer(flex: 2),
+                  // Brand wordmark — centered, ~80% of screen width, upper area.
+                  const RaynWordmarkHero(),
+                  // Subtitle + buttons, vertically centered in the remaining
+                  // space (and horizontally centered / full-width).
+                  Expanded(
+                    flex: 8,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          t.auth.subtitle,
+                          style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          textAlign: TextAlign.center,
+                        ),
+                        const Gap(32),
+                        // Primary path: paste the `rayn://import/<token>` link.
+                        _AuthAction(
+                          icon: Icons.content_paste,
+                          label: t.auth.paste,
+                          enabled: !isLoading,
+                          primary: true,
+                          onTap: () async {
+                            final data = await Clipboard.getData(Clipboard.kTextPlain);
+                            final raw = data?.text ?? '';
+                            if (raw.isEmpty) {
+                              if (context.mounted) {
+                                ref.read(inAppNotificationControllerProvider).showErrorToast(t.auth.pasteEmpty);
+                              }
+                              return;
+                            }
+                            if (!context.mounted) return;
+                            await ref.read(addProfileNotifierProvider.notifier).addClipboard(raw);
+                          },
+                        ),
+                        if (!PlatformUtils.isDesktop) ...[
+                          const Gap(16),
+                          _AuthAction(
+                            icon: Icons.qr_code_scanner,
+                            label: t.auth.scanQr,
+                            enabled: !isLoading,
+                            onTap: () async {
+                              final result = await ref.read(dialogNotifierProvider.notifier).showQrScanner();
+                              if (result == null || !context.mounted) return;
+                              await ref.read(addProfileNotifierProvider.notifier).addClipboard(result);
+                            },
+                          ),
+                        ],
+                        const Gap(16),
+                        // Secondary path: fetch the token via email/password
+                        // sign-in. Token import (above) stays primary — it works
+                        // even when the account API host is unreachable.
+                        _AuthAction(
+                          icon: Icons.alternate_email,
+                          label: t.auth.login.signInWithEmail,
+                          enabled: !isLoading,
+                          onTap: () => context.push('/auth/login'),
+                        ),
+                        if (isLoading) ...[
+                          const Gap(24),
+                          const Center(child: CircularProgressIndicator()),
+                        ],
+                      ],
                     ),
-                    const Gap(12),
-                  ],
-                  _AuthAction(
-                    icon: Icons.content_paste,
-                    label: t.auth.paste,
-                    enabled: !isLoading,
-                    primary: true,
-                    onTap: () async {
-                      final data = await Clipboard.getData(Clipboard.kTextPlain);
-                      final raw = data?.text ?? '';
-                      if (raw.isEmpty) {
-                        if (context.mounted) {
-                          ref.read(inAppNotificationControllerProvider).showErrorToast(t.auth.pasteEmpty);
-                        }
-                        return;
-                      }
-                      if (!context.mounted) return;
-                      await ref.read(addProfileNotifierProvider.notifier).addClipboard(raw);
-                    },
                   ),
-                  const Gap(12),
-                  // Secondary path: fetch the token via email/password sign-in.
-                  // Token import (above) stays primary — it works even when the
-                  // account API host is unreachable.
-                  _AuthAction(
-                    icon: Icons.alternate_email,
-                    label: t.auth.login.signInWithEmail,
-                    enabled: !isLoading,
-                    onTap: () => context.push('/auth/login'),
-                  ),
-                  if (isLoading) ...[const Gap(24), const CircularProgressIndicator()],
                 ],
               ),
             ),
@@ -140,16 +153,16 @@ class _AuthAction extends StatelessWidget {
     final borderColor = primary ? theme.colorScheme.primary : theme.colorScheme.outlineVariant;
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: 64,
       child: OutlinedButton.icon(
         onPressed: enabled ? onTap : null,
-        icon: Icon(icon, color: fg),
-        label: Text(label, style: theme.textTheme.titleMedium?.copyWith(color: fg)),
+        icon: Icon(icon, color: fg, size: 26),
+        label: Text(label, style: theme.textTheme.titleLarge?.copyWith(color: fg, fontWeight: FontWeight.w600)),
         style: OutlinedButton.styleFrom(
           backgroundColor: bg,
           foregroundColor: fg,
           side: BorderSide(color: borderColor),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
     );

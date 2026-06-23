@@ -9,6 +9,7 @@ import 'package:hiddify/features/auth/notifier/logout_notifier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
+import 'package:hiddify/utils/date_time_formatter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Settings → Account block. Three stacked [RaynSettingsTile]s:
@@ -30,7 +31,7 @@ class AccountSection extends ConsumerWidget {
 
     final remote = profile is RemoteProfileEntity ? profile : null;
     final sourceToken = remote?.sourceToken;
-    final subInfoLine = remote?.subInfo != null ? _formatSubInfo(remote!) : null;
+    final subInfoLine = remote?.subInfo != null ? _formatSubInfo(remote!, t) : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
@@ -101,17 +102,27 @@ class AccountSection extends ConsumerWidget {
   }
 }
 
-String _formatSubInfo(RemoteProfileEntity profile) {
+String _formatSubInfo(RemoteProfileEntity profile, Translations t) {
   final sub = profile.subInfo!;
   final consumed = sub.consumption.sizeGB();
   final total = sub.total.sizeGB();
-  final daysLeft = sub.remaining.inDays;
-  final expiry = sub.isExpired
-      ? 'expired'
-      : daysLeft > 365
-      ? '∞'
-      : '${daysLeft}d';
-  return '$consumed / $total GB · $expiry';
+
+  // Line 1: used / total quota, plus days-until-reset when the backend
+  // supplied `subscription-refill-date` (hidden otherwise).
+  var line1 = '$consumed / $total GB';
+  final resetDays = sub.untilRefill?.inDays;
+  if (resetDays != null && resetDays >= 0) {
+    line1 = '$line1 · ${t.components.subscriptionInfo.quotaResetIn(days: resetDays)}';
+  }
+
+  // Line 2: absolute plan-expiry date, or "Never" for the infinite sentinel
+  // (mirrors the > 365-day infinity convention used elsewhere).
+  final expiryValue = sub.remaining.inDays > 365
+      ? t.components.subscriptionInfo.planExpiryNever
+      : sub.expire.formatDate();
+  final line2 = t.components.subscriptionInfo.planExpiry(date: expiryValue);
+
+  return '$line1\n$line2';
 }
 
 extension _SizeFmt on int {

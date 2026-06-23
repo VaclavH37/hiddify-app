@@ -6,7 +6,7 @@ import com.google.gson.Gson
 import com.raynlabs.app.utils.ParsedOutboundGroup
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
-import com.hiddify.core.libbox.OutboundGroup
+import com.raynlabs.core.libbox.OutboundGroup
 import kotlinx.coroutines.CoroutineScope
 
 //

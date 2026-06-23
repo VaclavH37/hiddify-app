@@ -7,7 +7,10 @@ import 'dart:typed_data';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
+import 'package:hiddify/core/model/app_info_entity.dart';
+import 'package:hiddify/core/model/environment.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
@@ -137,10 +140,15 @@ void main() {
     late ProviderContainer container;
     late Ref ref;
 
-    setUp(() {
+    setUp(() async {
       tempDir = Directory.systemTemp.createTempSync('fallback_test_');
-      container = ProviderContainer();
+      container = ProviderContainer(
+        overrides: [appInfoProvider.overrideWith(_FakeAppInfo.new)],
+      );
       ref = container.read(_dummyRefProvider);
+      // `_downloadProfile` reads `appInfoProvider.requireValue` synchronously
+      // for the User-Agent header; resolve it first so the read succeeds.
+      await container.read(appInfoProvider.future);
     });
 
     tearDown(() {
@@ -285,6 +293,19 @@ void main() {
 }
 
 final _dummyRefProvider = Provider<Ref>((ref) => ref);
+
+class _FakeAppInfo extends AppInfo {
+  @override
+  Future<AppInfoEntity> build() async => const AppInfoEntity(
+    name: 'Rayn',
+    version: '1.0.0',
+    buildNumber: '1',
+    release: Release.general,
+    operatingSystem: 'test',
+    operatingSystemVersion: '1',
+    environment: Environment.prod,
+  );
+}
 
 class _FakeStep {
   _FakeStep._({this.headers, this.error});

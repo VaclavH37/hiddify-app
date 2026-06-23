@@ -195,8 +195,10 @@ class _QuotaCard extends ConsumerWidget {
     final consumedText = subInfo.consumption.sizeGB();
     final totalLabel = isInfinite ? '/ ∞ GiB' : '/ ${subInfo.total.sizeGB()}';
     final percentUsed = (subInfo.ratio * 100).toStringAsFixed(1);
-    final daysLeft = subInfo.remaining.inDays;
-    final isExpired = subInfo.isExpired;
+    // Days until the traffic quota resets (`subscription-refill-date`); null
+    // when the backend didn't send one — we hide the figure rather than show
+    // a stale value.
+    final resetDays = subInfo.untilRefill?.inDays;
 
     return GlassSurface(
       child: Column(
@@ -241,12 +243,11 @@ class _QuotaCard extends ConsumerWidget {
                 t.components.subscriptionInfo.percentUsed(percent: percentUsed),
                 style: RaynTypography.caption.copyWith(color: palette.textMuted),
               ),
-              Text(
-                isExpired
-                    ? t.components.subscriptionInfo.expired
-                    : t.components.subscriptionInfo.daysLeft(days: daysLeft),
-                style: RaynTypography.caption.copyWith(color: isExpired ? palette.danger : RaynColors.goldPrimary),
-              ),
+              if (resetDays != null && resetDays >= 0)
+                Text(
+                  t.components.subscriptionInfo.quotaResetIn(days: resetDays),
+                  style: RaynTypography.caption.copyWith(color: RaynColors.goldPrimary),
+                ),
             ],
           ),
         ],

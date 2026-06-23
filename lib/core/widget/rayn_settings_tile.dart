@@ -62,7 +62,15 @@ class RaynSettingsTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(title, style: RaynTypography.body.copyWith(color: titleColor)),
+                  Text(
+                    title,
+                    style: RaynTypography.body.copyWith(color: titleColor),
+                    // Safety net for server-driven titles (e.g. the account
+                    // display name): truncate rather than wrap onto a second
+                    // line if it exceeds the row width.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(subtitle!, style: RaynTypography.caption.copyWith(color: palette.textMuted)),

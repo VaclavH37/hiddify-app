@@ -574,8 +574,10 @@ build-headers:
 	make -C hiddify-core -f Makefile headers && mv $(BINDIR)/$(CORE_NAME)-headers.h $(BINDIR)/hiddify-core.h
 
 build-android-libs:
-	make -C hiddify-core -f Makefile android 
-	mv $(BINDIR)/$(LIB_NAME).aar $(ANDROID_OUT)/
+	make -C hiddify-core -f Makefile android
+	# Rayn rebrand (audit C1): the android target now emits rayn-core.aar
+	# (librayn-core.so inside), not $(LIB_NAME).aar.
+	mv $(BINDIR)/rayn-core.aar $(ANDROID_OUT)/
 
 build-windows-libs:
 	make -C hiddify-core -f Makefile windows-amd64

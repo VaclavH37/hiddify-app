@@ -1,8 +1,8 @@
 package com.raynlabs.app.utils
 
 import com.google.gson.annotations.SerializedName
-import com.hiddify.core.libbox.OutboundGroup
-import com.hiddify.core.libbox.OutboundGroupItem
+import com.raynlabs.core.libbox.OutboundGroup
+import com.raynlabs.core.libbox.OutboundGroupItem
 
 data class ParsedOutboundGroup(
     @SerializedName("tag") val tag: String,

@@ -89,6 +89,13 @@ class ProfileEntries extends Table with TableInfo {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  late final GeneratedColumn<DateTime> refillDate = GeneratedColumn<DateTime>(
+    'refill_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   late final GeneratedColumn<String> webPageUrl = GeneratedColumn<String>(
     'web_page_url',
     aliasedName,
@@ -124,6 +131,28 @@ class ProfileEntries extends Table with TableInfo {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  late final GeneratedColumn<String> sourceToken = GeneratedColumn<String>(
+    'source_token',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  late final GeneratedColumn<String> fallbackUrl = GeneratedColumn<String>(
+    'fallback_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  late final GeneratedColumn<String> fallbackSourceToken =
+      GeneratedColumn<String>(
+        'fallback_source_token',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -137,11 +166,15 @@ class ProfileEntries extends Table with TableInfo {
     download,
     total,
     expire,
+    refillDate,
     webPageUrl,
     supportUrl,
     populatedHeaders,
     profileOverride,
     userOverride,
+    sourceToken,
+    fallbackUrl,
+    fallbackSourceToken,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -161,67 +194,16 @@ class ProfileEntries extends Table with TableInfo {
   }
 }
 
-class AppProxyEntries extends Table with TableInfo {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  AppProxyEntries(this.attachedDatabase, [this._alias]);
-  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
-    'mode',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  late final GeneratedColumn<String> pkgName = GeneratedColumn<String>(
-    'pkg_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  late final GeneratedColumn<int> flags = GeneratedColumn<int>(
-    'flags',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const CustomExpression('0'),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [mode, pkgName, flags];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'app_proxy_entries';
-  @override
-  Set<GeneratedColumn> get $primaryKey => {mode, pkgName};
-  @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
-  }
-
-  @override
-  AppProxyEntries createAlias(String alias) {
-    return AppProxyEntries(attachedDatabase, alias);
-  }
-}
-
-class DatabaseAtV5 extends GeneratedDatabase {
-  DatabaseAtV5(QueryExecutor e) : super(e);
+class DatabaseAtV9 extends GeneratedDatabase {
+  DatabaseAtV9(QueryExecutor e) : super(e);
   late final ProfileEntries profileEntries = ProfileEntries(this);
-  late final AppProxyEntries appProxyEntries = AppProxyEntries(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [
-    profileEntries,
-    appProxyEntries,
-  ];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [profileEntries];
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 9;
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);

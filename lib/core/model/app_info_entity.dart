@@ -19,6 +19,9 @@ class AppInfoEntity with _$AppInfoEntity {
 
   String get userAgent => "RaynVPN/$version ($operatingSystem) sing-box";
 
+  /// User-Agent sent on subscription API requests: `Rayn/<version>`.
+  String get subscriptionUserAgent => "Rayn/$version";
+
   String get presentVersion => environment == Environment.prod ? version : "$version ${environment.name}";
 
   /// formats app info for sharing

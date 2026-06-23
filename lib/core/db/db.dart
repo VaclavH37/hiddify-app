@@ -13,7 +13,7 @@ class Db extends _$Db with InfraLogger {
   Db([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   static QueryExecutor _openConnection() {
     return LazyDatabase(
@@ -105,6 +105,16 @@ class Db extends _$Db with InfraLogger {
           // now-unused table. Created in from4To5; harmless if already absent.
           await m.deleteTable('app_proxy_entries');
         },
+        from8To9: (m, schema) async {
+          // `subscription-refill-date` quota-reset column.
+          final refillExists = await _columnExists(
+            schema.profileEntries.actualTableName,
+            schema.profileEntries.refillDate.name,
+          );
+          if (!refillExists) {
+            await m.addColumn(schema.profileEntries, schema.profileEntries.refillDate);
+          }
+        },
       ),
     );
   }
@@ -128,6 +138,9 @@ class ProfileEntries extends Table {
   IntColumn get download => integer().nullable()();
   IntColumn get total => integer().nullable()();
   DateTimeColumn get expire => dateTime().nullable()();
+  // Unix `subscription-refill-date` header → when the traffic quota next
+  // resets. Nullable: optional header and pre-v9 rows.
+  DateTimeColumn get refillDate => dateTime().nullable()();
   TextColumn get webPageUrl => text().nullable()();
   TextColumn get supportUrl => text().nullable()();
   TextColumn get populatedHeaders => text().nullable()();

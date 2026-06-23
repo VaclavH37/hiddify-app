@@ -10,6 +10,8 @@ import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
 import 'generated/schema_v6.dart' as v6;
 import 'generated/schema_v7.dart' as v7;
+import 'generated/schema_v8.dart' as v8;
+import 'generated/schema_v9.dart' as v9;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -214,6 +216,61 @@ void main() {
         );
         expect(
           newColumns.where((row) => row.data['name'] == 'fallback_source_token'),
+          hasLength(1),
+        );
+        await newDb.close();
+      },
+    );
+
+    test('migration from v8 to v9 adds refill_date when missing', () async {
+      final schema = await verifier.schemaAt(8);
+      addTearDown(() => schema.rawDatabase.dispose());
+
+      final oldDb = v8.DatabaseAtV8(schema.newConnection());
+      final oldColumns = await oldDb
+          .customSelect('PRAGMA table_info(profile_entries);')
+          .get();
+      expect(
+        oldColumns.where((row) => row.data['name'] == 'refill_date'),
+        isEmpty,
+      );
+      await oldDb.close();
+
+      final migratedDb = Db(schema.newConnection());
+      await verifier.migrateAndValidate(migratedDb, 9);
+      await migratedDb.close();
+
+      final newDb = v9.DatabaseAtV9(schema.newConnection());
+      final newColumns = await newDb
+          .customSelect('PRAGMA table_info(profile_entries);')
+          .get();
+      expect(
+        newColumns.where((row) => row.data['name'] == 'refill_date'),
+        hasLength(1),
+      );
+      await newDb.close();
+    });
+
+    test(
+      'migration from v8 to v9 skips adding refill_date when it already exists',
+      () async {
+        final schema = await verifier.schemaAt(8);
+        addTearDown(() => schema.rawDatabase.dispose());
+
+        schema.rawDatabase.execute(
+          'ALTER TABLE profile_entries ADD COLUMN refill_date TEXT NULL;',
+        );
+
+        final migratedDb = Db(schema.newConnection());
+        await verifier.migrateAndValidate(migratedDb, 9);
+        await migratedDb.close();
+
+        final newDb = v9.DatabaseAtV9(schema.newConnection());
+        final newColumns = await newDb
+            .customSelect('PRAGMA table_info(profile_entries);')
+            .get();
+        expect(
+          newColumns.where((row) => row.data['name'] == 'refill_date'),
           hasLength(1),
         );
         await newDb.close();

@@ -60,6 +60,7 @@ class SubscriptionInfo with _$SubscriptionInfo {
     required int download,
     required int total,
     required DateTime expire,
+    DateTime? refillDate,
     String? webPageUrl,
     String? supportUrl,
   }) = _SubscriptionInfo;
@@ -73,6 +74,10 @@ class SubscriptionInfo with _$SubscriptionInfo {
 
   Duration get remaining => expire.difference(DateTime.now());
   double get remainingRatio => min(remaining.inDays, 30) / 30;
+
+  /// Time until the traffic quota next resets (`subscription-refill-date`),
+  /// or null when the backend didn't supply a refill date.
+  Duration? get untilRefill => refillDate?.difference(DateTime.now());
 }
 
 const int latestUserOverrideVersion = 1;

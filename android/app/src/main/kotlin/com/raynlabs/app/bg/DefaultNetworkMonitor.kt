@@ -3,7 +3,7 @@ package com.raynlabs.app.bg
 import android.net.Network
 import android.os.Build
 import com.raynlabs.app.Application
-import com.hiddify.core.libbox.InterfaceUpdateListener
+import com.raynlabs.core.libbox.InterfaceUpdateListener
 import com.raynlabs.app.constant.Bugs
 
 

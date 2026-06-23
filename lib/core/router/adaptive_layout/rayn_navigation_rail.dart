@@ -4,6 +4,7 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
+import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 
 /// Custom navigation rail for the Rayn redesign.
@@ -89,23 +90,16 @@ class _BrandBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final logo = Assets.images.logo.svg(width: 32, height: 32);
     if (!extended) {
-      return Center(child: logo);
+      // Collapsed rail: just the icon — the "RAYN VPN" wordmark won't fit in
+      // the 72px column.
+      return Center(child: Assets.images.logo.svg(width: 32, height: 32));
     }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.sm),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          logo,
-          const SizedBox(width: RaynSpacing.md),
-          Text(
-            'Rayn VPN',
-            style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600, color: context.rayn.textPrimary),
-          ),
-        ],
-      ),
+    // Extended rail: full brand wordmark per WORDMARK.md, compact variant so
+    // the icon stays at the rail's established 32px.
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: RaynSpacing.sm),
+      child: RaynWordmark(iconSize: 32, wordSize: 24, suffixSize: 14, gap: 6),
     );
   }
 }

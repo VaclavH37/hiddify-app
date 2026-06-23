@@ -8,9 +8,9 @@ import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
-import com.hiddify.core.libbox.Libbox
-import com.hiddify.core.mobile.Mobile
-import com.hiddify.core.mobile.SetupOptions
+import com.raynlabs.core.libbox.Libbox
+import com.raynlabs.core.mobile.Mobile
+import com.raynlabs.core.mobile.SetupOptions
 import com.raynlabs.app.bg.Bugs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

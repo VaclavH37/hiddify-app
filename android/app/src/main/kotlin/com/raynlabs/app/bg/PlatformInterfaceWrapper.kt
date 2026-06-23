@@ -8,25 +8,25 @@ import android.os.Process
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.raynlabs.app.Application
-import com.hiddify.core.libbox.InterfaceUpdateListener
-import com.hiddify.core.libbox.Libbox
-import com.hiddify.core.libbox.NetworkInterfaceIterator
-import com.hiddify.core.libbox.PlatformInterface
-import com.hiddify.core.libbox.StringIterator
-import com.hiddify.core.libbox.TunOptions
-import com.hiddify.core.libbox.WIFIState
+import com.raynlabs.core.libbox.InterfaceUpdateListener
+import com.raynlabs.core.libbox.Libbox
+import com.raynlabs.core.libbox.NetworkInterfaceIterator
+import com.raynlabs.core.libbox.PlatformInterface
+import com.raynlabs.core.libbox.StringIterator
+import com.raynlabs.core.libbox.TunOptions
+import com.raynlabs.core.libbox.WIFIState
 import java.net.Inet6Address
 import java.net.InetSocketAddress
 import java.net.InterfaceAddress
 import java.net.NetworkInterface
 import java.util.Enumeration
-import com.hiddify.core.libbox.NetworkInterface as LibboxNetworkInterface
+import com.raynlabs.core.libbox.NetworkInterface as LibboxNetworkInterface
 
 
 
 import android.system.OsConstants
-import com.hiddify.core.libbox.ConnectionOwner
-import com.hiddify.core.libbox.LocalDNSTransport
+import com.raynlabs.core.libbox.ConnectionOwner
+import com.raynlabs.core.libbox.LocalDNSTransport
 import java.security.KeyStore
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi

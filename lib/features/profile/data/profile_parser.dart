@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dartx/dartx.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/db/db.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/features/profile/data/profile_data_mapper.dart';
@@ -46,6 +47,7 @@ class ProfileParser {
     'support-url',
     'profile-web-page-url',
     'enable-fragment',
+    'subscription-refill-date',
   ];
 
   final Ref _ref;
@@ -174,7 +176,12 @@ class ProfileParser {
     //   throw const ProfileFailure.invalidUrl('HTTP is not supported. Please use HTTPS for secure connection.');
 
     final rs = await _httpClient
-        .download(url.trim(), tempFilePath, cancelToken: cancelToken, userAgent: "Rayn")
+        .download(
+          url.trim(),
+          tempFilePath,
+          cancelToken: cancelToken,
+          userAgent: _ref.read(appInfoProvider).requireValue.subscriptionUserAgent,
+        )
         .catchError((err) {
           if (CancelToken.isCancel(err as DioException)) {
             throw const ProfileFailure.cancelByUser('HTTP request for getting profile content canceled by user.');
@@ -314,7 +321,12 @@ class ProfileParser {
         try {
           final tmpPath = '$tempFilePath.$currentIndex';
 
-          await httpClient.download(line, tmpPath, cancelToken: cancelToken, userAgent: "Rayn");
+          await httpClient.download(
+            line,
+            tmpPath,
+            cancelToken: cancelToken,
+            userAgent: ref.read(appInfoProvider).requireValue.subscriptionUserAgent,
+          );
 
           results[currentIndex] = (await File(tmpPath).readAsString()).trim();
         } catch (err) {
@@ -464,6 +476,14 @@ class ProfileParser {
           }
           if (headers['support-url'] case final String profileSupportUrl when isUrl(profileSupportUrl)) {
             subInfo = subInfo.copyWith(supportUrl: profileSupportUrl);
+          }
+          // `subscription-refill-date`: unix seconds for the next quota reset.
+          // Treat 0/absent/garbage as "unknown" → leave null so the UI hides it.
+          if (headers['subscription-refill-date'] case final String refillStr) {
+            final refillSecs = int.tryParse(refillStr.trim());
+            if (refillSecs != null && refillSecs > 0) {
+              subInfo = subInfo.copyWith(refillDate: DateTime.fromMillisecondsSinceEpoch(refillSecs * 1000));
+            }
           }
         }
 

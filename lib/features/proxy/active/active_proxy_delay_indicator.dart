@@ -142,9 +142,9 @@ class ActiveProxyDelayIndicator extends HookConsumerWidget with InfraLogger {
     if (isTimeout) return palette.danger;
     if (isConnecting) return RaynColors.goldPrimary;
     if (pingMs == null) return palette.textMuted;
-    if (pingMs < 120) return palette.success;
-    if (pingMs < 250) return palette.warning;
-    return palette.danger;
+    if (pingMs < 300) return palette.success; // green
+    if (pingMs < 600) return palette.warning; // yellow (300–600ms)
+    return palette.danger; // red (600ms+)
   }
 }
 

@@ -91,7 +91,7 @@
   },
   "auth": {
     "title": "Sign in with your token",
-    "subtitle": "Scan the QR code from your account or paste your rayn:// link to continue.",
+    "subtitle": "Paste your Rayn link, scan your QR code, or sign in with email to get started.",
     "scanQr": "Scan QR code",
     "paste": "Paste from clipboard",
     "pasteEmpty": "Clipboard is empty",
@@ -158,6 +158,8 @@
       "unknownIp": "Unknown IP",
       "autoSelected": "Auto-selected",
       "direct": "Direct",
+      "lowestLatency": "Lowest Latency",
+      "autoRotate": "Auto rotate",
       "sortOptions": {
         "unsorted": "Default",
         "name": "Alphabetically",
@@ -498,7 +500,10 @@
       "profileSupport": "Support",
       "monthlyQuota": "Monthly quota",
       "percentUsed": "${percent}% used",
-      "daysLeft": "${days} days left"
+      "daysLeft": "${days} days left",
+      "quotaResetIn": "${days}d to reset",
+      "planExpiry": "Plan expiry: ${date}",
+      "planExpiryNever": "Never"
     }
   },
   "dialogs": {

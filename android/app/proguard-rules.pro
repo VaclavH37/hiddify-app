@@ -7,7 +7,7 @@
 # crashing at runtime on a build that otherwise compiles and signs cleanly.
 #
 # Why minification is off: the app's logic lives in Dart (AOT-compiled into
-# libapp.so) and the Go core (libhiddify-core.so) — neither is touched by R8.
+# libapp.so) and the Go core (librayn-core.so) — neither is touched by R8.
 # R8 would only process the thin Kotlin shell + Java deps, where the obfuscation
 # benefit is low but the breakage risk (gomobile callbacks, gRPC, gson) is high.
 #
@@ -22,9 +22,9 @@
 # this breaks the native bridge.
 # ---------------------------------------------------------------------------
 -keep class go.** { *; }
--keep class com.hiddify.core.** { *; }
+-keep class com.raynlabs.core.** { *; }
 -dontwarn go.**
--dontwarn com.hiddify.core.**
+-dontwarn com.raynlabs.core.**
 
 # Any native method must keep its name (JNI resolves by exact signature).
 -keepclasseswithmembernames class * {

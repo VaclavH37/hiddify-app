@@ -14,6 +14,7 @@ import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/proxy/active/ip_widget.dart';
+import 'package:hiddify/features/proxy/model/node_name.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/singbox/model/singbox_proxy_type.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
@@ -49,7 +50,10 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
     } else {
       rawName = activeProxy.tagDisplay;
     }
-    final displayName = _stripTrailingFlag(rawName);
+    // Transform the backend hub/exit tag (e.g. "EXIT-US-DALLAS-01🇺🇸") into a
+    // readable "City, CC" label; fall back to the flag-stripped raw name for
+    // group/balancer labels that don't follow the convention.
+    final displayName = prettifyNodeName(rawName) ?? stripTrailingFlag(rawName);
     final modeLabel = isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct;
 
     Future<void> handleUrlTest() async {
@@ -149,17 +153,6 @@ String _balancerLocationName(OutboundInfo proxy) {
   return proxy.tagDisplay;
 }
 
-/// Strips a trailing flag emoji (pair of Regional Indicator Symbols, U+1F1E6
-/// – U+1F1FF) from [name] along with any whitespace that immediately
-/// preceded it. Returns [name] unchanged if the last grapheme isn't a flag.
-String _stripTrailingFlag(String name) {
-  final runes = name.runes.toList();
-  if (runes.length < 2) return name;
-  bool isRI(int r) => r >= 0x1F1E6 && r <= 0x1F1FF;
-  if (!isRI(runes.last) || !isRI(runes[runes.length - 2])) return name;
-  return String.fromCharCodes(runes.sublist(0, runes.length - 2)).trimRight();
-}
-
 /// Renders 4 ascending bars whose active count is derived from the active
 /// proxy's `urlTestDelay`. Updates are debounced to 1s — the underlying
 /// provider can tick frequently and a steady visual is more useful than a
@@ -206,10 +199,10 @@ class _SignalBars extends HookConsumerWidget {
   }
 
   int _barCount(int delay) {
-    if (delay <= 0) return 0;
-    if (delay <= 120) return 4;
-    if (delay <= 200) return 3;
-    if (delay <= 300) return 2;
-    return 1;
+    if (delay <= 0) return 0; // untested / no value
+    if (delay < 300) return 4; // full bars
+    if (delay < 600) return 3; // 300–600ms
+    if (delay < 900) return 2; // 600–900ms
+    return 1; // 900ms+
   }
 }

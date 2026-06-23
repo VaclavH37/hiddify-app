@@ -3,6 +3,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
 import 'package:hiddify/features/auth/login/notifier/login_notifier.dart';
 import 'package:hiddify/utils/uri_utils.dart';
@@ -18,6 +20,7 @@ class LoginPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final theme = Theme.of(context);
+    final palette = context.rayn;
 
     final loginState = ref.watch(loginNotifierProvider);
     final isSubmitting = loginState.isSubmitting;
@@ -45,7 +48,15 @@ class LoginPage extends HookConsumerWidget {
     final outcomeMessage = _outcomeMessage(t, loginState.outcome);
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.auth.login.title)),
+      // Match the auth screen canvas (palette.bgPrimary); transparent app bar
+      // keeps the back button without a title — the wordmark is the header.
+      backgroundColor: palette.bgPrimary,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -57,7 +68,12 @@ class LoginPage extends HookConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(t.auth.login.subtitle, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+                    const Gap(24),
+                    // Same wordmark hero (size / stylization / position) as the
+                    // initial auth screen.
+                    const RaynWordmarkHero(),
+                    const Gap(36),
+                    Text(t.auth.login.subtitle, style: theme.textTheme.bodyLarge, textAlign: TextAlign.center),
                     const Gap(24),
                     TextField(
                       controller: emailCtrl,

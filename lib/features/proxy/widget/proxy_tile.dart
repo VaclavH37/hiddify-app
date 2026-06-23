@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
@@ -7,15 +8,10 @@ import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/glass_surface.dart';
 import 'package:hiddify/features/proxy/active/ip_widget.dart';
+import 'package:hiddify/features/proxy/model/node_name.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
-/// Matches one or more trailing country-flag emojis (pairs of regional
-/// indicator symbols U+1F1E6–U+1F1FF) plus any surrounding whitespace, so we
-/// can strip the redundant flag the backend appends to `tagDisplay` — the
-/// flag is already shown as the leading icon.
-final RegExp _trailingFlagPattern = RegExp(r'\s*(?:[\u{1F1E6}-\u{1F1FF}]{2}\s*)+$', unicode: true);
 
 class ProxyTile extends HookConsumerWidget with PresLogger {
   const ProxyTile(this.proxy, {super.key, required this.selected, required this.onTap});
@@ -27,14 +23,27 @@ class ProxyTile extends HookConsumerWidget with PresLogger {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.rayn;
+    final t = ref.watch(translationsProvider).requireValue;
 
-    var displayName = proxy.tagDisplay.replaceAll(_trailingFlagPattern, '');
-    if (proxy.isGroup && displayName.isNotEmpty) {
-      if (displayName.toLowerCase() == 'balance') {
-        displayName = 'Auto rotate';
+    final String displayName;
+    if (proxy.isGroup) {
+      // Group rows: surface the auto-selector groups with friendly labels
+      // ("lowest" → Lowest Latency, "balance" → Auto rotate); otherwise show
+      // the flag-stripped, capitalized group name.
+      final stripped = stripTrailingFlag(proxy.tagDisplay);
+      if (stripped.isEmpty) {
+        displayName = stripped;
+      } else if (stripped.toLowerCase() == 'lowest') {
+        displayName = t.pages.proxies.lowestLatency;
+      } else if (stripped.toLowerCase() == 'balance') {
+        displayName = t.pages.proxies.autoRotate;
       } else {
-        displayName = displayName[0].toUpperCase() + displayName.substring(1);
+        displayName = stripped[0].toUpperCase() + stripped.substring(1);
       }
+    } else {
+      // Node rows: transform the backend hub/exit tag (e.g. "HUB-JP-TOKYO-A")
+      // into a readable "City, CC" label, falling back to the flag-stripped tag.
+      displayName = prettifyNodeName(proxy.tagDisplay) ?? stripTrailingFlag(proxy.tagDisplay);
     }
 
     final titleStyle = RaynTypography.body.copyWith(color: palette.textPrimary);

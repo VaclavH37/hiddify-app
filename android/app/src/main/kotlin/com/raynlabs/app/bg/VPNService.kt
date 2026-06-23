@@ -9,9 +9,9 @@ import android.net.VpnService
 import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
-import com.hiddify.core.libbox.Notification
+import com.raynlabs.core.libbox.Notification
 import com.raynlabs.app.ktx.toIpPrefix
-import com.hiddify.core.libbox.TunOptions
+import com.raynlabs.core.libbox.TunOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext

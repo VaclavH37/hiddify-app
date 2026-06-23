@@ -21,6 +21,7 @@ extension ProfileEntityMapper on ProfileEntity {
       download: Value(rp.subInfo?.download),
       total: Value(rp.subInfo?.total),
       expire: Value(rp.subInfo?.expire),
+      refillDate: Value(rp.subInfo?.refillDate),
       webPageUrl: Value(rp.subInfo?.webPageUrl),
       supportUrl: Value(rp.subInfo?.supportUrl),
       sourceToken: Value(rp.sourceToken),
@@ -51,6 +52,7 @@ extension ProfileEntityMapper on ProfileEntity {
       download: Value(rp.subInfo?.download),
       total: Value(rp.subInfo?.total),
       expire: Value(rp.subInfo?.expire),
+      refillDate: Value(rp.subInfo?.refillDate),
       webPageUrl: Value(rp.subInfo?.webPageUrl),
       supportUrl: Value(rp.subInfo?.supportUrl),
       // url + sourceToken persist any backend-driven token rotation
@@ -87,6 +89,7 @@ extension ProfileEntryMapper on ProfileEntry {
         download: download!,
         total: total!,
         expire: expire!,
+        refillDate: refillDate,
         webPageUrl: webPageUrl,
         supportUrl: supportUrl,
       );

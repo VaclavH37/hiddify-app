@@ -24,18 +24,18 @@ import com.raynlabs.app.Settings
 import com.raynlabs.app.constant.Action
 import com.raynlabs.app.constant.Alert
 import com.raynlabs.app.constant.Status
-import com.hiddify.core.mobile.SetupOptions
+import com.raynlabs.core.mobile.SetupOptions
 
 import go.Seq
-import com.hiddify.core.libbox.Libbox
-import com.hiddify.core.mobile.Mobile
+import com.raynlabs.core.libbox.Libbox
+import com.raynlabs.core.mobile.Mobile
 
 
-import com.hiddify.core.libbox.CommandServer
-import com.hiddify.core.libbox.CommandServerHandler
-import com.hiddify.core.libbox.Notification
-import com.hiddify.core.libbox.PlatformInterface
-import com.hiddify.core.libbox.SystemProxyStatus
+import com.raynlabs.core.libbox.CommandServer
+import com.raynlabs.core.libbox.CommandServerHandler
+import com.raynlabs.core.libbox.Notification
+import com.raynlabs.core.libbox.PlatformInterface
+import com.raynlabs.core.libbox.SystemProxyStatus
 import com.raynlabs.app.BuildConfig
 import com.raynlabs.app.MainActivity
 import com.raynlabs.app.constant.Bugs

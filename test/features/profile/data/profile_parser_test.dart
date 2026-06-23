@@ -162,5 +162,82 @@ void main() {
         });
       });
     });
+
+    test("Should parse subscription-refill-date into refillDate", () {
+      final headers = <String, List<String>>{
+        "profile-title": ["title"],
+        "subscription-userinfo": ["upload=0;download=1024;total=10240;expire=1704054600"],
+        "subscription-refill-date": ["1782864600"],
+      };
+      final fixedHeaders = headers.map((key, value) {
+        if (value.length == 1) return MapEntry(key, value.first);
+        return MapEntry(key, value);
+      });
+      final allHeaders = ProfileParser.populateHeaders(content: '', remoteHeaders: fixedHeaders);
+      expect(allHeaders.isRight(), true);
+      allHeaders.match((l) {}, (r) {
+        final profile = ProfileParser.parse(
+          tempFilePath: '',
+          profile: RemoteProfileEntity(
+            id: const Uuid().v4(),
+            active: true,
+            name: '',
+            url: validBaseUrl,
+            lastUpdate: DateTime.now(),
+            populatedHeaders: r,
+          ),
+        );
+        expect(profile.isRight(), true);
+        profile.match((l) {}, (r) {
+          r.map(
+            remote: (rp) {
+              expect(rp.subInfo, isNotNull);
+              expect(
+                rp.subInfo!.refillDate,
+                equals(DateTime.fromMillisecondsSinceEpoch(1782864600 * 1000)),
+              );
+            },
+            local: (lp) {},
+          );
+        });
+      });
+    });
+
+    test("Should leave refillDate null when subscription-refill-date is 0 or absent", () {
+      for (final refill in <String?>["0", null]) {
+        final headers = <String, List<String>>{
+          "profile-title": ["title"],
+          "subscription-userinfo": ["upload=0;download=1024;total=10240;expire=1704054600"],
+          if (refill != null) "subscription-refill-date": [refill],
+        };
+        final fixedHeaders = headers.map((key, value) {
+          if (value.length == 1) return MapEntry(key, value.first);
+          return MapEntry(key, value);
+        });
+        final allHeaders = ProfileParser.populateHeaders(content: '', remoteHeaders: fixedHeaders);
+        allHeaders.match((l) {}, (r) {
+          final profile = ProfileParser.parse(
+            tempFilePath: '',
+            profile: RemoteProfileEntity(
+              id: const Uuid().v4(),
+              active: true,
+              name: '',
+              url: validBaseUrl,
+              lastUpdate: DateTime.now(),
+              populatedHeaders: r,
+            ),
+          );
+          profile.match((l) {}, (r) {
+            r.map(
+              remote: (rp) {
+                expect(rp.subInfo, isNotNull);
+                expect(rp.subInfo!.refillDate, isNull);
+              },
+              local: (lp) {},
+            );
+          });
+        });
+      }
+    });
   });
 }

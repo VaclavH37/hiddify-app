@@ -27,7 +27,7 @@ import com.raynlabs.app.Settings
 import com.raynlabs.app.constant.Action
 import com.raynlabs.app.constant.Status
 //import com.raynlabs.app.utils.CommandClient
-import com.hiddify.core.libbox.Libbox
+import com.raynlabs.core.libbox.Libbox
 import com.raynlabs.app.Application.Companion.notification
 import com.raynlabs.app.utils.GrpcClientProvider
 import com.squareup.wire.GrpcClient
