@@ -9,6 +9,8 @@ import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
 import 'package:hiddify/features/about/widget/about_page.dart';
 import 'package:hiddify/features/auth/login/widget/login_page.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
+import 'package:hiddify/features/auth/register/widget/register_page.dart';
+import 'package:hiddify/features/auth/register/widget/verify_email_page.dart';
 import 'package:hiddify/features/auth/widget/auth_page.dart';
 import 'package:hiddify/features/home/widget/home_page.dart';
 import 'package:hiddify/features/log/overview/logs_page.dart';
@@ -202,6 +204,14 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
           builder: (_, _) => const AuthPage(),
           routes: <GoRoute>[
             GoRoute(name: 'login', path: 'login', builder: (_, _) => const LoginPage()),
+            GoRoute(name: 'register', path: 'register', builder: (_, _) => const RegisterPage()),
+            GoRoute(
+              name: 'verifyEmail',
+              path: 'verify-email',
+              // `extra` carries the typed email (from register success or the
+              // login "email not verified" redirect) so resend works.
+              builder: (_, state) => VerifyEmailPage(email: state.extra as String? ?? ''),
+            ),
           ],
         ),
       ],

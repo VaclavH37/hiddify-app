@@ -113,6 +113,15 @@ class AuthPage extends HookConsumerWidget {
                           enabled: !isLoading,
                           onTap: () => context.push('/auth/login'),
                         ),
+                        const Gap(16),
+                        // Create a new account (email verification + payment
+                        // finish on the website; the app owns creation only).
+                        _AuthAction(
+                          icon: Icons.person_add_alt,
+                          label: t.auth.register.createAccount,
+                          enabled: !isLoading,
+                          onTap: () => context.push('/auth/register'),
+                        ),
                         if (isLoading) ...[
                           const Gap(24),
                           const Center(child: CircularProgressIndicator()),

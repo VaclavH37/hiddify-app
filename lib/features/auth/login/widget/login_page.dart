@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
@@ -44,6 +45,15 @@ class LoginPage extends HookConsumerWidget {
       fieldError.value = null;
       await ref.read(loginNotifierProvider.notifier).login(email, password);
     }
+
+    // An unverified account returns `403 EMAIL_NOT_VERIFIED`; route the user to
+    // the verification screen (carrying the typed email so resend works) instead
+    // of showing an inline message.
+    ref.listen(loginNotifierProvider, (_, next) {
+      if (next.outcome == LoginOutcome.emailNotVerified) {
+        context.push('/auth/verify-email', extra: emailCtrl.text.trim());
+      }
+    });
 
     final outcomeMessage = _outcomeMessage(t, loginState.outcome);
 
@@ -156,7 +166,8 @@ class LoginPage extends HookConsumerWidget {
       case LoginOutcome.invalidCredentials:
         return t.auth.login.invalidCredentials;
       case LoginOutcome.emailNotVerified:
-        return t.auth.login.emailNotVerified;
+        // Handled by a redirect to the verification screen, not an inline message.
+        return null;
       case LoginOutcome.accountSuspended:
         return t.auth.login.accountSuspended;
       case LoginOutcome.accountDeactivated:
@@ -176,7 +187,6 @@ class LoginPage extends HookConsumerWidget {
 
   bool _showWebsiteLink(LoginOutcome? outcome) {
     switch (outcome) {
-      case LoginOutcome.emailNotVerified:
       case LoginOutcome.accountSuspended:
       case LoginOutcome.accountDeactivated:
       case LoginOutcome.pendingPayment:

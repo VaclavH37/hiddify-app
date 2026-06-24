@@ -124,6 +124,40 @@
       "unreachable": "Couldn't reach the sign-in service. You can paste your token instead.",
       "generic": "Something went wrong. Please try again later.",
       "openWebsite": "Open account page"
+    },
+    "register": {
+      "createAccount": "Create an account",
+      "title": "Create your account",
+      "subtitle": "Enter your details to create a Rayn account.",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "displayNameLabel": "Display name",
+      "passwordRule": "10–128 characters",
+      "displayNameRule": "Up to 100 characters · letters, numbers, spaces, _ and -",
+      "emailRequired": "Enter your email",
+      "emailInvalid": "Enter a valid email address",
+      "passwordRequired": "Enter a password",
+      "passwordTooShort": "Password must be at least 10 characters",
+      "passwordTooLong": "Password must be 128 characters or fewer",
+      "displayNameRequired": "Enter a display name",
+      "displayNameTooLong": "Display name must be 100 characters or fewer",
+      "displayNameInvalid": "Use only letters, numbers, spaces, _ and -",
+      "submit": "Create account",
+      "tooManyRequests": "Too many attempts from this network. Please try again later.",
+      "verifyFailed": "Couldn't verify the app. Please try again.",
+      "unreachable": "Couldn't reach the sign-up service. Please try again later.",
+      "generic": "Something went wrong. Please try again later."
+    },
+    "verifyEmail": {
+      "title": "Verify your email",
+      "body": "We've sent a verification link to ${email}. Open it to activate your account, then sign in.",
+      "bodyGeneric": "We've sent you a verification link. Open it to activate your account, then sign in.",
+      "note": "Verification and payment are completed in your browser.",
+      "resend": "Resend verification email",
+      "resendSent": "If an account exists, we've sent another email.",
+      "resendFailed": "Couldn't resend right now. Please try again later.",
+      "openWebsite": "Open account page",
+      "backToLogin": "Back to sign in"
     }
   },
   "pages": {
