@@ -1,14 +1,19 @@
 import 'package:dartx/dartx.dart';
+import 'package:hiddify/core/db/db.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
+import 'package:hiddify/features/notifications/data/notification_data_providers.dart';
+import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
+import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:meta/meta.dart';
 import 'package:neat_periodic_task/neat_periodic_task.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 part 'profiles_update_notifier.g.dart';
 
@@ -90,25 +95,35 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         final updateInterval = profile.options?.updateInterval;
         if (force || updateInterval != null && updateInterval <= DateTime.now().difference(profile.lastUpdate)) {
           final t = ref.read(translationsProvider).requireValue;
-          await ref
-              .read(profileRepositoryProvider)
-              .requireValue
-              .upsertRemote(profile.url)
-              .mapLeft((l) {
+          final result = await ref.read(profileRepositoryProvider).requireValue.upsertRemote(profile.url).run();
+          await result.fold(
+            (l) async {
+              if (l is ProfileSubscriptionExpiredFailure) {
+                // Lapsed subscription: notify (deduped) and keep the last
+                // config. The backend disables the tunnel server-side at
+                // expiry, so the client does not disconnect. A later renewal
+                // returns a `new-url` and auto-migrates.
+                loggy.info("profile [${profile.id}] subscription expired with no renewal");
+                await _raiseSubscriptionExpired();
+                state = AsyncData((name: profile.name, success: false));
+              } else {
                 loggy.debug("error updating profile [${profile.id}]", l);
                 ref
                     .read(inAppNotificationControllerProvider)
                     .showErrorToast(t.pages.profiles.msg.update.failureNamed(name: profile.name));
                 state = AsyncData((name: profile.name, success: false));
-              })
-              .map((_) {
-                loggy.debug("profile [${profile.id}] updated successfully");
-                ref
-                    .read(inAppNotificationControllerProvider)
-                    .showSuccessToast(t.pages.profiles.msg.update.successNamed(name: profile.name));
-                state = AsyncData((name: profile.name, success: true));
-              })
-              .run();
+              }
+            },
+            (_) async {
+              loggy.debug("profile [${profile.id}] updated successfully");
+              // A good config returned — clear any standing "expired" prompt.
+              await _clearSubscriptionExpired();
+              ref
+                  .read(inAppNotificationControllerProvider)
+                  .showSuccessToast(t.pages.profiles.msg.update.successNamed(name: profile.name));
+              state = AsyncData((name: profile.name, success: true));
+            },
+          );
         } else {
           loggy.debug(
             "skipping profile [${profile.id}] update. last successful update: [${profile.lastUpdate}] - interval: [${profile.options?.updateInterval}]",
@@ -118,5 +133,23 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     } finally {
       await ref.read(sharedPreferencesProvider).requireValue.setString(prefKey, DateTime.now().toIso8601String());
     }
+  }
+
+  /// Raise a single persistent "subscription expired" notification, deduped so
+  /// repeated polls while lapsed don't spam the inbox.
+  Future<void> _raiseSubscriptionExpired() async {
+    final dao = ref.read(notificationDataSourceProvider);
+    if (await dao.hasAnyOfKind(NotificationKind.subscriptionExpired)) return;
+    await dao.insert(
+      AppNotificationsCompanion.insert(
+        id: const Uuid().v4(),
+        kind: NotificationKind.subscriptionExpired,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> _clearSubscriptionExpired() async {
+    await ref.read(notificationDataSourceProvider).deleteByKind(NotificationKind.subscriptionExpired);
   }
 }

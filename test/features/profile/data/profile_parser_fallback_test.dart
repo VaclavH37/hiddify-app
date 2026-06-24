@@ -33,6 +33,9 @@ String _raynLink(String url) {
   return 'rayn://import/$token';
 }
 
+/// The MW subscription API's token-expired envelope (HTTP 200 body).
+const _expiredEnvelope = '{"success":false,"error_code":4010,"message":"Subscription token expired"}';
+
 void main() {
   setUpAll(() {
     _testKey = CryptoUtils.generateRSAKeyPair(keySize: 4096);
@@ -290,6 +293,195 @@ void main() {
       );
     });
   });
+
+  group('isExpiredEnvelope', () {
+    test('detects a 4010 envelope (with and without new_url)', () {
+      expect(ProfileParser.isExpiredEnvelope(_expiredEnvelope), isTrue);
+      expect(
+        ProfileParser.isExpiredEnvelope('{"success":false,"error_code":4010,"new_url":"rayn://import/x"}'),
+        isTrue,
+      );
+    });
+
+    test('treats a sing-box config (no error_code) as not expired', () {
+      expect(ProfileParser.isExpiredEnvelope('{"outbounds":[],"dns":{}}'), isFalse);
+    });
+
+    test('treats non-JSON bodies as not expired', () {
+      expect(ProfileParser.isExpiredEnvelope(''), isFalse);
+      expect(ProfileParser.isExpiredEnvelope('vmess://abc'), isFalse);
+      expect(ProfileParser.isExpiredEnvelope('not json at all'), isFalse);
+    });
+  });
+
+  group('expired token handling', () {
+    late Directory tempDir;
+    late ProviderContainer container;
+    late Ref ref;
+
+    setUp(() async {
+      tempDir = Directory.systemTemp.createTempSync('expired_test_');
+      container = ProviderContainer(overrides: [appInfoProvider.overrideWith(_FakeAppInfo.new)]);
+      ref = container.read(_dummyRefProvider);
+      await container.read(appInfoProvider.future);
+    });
+
+    tearDown(() {
+      container.dispose();
+      try {
+        tempDir.deleteSync(recursive: true);
+      } catch (_) {}
+    });
+
+    RemoteProfileEntity buildEntity({String? sourceToken, String? fallbackUrl}) => RemoteProfileEntity(
+      id: 'test-id',
+      active: true,
+      name: 'test',
+      url: 'https://primary.example.com/sub',
+      lastUpdate: DateTime(2020),
+      sourceToken: sourceToken,
+      fallbackUrl: fallbackUrl,
+    );
+
+    test('addRemote follows new-url on a 4010 (renewed) and persists the renewed token', () async {
+      const renewedUrl = 'https://renewed.example.com/sub';
+      final renewedLink = _raynLink(renewedUrl);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'new-url': renewedLink}, body: _expiredEnvelope),
+          _FakeStep.ok(headers: {}),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser
+          .addRemote(
+            id: 'id-1',
+            url: 'https://primary.example.com/sub',
+            tempFilePath: '${tempDir.path}/profile',
+            userOverride: null,
+            sourceToken: 'rayn://import/original',
+          )
+          .run();
+
+      expect(result.isRight(), isTrue);
+      result.fold(
+        (_) => fail('expected Right'),
+        (companion) {
+          expect(companion.url.value, renewedUrl);
+          expect(companion.sourceToken.value, renewedLink);
+        },
+      );
+      expect(fake.callCount, 2);
+      expect(fake.calledUrls, ['https://primary.example.com/sub', renewedUrl]);
+    });
+
+    test('addRemote surfaces subscriptionExpired on a 4010 with no new-url', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {}, body: _expiredEnvelope)]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser
+          .addRemote(
+            id: 'id-1',
+            url: 'https://primary.example.com/sub',
+            tempFilePath: '${tempDir.path}/profile',
+            userOverride: null,
+            sourceToken: 'rayn://import/original',
+          )
+          .run();
+
+      expect(result.isLeft(), isTrue);
+      result.fold((l) => expect(l, isA<ProfileSubscriptionExpiredFailure>()), (_) => fail('expected Left'));
+      expect(fake.callCount, 1);
+    });
+
+    test('addRemote stops following after the hop cap and reports expired', () async {
+      final links = List.generate(5, (i) => _raynLink('https://hop$i.example.com/sub'));
+      final fake = _FakeHttpClient(
+        steps: [for (final link in links) _FakeStep.ok(headers: {'new-url': link}, body: _expiredEnvelope)],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser
+          .addRemote(
+            id: 'id-1',
+            url: 'https://primary.example.com/sub',
+            tempFilePath: '${tempDir.path}/profile',
+            userOverride: null,
+            sourceToken: 'rayn://import/original',
+          )
+          .run();
+
+      expect(result.isLeft(), isTrue);
+      result.fold((l) => expect(l, isA<ProfileSubscriptionExpiredFailure>()), (_) => fail('expected Left'));
+      // initial download + 3 follows (the hop cap) = 4 downloads, terminal is 4010.
+      expect(fake.callCount, 4);
+    });
+
+    test('updateRemote follows new-url on a 4010 and persists the renewed token', () async {
+      const renewedUrl = 'https://renewed.example.com/sub';
+      final renewedLink = _raynLink(renewedUrl);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'new-url': renewedLink}, body: _expiredEnvelope),
+          _FakeStep.ok(headers: {}),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.updateRemote(rp: buildEntity(), tempFilePath: '${tempDir.path}/profile').run();
+
+      expect(result.isRight(), isTrue);
+      result.fold(
+        (_) => fail('expected Right'),
+        (companion) {
+          expect(companion.url.value, renewedUrl);
+          expect(companion.sourceToken.value, renewedLink);
+        },
+      );
+      expect(fake.callCount, 2);
+    });
+
+    test('updateRemote does not failover when the primary is expired', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {}, body: _expiredEnvelope)]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser
+          .updateRemote(
+            rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'),
+            tempFilePath: '${tempDir.path}/profile',
+          )
+          .run();
+
+      expect(result.isLeft(), isTrue);
+      result.fold((l) => expect(l, isA<ProfileSubscriptionExpiredFailure>()), (_) => fail('expected Left'));
+      expect(fake.callCount, 1);
+    });
+
+    test('a steady-state new-url on a valid config re-fetches and rotates', () async {
+      const migratedUrl = 'https://migrated.example.com/sub';
+      final migratedLink = _raynLink(migratedUrl);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'new-url': migratedLink}),
+          _FakeStep.ok(headers: {}),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.updateRemote(rp: buildEntity(), tempFilePath: '${tempDir.path}/profile').run();
+
+      expect(result.isRight(), isTrue);
+      result.fold(
+        (_) => fail('expected Right'),
+        (companion) {
+          expect(companion.url.value, migratedUrl);
+          expect(companion.sourceToken.value, migratedLink);
+        },
+      );
+      expect(fake.callCount, 2);
+    });
+  });
 }
 
 final _dummyRefProvider = Provider<Ref>((ref) => ref);
@@ -308,13 +500,15 @@ class _FakeAppInfo extends AppInfo {
 }
 
 class _FakeStep {
-  _FakeStep._({this.headers, this.error});
-  factory _FakeStep.ok({required Map<String, dynamic> headers}) => _FakeStep._(headers: headers);
+  _FakeStep._({this.headers, this.error, this.body = ''});
+  factory _FakeStep.ok({required Map<String, dynamic> headers, String body = ''}) =>
+      _FakeStep._(headers: headers, body: body);
   factory _FakeStep.networkError() => _FakeStep._(error: _NetworkErrorMarker());
   factory _FakeStep.cancelled() => _FakeStep._(error: _CancelMarker());
 
   final Map<String, dynamic>? headers;
   final Object? error;
+  final String body;
 }
 
 class _NetworkErrorMarker {}
@@ -358,8 +552,7 @@ class _FakeHttpClient extends DioHttpClient {
         message: 'fake network error',
       );
     }
-    // Write empty body so expandRemoteLinesInParallel has nothing to fetch.
-    await File(path).writeAsString('');
+    await File(path).writeAsString(step.body);
     final headersMap = <String, List<String>>{};
     step.headers!.forEach((k, v) {
       if (v is List) {

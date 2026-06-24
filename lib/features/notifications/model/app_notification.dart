@@ -18,6 +18,10 @@ enum NotificationKind {
 
   /// Subscription is within a week of expiring (fires once per day).
   expiryReminder,
+
+  /// Subscription token is fully expired with no renewal available — raised by
+  /// the refresh loop when the API returns `4010` with no `new-url`.
+  subscriptionExpired,
 }
 
 @freezed

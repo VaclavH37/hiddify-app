@@ -517,6 +517,10 @@
     "expiry": {
       "title": "Subscription expiring",
       "body": "Your subscription expires in ${days} day(s). Renew to stay connected."
+    },
+    "expired": {
+      "title": "Subscription expired",
+      "body": "Your subscription has expired. Renew to reconnect."
     }
   },
   "dialogs": {
@@ -619,7 +623,8 @@
       "notFound": "Profile not found",
       "invalidConfig": "Invalid configs",
       "invalidUrl": "Invalid URL",
-      "canceledByUser": "Canceled by user"
+      "canceledByUser": "Canceled by user",
+      "subscriptionExpired": "Your subscription has expired. Please renew to continue."
     },
     "connectivity": {
       "unexpected": "Unexpected failure",

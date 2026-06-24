@@ -31,6 +31,9 @@ import 'package:meta/meta.dart';
 class ProfileParser {
   static const infiniteTrafficThreshold = 920_233_720_368;
   static const infiniteTimeThreshold = 92_233_720_368;
+  // Max `new-url` hops to follow in one resolve before giving up (defensive;
+  // the API guarantees a renewed token never bounces back to "expired").
+  static const _maxRotationHops = 3;
   static const allowedOverrideConfigs = [
     'connection-test-url',
     'direct-dns-address',
@@ -95,19 +98,13 @@ class ProfileParser {
     required UserOverride? userOverride,
     String? sourceToken,
     CancelToken? cancelToken,
-  }) => _downloadProfile(url, tempFilePath, cancelToken).flatMap((remoteHeaders) {
-    final rotation = extractRotation(remoteHeaders);
-    final effectiveUrl = rotation?.url ?? url;
-    final effectiveSourceToken = rotation?.name ?? sourceToken;
-    if (rotation != null) {
-      _log.info('rotating subscription URL on import (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})');
-    }
-    final fallback = extractFallback(remoteHeaders);
+  }) => _resolveDownload(url, sourceToken, tempFilePath, cancelToken).flatMap((resolved) {
+    final fallback = extractFallback(resolved.headers);
     if (fallback != null) {
       _log.info('capturing fallback URL on import (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
     }
     return TaskEither.fromEither(
-      populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
+      populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: resolved.headers),
     ).flatMap(
       (populatedHeaders) => TaskEither.fromEither(
         parse(
@@ -116,11 +113,13 @@ class ProfileParser {
             id: id,
             active: true,
             name: '',
-            url: effectiveUrl,
+            // `_resolveDownload` already followed any `new-url`, so these are
+            // the renewed token's url/source when a rotation occurred.
+            url: resolved.url,
             lastUpdate: DateTime.now(),
             userOverride: userOverride,
             populatedHeaders: populatedHeaders,
-            sourceToken: effectiveSourceToken,
+            sourceToken: resolved.sourceToken,
             fallbackUrl: fallback?.url,
             fallbackSourceToken: fallback?.name,
           ),
@@ -133,20 +132,21 @@ class ProfileParser {
     required RemoteProfileEntity rp,
     required String tempFilePath,
     CancelToken? cancelToken,
-  }) => _downloadWithFailover(rp, tempFilePath, cancelToken).flatMap((remoteHeaders) {
-    final rotation = extractRotation(remoteHeaders);
+  }) => _downloadWithFailover(rp, tempFilePath, cancelToken).flatMap((resolved) {
     var rotated = rp;
-    if (rotation != null && rotation.name != rp.sourceToken) {
-      _log.info('rotating subscription URL on refresh (new host: ${Uri.tryParse(rotation.url)?.host ?? "?"})');
-      rotated = rotated.copyWith(url: rotation.url, sourceToken: rotation.name);
+    // `_resolveDownload` already followed any `new-url`; persist the resulting
+    // token when it changed.
+    if (resolved.sourceToken != rp.sourceToken) {
+      _log.info('rotating subscription URL on refresh (new host: ${Uri.tryParse(resolved.url)?.host ?? "?"})');
+      rotated = rotated.copyWith(url: resolved.url, sourceToken: resolved.sourceToken);
     }
-    final fallback = extractFallback(remoteHeaders);
+    final fallback = extractFallback(resolved.headers);
     if (fallback != null && fallback.name != rp.fallbackSourceToken) {
       _log.info('updating fallback URL on refresh (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
       rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.name);
     }
     return TaskEither.fromEither(
-      populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
+      populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: resolved.headers),
     ).flatMap(
       (populatedHeaders) => TaskEither.fromEither(
         parse(
@@ -201,34 +201,59 @@ class ProfileParser {
     });
   }, (err, st) => err is ProfileFailure ? err : ProfileFailure.unexpected(err, st));
 
-  /// Wraps [_downloadProfile] with the fallback-URL failover policy. Used by
-  /// [updateRemote] only — initial imports go through [_downloadProfile]
-  /// directly because there is no stored fallback to consult yet.
+  /// One subscription request that follows `new-url` token rotation to the
+  /// terminal response (see [Confirmed decisions] in the plan). Returns the
+  /// terminal `headers` plus the `url`/`sourceToken` that produced it (the
+  /// renewed token when a `new-url` was followed). A terminal `4010` envelope
+  /// with no (further) `new-url` is a lapsed subscription →
+  /// [ProfileFailure.subscriptionExpired]. Capped at [_maxRotationHops].
+  TaskEither<ProfileFailure, ({Map<String, dynamic> headers, String url, String? sourceToken})> _resolveDownload(
+    String url,
+    String? sourceToken,
+    String tempFilePath,
+    CancelToken? cancelToken, {
+    int depth = 0,
+  }) => _downloadProfile(url, tempFilePath, cancelToken).flatMap((headers) {
+    final rotation = extractRotation(headers);
+    if (rotation != null && rotation.name != sourceToken && depth < _maxRotationHops) {
+      _log.info(
+        'following `new-url` to renewed token (hop ${depth + 1}, host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
+      );
+      return _resolveDownload(rotation.url, rotation.name, tempFilePath, cancelToken, depth: depth + 1);
+    }
+    if (isExpiredEnvelope(File(tempFilePath).readAsStringSync())) {
+      _log.warning('subscription token expired with no renewal available');
+      return TaskEither<ProfileFailure, ({Map<String, dynamic> headers, String url, String? sourceToken})>.left(
+        const ProfileFailure.subscriptionExpired(),
+      );
+    }
+    return TaskEither.right((headers: headers, url: url, sourceToken: sourceToken));
+  });
+
+  /// Wraps [_resolveDownload] with the fallback-URL failover policy. Used by
+  /// [updateRemote] only — initial imports have no stored fallback yet.
   ///
-  /// Trigger: any [ProfileFailure] from the primary URL after dio's
-  /// RetryInterceptor exhausts (timeouts, DNS, connect refused, HTTP 4xx/5xx —
-  /// all wrapped uniformly as `ProfileFailure.unexpected` by `_downloadProfile`).
-  /// **Excludes** [ProfileCancelByUserFailure] — user cancellation propagates
-  /// immediately. If the fallback attempt itself is cancelled, the cancel
-  /// surfaces (most recent user intent); if it fails for any other reason, the
-  /// original primary failure surfaces so the user-facing toast describes what
-  /// they actually saw.
-  TaskEither<ProfileFailure, Map<String, dynamic>> _downloadWithFailover(
+  /// Failover triggers on any [ProfileFailure] from the primary except
+  /// [ProfileCancelByUserFailure] (user intent) and
+  /// [ProfileSubscriptionExpiredFailure] (an account state — the fallback host
+  /// would return the same `4010`, so we surface the lapse instead).
+  TaskEither<ProfileFailure, ({Map<String, dynamic> headers, String url, String? sourceToken})> _downloadWithFailover(
     RemoteProfileEntity rp,
     String tempFilePath,
     CancelToken? cancelToken,
   ) => TaskEither(() async {
-    final primary = await _downloadProfile(rp.url, tempFilePath, cancelToken).run();
+    final primary = await _resolveDownload(rp.url, rp.sourceToken, tempFilePath, cancelToken).run();
     final primaryFailure = primary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (primaryFailure == null) return primary;
     if (primaryFailure is ProfileCancelByUserFailure) return primary;
+    if (primaryFailure is ProfileSubscriptionExpiredFailure) return primary;
     final fallback = rp.fallbackUrl;
     if (fallback == null || fallback.isEmpty) return primary;
     _log.info(
       'primary subscription URL failed (${Uri.tryParse(rp.url)?.host ?? "?"}); '
       'attempting fallback (${Uri.tryParse(fallback)?.host ?? "?"})',
     );
-    final secondary = await _downloadProfile(fallback, tempFilePath, cancelToken).run();
+    final secondary = await _resolveDownload(fallback, rp.fallbackSourceToken, tempFilePath, cancelToken).run();
     final secondaryFailure = secondary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (secondaryFailure == null) {
       _log.info('fallback subscription URL succeeded');
@@ -287,6 +312,23 @@ class ProfileParser {
       return null;
     }
     return (url: parsed.url, name: trimmed);
+  }
+
+  /// True when [body] is a token-expired envelope — the JSON
+  /// `{"success":false,"error_code":4010,…}` the MW subscription API returns
+  /// (HTTP 200) for an expired token. A normal sing-box config is JSON without
+  /// `error_code`; non-JSON bodies are configs of other formats → false.
+  /// Only meaningful on the terminal response: a `4010` carrying a `new-url`
+  /// is followed before this check (see [_resolveDownload]).
+  static bool isExpiredEnvelope(String body) {
+    try {
+      final decoded = jsonDecode(body.trim());
+      if (decoded is! Map) return false;
+      final code = decoded['error_code'];
+      return code == 4010 || code == '4010';
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> expandRemoteLinesInParallel({

@@ -18,6 +18,12 @@ abstract interface class NotificationDataSource {
   Future<void> markDismissed(String id);
   Future<void> markAllSeen();
   Future<void> deleteAll();
+
+  /// Whether any notification of [kind] currently exists (dedup guard).
+  Future<bool> hasAnyOfKind(NotificationKind kind);
+
+  /// Remove every notification of [kind] (e.g. clear "expired" once renewed).
+  Future<void> deleteByKind(NotificationKind kind);
 }
 
 @DriftAccessor(tables: [AppNotifications])
@@ -70,6 +76,21 @@ class NotificationDao extends DatabaseAccessor<Db> with _$NotificationDaoMixin i
   @override
   Future<void> deleteAll() async {
     await delete(appNotifications).go();
+  }
+
+  @override
+  Future<bool> hasAnyOfKind(NotificationKind kind) async {
+    final count = appNotifications.id.count();
+    final row = await (selectOnly(appNotifications)
+          ..addColumns([count])
+          ..where(appNotifications.kind.equalsValue(kind)))
+        .getSingle();
+    return (row.read(count) ?? 0) > 0;
+  }
+
+  @override
+  Future<void> deleteByKind(NotificationKind kind) async {
+    await (delete(appNotifications)..where((tbl) => tbl.kind.equalsValue(kind))).go();
   }
 }
 

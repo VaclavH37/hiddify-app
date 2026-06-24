@@ -27,6 +27,12 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
   @With<ExpectedFailure>()
   const factory ProfileFailure.cancelByUser([String? message]) = ProfileCancelByUserFailure;
 
+  // Subscription token is past its expiry and no renewal is available (the MW
+  // API's `error_code:4010` with no `new-url`). Distinct from invalidConfig so
+  // the user sees a "please renew" message, not "invalid configs".
+  @With<ExpectedFailure>()
+  const factory ProfileFailure.subscriptionExpired() = ProfileSubscriptionExpiredFailure;
+
   @override
   ({String type, String? message}) present(TranslationsEn t) {
     return switch (this) {
@@ -37,6 +43,7 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
       ProfileInvalidConfigFailure(:final message, :final configOptionFailure) =>
         configOptionFailure?.present(t) ?? (type: t.errors.profiles.invalidConfig, message: message),
       ProfileCancelByUserFailure(:final message) => (type: t.errors.profiles.canceledByUser, message: message),
+      ProfileSubscriptionExpiredFailure() => (type: t.errors.profiles.subscriptionExpired, message: null),
     };
   }
 }
