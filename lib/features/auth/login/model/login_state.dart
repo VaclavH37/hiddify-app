@@ -8,6 +8,7 @@ enum LoginOutcome {
   accountDeactivated,
   pendingPayment,
   pendingActivation,
+  expired,
   verifyFailed,
   unreachable,
   generic,

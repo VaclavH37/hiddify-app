@@ -17,6 +17,16 @@ abstract class Constants {
   /// Website landing pages the client points users to for flows that complete
   /// out-of-app (account creation, email verification, payment, support).
   static const accountUrl = "https://www.raynlabs.io/account";
+
+  /// Support inbox surfaced when the account API can't be reached (e.g. the
+  /// host is packet-filtered) and the user can't recover via their token.
+  static const supportEmail = "support@raynlabs.io";
+
+  /// Google Play subscription product id (a single product carrying the
+  /// monthly / quarter / annual base plans + the `trial` offer). The client
+  /// queries Play by this id and the backend reads the authoritative product
+  /// from Google — see IAP-CLIENT-INTEGRATION.md.
+  static const iapProductId = "rayn_premium";
 }
 
 const kAnimationDuration = Duration(milliseconds: 250);

@@ -86,11 +86,19 @@ class _HomeDesktopBody extends StatelessWidget {
             ),
           ),
         ),
+        // Positioned just below the top-right bell (HomeTopBarBell): the bell
+        // sits at RaynSpacing.lg from the safe-area top and is ~a min tap target
+        // (kMinInteractiveDimension) tall, so clear that band before the banner.
         const Align(
           alignment: Alignment.topCenter,
           child: SafeArea(
             child: Padding(
-              padding: EdgeInsets.all(RaynSpacing.md),
+              padding: EdgeInsets.fromLTRB(
+                RaynSpacing.md,
+                RaynSpacing.lg + kMinInteractiveDimension + RaynSpacing.sm,
+                RaynSpacing.md,
+                0,
+              ),
               child: NotificationBanner(),
             ),
           ),
@@ -127,12 +135,17 @@ class _HomeMobileBody extends StatelessWidget {
           Center(
             child: Transform.translate(offset: const Offset(0, 240), child: const ActiveProxyFooter()),
           ),
-          // Below the app bar (the mobile bell lives in HomeMobileAppBar).
+          // Just below the mobile app bar / bell (HomeMobileAppBar). The body's
+          // outer SafeArea has top:false, so wrap in a SafeArea here to add the
+          // status-bar inset — without it, offsetting by kToolbarHeight alone
+          // omits the status bar height and the banner rides up under the bell.
           const Align(
             alignment: Alignment.topCenter,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(RaynSpacing.md, kToolbarHeight, RaynSpacing.md, 0),
-              child: NotificationBanner(),
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(RaynSpacing.md, kToolbarHeight + RaynSpacing.sm, RaynSpacing.md, 0),
+                child: NotificationBanner(),
+              ),
             ),
           ),
         ],

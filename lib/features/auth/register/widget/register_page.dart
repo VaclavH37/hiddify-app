@@ -8,6 +8,7 @@ import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/register/model/register_state.dart';
 import 'package:hiddify/features/auth/register/model/register_validators.dart';
 import 'package:hiddify/features/auth/register/notifier/register_notifier.dart';
+import 'package:hiddify/features/auth/widget/auth_unreachable_help.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// In-app account creation. Mirrors the login page's styling. On success it
@@ -59,6 +60,8 @@ class RegisterPage extends HookConsumerWidget {
     }
 
     final outcomeMessage = _outcomeMessage(t, registerState);
+    final isUnreachable =
+        registerState.phase == RegisterPhase.outcome && registerState.outcome == RegisterOutcome.unreachable;
 
     return Scaffold(
       backgroundColor: palette.bgPrimary,
@@ -131,7 +134,12 @@ class RegisterPage extends HookConsumerWidget {
                         errorText: displayNameError.value,
                       ),
                     ),
-                    if (outcomeMessage != null) ...[
+                    // Unreachable host (e.g. packet-filtered): never silent —
+                    // offer retry / token-import / support recovery paths.
+                    if (isUnreachable) ...[
+                      const Gap(12),
+                      AuthUnreachableHelp(t: t),
+                    ] else if (outcomeMessage != null) ...[
                       const Gap(12),
                       Text(outcomeMessage, style: TextStyle(color: theme.colorScheme.error)),
                     ],
@@ -186,7 +194,8 @@ class RegisterPage extends HookConsumerWidget {
       case RegisterOutcome.verifyFailed:
         return t.auth.register.verifyFailed;
       case RegisterOutcome.unreachable:
-        return t.auth.register.unreachable;
+        // Rendered by AuthUnreachableHelp (with recovery actions), not inline.
+        return null;
       case RegisterOutcome.generic:
       case null:
         return t.auth.register.generic;

@@ -8,6 +8,7 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
 import 'package:hiddify/features/auth/login/notifier/login_notifier.dart';
+import 'package:hiddify/features/auth/widget/auth_unreachable_help.dart';
 import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -46,12 +47,23 @@ class LoginPage extends HookConsumerWidget {
       await ref.read(loginNotifierProvider.notifier).login(email, password);
     }
 
-    // An unverified account returns `403 EMAIL_NOT_VERIFIED`; route the user to
-    // the verification screen (carrying the typed email so resend works) instead
-    // of showing an inline message.
+    // Some outcomes navigate instead of rendering an inline message:
+    //  - `EMAIL_NOT_VERIFIED` → the verify screen (carrying the typed email so
+    //    resend works).
+    //  - `pending_payment` → the pricing screen (the account is verified but has
+    //    no subscription to import yet).
+    //  - `expired` → the same pricing screen, flagged as the expired variant so
+    //    it shows a "subscription expired — renew" notice.
     ref.listen(loginNotifierProvider, (_, next) {
-      if (next.outcome == LoginOutcome.emailNotVerified) {
-        context.push('/auth/verify-email', extra: emailCtrl.text.trim());
+      switch (next.outcome) {
+        case LoginOutcome.emailNotVerified:
+          context.push('/auth/verify-email', extra: emailCtrl.text.trim());
+        case LoginOutcome.pendingPayment:
+          context.push('/auth/payment', extra: false);
+        case LoginOutcome.expired:
+          context.push('/auth/payment', extra: true);
+        default:
+          break;
       }
     });
 
@@ -120,7 +132,12 @@ class LoginPage extends HookConsumerWidget {
                       const Gap(8),
                       Text(fieldError.value!, style: TextStyle(color: theme.colorScheme.error)),
                     ],
-                    if (outcomeMessage != null) ...[
+                    // When the host is unreachable (e.g. packet-filtered) the
+                    // failure is never silent: show retry / token / support help.
+                    if (loginState.outcome == LoginOutcome.unreachable) ...[
+                      const Gap(8),
+                      AuthUnreachableHelp(t: t),
+                    ] else if (outcomeMessage != null) ...[
                       const Gap(8),
                       Text(outcomeMessage, style: TextStyle(color: theme.colorScheme.error)),
                       if (_showWebsiteLink(loginState.outcome)) ...[
@@ -173,13 +190,16 @@ class LoginPage extends HookConsumerWidget {
       case LoginOutcome.accountDeactivated:
         return t.auth.login.accountDeactivated;
       case LoginOutcome.pendingPayment:
-        return t.auth.login.pendingPayment;
+      case LoginOutcome.expired:
+        // Handled by a redirect to the pricing screen, not an inline message.
+        return null;
       case LoginOutcome.pendingActivation:
         return t.auth.login.pendingActivation;
       case LoginOutcome.verifyFailed:
         return t.auth.login.verifyFailed;
       case LoginOutcome.unreachable:
-        return t.auth.login.unreachable;
+        // Rendered by AuthUnreachableHelp (with recovery actions), not inline.
+        return null;
       case LoginOutcome.generic:
         return t.auth.login.generic;
     }
@@ -189,7 +209,6 @@ class LoginPage extends HookConsumerWidget {
     switch (outcome) {
       case LoginOutcome.accountSuspended:
       case LoginOutcome.accountDeactivated:
-      case LoginOutcome.pendingPayment:
         return true;
       default:
         return false;

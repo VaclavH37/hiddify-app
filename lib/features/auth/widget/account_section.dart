@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
@@ -10,6 +12,7 @@ import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
 import 'package:hiddify/utils/date_time_formatter.dart';
+import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Settings → Account block. Three stacked [RaynSettingsTile]s:
@@ -31,7 +34,17 @@ class AccountSection extends ConsumerWidget {
 
     final remote = profile is RemoteProfileEntity ? profile : null;
     final sourceToken = remote?.sourceToken;
-    final subInfoLine = remote?.subInfo != null ? _formatSubInfo(remote!, t) : null;
+
+    // Subscription-management metadata from the MW subscription headers,
+    // persisted in populatedHeaders (ProfileParser.allowedProfileHeaders).
+    final provider = _header(remote, 'subscription-payment-provider');
+    final billingPeriod = _header(remote, 'subscription-billing-period');
+    final manageUrl = _header(remote, 'subscription-manage-url');
+    final isGooglePlay = provider == 'google_play';
+
+    final subInfoLine = remote?.subInfo != null
+        ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod)
+        : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
@@ -49,6 +62,19 @@ class AccountSection extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: RaynSpacing.sm),
+          // Offer converting an active web-paid (NOWPayments/Guardarian) plan to
+          // an auto-renewing Google Play subscription. Hidden once the provider
+          // is already google_play (nothing to transition).
+          if (remote?.subInfo != null && !isGooglePlay) ...[
+            RaynSettingsTile(
+              leading: Icons.autorenew,
+              title: t.auth.planTransition.settingsRow,
+              subtitle: t.auth.planTransition.settingsRowHint,
+              enabled: !logoutLoading,
+              onTap: () => context.pushNamed('planTransition'),
+            ),
+            const SizedBox(height: RaynSpacing.sm),
+          ],
           RaynSettingsTile(
             leading: Icons.content_copy,
             title: t.auth.copyToken,
@@ -61,6 +87,15 @@ class AccountSection extends ConsumerWidget {
                     if (!context.mounted) return;
                     ref.read(inAppNotificationControllerProvider).showSuccessToast(t.auth.tokenCopied);
                   },
+          ),
+          const SizedBox(height: RaynSpacing.sm),
+          RaynSettingsTile(
+            leading: Icons.card_membership_outlined,
+            title: t.auth.manageSubscription,
+            enabled: !logoutLoading,
+            onTap: () => UriUtils.tryLaunch(
+              Uri.parse(isGooglePlay && manageUrl != null ? manageUrl : Constants.accountUrl),
+            ),
           ),
           const SizedBox(height: RaynSpacing.sm),
           RaynSettingsTile(
@@ -102,10 +137,17 @@ class AccountSection extends ConsumerWidget {
   }
 }
 
-String _formatSubInfo(RemoteProfileEntity profile, Translations t) {
+/// Reads a persisted subscription header value, or null if absent/blank.
+String? _header(RemoteProfileEntity? profile, String key) {
+  final value = profile?.populatedHeaders?[key]?.toString().trim();
+  return (value == null || value.isEmpty) ? null : value;
+}
+
+String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? provider, String? billingPeriod}) {
   final sub = profile.subInfo!;
   final consumed = sub.consumption.sizeGB();
   final total = sub.total.sizeGB();
+  final isGooglePlay = provider == 'google_play';
 
   // Line 1: used / total quota, plus days-until-reset when the backend
   // supplied `subscription-refill-date` (hidden otherwise).
@@ -115,14 +157,43 @@ String _formatSubInfo(RemoteProfileEntity profile, Translations t) {
     line1 = '$line1 · ${t.components.subscriptionInfo.quotaResetIn(days: resetDays)}';
   }
 
-  // Line 2: absolute plan-expiry date, or "Never" for the infinite sentinel
-  // (mirrors the > 365-day infinity convention used elsewhere).
+  // Line 2: absolute date, or "Never" for the infinite sentinel (mirrors the
+  // > 365-day infinity convention). For an auto-renewing Google Play plan this
+  // is the *renewal* date, so relabel accordingly.
   final expiryValue = sub.remaining.inDays > 365
       ? t.components.subscriptionInfo.planExpiryNever
       : sub.expire.formatDate();
-  final line2 = t.components.subscriptionInfo.planExpiry(date: expiryValue);
+  final line2 = isGooglePlay
+      ? t.components.subscriptionInfo.renewDate(date: expiryValue)
+      : t.components.subscriptionInfo.planExpiry(date: expiryValue);
 
-  return '$line1\n$line2';
+  final lines = [line1, line2];
+
+  // Line 3 (when the backend sent a billing period): e.g. "Annual · Auto-renew"
+  // — auto-renew for Google Play, manual for any other provider.
+  if (billingPeriod != null) {
+    final renewType = isGooglePlay
+        ? t.components.subscriptionInfo.autoRenew
+        : t.components.subscriptionInfo.manualRenew;
+    lines.add('${_billingPeriodLabel(billingPeriod, t)} · $renewType');
+  }
+
+  return lines.join('\n');
+}
+
+/// Maps a `subscription-billing-period` value to a localized label, reusing the
+/// payment screen's plan names. Unknown values pass through unchanged.
+String _billingPeriodLabel(String raw, Translations t) {
+  switch (raw) {
+    case 'monthly':
+      return t.auth.payment.monthly;
+    case 'quarter':
+      return t.auth.payment.quarterly;
+    case 'annual':
+      return t.auth.payment.annual;
+    default:
+      return raw;
+  }
 }
 
 extension _SizeFmt on int {

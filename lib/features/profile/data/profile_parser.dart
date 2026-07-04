@@ -51,6 +51,12 @@ class ProfileParser {
     'profile-web-page-url',
     'enable-fragment',
     'subscription-refill-date',
+    // Subscription-management metadata surfaced on Settings → Account. Kept in
+    // `populatedHeaders` (persisted) so it's available on every auth path,
+    // including token-import users who have no account-API session.
+    'subscription-billing-period',
+    'subscription-payment-provider',
+    'subscription-manage-url',
   ];
 
   final Ref _ref;

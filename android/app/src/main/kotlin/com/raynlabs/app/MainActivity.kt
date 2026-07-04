@@ -14,6 +14,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.raynlabs.app.bg.ServiceConnection
 import com.raynlabs.app.bg.ServiceNotification
+import com.raynlabs.app.billing.RaynBillingHandler
 import com.raynlabs.app.constant.Alert
 import com.raynlabs.app.constant.ServiceMode
 import com.raynlabs.app.constant.Status
@@ -49,6 +50,7 @@ class MainActivity : FlutterFragmentActivity(), ServiceConnection.Callback {
         flutterEngine.plugins.add(PlatformSettingsHandler())
         flutterEngine.plugins.add(EventHandler())
         flutterEngine.plugins.add(LogHandler())
+        flutterEngine.plugins.add(RaynBillingHandler())
 //        flutterEngine.plugins.add(GroupsChannel(lifecycleScope))
 //        flutterEngine.plugins.add(ActiveGroupsChannel(lifecycleScope))
 //        flutterEngine.plugins.add(StatsChannel(lifecycleScope))

@@ -1,4 +1,6 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
+import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -20,6 +22,10 @@ class LogoutNotifier extends _$LogoutNotifier with AppLogger {
     if (state.isLoading) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      // End the account API session first (best-effort server logout + clear the
+      // stored session_token). Independent of the profile so it always runs.
+      await endAuthSession(ref.read(sessionTokenStoreProvider), ref.read(authApiClientProvider));
+
       final profile = await ref.read(activeProfileProvider.future);
       if (profile == null) {
         loggy.warning("logout called with no active profile");

@@ -176,6 +176,17 @@ dependencies {
     implementation 'io.grpc:grpc-okhttp:1.64.0'
     implementation 'io.grpc:grpc-protobuf-lite:1.64.0'
     implementation 'io.grpc:grpc-stub:1.64.0'
+
+    // Google Play Billing Library. Present so the build declares the
+    // `com.android.vending.BILLING` permission (merged in from this AAR's own
+    // manifest) — that permission is what Play Console detects before it lets
+    // you create/activate subscription products. The actual purchase flow
+    // (queryProductDetails / launchBillingFlow / verify) is Phase 2 of
+    // IAP_Integration/IAP-INTEGRATION-ROADMAP.md and not wired yet.
+    // NOTE: if a future Phase 2 adopts the Flutter `in_app_purchase` plugin,
+    // drop this line — that plugin bundles its own Billing dependency and the
+    // two would conflict. Keep it only while integrating Billing natively.
+    implementation 'com.android.billingclient:billing:8.2.0'
 //    protoPath(project(':hiddify_api'))
 //    implementation project(':hiddify_api')
 

@@ -15,6 +15,16 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Some plugin modules (e.g. flutter_secure_storage) still compile their Java
+// sources with source/target 1.8, which a modern JDK flags as "obsolete". The
+// notice is harmless and out of our control, so mute that javac lint category
+// — exactly as the compiler itself suggests — to keep release builds clean.
+subprojects {
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << '-Xlint:-options'
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

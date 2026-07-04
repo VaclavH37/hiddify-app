@@ -9,6 +9,8 @@ import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
 import 'package:hiddify/features/about/widget/about_page.dart';
 import 'package:hiddify/features/auth/login/widget/login_page.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
+import 'package:hiddify/features/auth/payment/widget/payment_page.dart';
+import 'package:hiddify/features/auth/payment/widget/plan_transition_page.dart';
 import 'package:hiddify/features/auth/register/widget/register_page.dart';
 import 'package:hiddify/features/auth/register/widget/verify_email_page.dart';
 import 'package:hiddify/features/auth/widget/auth_page.dart';
@@ -205,6 +207,14 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
           routes: <GoRoute>[
             GoRoute(name: 'login', path: 'login', builder: (_, _) => const LoginPage()),
             GoRoute(name: 'register', path: 'register', builder: (_, _) => const RegisterPage()),
+            // Shown after a `pending_payment` (or `expired`) login: the live
+            // Google Play purchase screen (buy → verify → import). `extra == true`
+            // selects the expired/renew variant.
+            GoRoute(
+              name: 'payment',
+              path: 'payment',
+              builder: (_, state) => PaymentPage(expired: state.extra as bool? ?? false),
+            ),
             GoRoute(
               name: 'verifyEmail',
               path: 'verify-email',
@@ -213,6 +223,15 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
               builder: (_, state) => VerifyEmailPage(email: state.extra as String? ?? ''),
             ),
           ],
+        ),
+        // Post-auth full-screen: convert a web-paid (NOWPayments/Guardarian)
+        // plan to an auto-renewing Google Play subscription. Reached from
+        // Settings → Account for users whose payment provider isn't google_play.
+        // Not under `/auth`, so the redirect leaves it alone once a profile exists.
+        GoRoute(
+          name: 'planTransition',
+          path: '/upgrade',
+          builder: (_, _) => const PlanTransitionPage(),
         ),
       ],
     );

@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
+import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/account_status.dart';
 import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
@@ -15,16 +14,19 @@ part 'login_notifier.g.dart';
 /// import path ([AddProfileNotifier.addClipboard]); the router's
 /// `hasAnyProfileProvider` gate then routes the app to `/home`.
 ///
-/// The session is intentionally ephemeral: the 24h `session_token` lives only
-/// in local scope for the duration of one login → fetch → import flow, then is
-/// discarded (with a best-effort `POST /logout`). Nothing is persisted — the
-/// durable auth state remains the single imported profile.
+/// The 24h `session_token` is persisted to the OS keystore on every successful
+/// login ([SessionTokenStore]) so a later Google Play in-app purchase can be
+/// associated with the account (e.g. `pending_payment` users who have no
+/// subscription to import yet). It is cleared on logout / return-to-auth via
+/// [endAuthSession]. The durable *connectivity* state remains the single
+/// imported profile — login never gates the tunnel.
 @riverpod
 class LoginNotifier extends _$LoginNotifier with AppLogger {
   @override
   LoginState build() => LoginState.idle;
 
   AuthApiClient get _client => ref.read(authApiClientProvider);
+  SessionTokenStore get _sessionStore => ref.read(sessionTokenStoreProvider);
 
   Future<void> login(String email, String password) async {
     if (state.isSubmitting) return;
@@ -36,11 +38,24 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
       final sessionToken = resp['session_token'] as String?;
       final accountStatus = AccountStatus.fromApi(resp['account_status'] as String?);
       final inlineUrl = resp['subscription_url'] as String?;
+      final userId = resp['user_id'] as String?;
+
+      // Persist the 24h session token before branching so it's available for a
+      // later in-app purchase regardless of which status path we take (notably
+      // `pending_payment`, which has no subscription to import). The `user_id`
+      // is stored with it — it's the Google Play `obfuscatedAccountId` that
+      // binds an in-app purchase to this account (IAP-CLIENT-INTEGRATION.md §3.3).
+      if (sessionToken != null && sessionToken.isNotEmpty) {
+        await _sessionStore.write(sessionToken);
+        if (userId != null && userId.isNotEmpty) {
+          await _sessionStore.writeUserId(userId);
+        }
+      }
 
       // Happy path: native (PoW) login returns the cryptolink inline — import
       // it directly, no second round-trip.
       if (inlineUrl != null && inlineUrl.isNotEmpty) {
-        await _import(inlineUrl, sessionToken);
+        await _import(inlineUrl);
         return;
       }
 
@@ -52,6 +67,10 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
           state = LoginState.fail(LoginOutcome.pendingPayment);
         case AccountStatus.pendingActivation:
           state = LoginState.fail(LoginOutcome.pendingActivation);
+        case AccountStatus.expired:
+          // Plan lapsed: the session is valid (persisted above) so the user can
+          // renew — route to the pricing screen, flagged as the expired variant.
+          state = LoginState.fail(LoginOutcome.expired);
         default:
           state = LoginState.fail(LoginOutcome.generic);
       }
@@ -95,7 +114,7 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
           state = LoginState.fail(LoginOutcome.generic);
           return;
         }
-        await _import(url, bearer);
+        await _import(url);
         return;
       } on AuthApiException catch (e) {
         if (e.code == 'REAUTH_REQUIRED' && !reauthed) {
@@ -122,16 +141,11 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
   /// Hand the acquired cryptolink to the existing import path. On success the
   /// router redirect (driven by `hasAnyProfileProvider`) replaces this screen
   /// with `/home`.
-  Future<void> _import(String subscriptionUrl, String? bearer) async {
+  Future<void> _import(String subscriptionUrl) async {
     await ref.read(addProfileNotifierProvider.notifier).addClipboard(subscriptionUrl);
 
-    // Best-effort, fire-and-forget server-side session teardown — we never keep
-    // the session. Not awaited so a torn-down screen doesn't strand the future.
-    if (bearer != null) {
-      unawaited(
-        _client.post('/api/public/logout', const {}, bearer: bearer).catchError((_) => <String, dynamic>{}),
-      );
-    }
+    // The session is no longer torn down here — it's persisted (see [login])
+    // and cleared later via [endAuthSession] on logout / return-to-auth.
 
     final importState = ref.read(addProfileNotifierProvider);
     if (importState.hasError) {

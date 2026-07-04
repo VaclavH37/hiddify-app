@@ -1,7 +1,7 @@
 name: hiddify
 description: Cross Platform Multi Protocol Proxy Frontend.
 publish_to: "none"
-version: 1.1.2+10102
+version: 1.2.3+10203
 
 environment:
   sdk: ^3.10.4
@@ -37,6 +37,10 @@ dependencies:
   # SHA-256 for the auth API proof-of-work solver. Already present transitively
   # via basic_utils; declared directly so the import is a first-class dependency.
   crypto: ^3.0.7
+  # OS keystore (Keychain / Keystore-backed EncryptedSharedPreferences / DPAPI /
+  # libsecret) for the 24h account API session_token — mandated by
+  # CLIENT-AUTH-INTEGRATION.md §2/§9; never store this credential in plaintext.
+  flutter_secure_storage: ^9.2.2
   # shared_preferences_android: ^2.4.8
   dio: ^5.4.1
   ffi: ^2.1.2
@@ -144,6 +148,7 @@ dev_dependencies:
   flutter_gen_runner: ^5.4.0
   dart_mappable_builder: ^4.2.1
   flutter_launcher_icons: ^0.14.1
+  pigeon: ^26.1.0
   # protoc_builder: ^0.4.1
   # google_protobuf: ^3.20.1;
 

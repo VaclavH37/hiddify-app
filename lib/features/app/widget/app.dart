@@ -15,6 +15,7 @@ import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
+import 'package:hiddify/features/auth/payment/notifier/iap_launch_reverify.dart';
 import 'package:hiddify/features/connection/widget/connection_wrapper.dart';
 import 'package:hiddify/features/notifications/notifier/notification_monitor.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -70,6 +71,12 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     // profile's subscription to raise quota/expiry alerts. Pre-auth there is no
     // profile to evaluate.
     if (hasProfile) ref.listen(notificationMonitorProvider, (_, _) {});
+    // Re-verify any active Google Play purchase once at launch (Android + an
+    // account session). Silent, idempotent, self-guarding — recovers an
+    // interrupted purchase or a reinstalled / cross-device subscription. Safe
+    // pre-auth: it touches only secure storage + Billing + the auth API, never
+    // the gRPC core that the listeners above must wait on.
+    ref.listen(iapLaunchReverifyProvider, (_, _) {});
 
     // updating ActiveBreakpointNotifier value
     useEffect(() {
