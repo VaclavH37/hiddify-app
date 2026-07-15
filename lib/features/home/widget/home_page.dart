@@ -8,6 +8,8 @@ import 'package:hiddify/features/home/widget/home_top_bar.dart';
 import 'package:hiddify/features/notifications/widget/notification_banner.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
+import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
+import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
@@ -16,6 +18,15 @@ class HomePage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keep the pre-connect location machinery alive regardless of connection
+    // state or which sub-screen is visible: the snapshot notifier captures the
+    // live proxy group while connected (so the list is available offline), and
+    // the selected-location notifier applies a pending pre-connect pick when the
+    // tunnel comes up. `listen` (not `watch`) instantiates + keeps them alive
+    // without rebuilding the home page on every capture.
+    ref.listen(proxySnapshotNotifierProvider, (_, _) {});
+    ref.listen(selectedLocationNotifierProvider, (_, _) {});
+
     final isMobile = Breakpoint(context).isMobile();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = context.rayn;
@@ -32,7 +43,13 @@ class HomePage extends HookConsumerWidget {
           body: Container(
             decoration: BoxDecoration(
               color: palette.bgPrimary,
-              image: DecorationImage(image: AssetImage(asset), fit: BoxFit.cover),
+              image: DecorationImage(
+                image: AssetImage(asset),
+                fit: BoxFit.cover,
+                // Soften the warm constellation/glow wash in light mode so it
+                // reads as a subtle accent rather than a haze behind the content.
+                opacity: isDark ? 1 : 0.6,
+              ),
             ),
             child: isMobile ? const _HomeMobileBody() : const _HomeDesktopBody(),
           ),

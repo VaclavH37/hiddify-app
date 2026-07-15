@@ -24,6 +24,7 @@ class GlassSurface extends StatelessWidget {
     this.padding = const EdgeInsets.all(RaynSpacing.lg),
     this.border,
     this.fillColor,
+    this.boxShadow,
   });
 
   final Widget child;
@@ -43,6 +44,10 @@ class GlassSurface extends StatelessWidget {
 
   /// Optional explicit fill color. Overrides [opacity] when provided.
   final Color? fillColor;
+
+  /// Optional neutral drop shadow(s) rendered behind the surface. Used to lift a
+  /// card off a pale (light-mode) background; composes with [glowColor].
+  final List<BoxShadow>? boxShadow;
 
   @override
   Widget build(BuildContext context) {
@@ -66,11 +71,14 @@ class GlassSurface extends StatelessWidget {
       ),
     );
 
-    if (glowColor != null) {
+    if (glowColor != null || boxShadow != null) {
       content = DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
-          boxShadow: [BoxShadow(color: glowColor!, blurRadius: 32, spreadRadius: 2)],
+          boxShadow: [
+            if (glowColor != null) BoxShadow(color: glowColor!, blurRadius: 32, spreadRadius: 2),
+            ...?boxShadow,
+          ],
         ),
         child: content,
       );

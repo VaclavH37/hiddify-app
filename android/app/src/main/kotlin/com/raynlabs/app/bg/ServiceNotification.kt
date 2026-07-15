@@ -51,6 +51,14 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
         private const val notificationId = 1
         private const val notificationChannel = "service"
         var coreClient: CoreClient?=null
+
+        // Regexes mirroring lib/features/proxy/model/node_name.dart. One or more
+        // trailing country-flag emoji (pairs of Regional Indicator Symbols) plus
+        // surrounding whitespace; the core→detour separator ("→" or "->"); and a
+        // 2-letter country code.
+        private val trailingFlagPattern = Regex("\\s*(?:[\\x{1F1E6}-\\x{1F1FF}]{2}\\s*)+$")
+        private val detourSeparator = Regex("\\s*(?:→|->)\\s*")
+        private val countryCodePattern = Regex("^[A-Za-z]{2}$")
         val flags =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
 
@@ -142,13 +150,50 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
     fun updateStatus(previous:SystemInfo,status: SystemInfo) {
         val uplink=status.uplink_total - previous.uplink_total
         val downlink=status.downlink_total - previous.downlink_total
-        val content = "${Libbox.formatBytes(uplink)}/s ↑\t${Libbox.formatBytes(downlink)}/s ↓ \n${status.current_outbound}"
+        val content = "${Libbox.formatBytes(uplink)}/s ↑\t${Libbox.formatBytes(downlink)}/s ↓ \n${prettifyOutbound(status.current_outbound)}"
         val title = "${status.current_profile}"
         Application.notificationManager.notify(
                 notificationId,
                 notificationBuilder.setContentTitle(title).setContentText(content).build()
         )
     }
+
+    // Port of the Flutter proxy list's prettifyNodeName
+    // (lib/features/proxy/model/node_name.dart) so the notification shows the same
+    // "City, CC" label the in-app list does (e.g. "EXIT-SK-SEOUL-01🇰🇷" -> "Seoul, SK").
+    // The core reports the whole selector chain (e.g. "lowest → EXIT-SK-SEOUL-01"),
+    // so we scan every detour hop and use the first that matches the convention.
+    private fun prettifyOutbound(tag: String): String {
+        for (hop in tag.split(detourSeparator)) {
+            prettifyHop(hop)?.let { return it }
+        }
+        // No hop matched — fall back to the raw tag with any trailing flag stripped.
+        return stripTrailingFlag(tag).ifBlank { tag }
+    }
+
+    // Converts a single "HUB-<CC>-<CITY…>-<id>" / "EXIT-<CC>-<CITY…>-<id>[flag]" hop
+    // into "City, CC", or null when it doesn't fit the convention.
+    private fun prettifyHop(hop: String): String? {
+        val parts = stripTrailingFlag(hop).split("-")
+        // Need at least: <prefix> - <cc> - <city…> - <id>.
+        if (parts.size < 4) return null
+        val prefix = parts.first().uppercase()
+        if (prefix != "HUB" && prefix != "EXIT") return null
+        val countryCode = parts[1]
+        if (!countryCodePattern.matches(countryCode)) return null
+        // Everything between the country code and the trailing id is the city, which
+        // may span multiple hyphen-separated segments (e.g. "NEW-YORK" -> "New York").
+        val citySegments = parts.subList(2, parts.size - 1).filter { it.isNotEmpty() }
+        if (citySegments.isEmpty()) return null
+        val city = citySegments.joinToString(" ") { titleCase(it) }
+        return "$city, ${countryCode.uppercase()}"
+    }
+
+    private fun stripTrailingFlag(name: String): String =
+        trailingFlagPattern.replace(name, "").trim()
+
+    private fun titleCase(word: String): String =
+        word.first().uppercase() + word.substring(1).lowercase()
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {

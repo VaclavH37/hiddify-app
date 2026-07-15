@@ -200,6 +200,9 @@ class LoginPage extends HookConsumerWidget {
       case LoginOutcome.unreachable:
         // Rendered by AuthUnreachableHelp (with recovery actions), not inline.
         return null;
+      case LoginOutcome.accountMismatch:
+        // Only the plan-transition re-auth sets this; never reached here.
+        return null;
       case LoginOutcome.generic:
         return t.auth.login.generic;
     }

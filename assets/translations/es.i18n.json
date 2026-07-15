@@ -143,7 +143,6 @@
         },
         "update": {
           "success": "Perfil actualizado con éxito",
-          "successNamed": "\"${name}\" actualizado con éxito",
           "failure": "Error al actualizar el perfil",
           "failureNamed": "Error al actualizar \"${name}\""
         },
@@ -164,11 +163,6 @@
         "autoUpdateInterval": "Intervalo de actualización automática",
         "loading": "Añadiendo perfil..."
       }
-    },
-    "logs": {
-      "title": "Registros",
-      "shareCoreLogs": "Compartir registros del núcleo",
-      "shareAppLogs": "Compartir registros de la aplicación"
     },
     "about": {
       "title": "Acerca de",

@@ -28,7 +28,22 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
   AuthApiClient get _client => ref.read(authApiClientProvider);
   SessionTokenStore get _sessionStore => ref.read(sessionTokenStoreProvider);
 
-  Future<void> login(String email, String password) async {
+  /// [importProfile] is false for the web→Google Play plan-transition re-auth,
+  /// which only needs a fresh persisted session (token + user_id) to verify the
+  /// purchase — the user already has a profile, so re-running the import would be
+  /// rejected by the single-profile guard ("already signed in").
+  ///
+  /// [expectedSubscriptionUrl] is the active profile's subscription URL. When set
+  /// (transition re-auth), the credentials must belong to that same subscription
+  /// or the sign-in is rejected with [LoginOutcome.accountMismatch] and **no**
+  /// session is persisted — otherwise a different account's credentials would
+  /// silently overwrite the session and bind the purchase to the wrong account.
+  Future<void> login(
+    String email,
+    String password, {
+    bool importProfile = true,
+    String? expectedSubscriptionUrl,
+  }) async {
     if (state.isSubmitting) return;
     state = LoginState.submitting;
 
@@ -39,6 +54,29 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
       final accountStatus = AccountStatus.fromApi(resp['account_status'] as String?);
       final inlineUrl = resp['subscription_url'] as String?;
       final userId = resp['user_id'] as String?;
+
+      // Plan-transition re-auth: verify the account owns the subscription active
+      // on this device BEFORE persisting anything, then store the fresh session
+      // and report success without importing (the single-profile guard would
+      // reject a re-import). This is the account-switch guard for this path.
+      if (!importProfile) {
+        if (expectedSubscriptionUrl != null &&
+            expectedSubscriptionUrl.isNotEmpty &&
+            !_ownsSubscription(inlineUrl, expectedSubscriptionUrl)) {
+          state = LoginState.fail(LoginOutcome.accountMismatch);
+          return;
+        }
+        if (sessionToken == null || sessionToken.isEmpty) {
+          state = LoginState.fail(LoginOutcome.generic);
+          return;
+        }
+        await _sessionStore.write(sessionToken);
+        if (userId != null && userId.isNotEmpty) {
+          await _sessionStore.writeUserId(userId);
+        }
+        state = LoginState.success;
+        return;
+      }
 
       // Persist the 24h session token before branching so it's available for a
       // later in-app purchase regardless of which status path we take (notably
@@ -154,6 +192,17 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
       return;
     }
     state = LoginState.success;
+  }
+
+  /// Whether the account's inline subscription [cryptolink] decrypts to the same
+  /// subscription [expectedUrl] active on this device. Used by the transition
+  /// re-auth to reject a different account's credentials. A missing/undecryptable
+  /// cryptolink (e.g. a `pending_payment` account with no subscription) can't be
+  /// confirmed to match, so it fails closed.
+  bool _ownsSubscription(String? cryptolink, String expectedUrl) {
+    if (cryptolink == null || cryptolink.isEmpty) return false;
+    final parsed = LinkParser.parse(cryptolink);
+    return parsed != null && parsed.url == expectedUrl;
   }
 
   LoginOutcome _mapError(AuthApiException e) {

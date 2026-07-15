@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
@@ -12,6 +11,7 @@ import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
 import 'package:hiddify/utils/date_time_formatter.dart';
+import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -41,6 +41,10 @@ class AccountSection extends ConsumerWidget {
     final billingPeriod = _header(remote, 'subscription-billing-period');
     final manageUrl = _header(remote, 'subscription-manage-url');
     final isGooglePlay = provider == 'google_play';
+    // Google Play IAP is a mobile-only surface (the transition purchase and the
+    // Play-managed subscription center). On desktop there's no Play Billing and
+    // the manage deep-link goes nowhere, so both rows are hidden there.
+    final showPlayRows = !PlatformUtils.isDesktop;
 
     final subInfoLine = remote?.subInfo != null
         ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod)
@@ -65,9 +69,9 @@ class AccountSection extends ConsumerWidget {
           // Offer converting an active web-paid (NOWPayments/Guardarian) plan to
           // an auto-renewing Google Play subscription. Hidden once the provider
           // is already google_play (nothing to transition).
-          if (remote?.subInfo != null && !isGooglePlay) ...[
+          if (showPlayRows && remote?.subInfo != null && !isGooglePlay) ...[
             RaynSettingsTile(
-              leading: Icons.autorenew,
+              leading: Icons.shop_outlined,
               title: t.auth.planTransition.settingsRow,
               subtitle: t.auth.planTransition.settingsRowHint,
               enabled: !logoutLoading,
@@ -89,15 +93,19 @@ class AccountSection extends ConsumerWidget {
                   },
           ),
           const SizedBox(height: RaynSpacing.sm),
-          RaynSettingsTile(
-            leading: Icons.card_membership_outlined,
-            title: t.auth.manageSubscription,
-            enabled: !logoutLoading,
-            onTap: () => UriUtils.tryLaunch(
-              Uri.parse(isGooglePlay && manageUrl != null ? manageUrl : Constants.accountUrl),
+          // Manage subscription — Google Play subscribers only. It deep-links to
+          // the Play subscription center; for any other provider we must NOT link
+          // out to the account page (it exposes external payment options, which
+          // violates Play policy), so the row is hidden entirely.
+          if (showPlayRows && isGooglePlay && manageUrl != null) ...[
+            RaynSettingsTile(
+              leading: Icons.card_membership_outlined,
+              title: t.auth.manageSubscription,
+              enabled: !logoutLoading,
+              onTap: () => UriUtils.tryLaunch(Uri.parse(manageUrl)),
             ),
-          ),
-          const SizedBox(height: RaynSpacing.sm),
+            const SizedBox(height: RaynSpacing.sm),
+          ],
           RaynSettingsTile(
             leading: Icons.logout,
             title: t.auth.logout,

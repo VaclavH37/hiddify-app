@@ -93,7 +93,6 @@ class MyAdaptiveLayout extends HookConsumerWidget {
   List<ShellRouteAction> _actions(Translations t, bool isMobileBreakpoint) => [
     ShellRouteAction(Icons.power_settings_new_rounded, t.pages.home.title),
     ShellRouteAction(Icons.settings_rounded, t.pages.settings.title),
-    if (!isMobileBreakpoint) ShellRouteAction(Icons.description_rounded, t.pages.logs.title),
     if (!isMobileBreakpoint) ShellRouteAction(Icons.info_rounded, t.pages.about.title),
   ];
 
@@ -127,10 +126,16 @@ class MyAdaptiveLayout extends HookConsumerWidget {
           return IconThemeData(color: selected ? RaynColors.goldPrimary : palette.textSecondary, size: 22);
         }),
       ),
-      child: NavigationBar(
-        selectedIndex: selectedIndex,
-        destinations: destinations,
-        onDestinationSelected: onDestinationSelected,
+      // A hairline top divider separates the bar from the page canvas — in light
+      // mode the pale surface would otherwise blend into the pale background.
+      child: DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(border: Border(top: BorderSide(color: palette.glassBorder))),
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          destinations: destinations,
+          onDestinationSelected: onDestinationSelected,
+        ),
       ),
     );
   }

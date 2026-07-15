@@ -1,8 +1,9 @@
+import 'dart:math';
+
 import 'package:dartx/dartx.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/optional_range.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
-import 'package:hiddify/core/utils/json_converters.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/features/log/model/log_level.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
@@ -140,11 +141,16 @@ abstract class ConfigOptions {
     validator: (value) => value.isNotBlank && isUrl(value),
   );
 
-  static final urlTestInterval = PreferencesNotifier.create<Duration, int>(
-    "url-test-interval",
-    const Duration(minutes: 10),
-    mapFrom: const IntervalInSecondsConverter().fromJson,
-    mapTo: const IntervalInSecondsConverter().toJson,
+  /// Interval for the core's `urltest` outbound group (auto "Lowest Latency"
+  /// reselection). No longer a user setting — a per-session random value in
+  /// [20, 40] minutes, drawn once at app launch and held stable for the session.
+  ///
+  /// Randomizing avoids shipping a fixed, well-known interval and de-synchronizes
+  /// the periodic test bursts across installs; holding it stable within a session
+  /// avoids churning the core config. The core applies this as a *fixed* interval,
+  /// so true per-cycle jitter would require a core-side change — out of scope here.
+  static final urlTestInterval = Provider<Duration>(
+    (ref) => Duration(minutes: 20 + Random().nextInt(21)),
   );
 
   static const _kClashApiPort = 16756;
@@ -234,7 +240,6 @@ abstract class ConfigOptions {
     "mtu": mtu,
     "strict-route": strictRoute,
     "connection-test-url": connectionTestUrl,
-    "url-test-interval": urlTestInterval,
     "bypass-lan": bypassLan,
     // "enable-dns-routing": enableDnsRouting,
 

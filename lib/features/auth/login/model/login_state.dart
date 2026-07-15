@@ -11,6 +11,11 @@ enum LoginOutcome {
   expired,
   verifyFailed,
   unreachable,
+
+  /// Plan-transition re-auth only: the credentials are valid but belong to a
+  /// different account than the subscription active on this device. Never
+  /// occurs in the normal login flow (which passes no expected account).
+  accountMismatch,
   generic,
 }
 

@@ -1,5 +1,6 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
@@ -7,9 +8,14 @@ import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/widget/rayn_notification_bell.dart';
 import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
+import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
+import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
+import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_notifier.dart';
 import 'package:hiddify/features/proxy/widget/proxy_tile.dart';
 import 'package:hiddify/features/settings/widget/sub_page_back_button.dart';
+import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -25,15 +31,35 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
     final sortBy = ref.watch(proxiesSortNotifierProvider);
     final notifier = ref.read(proxiesOverviewNotifierProvider.notifier);
     final sortNotifier = ref.read(proxiesSortNotifierProvider.notifier);
+    final isConnected = ref.watch(
+      connectionNotifierProvider.select((v) => v.valueOrNull?.isConnected ?? false),
+    );
+
+    // Connected → change the live selection in the core. Disconnected → record
+    // the choice against the cached snapshot and return to the home screen; it's
+    // applied to the core on the next connect.
+    Future<void> handleTap(String groupTag, OutboundInfo proxy) async {
+      if (isConnected) {
+        await notifier.changeProxy(groupTag, proxy.tag);
+        return;
+      }
+      final display = activeProxyDisplay(proxy, t);
+      await ref
+          .read(selectedLocationNotifierProvider.notifier)
+          .choosePreConnect(
+            groupTag: groupTag,
+            outboundTag: proxy.tag,
+            displayName: display.name,
+            countryCode: display.countryCode,
+            isAutoSelected: display.isAutoSelected,
+          );
+      // Reflect the pick in the cached snapshot so reopening the list highlights
+      // the new choice (not the previously connected node).
+      ref.read(proxySnapshotNotifierProvider.notifier).setSelected(proxy.tag);
+      if (context.mounted) context.goNamed('home');
+    }
 
     final trailing = <Widget>[
-      IconButton(
-        onPressed: () async => await notifier.urlTest("select"),
-        icon: const Icon(FluentIcons.flash_24_filled),
-        tooltip: t.pages.proxies.testDelay,
-        iconSize: 20,
-        color: palette.textPrimary,
-      ),
       PopupMenuButton<ProxiesSort>(
         initialValue: sortBy,
         onSelected: sortNotifier.update,
@@ -59,8 +85,14 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
             child: proxies.when(
               data: (group) {
                 if (group == null || group.items.isEmpty) {
+                  // Disconnected with no cache yet (first-ever run) → guide the
+                  // user to connect once so the location list can be populated.
+                  final message = isConnected ? t.pages.proxies.empty : t.pages.proxies.snapshotEmpty;
                   return Center(
-                    child: Text(t.pages.proxies.empty, style: TextStyle(color: palette.textMuted)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+                      child: Text(message, textAlign: TextAlign.center, style: TextStyle(color: palette.textMuted)),
+                    ),
                   );
                 }
                 final groupItems = group.items.where((p) => p.isGroup).toList();
@@ -74,7 +106,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                       proxy,
                       selected: group.selected == proxy.tag,
                       onTap: () async {
-                        await notifier.changeProxy(group.tag, proxy.tag);
+                        await handleTap(group.tag, proxy);
                       },
                     ),
                   );
@@ -95,7 +127,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                       proxy,
                       selected: group.selected == proxy.tag,
                       onTap: () async {
-                        await notifier.changeProxy(group.tag, proxy.tag);
+                        await handleTap(group.tag, proxy);
                       },
                     ),
                   );

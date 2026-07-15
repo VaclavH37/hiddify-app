@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
+import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/router/adaptive_layout/my_adaptive_layout.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/custom_transition.dart';
@@ -14,8 +15,9 @@ import 'package:hiddify/features/auth/payment/widget/plan_transition_page.dart';
 import 'package:hiddify/features/auth/register/widget/register_page.dart';
 import 'package:hiddify/features/auth/register/widget/verify_email_page.dart';
 import 'package:hiddify/features/auth/widget/auth_page.dart';
+import 'package:hiddify/features/disclosure/widget/data_disclosure_page.dart';
+import 'package:hiddify/features/disclosure/widget/vpn_disclosure_page.dart';
 import 'package:hiddify/features/home/widget/home_page.dart';
-import 'package:hiddify/features/log/overview/logs_page.dart';
 import 'package:hiddify/features/notifications/widget/notifications_inbox_page.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_page.dart';
@@ -33,7 +35,6 @@ part 'routing_config_notifier.g.dart';
 final branchesScope = <String, FocusScopeNode>{
   'home': FocusScopeNode(),
   'settings': FocusScopeNode(),
-  'logs': FocusScopeNode(),
   'about': FocusScopeNode(),
 };
 
@@ -43,10 +44,10 @@ final loadingConfig = RoutingConfig(
 );
 
 String getNameOfBranch(bool isMobileBreakpoint, int index) =>
-    isMobileBreakpoint ? ['home', 'settings'][index] : ['home', 'settings', 'logs', 'about'][index];
+    isMobileBreakpoint ? ['home', 'settings'][index] : ['home', 'settings', 'about'][index];
 
 int getIndexOfBranch(bool isMobileBreakpoint, String name) =>
-    isMobileBreakpoint ? ['home', 'settings'].indexOf(name) : ['home', 'settings', 'logs', 'about'].indexOf(name);
+    isMobileBreakpoint ? ['home', 'settings'].indexOf(name) : ['home', 'settings', 'about'].indexOf(name);
 
 @Riverpod(keepAlive: true)
 class RoutingConfigNotifier extends _$RoutingConfigNotifier {
@@ -68,6 +69,25 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
         } else if (PlatformUtils.isDesktop && newUrlFromAppLink.isNotEmpty) {
           url = newUrlFromAppLink;
           newUrlFromAppLink = '';
+        }
+
+        // Mobile-only Google Play prominent disclosures, shown before any auth
+        // surface. Two SEPARATE consent screens (VpnService, then account
+        // data) — the VpnService disclosure must not be combined with the
+        // personal-data one. Desktop is exempt (no VpnService, not a Play
+        // submission) and falls straight through.
+        if (!PlatformUtils.isDesktop) {
+          final isDisclosureRoute = state.matchedLocation.startsWith('/disclosure');
+          if (!ref.read(Preferences.vpnDisclosureAccepted)) {
+            if (url != null) ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
+            return state.matchedLocation == '/disclosure/vpn' ? null : '/disclosure/vpn';
+          }
+          if (!ref.read(Preferences.dataDisclosureAccepted)) {
+            if (url != null) ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
+            return state.matchedLocation == '/disclosure/data' ? null : '/disclosure/data';
+          }
+          // Both accepted but still parked on a disclosure route → move on.
+          if (isDisclosureRoute) return '/auth';
         }
 
         // hasAnyProfileProvider is a Stream<bool>. While loading, hold on
@@ -160,34 +180,18 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                       pageBuilder: (_, state) =>
                           customTransition(TransitionType.slide, state.pageKey, const InboundOptionsPage()),
                     ),
-                    if (isMobileBreakpoint) ...[
-                      GoRoute(
-                        name: 'logs',
-                        path: '/logs',
-                        pageBuilder: (_, state) =>
-                            customTransition(TransitionType.slide, state.pageKey, const LogsPage()),
-                      ),
+                    if (isMobileBreakpoint)
                       GoRoute(
                         name: 'about',
                         path: '/about',
                         pageBuilder: (_, state) =>
                             customTransition(TransitionType.slide, state.pageKey, const AboutPage()),
                       ),
-                    ],
                   ],
                 ),
               ],
             ),
-            if (!isMobileBreakpoint) ...[
-              StatefulShellBranch(
-                routes: <GoRoute>[
-                  GoRoute(
-                    name: 'logs',
-                    path: '/logs',
-                    builder: (_, _) => FocusScope(node: branchesScope['logs'], child: const LogsPage()),
-                  ),
-                ],
-              ),
+            if (!isMobileBreakpoint)
               StatefulShellBranch(
                 routes: <GoRoute>[
                   GoRoute(
@@ -197,8 +201,19 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                   ),
                 ],
               ),
-            ],
           ],
+        ),
+        // Mobile prominent-disclosure screens (registered on all platforms but
+        // only reachable on mobile — desktop skips the redirect gate above).
+        GoRoute(
+          name: 'vpnDisclosure',
+          path: '/disclosure/vpn',
+          builder: (_, _) => const VpnDisclosurePage(),
+        ),
+        GoRoute(
+          name: 'dataDisclosure',
+          path: '/disclosure/data',
+          builder: (_, _) => const DataDisclosurePage(),
         ),
         GoRoute(
           name: 'auth',

@@ -1,15 +1,15 @@
 {
-  "version": "2026-06-30",
-  "fetched_at": "2026-06-30T04:26:17Z",
+  "version": "2026-07-15",
+  "fetched_at": "2026-07-15T07:20:13Z",
   "upstream_commit": {
-    "sing-geosite": "96fe6e161594de2cd018262f2ea3fece5f1d44b3",
-    "sing-geoip": "a508a0a09d30111e0ab5a0d9a3de1aff832d72b4"
+    "sing-geosite": "006ecb2fad6de1a0bf3f92421afc7d65840d4aa7",
+    "sing-geoip": "5605651c12ed5b2fcf3b5de580c041eb9d8d938e"
   },
   "files": [
     {"name": "direct-private.srs", "sha256": "260491243e0266e5ba543f509ca7f13b07d6f4c2c26ade3f675ddea1661f3213", "size": 754},
-    {"name": "direct-apple.srs", "sha256": "bf679c8ae2b528fa6f1768233798a96119c7e274aa4408b151a701e517e54b8f", "size": 2293},
-    {"name": "direct-regional-sites.srs", "sha256": "ea9195a7361453c9a6637d1c4ec276c0cc0f6ee165be19fbf4b3535786a4d7e2", "size": 51835},
-    {"name": "direct-regional-ips.srs", "sha256": "bdaeb6430a16b6f61777c94ec9dff0867f06c672bb443bce751d29aecbe2fc07", "size": 33815},
-    {"name": "fakeip-remote-sites.srs", "sha256": "3a0fe43b2cbd83f963904b2a38e747b636c975f6a3db1d9d2808281678317940", "size": 166587}
+    {"name": "direct-apple.srs", "sha256": "de3e9c5f167da7f8d9158fb96fe524e70a91590573da91340f3a2b05c488b7e5", "size": 2304},
+    {"name": "direct-regional-sites.srs", "sha256": "41e7997ca834deb004217894b3e2c2943b590adf2811cb77e443e775b20c2ec9", "size": 53669},
+    {"name": "direct-regional-ips.srs", "sha256": "bc1a9eb66f9c6a0fe9fc5300cf5b5e885e0f9eadd7213b085b767a95d6af3d2a", "size": 33920},
+    {"name": "fakeip-remote-sites.srs", "sha256": "6f1c062033661144f0d25a0823bc79f0d88f03c8fdf90d796412066eba871821", "size": 166809}
   ]
 }

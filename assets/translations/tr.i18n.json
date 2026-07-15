@@ -143,7 +143,6 @@
         },
         "update": {
           "success": "Profil başarıyla güncellendi",
-          "successNamed": "\"${name}\" başarıyla güncellendi",
           "failure": "Profil güncellenemedi",
           "failureNamed": "\"${name}\" güncellenemedi"
         },
@@ -164,11 +163,6 @@
         "autoUpdateInterval": "Otomatik güncelleme aralığı",
         "loading": "Profil ekleniyor..."
       }
-    },
-    "logs": {
-      "title": "Loglar",
-      "shareCoreLogs": "Çekirdek loglarını paylaş",
-      "shareAppLogs": "Uygulama loglarını paylaş"
     },
     "about": {
       "title": "Hakkında",

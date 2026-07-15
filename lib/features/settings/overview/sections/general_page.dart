@@ -1,16 +1,12 @@
-import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
-import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
 import 'package:hiddify/core/widget/rayn_preference_group.dart';
-import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
 import 'package:hiddify/features/common/general_pref_tiles.dart';
 import 'package:hiddify/features/log/model/log_level.dart';
@@ -19,7 +15,6 @@ import 'package:hiddify/features/settings/widget/preference_tile.dart';
 import 'package:hiddify/features/settings/widget/sub_page_back_button.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:humanizer/humanizer.dart';
 
 class GeneralPage extends HookConsumerWidget {
   const GeneralPage({super.key});
@@ -103,7 +98,6 @@ class GeneralPage extends HookConsumerWidget {
         title: t.pages.settings.general.connectionTestUrl,
         icon: Icons.link_rounded,
       ),
-      _UrlTestIntervalTile(),
     ];
 
     return RaynPageScaffold(
@@ -121,38 +115,6 @@ class GeneralPage extends HookConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _UrlTestIntervalTile extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = ref.watch(translationsProvider).requireValue;
-    final interval = ref.watch(ConfigOptions.urlTestInterval);
-    final palette = context.rayn;
-    return RaynSettingsTile(
-      leading: Icons.timer_rounded,
-      title: t.pages.settings.general.urlTestInterval,
-      trailing: Text(
-        interval.toApproximateTime(isRelativeToNow: false),
-        style: RaynTypography.body.copyWith(color: palette.textMuted),
-      ),
-      onTap: () async => await ref
-          .read(dialogNotifierProvider.notifier)
-          .showSettingSlider(
-            title: t.pages.settings.general.urlTestInterval,
-            initialValue: interval.inMinutes.coerceIn(0, 60).toDouble(),
-            onReset: ref.read(ConfigOptions.urlTestInterval.notifier).reset,
-            min: 1,
-            max: 60,
-            divisions: 60,
-            labelGen: (value) => Duration(minutes: value.toInt()).toApproximateTime(isRelativeToNow: false),
-          )
-          .then((value) async {
-            if (value == null) return;
-            await ref.read(ConfigOptions.urlTestInterval.notifier).update(Duration(minutes: value.toInt()));
-          }),
     );
   }
 }

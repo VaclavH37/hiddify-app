@@ -121,7 +121,13 @@ class PlanTransitionPage extends HookConsumerWidget {
                     if (authed.value == null)
                       const _CenteredSpinner()
                     else if (authed.value == false)
-                      _ReauthPanel(t: t, onAuthed: () => authed.value = true)
+                      _ReauthPanel(
+                        t: t,
+                        // Guard: the credentials must own the subscription active
+                        // on this device, or re-auth is rejected (no account switch).
+                        expectedSubscriptionUrl: remote?.url,
+                        onAuthed: () => authed.value = true,
+                      )
                     else
                       ..._plans(context, t, theme, palette, state, notifier, remainingDays),
                   ],
@@ -245,10 +251,13 @@ class PlanTransitionPage extends HookConsumerWidget {
 /// 24h `session_token` + `user_id` on success) so the transition can proceed
 /// without leaving this screen; [onAuthed] fires once a session is in place.
 class _ReauthPanel extends HookConsumerWidget {
-  const _ReauthPanel({required this.t, required this.onAuthed});
+  const _ReauthPanel({required this.t, required this.onAuthed, this.expectedSubscriptionUrl});
 
   final Translations t;
   final VoidCallback onAuthed;
+
+  /// The active profile's subscription URL — the credentials must match it.
+  final String? expectedSubscriptionUrl;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -274,7 +283,15 @@ class _ReauthPanel extends HookConsumerWidget {
         return;
       }
       fieldError.value = null;
-      await ref.read(loginNotifierProvider.notifier).login(email, password);
+      // Re-auth only: persist a fresh session for verify — don't re-import the
+      // profile (the user already has one; the guard would reject it). The
+      // account must own the active subscription, or login reports accountMismatch.
+      await ref.read(loginNotifierProvider.notifier).login(
+            email,
+            password,
+            importProfile: false,
+            expectedSubscriptionUrl: expectedSubscriptionUrl,
+          );
     }
 
     ref.listen(loginNotifierProvider, (_, next) {
@@ -355,6 +372,8 @@ class _ReauthPanel extends HookConsumerWidget {
         return null; // unreachable is rendered by AuthUnreachableHelp above.
       case LoginOutcome.invalidCredentials:
         return t.auth.login.invalidCredentials;
+      case LoginOutcome.accountMismatch:
+        return t.auth.planTransition.accountMismatch;
       case LoginOutcome.accountSuspended:
         return t.auth.login.accountSuspended;
       case LoginOutcome.accountDeactivated:

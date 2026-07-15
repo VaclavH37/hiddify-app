@@ -143,7 +143,6 @@
         },
         "update": {
           "success": "設定檔更新成功",
-          "successNamed": "「${name}」更新成功",
           "failure": "更新設定檔失敗",
           "failureNamed": "更新「${name}」失敗"
         },
@@ -164,11 +163,6 @@
         "autoUpdateInterval": "自動更新間隔",
         "loading": "正在新增設定檔..."
       }
-    },
-    "logs": {
-      "title": "日誌",
-      "shareCoreLogs": "分享核心日誌",
-      "shareAppLogs": "分享應用程式日誌"
     },
     "about": {
       "title": "關於",

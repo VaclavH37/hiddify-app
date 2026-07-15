@@ -81,7 +81,6 @@ class SettingsPage extends HookConsumerWidget {
           if (isMobile) ...[
             const _SectionDivider(),
             RaynSectionHeader(t.pages.about.title),
-            _Tile(title: t.pages.logs.title, icon: Icons.description_rounded, location: context.namedLocation('logs')),
             _Tile(title: t.pages.about.title, icon: Icons.info_rounded, location: context.namedLocation('about')),
           ],
         ],

@@ -7,8 +7,8 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
-import 'package:hiddify/features/proxy/model/proxy_failure.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/init_signal.dart';
 import 'package:hiddify/utils/riverpod_utils.dart';
@@ -36,7 +36,7 @@ class ProxiesSortNotifier extends _$ProxiesSortNotifier with AppLogger {
   late final _pref = PreferencesEntry(
     preferences: ref.watch(sharedPreferencesProvider).requireValue,
     key: "proxies_sort_mode",
-    defaultValue: ProxiesSort.delay,
+    defaultValue: ProxiesSort.name,
     mapFrom: ProxiesSort.values.byName,
     mapTo: (value) => value.name,
   );
@@ -61,10 +61,15 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
     ref.disposeDelay(const Duration(seconds: 15));
     ref.watch(coreRestartSignalProvider);
     final serviceRunning = await ref.watch(serviceRunningProvider.future);
-    if (!serviceRunning) {
-      throw const ServiceNotRunning();
-    }
     final sortBy = ref.watch(proxiesSortNotifierProvider);
+    if (!serviceRunning) {
+      // Pre-connect: there is no core, so render the cached snapshot captured on
+      // the last connected session. Null on first-ever run → the page shows its
+      // "connect once" empty state.
+      final snapshot = ref.watch(proxySnapshotNotifierProvider);
+      yield snapshot == null ? null : await _sortOutbounds(snapshot.toOutboundGroup(), sortBy);
+      return;
+    }
     // yield* ref
     //     .watch(proxyRepositoryProvider)
     //     .watchProxies()
@@ -215,17 +220,6 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
       newselected.isSelected = true;
       outbounds.selected = newselected.tag;
       state = AsyncValue.data(outbounds);
-    }
-  }
-
-  Future<void> urlTest(String groupTag) async {
-    loggy.debug("testing group: [$groupTag]");
-    if (state case AsyncData()) {
-      await ref.read(hapticServiceProvider.notifier).lightImpact();
-      await ref.read(proxyRepositoryProvider).urlTest(groupTag).getOrElse((err) {
-        loggy.error("error testing group", err);
-        throw err;
-      }).run();
     }
   }
 }

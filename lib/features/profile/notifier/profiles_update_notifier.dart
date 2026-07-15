@@ -120,7 +120,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
               await _clearSubscriptionExpired();
               ref
                   .read(inAppNotificationControllerProvider)
-                  .showSuccessToast(t.pages.profiles.msg.update.successNamed(name: profile.name));
+                  .showSuccessToast(t.pages.profiles.msg.update.success);
               state = AsyncData((name: profile.name, success: true));
             },
           );

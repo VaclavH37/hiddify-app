@@ -143,7 +143,6 @@
         },
         "update": {
           "success": "配置文件更新成功",
-          "successNamed": "\"${name}\" 更新成功",
           "failure": "更新配置文件失败",
           "failureNamed": "更新 \"${name}\" 失败"
         },
@@ -164,11 +163,6 @@
         "autoUpdateInterval": "自动更新间隔",
         "loading": "正在添加配置文件..."
       }
-    },
-    "logs": {
-      "title": "日志",
-      "shareCoreLogs": "分享核心日志",
-      "shareAppLogs": "分享应用日志"
     },
     "about": {
       "title": "关于",

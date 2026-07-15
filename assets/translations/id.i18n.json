@@ -143,7 +143,6 @@
         },
         "update": {
           "success": "Profil berhasil diperbarui",
-          "successNamed": "\"${name}\" berhasil diperbarui",
           "failure": "Gagal memperbarui profil",
           "failureNamed": "Gagal memperbarui \"${name}\""
         },
@@ -164,11 +163,6 @@
         "autoUpdateInterval": "Interval pembaruan otomatis",
         "loading": "Menambahkan profil..."
       }
-    },
-    "logs": {
-      "title": "Log",
-      "shareCoreLogs": "Bagikan log inti",
-      "shareAppLogs": "Bagikan log aplikasi"
     },
     "about": {
       "title": "Tentang",

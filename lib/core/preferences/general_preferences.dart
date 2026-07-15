@@ -56,6 +56,14 @@ abstract class Preferences {
 
   static final storeReviewedByUser = PreferencesNotifier.create<bool, bool>("store_reviewed_by_user", false);
 
+  // Google Play prominent-disclosure consent flags (mobile only). Two SEPARATE
+  // disclosures per policy: the VpnService disclosure must not be combined with
+  // the personal/sensitive-data disclosure, so each has its own affirmative
+  // consent and its own flag. Gated in the router redirect before `/auth`.
+  static final vpnDisclosureAccepted = PreferencesNotifier.create<bool, bool>("vpn_disclosure_accepted", false);
+
+  static final dataDisclosureAccepted = PreferencesNotifier.create<bool, bool>("data_disclosure_accepted", false);
+
   // Counts successful connections so the in-app review prompt can wait until
   // the user has connected enough times to form an opinion (see
   // ConnectionNotifier) rather than firing on the first-ever connection.

@@ -14,6 +14,7 @@ import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/proxy/active/ip_widget.dart';
+import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
 import 'package:hiddify/features/proxy/model/node_name.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/singbox/model/singbox_proxy_type.dart';
@@ -25,36 +26,36 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Remember the live exit location so the home screen can show where the next
+    // connection will land, before any core/tunnel exists. Registered before the
+    // early return so it keeps recording across connect/disconnect transitions.
+    ref.listen(activeProxyNotifierProvider, (_, next) {
+      final proxy = next.valueOrNull;
+      if (proxy == null) return;
+      final display = activeProxyDisplay(proxy, ref.read(translationsProvider).requireValue);
+      // Only remember real, resolved exits — never an auto-selector placeholder
+      // ("Lowest Latency") captured before the group has picked a member.
+      if (!display.resolved) return;
+      ref
+          .read(selectedLocationNotifierProvider.notifier)
+          .recordActive(display.name, display.countryCode, display.isAutoSelected);
+    });
+
     final connectionState = ref.watch(
       connectionNotifierProvider.select((value) => value.valueOrNull ?? const Disconnected()),
     );
     final activeProxy = ref.watch(activeProxyNotifierProvider.select((value) => value.valueOrNull));
     final t = ref.watch(translationsProvider).requireValue;
 
+    // Pre-connect (or before the core reports an outbound), show the interactive
+    // location tile so the user can review — and change — where they'll exit.
     if (connectionState != const Connected() || activeProxy == null) {
-      return const SizedBox.shrink();
+      return const SelectedLocationTile();
     }
 
-    final proxyType = ProxyType.fromJson(activeProxy.type);
-    final isAutoSelected = proxyType == ProxyType.urltest || proxyType == ProxyType.balancer;
-    // Balancer rotates across multiple outbounds and the core does not
-    // populate `groupSelectedTagDisplay`, so falling back to `tagDisplay`
-    // would just print the group's name ("round-robin"). Derive a location
-    // from the exit IP info instead — that's what the user actually wants
-    // to see for an auto-rotated connection.
-    final String rawName;
-    if (proxyType == ProxyType.balancer) {
-      rawName = _balancerLocationName(activeProxy);
-    } else if (activeProxy.groupSelectedTagDisplay.isNotEmpty) {
-      rawName = activeProxy.groupSelectedTagDisplay;
-    } else {
-      rawName = activeProxy.tagDisplay;
-    }
-    // Transform the backend hub/exit tag (e.g. "EXIT-US-DALLAS-01🇺🇸") into a
-    // readable "City, CC" label; fall back to the flag-stripped raw name for
-    // group/balancer labels that don't follow the convention.
-    final displayName = prettifyNodeName(rawName) ?? stripTrailingFlag(rawName);
-    final modeLabel = isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct;
+    final display = activeProxyDisplay(activeProxy, t);
+    final displayName = display.name;
+    final modeLabel = display.isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct;
 
     Future<void> handleUrlTest() async {
       try {
@@ -72,6 +73,11 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
         label: '${t.pages.proxies.activeProxy}: $displayName',
         child: GlassSurface(
           padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
+          // Light mode's pale surfaces blend into the pale background — a subtle
+          // drop shadow lifts the card so it reads as a surface above the canvas.
+          boxShadow: Theme.of(context).brightness == Brightness.light
+              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))]
+              : null,
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -130,6 +136,63 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
   }
 }
 
+/// Derives the user-facing label and flag country code for an active outbound,
+/// plus whether it resolved to a real exit location. Shared by the live tile and
+/// the last-location recorder so both render identically.
+///
+/// `resolved` is false for auto-selector group placeholders ("Lowest Latency",
+/// "Auto rotate") and bare unnamed outbounds — e.g. before a `urltest` group has
+/// picked a member on first connect — so the recorder never remembers those as a
+/// "last location".
+({String name, String countryCode, bool resolved, bool isAutoSelected}) activeProxyDisplay(
+  OutboundInfo proxy,
+  Translations t,
+) {
+  final proxyType = ProxyType.fromJson(proxy.type);
+  final isAutoSelected = proxyType == ProxyType.urltest || proxyType == ProxyType.balancer;
+  final countryCode = proxy.ipinfo.countryCode;
+
+  // Balancer: the core doesn't populate `groupSelectedTagDisplay`, so derive the
+  // resolved exit from its IP geo ("Tokyo, JP"). Without a city there's no real
+  // location to show, so fall back to the mode label rather than a bare country.
+  if (proxyType == ProxyType.balancer) {
+    final location = _balancerLocationName(proxy);
+    if (location != null) {
+      return (name: location, countryCode: countryCode, resolved: true, isAutoSelected: true);
+    }
+    return (name: t.pages.proxies.autoRotate, countryCode: countryCode, resolved: false, isAutoSelected: true);
+  }
+
+  // A hub/exit tag ("EXIT-US-DALLAS-01🇺🇸"), or a urltest group's resolved member
+  // (carried on `groupSelectedTagDisplay`), prettifies to a readable "City, CC" —
+  // a real, rememberable exit.
+  final rawName = proxy.groupSelectedTagDisplay.isNotEmpty ? proxy.groupSelectedTagDisplay : proxy.tagDisplay;
+  final prettified = prettifyNodeName(rawName);
+  if (prettified != null) {
+    return (name: prettified, countryCode: countryCode, resolved: true, isAutoSelected: isAutoSelected);
+  }
+
+  // Otherwise it's an auto-selector placeholder (e.g. "lowest" before a member is
+  // picked). Give the known groups the same friendly labels the list uses, and
+  // mark them unresolved so the recorder doesn't remember a placeholder.
+  final stripped = stripTrailingFlag(rawName);
+  switch (stripped.toLowerCase()) {
+    case 'lowest':
+      return (name: t.pages.proxies.lowestLatency, countryCode: countryCode, resolved: false, isAutoSelected: true);
+    case 'balance':
+      return (name: t.pages.proxies.autoRotate, countryCode: countryCode, resolved: false, isAutoSelected: true);
+  }
+
+  // A custom-named node with geo is still a real exit; a bare placeholder with no
+  // country info (e.g. an untested group) is not worth remembering.
+  return (
+    name: stripped,
+    countryCode: countryCode,
+    resolved: countryCode.isNotEmpty,
+    isAutoSelected: isAutoSelected,
+  );
+}
+
 String getRealOutboundTag(OutboundInfo group) {
   var tag = group.tagDisplay;
   if (group.groupSelectedTagDisplay != "" && group.groupSelectedTagDisplay != tag) {
@@ -138,19 +201,17 @@ String getRealOutboundTag(OutboundInfo group) {
   return tag;
 }
 
-/// Builds a location label for a balancer outbound from its exit IP info.
-/// Prefers `city, countryCode`, then `city`, then `region`, then
-/// `countryCode`; falls back to the group's `tagDisplay` ("round-robin"
-/// etc.) only when no geo info is available.
-String _balancerLocationName(OutboundInfo proxy) {
+/// Location for a balancer's resolved exit from its IP geo — "City, CC", or just
+/// "City" when the country is missing. Returns null when there's no city to build
+/// a real location (a bare country reads as a meaningless "JP"); the caller then
+/// shows the "Auto rotate" mode label instead.
+String? _balancerLocationName(OutboundInfo proxy) {
   final ip = proxy.ipinfo;
   final city = ip.city;
   final cc = ip.countryCode;
   if (city.isNotEmpty && cc.isNotEmpty) return '$city, $cc';
   if (city.isNotEmpty) return city;
-  if (ip.region.isNotEmpty) return ip.region;
-  if (cc.isNotEmpty) return cc;
-  return proxy.tagDisplay;
+  return null;
 }
 
 /// Renders 4 ascending bars whose active count is derived from the active
@@ -204,5 +265,78 @@ class _SignalBars extends HookConsumerWidget {
     if (delay < 600) return 3; // 300–600ms
     if (delay < 900) return 2; // 600–900ms
     return 1; // 900ms+
+  }
+}
+
+/// Pre-connect counterpart to [ActiveProxyFooter]. Shows the remembered exit
+/// location (or a "Select location" prompt on first-ever launch) and — unlike
+/// the live footer — is tappable while disconnected: it opens the Proxies page,
+/// which renders the cached snapshot so the user can change where they'll exit
+/// before connecting. The picked location is applied on the next connect.
+class SelectedLocationTile extends ConsumerWidget {
+  const SelectedLocationTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(selectedLocationNotifierProvider);
+    final t = ref.watch(translationsProvider).requireValue;
+    final palette = context.rayn;
+
+    final hasSelection = selected != null;
+    final title = hasSelection ? selected.displayName : t.pages.proxies.selectLocation;
+    final subtitle = hasSelection
+        ? (selected.isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct)
+        : t.pages.proxies.tapToChoose;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
+      child: Semantics(
+        button: true,
+        label: '$title: $subtitle',
+        child: GlassSurface(
+          padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
+          boxShadow: Theme.of(context).brightness == Brightness.light
+              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))]
+              : null,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => context.goNamed('proxies'),
+              borderRadius: BorderRadius.circular(RaynRadius.card),
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(RaynSpacing.xs),
+                    child: hasSelection
+                        ? IPCountryFlag(countryCode: selected.countryCode, size: 40)
+                        : Icon(Icons.public_outlined, size: 36, color: palette.textSecondary),
+                  ),
+                  const SizedBox(width: RaynSpacing.md),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(subtitle, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: RaynSpacing.sm),
+                  Icon(Icons.chevron_right_rounded, size: 22, color: palette.textSecondary),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

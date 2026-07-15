@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 
 /// Brand wordmark per WORDMARK.md: `[icon] RAYN VPN` on one row — "RAYN" bold
-/// near-white anchoring the mark, "VPN" a smaller muted suffix centered against
-/// "RAYN"'s vertical middle. "RAYN"/"VPN" are the fixed product wordmark (not
-/// localized copy), so they're literal.
+/// anchoring the mark, "VPN" a smaller muted suffix centered against "RAYN"'s
+/// vertical middle. "RAYN"/"VPN" are the fixed product wordmark (not localized
+/// copy), so they're literal.
+///
+/// The two text colors come from the brightness-aware palette (`content` /
+/// `content-muted` tokens: [RaynPalette.textPrimary] / [RaynPalette.textMuted]),
+/// so the mark stays legible on both themes — every surface it appears on (auth,
+/// login, home) uses the theme-derived `bgPrimary`, which is a light cream in
+/// light mode, so a fixed near-white "RAYN" would be invisible there.
 ///
 /// Defaults to the standard variant (icon 40 / RAYN 30 / VPN 18 / gap 8). For
 /// denser surfaces (e.g. an app bar) pass smaller sizes — keep the four values
-/// proportional so the mark doesn't distort. Colors and the -0.025em tracking
-/// are fixed by the spec and not theme-derived, so the mark renders identically
-/// everywhere it appears. To present it as a large screen hero, use
-/// [RaynWordmarkHero] (which scales this to a fraction of the screen width).
+/// proportional so the mark doesn't distort. The -0.025em tracking is fixed by
+/// the spec. To present it as a large screen hero, use [RaynWordmarkHero] (which
+/// scales this to a fraction of the screen width).
 class RaynWordmark extends StatelessWidget {
   const RaynWordmark({
     super.key,
@@ -26,13 +32,11 @@ class RaynWordmark extends StatelessWidget {
   final double suffixSize;
   final double gap;
 
-  // Fixed brand colors from WORDMARK.md (global `content` / `content-muted`
-  // tokens) — intentionally not theme-derived so the mark stays consistent.
-  static const _wordColor = Color(0xFFFAFAFA);
-  static const _suffixColor = Color(0xFFA1A1AA);
-
   @override
   Widget build(BuildContext context) {
+    // Brand `content` / `content-muted` from the brightness-aware palette so the
+    // mark is legible on both light and dark backgrounds.
+    final palette = context.rayn;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -45,7 +49,7 @@ class RaynWordmark extends StatelessWidget {
             Text(
               'RAYN',
               style: TextStyle(
-                color: _wordColor,
+                color: palette.textPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize: wordSize,
                 height: 1,
@@ -56,7 +60,7 @@ class RaynWordmark extends StatelessWidget {
             Text(
               'VPN',
               style: TextStyle(
-                color: _suffixColor,
+                color: palette.textMuted,
                 fontWeight: FontWeight.w500,
                 fontSize: suffixSize,
                 height: 1,

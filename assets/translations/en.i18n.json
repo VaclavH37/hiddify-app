@@ -89,6 +89,32 @@
     "termsAndPolicyCaution(rich)": "By continuing you agree to ${tap(@:pages.about.termsAndConditions)}",
     "info(rich)": "Made with ❤️ by Rayn VPN - ${tap_source(Open Source)} (${tap_license(License)})"
   },
+  "disclosure": {
+    "agree": "Agree & Continue",
+    "decline": "Decline",
+    "privacyPolicy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "vpn": {
+      "title": "How Rayn VPN works",
+      "whyTitle": "VPN connection",
+      "whyBody": "Rayn VPN uses your device's VPN service to establish an encrypted tunnel and route your internet traffic through the server location you select, helping protect your connection on untrusted networks.",
+      "dataTitle": "Traffic handled by the VPN",
+      "dataBody": "To route your connection, the VPN service can access your device's network traffic. This access exists only to carry your traffic through the tunnel.",
+      "trafficTitle": "How your traffic is used",
+      "trafficBody": "Your traffic is forwarded only to the server you choose. We do not log, inspect, store, or sell the contents of your traffic or your browsing activity, and it is never shared with third parties.",
+      "consent": "By tapping Agree & Continue, you consent to the use of the VPN service as described above."
+    },
+    "data": {
+      "title": "Your account data",
+      "accountTitle": "What we collect",
+      "accountBody": "To sign you in and manage your subscription, we collect your email address, account identifier, and subscription status.",
+      "passwordTitle": "Your password",
+      "passwordBody": "Your password is used only to authenticate you. It is never stored on your device in readable form.",
+      "useTitle": "How it's used",
+      "useBody": "This information is used only to authenticate you and manage your subscription. It is not sold, and it is not shared with third parties for their own use.",
+      "consent": "By tapping Agree & Continue, you consent to this collection as described in our Privacy Policy."
+    }
+  },
   "auth": {
     "title": "Sign in with your token",
     "subtitle": "Paste your Rayn link, scan your QR code, or sign in with email to get started.",
@@ -114,7 +140,7 @@
     "login": {
       "signInWithEmail": "Sign in with email",
       "title": "Sign in",
-      "subtitle": "Enter your account email and password to fetch your token automatically.",
+      "subtitle": "Enter your account email and password to authenticate.",
       "emailLabel": "Email",
       "passwordLabel": "Password",
       "emailEmpty": "Enter your email",
@@ -201,12 +227,13 @@
       "backToSignIn": "Back to sign in"
     },
     "planTransition": {
-      "settingsRow": "Switch to auto-renewing",
+      "settingsRow": "Subscribe with Google Play",
       "settingsRowHint": "Keep your remaining time and renew automatically",
       "title": "Switch to auto-renew",
-      "explainer": "Your plan has ${days} days remaining. Switching keeps that time — you're charged today, and your remaining days are added on before your first renewal.",
+      "explainer": "Your plan has ${days} days remaining, and switching keeps that time. You're charged today, and your remaining days are added on before your first renewal.",
       "nextBilling": "Next renewal ~${date}",
       "needsSignIn": "Sign in to your account to switch your plan to auto-renewing.",
+      "accountMismatch": "These credentials are for a different account. Log out to switch accounts.",
       "success": "Your plan is now set to auto-renew.",
       "close": "Close"
     }
@@ -243,6 +270,10 @@
       "unknownIp": "Unknown IP",
       "autoSelected": "Auto-selected",
       "direct": "Direct",
+      "lastLocation": "Last location",
+      "selectLocation": "Select location",
+      "tapToChoose": "Tap to choose a location",
+      "snapshotEmpty": "Connect once to load available locations",
       "lowestLatency": "Lowest Latency",
       "autoRotate": "Auto rotate",
       "sortOptions": {
@@ -279,15 +310,14 @@
       },
       "msg": {
         "save": {
-          "success": "Profile saved successfully"
+          "success": "Subscription updated"
         },
         "invalidUrl": "Invalid URL",
         "add": {
           "failure": "Failed to add profile"
         },
         "update": {
-          "success": "Profile updated successfully",
-          "successNamed": "\"${name}\" updated successfully",
+          "success": "Subscription updated",
           "failure": "Failed to update profile",
           "failureNamed": "Failed to update \"${name}\""
         },
@@ -308,12 +338,6 @@
         "autoUpdateInterval": "Auto update interval",
         "loading": "Adding profile..."
       }
-    },
-    "logs": {
-      "title": "Logs",
-      "subtitle": "Live diagnostic output from the core and app.",
-      "shareCoreLogs": "Share core logs",
-      "shareAppLogs": "Share app logs"
     },
     "about": {
       "title": "About",

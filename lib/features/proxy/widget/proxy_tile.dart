@@ -65,23 +65,10 @@ class ProxyTile extends HookConsumerWidget with PresLogger {
               Expanded(
                 child: Text(displayName, overflow: TextOverflow.ellipsis, style: titleStyle),
               ),
-              if (proxy.urlTestDelay != 0) ...[
-                const SizedBox(width: RaynSpacing.md),
-                Text(
-                  proxy.urlTestDelay > 65000 ? "×" : proxy.urlTestDelay.toString(),
-                  style: RaynTypography.caption.copyWith(color: _delayColor(palette, proxy.urlTestDelay)),
-                ),
-              ],
             ],
           ),
         ),
       ),
     );
-  }
-
-  Color _delayColor(RaynPalette palette, int delay) {
-    if (delay < 800) return palette.success;
-    if (delay < 1500) return palette.warning;
-    return palette.danger;
   }
 }
