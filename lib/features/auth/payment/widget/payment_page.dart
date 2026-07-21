@@ -5,7 +5,6 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/widget/rayn_wordmark.dart';
-import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/payment/data/iap_service.dart';
 import 'package:hiddify/features/auth/payment/model/purchase_state.dart';
@@ -39,7 +38,7 @@ class PaymentPage extends ConsumerWidget {
 
     Future<void> backToSignIn() async {
       // Leaving abandons the pending purchase — tear down the session.
-      await endAuthSession(ref.read(sessionTokenStoreProvider), ref.read(authApiClientProvider));
+      await endAuthSession(ref.read(sessionTokenStoreProvider));
       if (context.mounted) context.go('/auth');
     }
 

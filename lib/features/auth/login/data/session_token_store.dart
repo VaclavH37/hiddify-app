@@ -1,5 +1,4 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -46,19 +45,14 @@ class SessionTokenStore {
   }
 }
 
-/// Best-effort server-side session teardown followed by the local clear of the
-/// stored token. Shared by the Settings logout and the payment screen's
-/// "back to sign in" so both end the API session the same way. The server call
-/// is best-effort (the host may be unreachable on a censored network); the
-/// local clear always runs.
-Future<void> endAuthSession(SessionTokenStore store, AuthApiClient client) async {
-  final token = await store.read();
-  if (token != null && token.isNotEmpty) {
-    try {
-      await client.post('/api/public/logout', const {}, bearer: token);
-    } catch (_) {
-      // Best-effort only — the token still gets cleared locally below.
-    }
-  }
-  await store.clear();
-}
+/// Ends the account API session by clearing the local credentials. Shared by the
+/// Settings logout and the payment screen's "back to sign in" so both end the
+/// session the same way.
+///
+/// This is deliberately LOCAL-ONLY: it must NEVER call the account API. A logout
+/// request would put an identifiable hit on the account host at the moment the
+/// user is trying to walk away, associating them with the service. The server
+/// session is left to lapse on its own — the `session_token` is a 24h credential
+/// that the backend expires without any help from us, and once cleared here the
+/// client can no longer present it.
+Future<void> endAuthSession(SessionTokenStore store) => store.clear();

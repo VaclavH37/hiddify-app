@@ -20,6 +20,9 @@ EvaluationResult evaluateNotifications({
   required SubscriptionInfo subInfo,
   required NotificationDedupState state,
   required DateTime now,
+  // MW `subscription-payment-provider` header (e.g. "google_play"). Null for
+  // token-import users / non-Play plans → the standard expiry-reminder path.
+  String? paymentProvider,
 }) {
   final toCreate = <PendingNotification>[];
   var next = state;
@@ -63,22 +66,37 @@ EvaluationResult evaluateNotifications({
     next = next.copyWith(lastConsumption: consumption);
   }
 
-  // ---- Subscription expiry: within 7 days, once per calendar day ----
+  // ---- Subscription expiry / Google Play renewal ----
   final daysRemaining = subInfo.expire.difference(now).inDays;
   // `> 365` also covers the parser's "infinite" expiry sentinel.
   final nonExpiring = daysRemaining > 365;
   if (!nonExpiring) {
     final anchorKey = subInfo.expire.toIso8601String();
-    // Subscription extended / changed → reset the per-day marker so the next
-    // approach to expiry reminds again.
-    if (next.expiryAnchorKey != anchorKey) {
-      next = next.copyWith(expiryAnchorKey: anchorKey, expiryLastFiredDay: null);
-    }
-    if (daysRemaining >= 0 && daysRemaining <= 7) {
-      final today = _dayKey(now);
-      if (next.expiryLastFiredDay != today) {
-        toCreate.add((kind: NotificationKind.expiryReminder, thresholdValue: daysRemaining));
-        next = next.copyWith(expiryLastFiredDay: today);
+    final isGooglePlay = paymentProvider == 'google_play';
+
+    if (isGooglePlay) {
+      // Auto-renewing plans don't "expire" — suppress the countdown and instead
+      // give one heads-up the day before the renewal date (for Play plans the
+      // `expire` field IS the renewal date). Deduped once per anchor: when the
+      // sub renews, `expire` advances, the anchor differs, and it's eligible
+      // again next cycle.
+      if (daysRemaining == 1 && next.renewalFiredAnchor != anchorKey) {
+        toCreate.add((kind: NotificationKind.renewalReminder, thresholdValue: 1));
+        next = next.copyWith(renewalFiredAnchor: anchorKey);
+      }
+    } else {
+      // Non-auto-renewing: remind within 7 days of expiry, once per calendar day.
+      // Subscription extended / changed → reset the per-day marker so the next
+      // approach to expiry reminds again.
+      if (next.expiryAnchorKey != anchorKey) {
+        next = next.copyWith(expiryAnchorKey: anchorKey, expiryLastFiredDay: null);
+      }
+      if (daysRemaining >= 0 && daysRemaining <= 7) {
+        final today = _dayKey(now);
+        if (next.expiryLastFiredDay != today) {
+          toCreate.add((kind: NotificationKind.expiryReminder, thresholdValue: daysRemaining));
+          next = next.copyWith(expiryLastFiredDay: today);
+        }
       }
     }
   }

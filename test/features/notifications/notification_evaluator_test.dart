@@ -221,6 +221,77 @@ void main() {
       );
       expect(r.toCreate, isEmpty);
     });
+
+    test('a Google Play subscriber never gets the expiry reminder', () {
+      // 5 days out — inside the 7-day window, but Play auto-renews.
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 5))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'google_play',
+      );
+      expect(r.toCreate, isEmpty);
+    });
+  });
+
+  group('google play renewal reminder', () {
+    test('fires the day before renewal (1 day out)', () {
+      final expire = now.add(const Duration(days: 1));
+      final r = evaluateNotifications(
+        subInfo: sub(expire: expire),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'google_play',
+      );
+      expect(kinds(r), {NotificationKind.renewalReminder});
+      expect(r.toCreate.single.thresholdValue, 1);
+      expect(r.nextState.renewalFiredAnchor, expire.toIso8601String());
+    });
+
+    test('does not fire earlier than the day before (2 days out)', () {
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 2))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'google_play',
+      );
+      expect(r.toCreate, isEmpty);
+    });
+
+    test('does not repeat once fired for the same renewal anchor', () {
+      final expire = now.add(const Duration(days: 1));
+      final r = evaluateNotifications(
+        subInfo: sub(expire: expire),
+        state: NotificationDedupState(renewalFiredAnchor: expire.toIso8601String()),
+        now: now,
+        paymentProvider: 'google_play',
+      );
+      expect(r.toCreate, isEmpty);
+    });
+
+    test('fires again after the sub renews (anchor advanced)', () {
+      final expire = now.add(const Duration(days: 1));
+      final r = evaluateNotifications(
+        subInfo: sub(expire: expire),
+        // Marker still points at last cycle's (now-past) renewal date.
+        state: NotificationDedupState(
+          renewalFiredAnchor: now.subtract(const Duration(days: 29)).toIso8601String(),
+        ),
+        now: now,
+        paymentProvider: 'google_play',
+      );
+      expect(kinds(r), {NotificationKind.renewalReminder});
+    });
+
+    test('a non-Play provider at 1 day out still gets the expiry reminder', () {
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 1))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'nowpayments',
+      );
+      expect(kinds(r), {NotificationKind.expiryReminder});
+    });
   });
 
   test('the evaluator is deterministic', () {

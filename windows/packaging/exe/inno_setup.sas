@@ -60,7 +60,12 @@ Name: "{autoprograms}\\{{DISPLAY_NAME}}"; Filename: "{app}\\{{EXECUTABLE_NAME}}"
 Name: "{autodesktop}\\{{DISPLAY_NAME}}"; Filename: "{app}\\{{EXECUTABLE_NAME}}"; Tasks: desktopicon
 Name: "{userstartup}\\{{DISPLAY_NAME}}"; Filename: "{app}\\{{EXECUTABLE_NAME}}"; WorkingDir: "{app}"; Tasks: launchAtStartup
 [Run]
-Filename: "{app}\\{{EXECUTABLE_NAME}}"; Description: "{cm:LaunchProgram,{{DISPLAY_NAME}}}"; Flags: {% if PRIVILEGES_REQUIRED == 'admin' %}runascurrentuser{% endif %} nowait postinstall skipifsilent
+; RaynVPN.exe is manifested requireAdministrator. Inno runs the post-install launch
+; de-elevated and via CreateProcess, which cannot elevate the target → it fails with
+; error 740 (ERROR_ELEVATION_REQUIRED). The `shellexec` flag routes the launch through
+; ShellExecuteEx instead, which honors the manifest and performs the UAC elevation, so
+; the app starts elevated like it does from the Start-menu shortcut.
+Filename: "{app}\\{{EXECUTABLE_NAME}}"; Description: "{cm:LaunchProgram,{{DISPLAY_NAME}}}"; Flags: shellexec nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{userappdata}\RaynVPN"
@@ -71,9 +76,12 @@ var
   ResultCode: Integer;
 begin
   Exec('taskkill', '/F /IM RaynVPN.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
-  // HiddifyTunnelService is the name the bundled singbox core binary still
-  // registers on Windows; rename only when the Go core is rebuilt with a
-  // Rayn-branded service identifier.
+  Exec('taskkill', '/F /IM RaynVPNCli.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+  // The bundled sing-box core registers RaynVPNTunnelService (renamed from the
+  // upstream HiddifyTunnelService). Stop/delete both: the current name, plus the
+  // legacy name so machines that ran a pre-rename build are cleaned up too.
+  Exec('net', 'stop "RaynVPNTunnelService"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+  Exec('sc.exe', 'delete "RaynVPNTunnelService"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
   Exec('net', 'stop "HiddifyTunnelService"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
   Exec('sc.exe', 'delete "HiddifyTunnelService"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
   Result := True;

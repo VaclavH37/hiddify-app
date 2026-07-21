@@ -81,17 +81,21 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
-# install(FILES "../hiddify-core/bin/hiddify-core.dll" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-#  COMPONENT Runtime)
-
-install(FILES "../hiddify-core/bin/hiddify-core.dll" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-COMPONENT Runtime RENAME hiddify-core.dll)
+# Rayn rebrand: the core Makefile's windows-amd64 target emits rayn-core.dll +
+# RaynVPNCli.exe (see hiddify-core/Makefile). The DLL name must match the Dart
+# FFI loader in lib/hiddifycore/core_interface/core_interface_desktop.dart.
+install(FILES "../hiddify-core/bin/rayn-core.dll" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+COMPONENT Runtime RENAME rayn-core.dll)
 
 install(FILES "../hiddify-core/bin/libcronet.dll" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
 COMPONENT Runtime RENAME libcronet.dll)
 
-install(FILES "../hiddify-core/bin/HiddifyCli.exe" DESTINATION "${CMAKE_INSTALL_PREFIX}"
-COMPONENT Runtime RENAME HiddifyCli.exe)
+# RaynVPNCli.exe is deliberately NOT bundled in the distribution. It is a
+# command-line front-end to rayn-core.dll (parseCli) used only for debugging.
+# The GUI runs elevated (runner.exe.manifest = requireAdministrator) and creates
+# the wintun TUN in-process, so the tunnel-service/CLI path (extension
+# admin_service_vpn, gated behind !TunAllowed() and not even registered) is never
+# used at runtime. Shipping it only added a second .exe and a stray console tool.
 
 
 if(PLUGIN_BUNDLED_LIBRARIES)

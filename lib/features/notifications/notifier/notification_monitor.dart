@@ -30,17 +30,20 @@ class NotificationMonitor extends _$NotificationMonitor with AppLogger {
       if (profile is! RemoteProfileEntity) return;
       final subInfo = profile.subInfo;
       if (subInfo == null) return;
-      _enqueue(profile.id, subInfo);
+      // MW subscription header — "google_play" routes to the renewal reminder
+      // instead of the expiry countdown (mirrors account_section.dart's _header).
+      final paymentProvider = profile.populatedHeaders?['subscription-payment-provider']?.toString().trim();
+      _enqueue(profile.id, subInfo, paymentProvider);
     });
   }
 
-  void _enqueue(String profileId, SubscriptionInfo subInfo) {
-    _chain = _chain.then((_) => _process(profileId, subInfo)).catchError((Object e, StackTrace s) {
+  void _enqueue(String profileId, SubscriptionInfo subInfo, String? paymentProvider) {
+    _chain = _chain.then((_) => _process(profileId, subInfo, paymentProvider)).catchError((Object e, StackTrace s) {
       loggy.warning("notification evaluation failed", e, s);
     });
   }
 
-  Future<void> _process(String profileId, SubscriptionInfo subInfo) async {
+  Future<void> _process(String profileId, SubscriptionInfo subInfo, String? paymentProvider) async {
     final store = ref.read(notificationDedupStoreProvider);
     var state = store.read();
     // New active profile → discard stale markers so a re-import can't suppress
@@ -49,7 +52,12 @@ class NotificationMonitor extends _$NotificationMonitor with AppLogger {
       state = NotificationDedupState(profileId: profileId);
     }
 
-    final result = evaluateNotifications(subInfo: subInfo, state: state, now: DateTime.now());
+    final result = evaluateNotifications(
+      subInfo: subInfo,
+      state: state,
+      now: DateTime.now(),
+      paymentProvider: paymentProvider,
+    );
 
     if (result.toCreate.isNotEmpty) {
       final dao = ref.read(notificationDataSourceProvider);

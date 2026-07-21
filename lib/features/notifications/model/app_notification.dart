@@ -16,8 +16,14 @@ enum NotificationKind {
   /// Traffic quota fully consumed (100%).
   quota100,
 
-  /// Subscription is within a week of expiring (fires once per day).
+  /// Subscription is within a week of expiring (fires once per day). Only for
+  /// non-auto-renewing plans; Google Play subscribers get [renewalReminder]
+  /// instead.
   expiryReminder,
+
+  /// Google Play (auto-renewing) subscription renews tomorrow — a single
+  /// heads-up the day before the renewal date, in place of the expiry countdown.
+  renewalReminder,
 
   /// Subscription token is fully expired with no renewal available — raised by
   /// the refresh loop when the API returns `4010` with no `new-url`.

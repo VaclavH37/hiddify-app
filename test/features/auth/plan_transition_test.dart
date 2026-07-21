@@ -51,34 +51,30 @@ void main() {
   });
 
   group('projectedRenewal', () {
+    // Renewal now follows the standard Play cycle from today — the current plan
+    // ends immediately on switch, so no remaining-time is carried over.
     final from = DateTime(2026, 1, 10);
 
-    test('adds remaining days plus the billing period (monthly)', () {
-      // 20 days remaining + 1 month → 30 Jan + 1 month = 30 Feb → 2 Mar (normalized).
-      expect(projectedRenewal(from, 20, 'P1M'), DateTime(2026, 2, 30));
+    test('adds one billing period (monthly)', () {
+      expect(projectedRenewal(from, 'P1M'), DateTime(2026, 2, 10));
     });
 
     test('adds a quarter (P3M)', () {
-      expect(projectedRenewal(from, 5, 'P3M'), DateTime(2026, 4, 15));
+      expect(projectedRenewal(from, 'P3M'), DateTime(2026, 4, 10));
     });
 
     test('adds a year (P1Y)', () {
-      expect(projectedRenewal(from, 0, 'P1Y'), DateTime(2027, 1, 10));
+      expect(projectedRenewal(from, 'P1Y'), DateTime(2027, 1, 10));
     });
 
     test('rolls the year over when months overflow', () {
-      // Oct 10 + 5 days + 3 months → Nov 15 + 3 → Feb 15 next year.
-      expect(projectedRenewal(DateTime(2026, 11, 10), 5, 'P3M'), DateTime(2027, 2, 15));
+      // Nov 10 + 3 months → Feb 10 next year.
+      expect(projectedRenewal(DateTime(2026, 11, 10), 'P3M'), DateTime(2027, 2, 10));
     });
 
-    test('clamps negative remaining days to zero', () {
-      expect(projectedRenewal(from, -30, 'P1M'), DateTime(2026, 2, 10));
-    });
-
-    test('handles a multi-year remaining balance', () {
-      // 400 days remaining + 1 year. Display estimate; backend chains the defer.
-      final next = projectedRenewal(from, 400, 'P1Y');
-      expect(next.isAfter(DateTime(2028)), isTrue);
+    test('normalizes an overflowing day-of-month', () {
+      // Jan 31 + 1 month = Feb 31 → Mar 3 (2026 non-leap), matching DateTime normalization.
+      expect(projectedRenewal(DateTime(2026, 1, 31), 'P1M'), DateTime(2026, 3, 3));
     });
   });
 

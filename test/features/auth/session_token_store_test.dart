@@ -1,8 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
-import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
 
 /// In-memory [SessionTokenStore] — overrides every method so the underlying
 /// (never-touched) [FlutterSecureStorage] platform channel is never invoked.
@@ -22,20 +20,6 @@ class _FakeStore extends SessionTokenStore {
   Future<void> clear() async {
     token = null;
     cleared = true;
-  }
-}
-
-class _FakeClient extends AuthApiClient {
-  _FakeClient({this.throwOnPost = false}) : super(baseUrl: 'https://test.invalid', userAgent: 'test');
-
-  final bool throwOnPost;
-  final List<({String path, String? bearer})> posts = [];
-
-  @override
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body, {String? bearer}) async {
-    posts.add((path: path, bearer: bearer));
-    if (throwOnPost) throw AuthApiException.unreachable('no route');
-    return const {};
   }
 }
 
@@ -93,35 +77,20 @@ class _MemSecureStorage implements FlutterSecureStorage {
 
 void main() {
   group('endAuthSession', () {
-    test('with a stored token → best-effort server logout (Bearer) then local clear', () async {
+    test('with a stored token → clears locally', () async {
       final store = _FakeStore('tok-123');
-      final client = _FakeClient();
 
-      await endAuthSession(store, client);
+      await endAuthSession(store);
 
-      expect(client.posts, [(path: '/api/public/logout', bearer: 'tok-123')]);
       expect(store.cleared, isTrue);
       expect(store.token, isNull);
     });
 
-    test('clears the token even when the server logout is unreachable', () async {
-      final store = _FakeStore('tok-123');
-      final client = _FakeClient(throwOnPost: true);
-
-      await endAuthSession(store, client);
-
-      expect(client.posts, hasLength(1));
-      expect(store.cleared, isTrue);
-      expect(store.token, isNull);
-    });
-
-    test('with no stored token → does not hit the network', () async {
+    test('with no stored token → still clears', () async {
       final store = _FakeStore(null);
-      final client = _FakeClient();
 
-      await endAuthSession(store, client);
+      await endAuthSession(store);
 
-      expect(client.posts, isEmpty);
       expect(store.cleared, isTrue);
     });
 
@@ -130,7 +99,7 @@ void main() {
       await store.write('tok-123');
       await store.writeUserId('d6b45e25-6cc8-4268-b3af-8f79425f00f7');
 
-      await endAuthSession(store, _FakeClient());
+      await endAuthSession(store);
 
       expect(await store.read(), isNull);
       expect(await store.readUserId(), isNull);

@@ -30,6 +30,10 @@ class NotificationDedupState with _$NotificationDedupState {
     String? expiryAnchorKey,
     // yyyy-MM-dd of the last expiry reminder, so it fires at most once per day.
     String? expiryLastFiredDay,
+    // ISO8601 `expire` (== renewal date) for which the Google Play "renews
+    // tomorrow" reminder already fired. When the sub renews, `expire` advances,
+    // this no longer matches, and the reminder is eligible again next cycle.
+    String? renewalFiredAnchor,
   }) = _NotificationDedupState;
 
   factory NotificationDedupState.fromJson(Map<String, Object?> json) => _$NotificationDedupStateFromJson(json);

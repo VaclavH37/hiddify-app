@@ -31,7 +31,10 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
       fullPath = "hiddify-core";
     }
     if (Platform.isWindows) {
-      fullPath = p.join(fullPath, "hiddify-core.dll");
+      // Rayn rebrand: the Windows core ships as rayn-core.dll (see the
+      // windows-amd64 target in hiddify-core/Makefile + windows/CMakeLists.txt).
+      // macOS/Linux still use the hiddify-core name.
+      fullPath = p.join(fullPath, "rayn-core.dll");
     } else if (Platform.isMacOS) {
       fullPath = p.join(fullPath, "hiddify-core.dylib");
     } else {

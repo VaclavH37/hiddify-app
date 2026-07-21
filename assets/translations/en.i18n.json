@@ -228,9 +228,9 @@
     },
     "planTransition": {
       "settingsRow": "Subscribe with Google Play",
-      "settingsRowHint": "Keep your remaining time and renew automatically",
+      "settingsRowHint": "Start a fresh plan today and renew automatically",
       "title": "Switch to auto-renew",
-      "explainer": "Your plan has ${days} days remaining, and switching keeps that time. You're charged today, and your remaining days are added on before your first renewal.",
+      "explainer": "Subscribing starts your plan fresh today: your trial ends now and your data allowance resets to full. Google Play then renews your subscription automatically.",
       "nextBilling": "Next renewal ~${date}",
       "needsSignIn": "Sign in to your account to switch your plan to auto-renewing.",
       "accountMismatch": "These credentials are for a different account. Log out to switch accounts.",
@@ -622,6 +622,7 @@
     "title": "Notifications",
     "empty": "You're all caught up",
     "clearAll": "Clear all",
+    "dismiss": "Dismiss",
     "quota": {
       "title": "Data usage",
       "body": "You've used ${percent}% of your monthly data."
@@ -629,6 +630,10 @@
     "expiry": {
       "title": "Subscription expiring",
       "body": "Your subscription expires in ${days} day(s). Renew to stay connected."
+    },
+    "renewal": {
+      "title": "Subscription renewing",
+      "body": "Your subscription renews automatically tomorrow — no action needed."
     },
     "expired": {
       "title": "Subscription expired",

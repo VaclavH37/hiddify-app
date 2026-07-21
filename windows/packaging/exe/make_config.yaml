@@ -1,9 +1,23 @@
-app_id: 6L903538-42B1-4596-G479-BJ779F21A65D
+# Rayn's OWN Inno Setup AppId — must NOT be shared with Hiddify's. Inno keys the
+# install location + uninstall entry off AppId and (UsePreviousAppDir=yes, default)
+# reuses a prior install's remembered path. The old value was Hiddify's, so on any
+# machine with a Hiddify-era build the RaynVPN installer inherited C:\Program
+# Files\Hiddify. This unique GUID gives Rayn a clean, independent install identity.
+app_id: 9E2B4D7A-6C31-4F58-B0A9-3D8E1F2C5A64
 publisher: RaynLabs
 publisher_url: https://www.raynlabs.io
 display_name: Rayn VPN
+# Pin the shortcut target to the GUI binary (CMake BINARY_NAME -> RaynVPN.exe).
+# Without this, fastforge derives EXECUTABLE_NAME from listSync().first over the
+# bundle's *.exe files, which now also contains RaynVPNCli.exe (the console core)
+# and can non-deterministically point the shortcut at the CLI.
+executable_name: RaynVPN.exe
 create_desktop_icon: true
 install_dir_name: "{autopf64}\\RaynVPN"
+# The GUI is manifested requireAdministrator and installs into Program Files, so the
+# installer must elevate (single UAC at start). This also makes {autopf64} resolve to
+# real Program Files and lets the post-install launch run in the elevated context.
+privileges_required: admin
 setup_icon_file: windows\runner\resources\app_icon.ico
 locales:
   - ar

@@ -23,6 +23,12 @@ NotificationCopy notificationCopy(AppNotification n, Translations t) {
         body: t.notifications.expiry.body(days: n.thresholdValue ?? 0),
         icon: FluentIcons.calendar_clock_24_regular,
       );
+    case NotificationKind.renewalReminder:
+      return (
+        title: t.notifications.renewal.title,
+        body: t.notifications.renewal.body,
+        icon: FluentIcons.arrow_sync_24_regular,
+      );
     case NotificationKind.subscriptionExpired:
       return (
         title: t.notifications.expired.title,

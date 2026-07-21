@@ -25,11 +25,13 @@ class NotificationBanner extends ConsumerWidget {
     final copy = notificationCopy(notification, t);
     final palette = context.rayn;
 
+    void dismiss() => ref.read(notificationDataSourceProvider).markDismissed(notification.id);
+
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 480),
       child: Dismissible(
         key: ValueKey(notification.id),
-        onDismissed: (_) => ref.read(notificationDataSourceProvider).markDismissed(notification.id),
+        onDismissed: (_) => dismiss(),
         child: GlassSurface(
           glowColor: RaynColors.goldPrimary.withValues(alpha: 0.12),
           child: Row(
@@ -52,7 +54,14 @@ class NotificationBanner extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: RaynSpacing.sm),
-              Icon(Icons.close_rounded, size: 18, color: palette.textMuted),
+              IconButton(
+                onPressed: dismiss,
+                icon: Icon(Icons.close_rounded, size: 18, color: palette.textMuted),
+                tooltip: t.notifications.dismiss,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              ),
             ],
           ),
         ),

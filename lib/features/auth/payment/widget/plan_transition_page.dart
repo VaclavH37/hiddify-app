@@ -25,9 +25,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 /// Settings → Account (for users whose payment provider isn't `google_play`), it
 /// converts an active NOWPayments/Guardarian plan to an auto-renewing Google Play
 /// subscription. The purchase → `POST /iap/google/verify` → import chain is
-/// byte-for-byte identical to the sign-up [PaymentPage]; the backend branches on
-/// the user's status (deferring the next billing anchor by their remaining paid
-/// time) and the client only sees the difference in the response body.
+/// byte-for-byte identical to the sign-up [PaymentPage]; switching ends the
+/// current plan immediately and starts a fresh subscription (no remaining-time
+/// carry-over) — the client only sees the difference in the response body.
 ///
 /// Verify needs a live account session (24h `session_token` + `user_id`). Most
 /// transition users arrive via a token import (no session) or a stale one, and
@@ -172,10 +172,11 @@ class PlanTransitionPage extends HookConsumerWidget {
       case PurchaseStatus.error:
         final cardsEnabled = state.status == PurchaseStatus.ready || state.status == PurchaseStatus.error;
         return [
-          // Remaining-time explainer: their web-paid days carry over on top of the
-          // newly purchased period before the first Play renewal.
+          // Transition explainer: shown only when there's trial time to lose, to
+          // be transparent that switching ends the current plan and resets the
+          // data allowance (no carry-over) before Play takes over auto-renewal.
           if (remainingDays != null && remainingDays > 0) ...[
-            _ExplainerCard(message: t.auth.planTransition.explainer(days: remainingDays)),
+            _ExplainerCard(message: t.auth.planTransition.explainer),
             const Gap(16),
           ],
           if (state.status == PurchaseStatus.processing) ...[
@@ -212,14 +213,13 @@ class PlanTransitionPage extends HookConsumerWidget {
     }
   }
 
-  /// Projected first Play renewal date shown under each plan: today + the user's
-  /// remaining paid days + the plan's billing period. This is a display estimate
-  /// (the authoritative anchor is set by Google/the backend); for very large
-  /// remaining balances Google caps a single `defer` at ~365 days and the backend
-  /// chains the rest, so Play's own display may lag this until the chain settles.
+  /// Projected first Play renewal date shown under each plan: today + the plan's
+  /// billing period. The current plan ends immediately on switch (no remaining-
+  /// time carry-over), so renewal follows the standard Play cycle from today.
+  /// A display estimate — the authoritative anchor is set by Google/the backend.
   String? _nextRenewalLabel(Translations t, RaynOffer offer, int? remainingDays) {
     if (remainingDays == null) return null;
-    final next = projectedRenewal(DateTime.now(), remainingDays, offer.billingPeriodIso);
+    final next = projectedRenewal(DateTime.now(), offer.billingPeriodIso);
     return t.auth.planTransition.nextBilling(date: next.formatDate());
   }
 
