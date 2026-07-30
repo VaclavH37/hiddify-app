@@ -16,6 +16,11 @@ enum LoginOutcome {
   /// different account than the subscription active on this device. Never
   /// occurs in the normal login flow (which passes no expected account).
   accountMismatch,
+
+  /// The account's subscription cryptolink uses an envelope version this build
+  /// has no handler for. The credentials are fine — the app is out of date
+  /// (RAYN-LINK-SYMMETRIC-MIGRATION.md §10).
+  updateRequired,
   generic,
 }
 

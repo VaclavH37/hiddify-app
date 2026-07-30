@@ -148,6 +148,7 @@ class PurchaseNotifier extends _$PurchaseNotifier with InfraLogger {
       case IapPurchaseOutcome.reauthRequired:
       case IapPurchaseOutcome.rateLimited:
       case IapPurchaseOutcome.unreachable:
+      case IapPurchaseOutcome.updateRequired:
       case IapPurchaseOutcome.failed:
         state = state.copyWith(status: PurchaseStatus.error, outcome: outcome, pendingOfferToken: null);
     }

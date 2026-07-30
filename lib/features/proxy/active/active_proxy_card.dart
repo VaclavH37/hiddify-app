@@ -163,32 +163,28 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
     return (name: t.pages.proxies.autoRotate, countryCode: countryCode, resolved: false, isAutoSelected: true);
   }
 
-  // A hub/exit tag ("EXIT-US-DALLAS-01🇺🇸"), or a urltest group's resolved member
-  // (carried on `groupSelectedTagDisplay`), prettifies to a readable "City, CC" —
-  // a real, rememberable exit.
+  // Node tags are generated in final display form by the MW API — show them
+  // verbatim. The client does NOT parse the internal tag schema (that would both
+  // duplicate MW's work and encode the fleet's naming convention in the client,
+  // a cohort-identification surface). A urltest group's resolved member is
+  // carried on `groupSelectedTagDisplay`.
   final rawName = proxy.groupSelectedTagDisplay.isNotEmpty ? proxy.groupSelectedTagDisplay : proxy.tagDisplay;
-  final prettified = prettifyNodeName(rawName);
-  if (prettified != null) {
-    return (name: prettified, countryCode: countryCode, resolved: true, isAutoSelected: isAutoSelected);
-  }
 
-  // Otherwise it's an auto-selector placeholder (e.g. "lowest" before a member is
-  // picked). Give the known groups the same friendly labels the list uses, and
-  // mark them unresolved so the recorder doesn't remember a placeholder.
-  final stripped = stripTrailingFlag(rawName);
-  switch (stripped.toLowerCase()) {
+  // Client-injected auto-selector groups have no per-node tag until they resolve
+  // a member; give the known ones their mode labels (these are local group tags,
+  // not MW-issued node names) and mark them unresolved so the recorder doesn't
+  // remember a placeholder.
+  switch (rawName.toLowerCase()) {
     case 'lowest':
       return (name: t.pages.proxies.lowestLatency, countryCode: countryCode, resolved: false, isAutoSelected: true);
     case 'balance':
       return (name: t.pages.proxies.autoRotate, countryCode: countryCode, resolved: false, isAutoSelected: true);
   }
 
-  // A custom-named node with geo is still a real exit; a bare placeholder with no
-  // country info (e.g. an untested group) is not worth remembering.
   return (
-    name: stripped,
+    name: displayNodeTag(rawName),
     countryCode: countryCode,
-    resolved: countryCode.isNotEmpty,
+    resolved: rawName.isNotEmpty,
     isAutoSelected: isAutoSelected,
   );
 }

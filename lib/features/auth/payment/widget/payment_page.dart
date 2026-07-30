@@ -187,6 +187,8 @@ class PaymentPage extends ConsumerWidget {
         return t.auth.payment.errorRateLimited;
       case IapPurchaseOutcome.unreachable:
         return t.auth.payment.errorUnreachable;
+      case IapPurchaseOutcome.updateRequired:
+        return t.auth.payment.errorUpdateRequired;
       default:
         return t.auth.payment.errorGeneric;
     }

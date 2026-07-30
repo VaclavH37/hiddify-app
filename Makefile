@@ -1,6 +1,22 @@
 # .ONESHELL:
 include dependencies.properties
 
+# --- Shell guard (Windows) ---
+# GNU make defaults SHELL to an unqualified `sh.exe`. Launched from cmd.exe or
+# PowerShell — where Git's sh is not on PATH — make silently falls back to
+# cmd.exe, and the first POSIX recipe dies with the useless
+# `! was unexpected at this time`. Most recipes here are POSIX (`if [ ! -f ]`,
+# `ls`, `unzip`, `tar`, `$$VAR`), so fail immediately with a message that says
+# what to do. WSL leaves OS unset, so core builds are unaffected.
+# The probe is `echo $$0`: a POSIX shell expands it to its own name (sh/bash),
+# cmd.exe has no such variable and echoes the literal `$0` — and does so without
+# printing an "unrecognized command" error, so the guard stays quiet.
+ifeq ($(OS),Windows_NT)
+ifeq (,$(findstring sh,$(shell echo $$0)))
+$(error Run make from Git Bash (MINGW64) — cmd.exe/PowerShell have no POSIX shell, which these recipes require. Native core builds run in WSL; see CORE_BUILD.md)
+endif
+endif
+
 # --- Log Colors ---
 blue   := \033[1;34m
 green  := \033[1;92m
@@ -80,6 +96,16 @@ endif
 BUILD_ARGS=
 DISTRIBUTOR_ARGS=--skip-clean --build-target $(TARGET) --artifact-name=$(FF_ARTIFACT_NAME)
 
+# Dart AOT obfuscation for shipped artifacts. Strips class/method/field names
+# from the snapshot, so the rayn:// key-derivation code can't be located by
+# name — the layer that makes the masked key tables worth having. `--obfuscate`
+# requires `--split-debug-info`; nothing consumes the symbol files (Sentry was
+# removed) and .gitignore already covers `app.*.symbols` / `app.*.map.json`.
+#
+# fastforge forwards these to its internal `flutter build`: bare names become
+# `--flag`, `k=v` pairs become `--k v`.
+FF_OBFUSCATE=--flutter-build-args=obfuscate,split-debug-info=build/symbols
+
 
 
 get:	
@@ -90,6 +116,25 @@ gen:
 
 translate:
 	dart run slang
+
+# Regenerates lib/utils/rayn_link_key_data.dart — the masked material the
+# rayn://import/ AES-256-GCM key is reconstructed from. Reads RAYN_LINK_SECRET
+# from the ENVIRONMENT (never argv, which CI runners echo) and hard-fails when
+# it is unset, so a release can never ship the committed development key.
+#
+# The recipe is `@`-prefixed so make doesn't echo it; GitHub Actions masks
+# registered secrets in its own output but not values make prints back.
+#
+# Every release target depends on this. Make runs a phony prerequisite once per
+# invocation, so `make windows-release` regenerates once, not three times.
+.PHONY: rayn-link-key rayn-link-key-dev
+rayn-link-key:
+	@dart run tool/gen_rayn_link_key.dart --require-secret
+
+# Restores the committed development key file (no secret required). Use after a
+# release build so a local `flutter run` keeps working with the dev key.
+rayn-link-key-dev:
+	@dart run tool/gen_rayn_link_key.dart
 
 
 
@@ -281,34 +326,37 @@ gen_translations: #generating missing translations using google translate
 
 android-release: android-apk-release android-aab-release
 
-android-apk-release: check-rulesets-fresh
+android-apk-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	  --platform android \
 	  --targets apk \
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
+	  $(FF_OBFUSCATE) \
 	  --build-target-platform=android-arm,android-arm64,android-x64
 	ls -R build/app/outputs
 
-android-aab-release: check-rulesets-fresh
+android-aab-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	  --platform android \
 	  --targets aab \
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
+	  $(FF_OBFUSCATE) \
 	  --build-dart-define=release=google-play
 
 windows-release: windows-zip-release windows-exe-release windows-msix-release
 
-windows-zip-release:
+windows-zip-release: rayn-link-key
 	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets zip \
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
+	  $(FF_OBFUSCATE) \
 	  --build-dart-define=portable=true
 	@FULL_PATH=$$(ls dist/*/*.zip | head -n 1); \
 	ZIP_DIR=$$(dirname "$$FULL_PATH"); \
@@ -324,21 +372,23 @@ windows-zip-release:
 	rm -rf RaynVPN; \
 	$(GREEN)Successful$(DONE)
 
-windows-exe-release:
+windows-exe-release: rayn-link-key
 	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets exe \
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
-	  --build-target=$(TARGET)
+	  --build-target=$(TARGET) \
+	  $(FF_OBFUSCATE)
 
-windows-msix-release:
+windows-msix-release: rayn-link-key
 	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets msix \
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
-	  --build-target=$(TARGET)
+	  --build-target=$(TARGET) \
+	  $(FF_OBFUSCATE)
 
 linux-release: linux-deb-release linux-appimage-release
 
@@ -348,13 +398,14 @@ linux-amd64-musl-release: linux-release
 linux-arm64-musl-release: linux-release
 
 
-linux-deb-release:
+linux-deb-release: rayn-link-key
 	$(FASTFORGE) package \
 	--platform linux \
 	--targets deb \
 	--skip-clean \
 	--artifact-name=$(FF_ARTIFACT_NAME) \
-	--build-target=$(TARGET)
+	--build-target=$(TARGET) \
+	$(FF_OBFUSCATE)
 
 
 # ==============================================================================
@@ -386,13 +437,14 @@ linux-deb-release:
 # their own unresolved dependencies. It increases maintenance cost and may cause
 # runtime instability. Use only for specific edge cases where standard linking fails.
 # ==============================================================================
-linux-appimage-release:
+linux-appimage-release: rayn-link-key
 	$(FASTFORGE) package \
 	--platform linux \
 	--targets appimage \
 	--skip-clean \
 	--artifact-name=$(FF_ARTIFACT_NAME) \
-	--build-target=$(TARGET)
+	--build-target=$(TARGET) \
+	$(FF_OBFUSCATE)
 	@$(YELLOW)Post-processing AppImage$(DONE); \
 	$(BLUE)Extracting AppImage$(DONE); \
 	cd dist/* && ./*.AppImage --appimage-extract > /dev/null; \
@@ -479,11 +531,11 @@ linux-docker-release:
 
 	@$(GREEN)Successful. Output is in 'dist_docker' folder.$(DONE)
 
-macos-release:
-	$(FASTFORGE) package --platform macos --targets dmg,pkg $(DISTRIBUTOR_ARGS)
+macos-release: rayn-link-key
+	$(FASTFORGE) package --platform macos --targets dmg,pkg $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE)
 
-ios-release: #not tested
-	$(FASTFORGE) package --platform ios --targets ipa --build-export-options-plist  ios/exportOptions.plist $(DISTRIBUTOR_ARGS)
+ios-release: rayn-link-key #not tested
+	$(FASTFORGE) package --platform ios --targets ipa --build-export-options-plist  ios/exportOptions.plist $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE)
 
 android-libs:
 	$(MKDIR) $(ANDROID_OUT) || echo Folder already exists. Skipping...
@@ -551,12 +603,15 @@ fetch-rulesets:
 	#   geosite-apple@cn       -> direct-apple
 	#   geosite-cn             -> direct-regional-sites
 	#   geoip-cn               -> direct-regional-ips
-	#   geosite-geolocation-!cn-> fakeip-remote-sites
+	#
+	# DO NOT re-add geosite-geolocation-!cn -> fakeip-remote-sites. It was only
+	# ever consumed by the FakeIP DNS path, which was removed (the hub runs
+	# domainStrategy:AsIs and needs real IPs). Nothing in builder.go references
+	# the tag any more, and at 167 KB it was 61% of the whole rule-set bundle.
 	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-private.srs           -o $(RULESETS_DIR)/direct-private.srs
 	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-apple@cn.srs"        -o $(RULESETS_DIR)/direct-apple.srs
 	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-cn.srs                -o $(RULESETS_DIR)/direct-regional-sites.srs
 	curl -fSL $(RULESETS_GEOIP_BASE)/geoip-cn.srs                    -o $(RULESETS_DIR)/direct-regional-ips.srs
-	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-geolocation-!cn.srs" -o $(RULESETS_DIR)/fakeip-remote-sites.srs
 	@$(BLUE)Regenerating MANIFEST$(DONE)
 	bash scripts/regen_rulesets_manifest.sh
 	@$(GREEN)Rule-sets refreshed. Commit assets/rulesets/ before cutting a release.$(DONE)

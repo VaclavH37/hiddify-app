@@ -9,6 +9,8 @@ import 'package:hiddify/features/auth/payment/data/iap_service.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../support/rayn_link_fixture.dart';
+
 /// Session store stub — overrides only `read` (the platform channel is never hit).
 class _FakeStore extends SessionTokenStore {
   _FakeStore(this._token) : super(const FlutterSecureStorage());
@@ -50,6 +52,28 @@ Future<IapPurchaseOutcome?> _outcome({
   Map<String, dynamic> verifyResponse = const {},
   String? token = 'tok-123',
 }) async {
+  final all = await _outcomes(
+    count: 1,
+    responseCode: responseCode,
+    purchases: purchases,
+    verifyError: verifyError,
+    verifyResponse: verifyResponse,
+    token: token,
+  );
+  return all.isEmpty ? null : all.first;
+}
+
+/// As [_outcome], but collects the first [count] outcomes. A successful verify
+/// emits `activating` before the import result, so the terminal outcome of the
+/// verify→import chain is the second element.
+Future<List<IapPurchaseOutcome>> _outcomes({
+  required int count,
+  required int responseCode,
+  List<RaynPurchase>? purchases,
+  AuthApiException? verifyError,
+  Map<String, dynamic> verifyResponse = const {},
+  String? token = 'tok-123',
+}) async {
   final container = ProviderContainer(
     overrides: [
       sessionTokenStoreProvider.overrideWithValue(_FakeStore(token)),
@@ -59,12 +83,12 @@ Future<IapPurchaseOutcome?> _outcome({
   addTearDown(container.dispose);
 
   final service = container.read(iapServiceProvider);
-  final first = service.outcomes.first; // subscribe before triggering
+  final collected = service.outcomes.take(count).toList(); // subscribe before triggering
   service.onPurchasesUpdated(purchases ?? [_purchase()], responseCode);
   try {
-    return await first.timeout(const Duration(seconds: 3));
+    return await collected.timeout(const Duration(seconds: 3));
   } on TimeoutException {
-    return null;
+    return const [];
   }
 }
 
@@ -72,7 +96,23 @@ void main() {
   const billingOk = 0;
   const billingUserCanceled = 1;
 
+  setUp(useTestSecret);
+  tearDown(useEmbeddedKey);
+
   group('IapService.onPurchasesUpdated', () {
+    test('a cryptolink this build cannot open → updateRequired (purchase is safe)', () async {
+      final outcomes = await _outcomes(
+        count: 2,
+        responseCode: billingOk,
+        verifyResponse: {
+          'status': 'ok',
+          'subscription_url': mintRaynLink('https://sub.example.com/s/tok', version: 0x03),
+        },
+      );
+      expect(outcomes.first, IapPurchaseOutcome.activating);
+      expect(outcomes.last, IapPurchaseOutcome.updateRequired);
+    });
+
     test('PURCHASED + verify 200 → activating (provisioning wait begins)', () async {
       // After a successful verify the first outcome is `activating` (the account
       // is being provisioned); the terminal imported/stillProvisioning follows

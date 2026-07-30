@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:dartx/dartx.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/optional_range.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
@@ -83,9 +84,13 @@ abstract class ConfigOptions {
     validator: (value) => value.isNotBlank,
   );
 
+  /// ipv4_only, matching [remoteDnsDomainStrategy]. The CN-direct resolvers
+  /// return GFW-poisoned AAAA records for foreign names (www.google.com came
+  /// back as the sentinel 2001::1, which the client then dialled ~200 times).
+  /// `auto` applies no filtering and lets those through.
   static final directDnsDomainStrategy = PreferencesNotifier.create<DomainStrategy, String>(
     "direct-dns-domain-strategy",
-    DomainStrategy.auto,
+    DomainStrategy.ipv4Only,
     mapFrom: (value) => DomainStrategy.values.firstWhere((e) => e.key == value),
     mapTo: (value) => value.key,
   );
@@ -123,20 +128,22 @@ abstract class ConfigOptions {
 
   static final strictRoute = PreferencesNotifier.create<bool, bool>("strict-route", true);
 
+  /// Latency/health probe target.
+  ///
+  /// CRITICAL: the core force-pins this HOSTNAME to the CN-direct resolver
+  /// (doh.pub) with a 24h TTL, and that cached answer is shared with ordinary
+  /// browser traffic. A GFW-poisoned host here therefore breaks real page loads,
+  /// not just the probe — `www.gstatic.com` resolved to a China Telecom address
+  /// and took google.com down with it. Only offer hosts that resolve CORRECTLY
+  /// via a mainland resolver, or IP literals (which are exempt from the pinning).
+  /// HTTPS only.
   static final connectionTestUrl = PreferencesNotifier.create<String, String>(
     "connection-test-url",
-    "http://captive.apple.com/hotspot-detect.html",
+    "https://cp.cloudflare.com",
     possibleValues: List.of([
-      "http://connectivitycheck.gstatic.com/generate_204",
-      "http://www.gstatic.com/generate_204",
-      "https://www.gstatic.com/generate_204",
-      "https://redirector.googlevideo.com/generate_204",
-      "http://cp.cloudflare.com",
-      "http://kernel.org",
-      "http://detectportal.firefox.com",
-      "http://captive.apple.com/hotspot-detect.html",
+      "https://cp.cloudflare.com",
       "https://1.1.1.1",
-      "http://1.1.1.1",
+      "https://captive.apple.com/hotspot-detect.html",
     ]),
     validator: (value) => value.isNotBlank && isUrl(value),
   );
@@ -157,7 +164,10 @@ abstract class ConfigOptions {
 
   static final bypassLan = PreferencesNotifier.create<bool, bool>("bypass-lan", false);
 
-  static final enableFakeDns = PreferencesNotifier.create<bool, bool>("enable-fake-dns", true);
+  // enableFakeDns preference removed: the hub runs domainStrategy:AsIs and needs
+  // real IPs, so FakeIP is force-disabled in the core regardless of any option.
+  // The DNS-page toggle was removed with it; enable-fake-dns is cleared from
+  // stored prefs by preferences_migration.dart.
 
   // static final enableDnsRouting = PreferencesNotifier.create<bool, bool>("enable-dns-routing", true);
 
@@ -263,6 +273,10 @@ abstract class ConfigOptions {
       blockAds: ref.watch(blockAds),
       executeConfigAsIs: false,
       logLevel: ref.watch(logLevel),
+      // Release builds write NO log file (empty = memory/console only); debug
+      // and profile builds keep data/box.log for UAT. See LogFile in
+      // hiddify_option.go, whose default is likewise empty.
+      logFile: kReleaseMode ? "" : "data/box.log",
       resolveDestination: ref.watch(resolveDestination),
       ipv6Mode: ref.watch(ipv6Mode),
       remoteDnsAddress: ref.watch(remoteDnsAddress),
@@ -286,7 +300,9 @@ abstract class ConfigOptions {
       bypassLan: ref.watch(bypassLan),
       // Hardcoded false — UI toggle removed; LAN sharing kept off by default.
       allowConnectionFromLan: false,
-      enableFakeDns: ref.watch(enableFakeDns),
+      // Hardcoded false — FakeIP is force-disabled (hub is domainStrategy:AsIs);
+      // UI toggle and preference removed. The core ignores this value regardless.
+      enableFakeDns: false,
       // enableDnsRouting: ref.watch(enableDnsRouting),
       independentDnsCache: ref.watch(independentDnsCache),
       // mux: SingboxMuxOption(

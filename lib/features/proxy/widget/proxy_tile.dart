@@ -27,23 +27,24 @@ class ProxyTile extends HookConsumerWidget with PresLogger {
 
     final String displayName;
     if (proxy.isGroup) {
-      // Group rows: surface the auto-selector groups with friendly labels
-      // ("lowest" → Lowest Latency, "balance" → Auto rotate); otherwise show
-      // the flag-stripped, capitalized group name.
-      final stripped = stripTrailingFlag(proxy.tagDisplay);
-      if (stripped.isEmpty) {
-        displayName = stripped;
-      } else if (stripped.toLowerCase() == 'lowest') {
-        displayName = t.pages.proxies.lowestLatency;
-      } else if (stripped.toLowerCase() == 'balance') {
-        displayName = t.pages.proxies.autoRotate;
-      } else {
-        displayName = stripped[0].toUpperCase() + stripped.substring(1);
+      // Group rows: surface the client-injected auto-selector groups with
+      // friendly mode labels ("lowest" → Lowest Latency, "balance" → Auto
+      // rotate); any other group name is shown verbatim.
+      final tag = proxy.tagDisplay;
+      switch (tag.toLowerCase()) {
+        case 'lowest':
+          displayName = t.pages.proxies.lowestLatency;
+        case 'balance':
+          displayName = t.pages.proxies.autoRotate;
+        default:
+          displayName = tag;
       }
     } else {
-      // Node rows: transform the backend hub/exit tag (e.g. "HUB-JP-TOKYO-A")
-      // into a readable "City, CC" label, falling back to the flag-stripped tag.
-      displayName = prettifyNodeName(proxy.tagDisplay) ?? stripTrailingFlag(proxy.tagDisplay);
+      // Node rows: the readable name is authored by the MW API and shown as-is;
+      // only the "EXIT-" role prefix and a trailing country-flag emoji are
+      // stripped (the flag is drawn separately as the leading icon). The internal
+      // tag schema is not otherwise parsed.
+      displayName = displayNodeTag(proxy.tagDisplay);
     }
 
     final titleStyle = RaynTypography.body.copyWith(color: palette.textPrimary);

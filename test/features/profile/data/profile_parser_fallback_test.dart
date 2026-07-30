@@ -1,10 +1,5 @@
-// ignore_for_file: depend_on_referenced_packages
-
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:basic_utils/basic_utils.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
@@ -14,36 +9,18 @@ import 'package:hiddify/core/model/environment.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
-import 'package:hiddify/utils/rayn_token.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:pointycastle/asymmetric/oaep.dart';
-import 'package:pointycastle/asymmetric/rsa.dart';
 
-late AsymmetricKeyPair _testKey;
+import '../../../support/rayn_link_fixture.dart';
 
-String _encrypt(String url, RSAPublicKey publicKey) {
-  final cipher = OAEPEncoding.withSHA256(RSAEngine())
-    ..init(true, PublicKeyParameter<RSAPublicKey>(publicKey));
-  final ciphertext = cipher.process(Uint8List.fromList(utf8.encode(url)));
-  return base64Url.encode(ciphertext).replaceAll('=', '');
-}
-
-String _raynLink(String url) {
-  final token = _encrypt(url, _testKey.publicKey as RSAPublicKey);
-  return 'rayn://import/$token';
-}
+String _raynLink(String url) => mintRaynLink(url);
 
 /// The MW subscription API's token-expired envelope (HTTP 200 body).
 const _expiredEnvelope = '{"success":false,"error_code":4010,"message":"Subscription token expired"}';
 
 void main() {
-  setUpAll(() {
-    _testKey = CryptoUtils.generateRSAKeyPair(keySize: 4096);
-  });
-
-  setUp(() {
-    RaynTokenDecryptor.debugSetKey(_testKey.privateKey as RSAPrivateKey);
-  });
+  setUp(useTestSecret);
+  tearDown(useEmbeddedKey);
 
   group('extractFallback', () {
     test('returns null when `fallback-url` header is absent', () {
@@ -92,7 +69,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.url, url);
-      expect(result.name, link);
+      expect(result.sourceToken, link);
     });
 
     test('trims surrounding whitespace before parsing', () {
@@ -103,7 +80,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.url, url);
-      expect(result.name, link);
+      expect(result.sourceToken, link);
     });
 
     test('takes first element when header is a multi-value list', () {
@@ -116,7 +93,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.url, url);
-      expect(result.name, link);
+      expect(result.sourceToken, link);
     });
 
     test('returns null when multi-value list is empty', () {
@@ -128,13 +105,14 @@ void main() {
       expect(ProfileParser.extractFallback(const {'fallback-url': null}), isNull);
     });
 
-    test('rejects fallback when the underlying decrypt fails (different key)', () {
-      final otherKey = CryptoUtils.generateRSAKeyPair(keySize: 4096);
-      final token = _encrypt('https://api.example.com/sub', otherKey.publicKey as RSAPublicKey);
-      expect(
-        ProfileParser.extractFallback({'fallback-url': 'rayn://import/$token'}),
-        isNull,
-      );
+    test('rejects fallback when the underlying decrypt fails (different secret)', () {
+      final link = mintRaynLink('https://api.example.com/sub', secret: 'a-different-secret');
+      expect(ProfileParser.extractFallback({'fallback-url': link}), isNull);
+    });
+
+    test('rejects an envelope version this build cannot open', () {
+      final link = mintRaynLink('https://api.example.com/sub', version: 0x03);
+      expect(ProfileParser.extractFallback({'fallback-url': link}), isNull);
     });
   });
 
@@ -289,6 +267,39 @@ void main() {
         (companion) {
           expect(companion.fallbackUrl.value, newFallback);
           expect(companion.fallbackSourceToken.value, newLink);
+        },
+      );
+    });
+
+    test('a fallback-url for the SAME url does not rewrite the columns (§4)', () async {
+      // The regression: the cryptolink string differs on every response because
+      // the GCM nonce is random. Comparing raw links would rewrite both columns
+      // on every single refresh.
+      const existingFallback = 'https://fallback.example.com/sub';
+      final storedLink = _raynLink(existingFallback);
+      final freshLink = _raynLink(existingFallback);
+      expect(freshLink, isNot(storedLink), reason: 'cryptolinks for the same URL are never equal (§4)');
+
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {'fallback-url': freshLink})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser
+          .updateRemote(
+            rp: buildEntity(fallbackUrl: existingFallback, fallbackSourceToken: storedLink),
+            tempFilePath: '${tempDir.path}/profile',
+          )
+          .run();
+
+      expect(result.isRight(), isTrue);
+      result.fold(
+        (_) => fail('expected Right'),
+        (companion) {
+          expect(companion.fallbackUrl.value, existingFallback);
+          // The load-bearing assertion: with a raw-string comparison the stored
+          // token would have been overwritten with `freshLink` on this refresh,
+          // and on every refresh thereafter.
+          expect(companion.fallbackSourceToken.value, storedLink);
+          expect(companion.fallbackSourceToken.value, isNot(freshLink));
         },
       );
     });
@@ -455,6 +466,40 @@ void main() {
 
       expect(result.isLeft(), isTrue);
       result.fold((l) => expect(l, isA<ProfileSubscriptionExpiredFailure>()), (_) => fail('expected Left'));
+      expect(fake.callCount, 1);
+    });
+
+    test('a new-url pointing at the CURRENT url is not followed (§4)', () async {
+      // Regression for the ciphertext-equality bug: the header re-encrypts the
+      // same URL to a different string every time, so a string comparison would
+      // "rotate" on every refresh and burn up to _maxRotationHops downloads.
+      const currentUrl = 'https://primary.example.com/sub';
+      final storedLink = _raynLink(currentUrl);
+      final echoedLink = _raynLink(currentUrl);
+      expect(echoedLink, isNot(storedLink), reason: 'cryptolinks for the same URL are never equal (§4)');
+
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {'new-url': echoedLink})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser
+          .updateRemote(rp: buildEntity(sourceToken: storedLink), tempFilePath: '${tempDir.path}/profile')
+          .run();
+
+      expect(result.isRight(), isTrue);
+      expect(fake.callCount, 1, reason: 'the rotation must not be followed — exactly one download');
+    });
+
+    test('a new-url with an unreadable envelope version is not followed', () async {
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'new-url': mintRaynLink('https://migrated.example.com/sub', version: 0x03)}),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.updateRemote(rp: buildEntity(), tempFilePath: '${tempDir.path}/profile').run();
+
+      expect(result.isRight(), isTrue);
       expect(fake.callCount, 1);
     });
 

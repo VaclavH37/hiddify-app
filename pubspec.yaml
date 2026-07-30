@@ -1,7 +1,7 @@
 name: hiddify
 description: Cross Platform Multi Protocol Proxy Frontend.
 publish_to: "none"
-version: 1.2.9+10209
+version: 1.3.1+10301
 
 environment:
   sdk: ^3.10.4
@@ -37,6 +37,11 @@ dependencies:
   # SHA-256 for the auth API proof-of-work solver. Already present transitively
   # via basic_utils; declared directly so the import is a first-class dependency.
   crypto: ^3.0.7
+  # AES-256-GCM for the `rayn://import/` cryptolink decrypt — its ciphertext||tag
+  # layout matches our wire format exactly. Already present transitively via
+  # basic_utils; declared directly so the import is first-class and a crypto
+  # dependency carries its own version constraint rather than inheriting one.
+  pointycastle: ^3.9.1
   # OS keystore (Keychain / Keystore-backed EncryptedSharedPreferences / DPAPI /
   # libsecret) for the 24h account API session_token — mandated by
   # CLIENT-AUTH-INTEGRATION.md §2/§9; never store this credential in plaintext.

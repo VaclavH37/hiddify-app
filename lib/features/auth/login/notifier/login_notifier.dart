@@ -3,6 +3,7 @@ import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/account_status.dart';
 import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
+import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -188,7 +189,11 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
     final importState = ref.read(addProfileNotifierProvider);
     if (importState.hasError) {
       // addClipboard already surfaced its own toast; reflect failure in-form.
-      state = LoginState.fail(LoginOutcome.generic);
+      // Reuse the failure it constructed rather than re-parsing the link, so an
+      // out-of-date build says "update the app" instead of "something went wrong".
+      state = LoginState.fail(
+        importState.error is ProfileUnsupportedLinkVersionFailure ? LoginOutcome.updateRequired : LoginOutcome.generic,
+      );
       return;
     }
     state = LoginState.success;
@@ -201,8 +206,13 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
   /// confirmed to match, so it fails closed.
   bool _ownsSubscription(String? cryptolink, String expectedUrl) {
     if (cryptolink == null || cryptolink.isEmpty) return false;
-    final parsed = LinkParser.parse(cryptolink);
-    return parsed != null && parsed.url == expectedUrl;
+    return switch (LinkParser.parse(cryptolink)) {
+      RaynLinkOk(:final url) => url == expectedUrl,
+      // An unsupported version also fails closed: we can't confirm ownership, and
+      // this guard's contract is "reject what we can't verify". The user still
+      // learns they need to update via the import path.
+      _ => false,
+    };
   }
 
   LoginOutcome _mapError(AuthApiException e) {

@@ -52,13 +52,12 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
         private const val notificationChannel = "service"
         var coreClient: CoreClient?=null
 
-        // Regexes mirroring lib/features/proxy/model/node_name.dart. One or more
-        // trailing country-flag emoji (pairs of Regional Indicator Symbols) plus
-        // surrounding whitespace; the core→detour separator ("→" or "->"); and a
-        // 2-letter country code.
-        private val trailingFlagPattern = Regex("\\s*(?:[\\x{1F1E6}-\\x{1F1FF}]{2}\\s*)+$")
+        // The core→detour separator ("→" or "->"), used to split a selector chain
+        // into its hops so the notification can show the resolved node.
         private val detourSeparator = Regex("\\s*(?:→|->)\\s*")
-        private val countryCodePattern = Regex("^[A-Za-z]{2}$")
+        // One or more trailing country-flag emoji (pairs of Regional Indicator
+        // Symbols) plus surrounding whitespace — stripped from the tag text.
+        private val trailingFlagPattern = Regex("\\s*(?:[\\x{1F1E6}-\\x{1F1FF}]{2}\\s*)+$")
         val flags =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
 
@@ -150,7 +149,7 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
     fun updateStatus(previous:SystemInfo,status: SystemInfo) {
         val uplink=status.uplink_total - previous.uplink_total
         val downlink=status.downlink_total - previous.downlink_total
-        val content = "${Libbox.formatBytes(uplink)}/s ↑\t${Libbox.formatBytes(downlink)}/s ↓ \n${prettifyOutbound(status.current_outbound)}"
+        val content = "${Libbox.formatBytes(uplink)}/s ↑\t${Libbox.formatBytes(downlink)}/s ↓ \n${resolvedOutbound(status.current_outbound)}"
         val title = "${status.current_profile}"
         Application.notificationManager.notify(
                 notificationId,
@@ -158,42 +157,28 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
         )
     }
 
-    // Port of the Flutter proxy list's prettifyNodeName
-    // (lib/features/proxy/model/node_name.dart) so the notification shows the same
-    // "City, CC" label the in-app list does (e.g. "EXIT-SK-SEOUL-01🇰🇷" -> "Seoul, SK").
-    // The core reports the whole selector chain (e.g. "lowest → EXIT-SK-SEOUL-01"),
-    // so we scan every detour hop and use the first that matches the convention.
-    private fun prettifyOutbound(tag: String): String {
-        for (hop in tag.split(detourSeparator)) {
-            prettifyHop(hop)?.let { return it }
-        }
-        // No hop matched — fall back to the raw tag with any trailing flag stripped.
-        return stripTrailingFlag(tag).ifBlank { tag }
+    // Node tags are generated in final display form by the MW API, so the client
+    // does NOT parse the internal tag schema. The core reports the whole selector
+    // chain (e.g. "lowest → EXIT-SK-SEOUL-01"); we resolve it to the primary node
+    // hop — skipping the client-injected auto-selector group names — and show that
+    // tag verbatim, matching what the in-app list shows.
+    private fun resolvedOutbound(tag: String): String {
+        val hops = tag.split(detourSeparator).map { it.trim() }.filter { it.isNotEmpty() }
+        val hop = hops.firstOrNull { it.lowercase() != "lowest" && it.lowercase() != "balance" }
+            ?: hops.firstOrNull()
+            ?: tag
+        return displayNodeTag(hop)
     }
 
-    // Converts a single "HUB-<CC>-<CITY…>-<id>" / "EXIT-<CC>-<CITY…>-<id>[flag]" hop
-    // into "City, CC", or null when it doesn't fit the convention.
-    private fun prettifyHop(hop: String): String? {
-        val parts = stripTrailingFlag(hop).split("-")
-        // Need at least: <prefix> - <cc> - <city…> - <id>.
-        if (parts.size < 4) return null
-        val prefix = parts.first().uppercase()
-        if (prefix != "HUB" && prefix != "EXIT") return null
-        val countryCode = parts[1]
-        if (!countryCodePattern.matches(countryCode)) return null
-        // Everything between the country code and the trailing id is the city, which
-        // may span multiple hyphen-separated segments (e.g. "NEW-YORK" -> "New York").
-        val citySegments = parts.subList(2, parts.size - 1).filter { it.isNotEmpty() }
-        if (citySegments.isEmpty()) return null
-        val city = citySegments.joinToString(" ") { titleCase(it) }
-        return "$city, ${countryCode.uppercase()}"
-    }
+    // Display form of a node tag: the "EXIT-" role prefix and a trailing country-
+    // flag emoji removed, the readable MW-authored portion otherwise verbatim
+    // (e.g. "EXIT-Tokyo, JP🇯🇵" -> "Tokyo, JP"). Mirrors displayNodeTag in
+    // lib/features/proxy/model/node_name.dart.
+    private fun displayNodeTag(tag: String): String =
+        stripTrailingFlag(tag.removePrefix("EXIT-"))
 
     private fun stripTrailingFlag(name: String): String =
         trailingFlagPattern.replace(name, "").trim()
-
-    private fun titleCase(word: String): String =
-        word.first().uppercase() + word.substring(1).lowercase()
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {

@@ -1,19 +1,12 @@
-// ignore_for_file: depend_on_referenced_packages
-
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:basic_utils/basic_utils.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
 import 'package:hiddify/features/auth/login/notifier/login_notifier.dart';
-import 'package:hiddify/utils/rayn_token.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:pointycastle/asymmetric/oaep.dart';
-import 'package:pointycastle/asymmetric/rsa.dart';
+
+import '../../support/rayn_link_fixture.dart';
 
 /// Records what the session store is asked to persist so a test can assert that
 /// a mismatched account's credentials never overwrite the session.
@@ -55,26 +48,17 @@ class _FakeAuthApiClient extends AuthApiClient {
   Future<Map<String, dynamic>> gatedPost(String path, Map<String, dynamic> body, {String? bearer}) async => result;
 }
 
-late AsymmetricKeyPair _testKey;
-
-String _encrypt(String url) {
-  final cipher = OAEPEncoding.withSHA256(RSAEngine())
-    ..init(true, PublicKeyParameter<RSAPublicKey>(_testKey.publicKey as RSAPublicKey));
-  final ciphertext = cipher.process(Uint8List.fromList(utf8.encode(url)));
-  return base64Url.encode(ciphertext).replaceAll('=', '');
-}
-
 /// A login response whose inline `subscription_url` cryptolink decrypts to [url].
-Map<String, dynamic> _loginResponse(String url) => {
+Map<String, dynamic> _loginResponse(String url, {int version = kLinkVersionV2}) => {
       'session_token': 'sess-abc',
       'user_id': 'uid-123',
       'account_status': 'active',
-      'subscription_url': 'rayn://import/${_encrypt(url)}',
+      'subscription_url': mintRaynLink(url, version: version),
     };
 
 void main() {
-  setUpAll(() => _testKey = CryptoUtils.generateRSAKeyPair(keySize: 4096));
-  setUp(() => RaynTokenDecryptor.debugSetKey(_testKey.privateKey as RSAPrivateKey));
+  setUp(useTestSecret);
+  tearDown(useEmbeddedKey);
 
   const activeUrl = 'https://subscription-api.example.com/AccountA?x=1';
 
@@ -138,6 +122,24 @@ void main() {
         }),
         store,
       );
+
+      await c.read(loginNotifierProvider.notifier).login(
+            'me@example.com',
+            'password12',
+            importProfile: false,
+            expectedSubscriptionUrl: activeUrl,
+          );
+
+      expect(c.read(loginNotifierProvider).outcome, LoginOutcome.accountMismatch);
+      expect(store.tokenWrites, 0);
+    });
+
+    test('an unreadable envelope version also fails closed (accountMismatch)', () async {
+      // We can't confirm ownership of a link we can't open, and this guard's
+      // contract is "reject what we can't verify" — the user learns an update is
+      // needed from the import path, not by having a foreign session persisted.
+      final store = _FakeSessionStore();
+      final c = containerWith(_FakeAuthApiClient(_loginResponse(activeUrl, version: 0x03)), store);
 
       await c.read(loginNotifierProvider.notifier).login(
             'me@example.com',

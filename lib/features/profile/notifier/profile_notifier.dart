@@ -38,6 +38,8 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
         case AsyncError(:final error):
           if (error case ProfileInvalidUrlFailure()) {
             notification.showErrorToast(t.pages.profiles.msg.invalidUrl);
+          } else if (error case ProfileUnsupportedLinkVersionFailure()) {
+            notification.showErrorToast(t.pages.profiles.msg.updateRequired);
           } else if (error case ProfileAlreadyAuthenticatedFailure()) {
             notification.showErrorToast(t.auth.alreadySignedIn);
           } else if (error case ProfileCancelByUserFailure()) {
@@ -70,15 +72,24 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
     }
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final parsed = LinkParser.parse(rawInput);
-      if (parsed == null) {
-        loggy.warning("rejected import: not a valid rayn://import/<token> link");
-        throw const ProfileFailure.invalidUrl();
+      final RaynLinkOk parsed;
+      switch (LinkParser.parse(rawInput)) {
+        case RaynLinkOk ok:
+          parsed = ok;
+        case RaynLinkUnsupportedVersion(:final version):
+          // The link is fine; this build is too old to open it. Distinct from
+          // invalidUrl so the user is told to update, not to re-copy the link.
+          loggy.warning("rejected import: unsupported cryptolink version 0x${version.toRadixString(16)}");
+          throw const ProfileFailure.unsupportedLinkVersion();
+        case RaynLinkInvalid(:final reason):
+          loggy.warning("rejected import: $reason");
+          throw const ProfileFailure.invalidUrl();
       }
-      loggy.debug("adding profile, url: [${parsed.url}]");
+      // Never log the decrypted URL — it is the user's subscription credential
+      // (RAYN-LINK-SYMMETRIC-MIGRATION.md §9). Host only.
+      loggy.debug("adding profile (host: ${Uri.tryParse(parsed.url)?.host ?? "?"})");
       final task = _profilesRepo.upsertRemote(
         parsed.url,
-        userOverride: parsed.name.isNotEmpty ? UserOverride(name: parsed.name) : null,
         sourceToken: rawInput.trim(),
         cancelToken: _cancelToken = CancelToken(),
       );

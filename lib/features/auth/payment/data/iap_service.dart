@@ -10,6 +10,7 @@ import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hiddify/utils/link_parsers.dart';
+import 'package:hiddify/utils/rayn_token.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -56,6 +57,10 @@ enum IapPurchaseOutcome {
 
   /// The API host couldn't be reached (transport failure).
   unreachable,
+
+  /// The cryptolink's envelope version is one this build can't open. The
+  /// purchase is safe — an updated app imports it on the next Restore.
+  updateRequired,
 
   /// Generic / `5xx`. The purchase is safe; re-verify later (§5.5).
   failed,
@@ -248,8 +253,16 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// dialog on every retry; on success the persisted profile drives the router
   /// redirect to `/home`.
   Future<IapPurchaseOutcome> _pollImport(String cryptolink) async {
-    final parsed = LinkParser.parse(cryptolink);
-    if (parsed == null) return IapPurchaseOutcome.failed;
+    final RaynLinkOk parsed;
+    switch (LinkParser.parse(cryptolink)) {
+      case RaynLinkOk ok:
+        parsed = ok;
+      case RaynLinkUnsupportedVersion():
+        // The purchase is safe; an updated build will import it on Restore.
+        return IapPurchaseOutcome.updateRequired;
+      case RaynLinkInvalid():
+        return IapPurchaseOutcome.failed;
+    }
 
     final repo = await _ref.read(profileRepositoryProvider.future);
     for (var attempt = 1; attempt <= _maxActivationAttempts; attempt++) {
@@ -257,7 +270,6 @@ class IapService with InfraLogger implements RaynBillingEvents {
           .upsertRemote(
             parsed.url,
             sourceToken: cryptolink,
-            userOverride: parsed.name.isNotEmpty ? UserOverride(name: parsed.name) : null,
           )
           .run();
       if (result.isRight()) return IapPurchaseOutcome.imported;

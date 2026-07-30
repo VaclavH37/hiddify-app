@@ -248,6 +248,12 @@ jobs:
 
 
       - name: Build ${{ matrix.platform }}
+        env:
+          # Shared secret the rayn://import/ cryptolink key is derived from. The
+          # `rayn-link-key` make prerequisite hard-fails when this is unset, so a
+          # release can never ship the committed development key. Passed via env
+          # (not argv) so it stays out of process listings and build logs.
+          RAYN_LINK_SECRET: ${{ secrets.RAYN_LINK_SECRET }}
         run: |
           make ${{ matrix.platform }}-release
 

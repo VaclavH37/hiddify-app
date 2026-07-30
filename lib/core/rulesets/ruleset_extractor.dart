@@ -70,6 +70,8 @@ abstract class RulesetExtractor {
       await _extractFile(targetDir, file.name);
     }
 
+    await _pruneStale(targetDir, bundleManifest);
+
     // Manifest written last so a crash above leaves the previous version
     // marker on disk and we re-enter the extraction branch next launch.
     final manifestJson = await rootBundle.loadString(_bundleAssetPath);
@@ -99,6 +101,30 @@ abstract class RulesetExtractor {
       }
     }
     return true;
+  }
+
+  /// Deletes `*.srs` files that are no longer listed in the bundled MANIFEST.
+  /// Without this, a rule-set dropped from the bundle lingers on disk forever on
+  /// upgraded installs — `fakeip-remote-sites.srs` (167 KB) was left behind when
+  /// the FakeIP path was removed. Best-effort: a failure here is not fatal, the
+  /// stale file is unreferenced by builder.go either way.
+  static Future<void> _pruneStale(Directory targetDir, RulesetManifest manifest) async {
+    final expected = manifest.files.map((f) => f.name).toSet();
+    try {
+      await for (final entity in targetDir.list()) {
+        if (entity is! File) continue;
+        final name = p.basename(entity.path);
+        if (!name.endsWith('.srs') || expected.contains(name)) continue;
+        try {
+          await entity.delete();
+          _log.info('pruned stale rule-set $name');
+        } catch (e) {
+          _log.warning('failed to prune stale rule-set $name: $e');
+        }
+      }
+    } catch (e, st) {
+      _log.warning('rule-set prune scan failed', e, st);
+    }
   }
 
   static Future<void> _extractFile(Directory targetDir, String name) async {

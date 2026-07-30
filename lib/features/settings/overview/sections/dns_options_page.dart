@@ -4,7 +4,6 @@ import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
 import 'package:hiddify/core/widget/rayn_preference_group.dart';
-import 'package:hiddify/features/common/general_pref_tiles.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/settings/widget/preference_tile.dart';
 import 'package:hiddify/features/settings/widget/sub_page_back_button.dart';
@@ -32,12 +31,6 @@ class DnsOptionsPage extends HookConsumerWidget {
         title: t.pages.settings.dns.remoteDnsDomainStrategy,
         icon: Icons.sync_alt_rounded,
         presentChoice: (value) => value.present(t),
-      ),
-      RaynSwitchTile(
-        icon: Icons.private_connectivity_rounded,
-        title: t.pages.settings.dns.enableFakeDns,
-        value: ref.watch(ConfigOptions.enableFakeDns),
-        onChanged: ref.read(ConfigOptions.enableFakeDns.notifier).update,
       ),
       ValuePreferenceWidget(
         title: t.pages.settings.dns.directDns,

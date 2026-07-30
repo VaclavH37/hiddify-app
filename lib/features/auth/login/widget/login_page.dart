@@ -203,6 +203,8 @@ class LoginPage extends HookConsumerWidget {
       case LoginOutcome.accountMismatch:
         // Only the plan-transition re-auth sets this; never reached here.
         return null;
+      case LoginOutcome.updateRequired:
+        return t.auth.login.updateRequired;
       case LoginOutcome.generic:
         return t.auth.login.generic;
     }

@@ -154,6 +154,7 @@
       "pendingActivation": "Your account is activating. Please check back in a few minutes.",
       "verifyFailed": "Couldn't verify the app. Please try again.",
       "unreachable": "Couldn't reach the sign-in service. You can paste your token instead.",
+      "updateRequired": "This account needs a newer version of Rayn. Please update the app, then sign in again.",
       "generic": "Something went wrong. Please try again later.",
       "openWebsite": "Open account page"
     },
@@ -223,6 +224,7 @@
       "errorReauth": "Please sign in again to finish activating your plan.",
       "errorRateLimited": "Too many attempts. Please wait a moment and try again.",
       "errorUnreachable": "We couldn't reach the server. Check your connection and try again.",
+      "errorUpdateRequired": "Your purchase is safe, but this version of Rayn can't finish activating it. Please update the app, then tap Restore.",
       "errorGeneric": "Something went wrong. Your purchase is safe — please try again.",
       "backToSignIn": "Back to sign in"
     },
@@ -313,6 +315,7 @@
           "success": "Subscription updated"
         },
         "invalidUrl": "Invalid URL",
+        "updateRequired": "This link needs a newer version of Rayn. Please update the app.",
         "add": {
           "failure": "Failed to add profile"
         },
@@ -741,7 +744,8 @@
       "invalidConfig": "Invalid configs",
       "invalidUrl": "Invalid URL",
       "canceledByUser": "Canceled by user",
-      "subscriptionExpired": "Your subscription has expired. Please renew to continue."
+      "subscriptionExpired": "Your subscription has expired. Please renew to continue.",
+      "unsupportedLinkVersion": "App update required"
     },
     "connectivity": {
       "unexpected": "Unexpected failure",

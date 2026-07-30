@@ -33,6 +33,13 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
   @With<ExpectedFailure>()
   const factory ProfileFailure.subscriptionExpired() = ProfileSubscriptionExpiredFailure;
 
+  // The cryptolink's version byte is one this build has no handler for. The user
+  // needs a newer APP, not a newer link — never collapse this into invalidUrl,
+  // which would tell them to re-copy a link that is already correct. See
+  // RAYN-LINK-SYMMETRIC-MIGRATION.md §10.
+  @With<ExpectedFailure>()
+  const factory ProfileFailure.unsupportedLinkVersion() = ProfileUnsupportedLinkVersionFailure;
+
   @override
   ({String type, String? message}) present(TranslationsEn t) {
     return switch (this) {
@@ -44,6 +51,7 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
         configOptionFailure?.present(t) ?? (type: t.errors.profiles.invalidConfig, message: message),
       ProfileCancelByUserFailure(:final message) => (type: t.errors.profiles.canceledByUser, message: message),
       ProfileSubscriptionExpiredFailure() => (type: t.errors.profiles.subscriptionExpired, message: null),
+      ProfileUnsupportedLinkVersionFailure() => (type: t.errors.profiles.unsupportedLinkVersion, message: null),
     };
   }
 }

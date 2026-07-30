@@ -1,37 +1,11 @@
-// ignore_for_file: depend_on_referenced_packages
-
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:basic_utils/basic_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
-import 'package:hiddify/utils/rayn_token.dart';
-import 'package:pointycastle/asymmetric/oaep.dart';
-import 'package:pointycastle/asymmetric/rsa.dart';
 
-late AsymmetricKeyPair _testKey;
-
-String _encrypt(String url, RSAPublicKey publicKey) {
-  final cipher = OAEPEncoding.withSHA256(RSAEngine())
-    ..init(true, PublicKeyParameter<RSAPublicKey>(publicKey));
-  final ciphertext = cipher.process(Uint8List.fromList(utf8.encode(url)));
-  return base64Url.encode(ciphertext).replaceAll('=', '');
-}
-
-String _raynLink(String url) {
-  final token = _encrypt(url, _testKey.publicKey as RSAPublicKey);
-  return 'rayn://import/$token';
-}
+import '../../../support/rayn_link_fixture.dart';
 
 void main() {
-  setUpAll(() {
-    _testKey = CryptoUtils.generateRSAKeyPair(keySize: 4096);
-  });
-
-  setUp(() {
-    RaynTokenDecryptor.debugSetKey(_testKey.privateKey as RSAPrivateKey);
-  });
+  setUp(useTestSecret);
+  tearDown(useEmbeddedKey);
 
   group('extractRotation', () {
     test('returns null when `new-url` header is absent', () {
@@ -74,30 +48,30 @@ void main() {
 
     test('returns decrypted url and full rayn:// link when header is valid', () {
       const url = 'https://api.example.com/sub/abc?x=1';
-      final link = _raynLink(url);
+      final link = mintRaynLink(url);
 
       final result = ProfileParser.extractRotation({'new-url': link});
 
       expect(result, isNotNull);
       expect(result!.url, url);
-      // `name` channel reused to carry the raw rayn:// link for sourceToken.
-      expect(result.name, link);
+      // sourceToken carries the raw rayn:// link for persistence.
+      expect(result.sourceToken, link);
     });
 
     test('trims surrounding whitespace before parsing', () {
       const url = 'https://api.example.com/sub';
-      final link = _raynLink(url);
+      final link = mintRaynLink(url);
 
       final result = ProfileParser.extractRotation({'new-url': '  $link  '});
 
       expect(result, isNotNull);
       expect(result!.url, url);
-      expect(result.name, link);
+      expect(result.sourceToken, link);
     });
 
     test('takes first element when header is a multi-value list', () {
       const url = 'https://api.example.com/sub';
-      final link = _raynLink(url);
+      final link = mintRaynLink(url);
 
       final result = ProfileParser.extractRotation({
         'new-url': [link, 'rayn://import/ignored_second_value'],
@@ -105,7 +79,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.url, url);
-      expect(result.name, link);
+      expect(result.sourceToken, link);
     });
 
     test('returns null when multi-value list is empty', () {
@@ -117,13 +91,28 @@ void main() {
       expect(ProfileParser.extractRotation(const {'new-url': null}), isNull);
     });
 
-    test('rejects rotation when the underlying decrypt fails (different key)', () {
-      final otherKey = CryptoUtils.generateRSAKeyPair(keySize: 4096);
-      final token = _encrypt('https://api.example.com/sub', otherKey.publicKey as RSAPublicKey);
-      expect(
-        ProfileParser.extractRotation({'new-url': 'rayn://import/$token'}),
-        isNull,
-      );
+    test('rejects rotation when the underlying decrypt fails (different secret)', () {
+      final link = mintRaynLink('https://api.example.com/sub', secret: 'a-different-secret');
+      expect(ProfileParser.extractRotation({'new-url': link}), isNull);
+    });
+
+    test('rejects an envelope version this build cannot open', () {
+      // Must not be followed, and must not throw — the caller keeps using the
+      // current URL and the error log tells us an app update is due.
+      final link = mintRaynLink('https://api.example.com/sub', version: 0x03);
+      expect(ProfileParser.extractRotation({'new-url': link}), isNull);
+    });
+
+    test('two links for the same URL differ but decrypt identically', () {
+      // The precondition behind the §4 rule: rotation must be detected by
+      // comparing decrypted URLs, because the cryptolink strings never match.
+      const url = 'https://api.example.com/sub';
+      final first = mintRaynLink(url);
+      final second = mintRaynLink(url);
+
+      expect(first, isNot(second), reason: 'GCM nonce is random — links are not comparable (§4)');
+      expect(ProfileParser.extractRotation({'new-url': first})!.url, url);
+      expect(ProfileParser.extractRotation({'new-url': second})!.url, url);
     });
   });
 }

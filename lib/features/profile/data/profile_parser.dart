@@ -28,6 +28,15 @@ import 'package:meta/meta.dart';
 /// - remote:  fallback to `Remote Profile`
 /// - local: fallback to protocol, extracted from content by protocol()
 
+/// A subscription URL recovered from a `new-url` / `fallback-url` response
+/// header: the decrypted `https://` [url] to request, plus the raw
+/// `rayn://import/<token>` string to persist alongside it.
+///
+/// Compare the [url], never the [sourceToken] — the cryptolink envelope is
+/// randomised, so re-encrypting the same URL yields a different string every
+/// time (RAYN-LINK-SYMMETRIC-MIGRATION.md §4).
+typedef SubscriptionRotation = ({String url, String sourceToken});
+
 class ProfileParser {
   static const infiniteTrafficThreshold = 920_233_720_368;
   static const infiniteTimeThreshold = 92_233_720_368;
@@ -127,7 +136,7 @@ class ProfileParser {
             populatedHeaders: populatedHeaders,
             sourceToken: resolved.sourceToken,
             fallbackUrl: fallback?.url,
-            fallbackSourceToken: fallback?.name,
+            fallbackSourceToken: fallback?.sourceToken,
           ),
         ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected)),
       ),
@@ -147,9 +156,11 @@ class ProfileParser {
       rotated = rotated.copyWith(url: resolved.url, sourceToken: resolved.sourceToken);
     }
     final fallback = extractFallback(resolved.headers);
-    if (fallback != null && fallback.name != rp.fallbackSourceToken) {
+    // Same as the rotation guard above: compare decrypted URLs, never cryptolink
+    // strings, or this rewrites both columns on every refresh (§4).
+    if (fallback != null && fallback.url != rp.fallbackUrl) {
       _log.info('updating fallback URL on refresh (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
-      rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.name);
+      rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.sourceToken);
     }
     return TaskEither.fromEither(
       populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: resolved.headers),
@@ -221,11 +232,14 @@ class ProfileParser {
     int depth = 0,
   }) => _downloadProfile(url, tempFilePath, cancelToken).flatMap((headers) {
     final rotation = extractRotation(headers);
-    if (rotation != null && rotation.name != sourceToken && depth < _maxRotationHops) {
+    // Compare the DECRYPTED url, not the cryptolink: the envelope is randomised,
+    // so the same URL re-encrypts to a different string on every response and a
+    // string comparison would follow a "rotation" on every single refresh (§4).
+    if (rotation != null && rotation.url != url && depth < _maxRotationHops) {
       _log.info(
         'following `new-url` to renewed token (hop ${depth + 1}, host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
       );
-      return _resolveDownload(rotation.url, rotation.name, tempFilePath, cancelToken, depth: depth + 1);
+      return _resolveDownload(rotation.url, rotation.sourceToken, tempFilePath, cancelToken, depth: depth + 1);
     }
     if (isExpiredEnvelope(File(tempFilePath).readAsStringSync())) {
       _log.warning('subscription token expired with no renewal available');
@@ -278,7 +292,7 @@ class ProfileParser {
   ///
   /// `result.url` is the decrypted https URL; `result.name` carries the raw
   /// `rayn://import/<token>` string the caller persists as the new sourceToken.
-  static ProfileLink? extractRotation(Map<String, dynamic> headers) {
+  static SubscriptionRotation? extractRotation(Map<String, dynamic> headers) {
     final raw = headers['new-url'];
     final value = switch (raw) {
       final String s => s,
@@ -287,12 +301,20 @@ class ProfileParser {
     };
     if (value == null || value.trim().isEmpty) return null;
     final trimmed = value.trim();
-    final parsed = LinkParser.parse(trimmed);
-    if (parsed == null) {
-      _log.warning('rotation header `new-url` rejected — not a valid rayn://import/<token> link');
-      return null;
+    switch (LinkParser.parse(trimmed)) {
+      case RaynLinkOk(:final url):
+        return (url: url, sourceToken: trimmed);
+      case RaynLinkUnsupportedVersion(:final version):
+        // Loud: the backend has moved past what this build can read, so we will
+        // silently stop following rotations until the app is updated.
+        _log.error(
+          '`new-url` uses cryptolink version 0x${version.toRadixString(16)} — app update required',
+        );
+        return null;
+      case RaynLinkInvalid(:final reason):
+        _log.warning('rotation header `new-url` rejected ($reason)');
+        return null;
     }
-    return (url: parsed.url, name: trimmed);
   }
 
   /// Reads the optional `fallback-url` response header on a subscription
@@ -303,7 +325,7 @@ class ProfileParser {
   ///
   /// `result.url` is the decrypted https URL; `result.name` carries the raw
   /// `rayn://import/<token>` string the caller persists as `fallbackSourceToken`.
-  static ProfileLink? extractFallback(Map<String, dynamic> headers) {
+  static SubscriptionRotation? extractFallback(Map<String, dynamic> headers) {
     final raw = headers['fallback-url'];
     final value = switch (raw) {
       final String s => s,
@@ -312,12 +334,18 @@ class ProfileParser {
     };
     if (value == null || value.trim().isEmpty) return null;
     final trimmed = value.trim();
-    final parsed = LinkParser.parse(trimmed);
-    if (parsed == null) {
-      _log.warning('fallback header `fallback-url` rejected — not a valid rayn://import/<token> link');
-      return null;
+    switch (LinkParser.parse(trimmed)) {
+      case RaynLinkOk(:final url):
+        return (url: url, sourceToken: trimmed);
+      case RaynLinkUnsupportedVersion(:final version):
+        _log.error(
+          '`fallback-url` uses cryptolink version 0x${version.toRadixString(16)} — app update required',
+        );
+        return null;
+      case RaynLinkInvalid(:final reason):
+        _log.warning('fallback header `fallback-url` rejected ($reason)');
+        return null;
     }
-    return (url: parsed.url, name: trimmed);
   }
 
   /// True when [body] is a token-expired envelope — the JSON

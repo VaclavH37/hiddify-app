@@ -38,13 +38,16 @@ GEOIP_COMMIT="$(fetch_commit SagerNet/sing-geoip)"
 #   geosite-apple@cn        -> direct-apple
 #   geosite-cn              -> direct-regional-sites
 #   geoip-cn                -> direct-regional-ips
-#   geosite-geolocation-!cn -> fakeip-remote-sites
+#
+# DO NOT re-add fakeip-remote-sites.srs (geosite-geolocation-!cn): the FakeIP
+# DNS path that consumed it was removed, and it was 61% of the bundle size.
+# This list must stay in sync with the curl targets in the Makefile's
+# fetch-rulesets and with the Path: literals in builder.go.
 FILES=(
   "direct-private.srs"
   "direct-apple.srs"
   "direct-regional-sites.srs"
   "direct-regional-ips.srs"
-  "fakeip-remote-sites.srs"
 )
 
 files_json=""

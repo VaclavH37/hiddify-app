@@ -14,6 +14,9 @@ class PreferencesMigration with InfraLogger {
     final migrationSteps = <PreferencesMigrationStep>[
       PreferencesVersion1Migration(sharedPreferences),
       PreferencesVersion2Migration(sharedPreferences),
+      PreferencesVersion3Migration(sharedPreferences),
+      PreferencesVersion4Migration(sharedPreferences),
+      PreferencesVersion5Migration(sharedPreferences),
     ];
 
     if (currentVersion == migrationSteps.length) {
@@ -147,6 +150,66 @@ class PreferencesVersion2Migration extends PreferencesMigrationStep with InfraLo
       "remote-dns-domain-strategy",
       "enable-fake-dns",
       "block-ads",
+    ];
+    for (final key in keysToClear) {
+      await sharedPreferences.remove(key);
+    }
+  }
+}
+
+/// v3 — reset the connection-test URL so existing installs stop probing a
+/// plaintext, captive-portal-branded endpoint. These probes are dialled through
+/// the outbound directly and therefore cross the tunnel (url-test bypasses the
+/// route table), so a recurring cleartext request to a well-known captive-portal
+/// URL is a usable behavioural signature. The new default is HTTPS.
+class PreferencesVersion3Migration extends PreferencesMigrationStep with InfraLogger {
+  PreferencesVersion3Migration(super.sharedPreferences);
+
+  @override
+  Future<void> migrate() async {
+    const keysToClear = [
+      "connection-test-url",
+    ];
+    for (final key in keysToClear) {
+      await sharedPreferences.remove(key);
+    }
+  }
+}
+
+/// v4 — reset the connection-test URL again. v3's replacement
+/// (`https://www.gstatic.com/generate_204`) was a serious mistake: the core
+/// force-pins every probe hostname to the CN-direct resolver with a 24h TTL,
+/// and that cached answer is shared with normal browser traffic. gstatic is
+/// GFW-poisoned, so it resolved to a China Telecom address and broke google.com
+/// page loads. The default is now a host that resolves correctly via a mainland
+/// resolver. Any install carrying the bad value must drop it.
+class PreferencesVersion4Migration extends PreferencesMigrationStep with InfraLogger {
+  PreferencesVersion4Migration(super.sharedPreferences);
+
+  @override
+  Future<void> migrate() async {
+    const keysToClear = [
+      "connection-test-url",
+    ];
+    for (final key in keysToClear) {
+      await sharedPreferences.remove(key);
+    }
+  }
+}
+
+/// v5 — reset the direct DNS domain strategy so existing installs pick up
+/// `ipv4_only`. The previous default (`auto`) applied no filtering to answers
+/// from the CN-direct resolvers, which return GFW-poisoned AAAA records for
+/// foreign names — www.google.com resolved to the sentinel `2001::1` and the
+/// client dialled it ~200 times. The remote resolver was already `ipv4_only`;
+/// this removes the inconsistency.
+class PreferencesVersion5Migration extends PreferencesMigrationStep with InfraLogger {
+  PreferencesVersion5Migration(super.sharedPreferences);
+
+  @override
+  Future<void> migrate() async {
+    const keysToClear = [
+      "direct-dns-domain-strategy",
     ];
     for (final key in keysToClear) {
       await sharedPreferences.remove(key);

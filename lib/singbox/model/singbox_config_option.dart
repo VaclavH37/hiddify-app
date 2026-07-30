@@ -21,6 +21,10 @@ class SingboxConfigOption with _$SingboxConfigOption {
     required bool blockAds,
     required bool executeConfigAsIs,
     required LogLevel logLevel,
+    /// Path the core writes sing-box logs to. Empty string = no file (memory /
+    /// console only), which is what release builds send — a persistent log
+    /// naming servers and domains is a liability on an inspectable device.
+    required String logFile,
     required bool resolveDestination,
     required IPv6Mode ipv6Mode,
     required String remoteDnsAddress,
