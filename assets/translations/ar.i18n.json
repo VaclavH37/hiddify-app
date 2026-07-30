@@ -242,13 +242,6 @@
         "blockAds": "حظر الإعلانات",
         "bypassLan": "تجاوز الشبكة المحلية",
         "resolveDestination": "تحديد وجهة الاتصال",
-        "ipv6Route": "توجيه IPv6",
-        "ipv6Modes": {
-          "disable": "تعطيل",
-          "enable": "تفعيل",
-          "prefer": "مفضل",
-          "only": "فقط"
-        },
         "routeRule": {
           "title": "قواعد التوجيه",
           "options": {

@@ -40,6 +40,14 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
   @With<ExpectedFailure>()
   const factory ProfileFailure.unsupportedLinkVersion() = ProfileUnsupportedLinkVersionFailure;
 
+  // The stored `configs/<id>.enc` could not be sealed or opened: the per-install
+  // key is gone (keystore wiped, restored to a new device, portable install
+  // moved to another Windows user) or the file is corrupt. Never surfaced by
+  // reason — the remedy is always the same, re-fetch the subscription — so the
+  // copy asks the user to go online rather than describing a crypto failure.
+  @With<ExpectedFailure>()
+  const factory ProfileFailure.configUnreadable() = ProfileConfigUnreadableFailure;
+
   @override
   ({String type, String? message}) present(TranslationsEn t) {
     return switch (this) {
@@ -52,6 +60,7 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
       ProfileCancelByUserFailure(:final message) => (type: t.errors.profiles.canceledByUser, message: message),
       ProfileSubscriptionExpiredFailure() => (type: t.errors.profiles.subscriptionExpired, message: null),
       ProfileUnsupportedLinkVersionFailure() => (type: t.errors.profiles.unsupportedLinkVersion, message: null),
+      ProfileConfigUnreadableFailure() => (type: t.errors.profiles.configUnreadable, message: null),
     };
   }
 }

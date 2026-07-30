@@ -58,29 +58,30 @@ class RaynCoreService with InfraLogger {
         .run();
   }
 
-  /// validates config by path and save it
+  /// Validates a raw subscription body and returns the normalised sing-box JSON.
   ///
-  /// [path] is used to save validated config
-  /// [tempPath] includes base config, possibly invalid
-  /// [debug] indicates if debug mode (avoid in prod)
-
-  TaskEither<String, Unit> validateConfigByPath(String path, String tempPath, bool debug) {
+  /// Deliberately passes only `content` and leaves both path fields empty: the
+  /// core writes a file if and only if `configPath` is set (see
+  /// `v2/hcore/buildconfighelper.go`), so this is what keeps the plaintext
+  /// config off disk. The caller seals the returned JSON into
+  /// `configs/<id>.enc` instead.
+  TaskEither<String, String> validateConfig(String content) {
     return TaskEither(() async {
+      ParseResponse response;
       try {
-        final response = await core.fgClient.parse(ParseRequest(tempPath: tempPath, configPath: path, debug: false));
-        if (response.responseCode != ResponseCode.OK) return left("${response.responseCode} ${response.message}");
+        response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
       } catch (e) {
         await setup().run();
-        final response = await core.fgClient.parse(ParseRequest(tempPath: tempPath, configPath: path, debug: false));
-        if (response.responseCode != ResponseCode.OK) return left("${response.responseCode} ${response.message}");
+        response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
       }
-      return right(unit);
+      if (response.responseCode != ResponseCode.OK) return left("${response.responseCode} ${response.message}");
+      return right(response.content);
     });
   }
 
-  TaskEither<String, String> generateFullConfigByPath(String path) {
+  TaskEither<String, String> generateFullConfig(String content) {
     return TaskEither(() async {
-      final response = await core.fgClient.parse(ParseRequest(configPath: path, debug: false));
+      final response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
       if (response.responseCode != ResponseCode.OK) return left("${response.responseCode} ${response.message}");
       return right(response.content);
     });
@@ -136,11 +137,27 @@ class RaynCoreService with InfraLogger {
     });
   }
 
-  TaskEither<ConnectionFailure, Unit> start(String path, String name, bool disableMemoryLimit) {
+  /// Starts the core.
+  ///
+  /// [sealedPath] is `configs/<id>.enc` and is handed to the platform shell, not
+  /// to the core: Android stores it in `Settings.activeConfigPath` and iOS in
+  /// `VPNConfig.activeConfigPath`, so that a start the system initiates on its
+  /// own — quick-settings tile, always-on, iOS on-demand — can find the file,
+  /// decrypt it natively and pass the plaintext to `Mobile.Start`.
+  ///
+  /// [content] is the already-decrypted sing-box JSON and goes to the core over
+  /// gRPC. The core never opens the sealed file itself and never receives the
+  /// key.
+  TaskEither<ConnectionFailure, Unit> start(
+    String sealedPath,
+    String content,
+    String name,
+    bool disableMemoryLimit,
+  ) {
     return TaskEither(() async {
       statusController.add(currentState = const CoreStatus.starting());
       loggy.debug("starting");
-      final background = await core.setupBackground(path, name);
+      final background = await core.setupBackground(sealedPath, name);
       if (background != const CoreStatus.started()) {
         statusController.add(currentState = const CoreStatus.stopped());
         return left(background.getCoreAlert() ?? const ConnectionFailure.unexpected("failed to start core"));
@@ -156,14 +173,15 @@ class RaynCoreService with InfraLogger {
       //     ),
       //   );
       // }
-      // final content = await File(path).readAsString();
-      // loggy.debug("starting with content: $content");
       try {
         final res = await core.bgClient.start(
           StartRequest(
-            configPath: path,
+            // configContent only — never configPath. `ReadContent` in the core
+            // prefers content and only falls back to reading the path, so
+            // sending a path here would make the core open a file we have
+            // deliberately encrypted.
+            configContent: content,
             configName: name,
-            // configContent: content,
             disableMemoryLimit: disableMemoryLimit,
           ),
         );
@@ -224,13 +242,18 @@ class RaynCoreService with InfraLogger {
     });
   }
 
-  TaskEither<String, Unit> restart(String path, String name, bool disableMemoryLimit) {
+  TaskEither<String, Unit> restart(String content, String name, bool disableMemoryLimit) {
     return TaskEither(() async {
       loggy.debug("restarting");
       // if (!await core.restart(path, name)) {
       try {
         final res = await core.bgClient.restart(
-          StartRequest(configPath: path, configName: name, disableMemoryLimit: disableMemoryLimit, delayStart: true),
+          StartRequest(
+            configContent: content,
+            configName: name,
+            disableMemoryLimit: disableMemoryLimit,
+            delayStart: true,
+          ),
         );
         if (res.messageType != MessageType.EMPTY) return left("${res.messageType} ${res.message}");
       } on GrpcError catch (e) {

@@ -10,13 +10,16 @@ import 'package:path/path.dart' as p;
 /// Go core's working directory so sing-box can load them as `Type: Local`
 /// rule-sets.
 ///
-/// [basePath] MUST be the core's working dir (CWD), not the app support dir:
-/// in the gRPC service mode the core `os.Chdir()`s to the working path and the
-/// `filemanager.WithDefault` base is unset, so relative Local rule-set paths
-/// (`rulesets/*.srs`) resolve against CWD. On Android the internal filesDir
-/// (baseDir) and external files dir (workingDir) are different directories —
-/// extracting to the wrong one makes every `RuleSet:`-keyed rule fail to open
+/// [basePath] MUST be the core's working dir (CWD): in the gRPC service mode the
+/// core `os.Chdir()`s to the working path and the `filemanager.WithDefault` base
+/// is unset, so relative Local rule-set paths (`rulesets/*.srs`) resolve against
+/// CWD. Extracting anywhere else makes every `RuleSet:`-keyed rule fail to open
 /// and the core refuses to start. See bootstrap.dart for the call site.
+///
+/// baseDir and workingDir are now identical on every platform. They diverged on
+/// Android until the working dir moved off external storage, and getting this
+/// argument wrong was how that bug originally surfaced — so the parameter stays
+/// explicit rather than being inferred.
 ///
 /// Rule-sets must be on disk before the first VPN start: the Go core opens the
 /// file at config-load time, and a missing file makes the entire `RuleSet:`-

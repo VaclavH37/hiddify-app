@@ -16,7 +16,16 @@ enum ServiceMode {
 
   final String key;
 
-  static ServiceMode get defaultMode => PlatformUtils.isDesktop ? systemProxy : tun;
+  /// Desktop used to default to [systemProxy]. That left a fresh Windows
+  /// install with `enableTun == false`, so builder.go never created a TUN
+  /// inbound: nothing claimed the routing table, and everything the Windows
+  /// system-proxy setting does not cover — all IPv6, and any app that ignores
+  /// it — went out natively while the UI reported "connected". Sensible for a
+  /// general-purpose proxy client, wrong for a VPN.
+  ///
+  /// Only affects installs with no stored `service-mode`; an explicit choice is
+  /// untouched.
+  static ServiceMode get defaultMode => tun;
 
   /// supported service mode based on platform, use this instead of [values] in UI
   static List<ServiceMode> get choices {
@@ -67,24 +76,27 @@ enum BalancerStrategy {
   };
 }
 
-@JsonEnum(valueField: 'key')
-enum IPv6Mode {
-  disable("ipv4_only"),
-  enable("prefer_ipv4"),
-  prefer("prefer_ipv6"),
-  only("ipv6_only");
-
-  const IPv6Mode(this.key);
-
-  final String key;
-
-  String present(TranslationsEn t) => switch (this) {
-    disable => t.pages.settings.routing.ipv6Modes.disable,
-    enable => t.pages.settings.routing.ipv6Modes.enable,
-    prefer => t.pages.settings.routing.ipv6Modes.prefer,
-    only => t.pages.settings.routing.ipv6Modes.only,
-  };
-}
+// `IPv6Mode` used to live here, backing a Settings → Routing picker. It was
+// serialised, sent to the core over gRPC and persisted — and read by nothing:
+// both use sites in builder.go were commented out upstream. A security control
+// that appears to work and does nothing is worse than no control, so it is
+// gone rather than left in place. DNS address families remain controllable via
+// remote/direct-dns-domain-strategy, which the core does read.
+//
+// IPv6 through the hub is a plausible future capability. The decision point
+// already exists and is the ONLY one that matters: `tunnelIPv6Enabled(hopt)` in
+// hiddify-core/v2/config/builder.go, which gates whether the TUN claims an IPv6
+// address and therefore whether AutoRoute installs a ::/0 route into it.
+//
+// To wire it up:
+//   1. add `TunnelIPv6` to RouteOptions in hiddify_option.go and return it from
+//      condition (2) of tunnelIPv6Enabled;
+//   2. prefer feeding it from the subscription — the hub knows its own egress
+//      capability — over adding a user setting;
+//   3. only if it must be user-visible, re-add an enum here plus a
+//      PreferencesNotifier in ConfigOptions and a tile in route_options_page,
+//      and cover it with a test asserting the tun address list actually changes.
+//      Step 3 without step 1 recreates exactly the dead control removed here.
 
 @JsonEnum(valueField: 'key')
 enum DomainStrategy {

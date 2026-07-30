@@ -625,27 +625,38 @@ check-rulesets-fresh:
 	  $(YELLOW)WARNING: rule-set MANIFEST is older than 30 days — consider 'make fetch-rulesets'$(DONE); \
 	fi
 
+# Extra Go build tags for the core, forwarded to hiddify-core/Makefile where they
+# are APPENDED to the required tag list rather than replacing it:
+#
+#   make build-windows-libs EXTRA_TAGS=raynconfigdump
+#
+# raynconfigdump makes the core write the full built config (outbounds plus our
+# routing, DNS and balancer groups) to data/debug-built-config.json in plaintext
+# — the only way to inspect it, since no runtime flag can be trusted for this
+# (see v2/hcore/configdump.go). NEVER ship a core built with it.
+EXTRA_TAGS=
+
 build-headers:
 	make -C hiddify-core -f Makefile headers && mv $(BINDIR)/$(CORE_NAME)-headers.h $(BINDIR)/hiddify-core.h
 
 build-android-libs:
-	make -C hiddify-core -f Makefile android
+	make -C hiddify-core -f Makefile android EXTRA_TAGS="$(EXTRA_TAGS)"
 	# Rayn rebrand (audit C1): the android target now emits rayn-core.aar
 	# (librayn-core.so inside), not $(LIB_NAME).aar.
 	mv $(BINDIR)/rayn-core.aar $(ANDROID_OUT)/
 
 build-windows-libs:
-	make -C hiddify-core -f Makefile windows-amd64
+	make -C hiddify-core -f Makefile windows-amd64 EXTRA_TAGS="$(EXTRA_TAGS)"
 
 build-linux-libs:
-	make -C hiddify-core -f Makefile linux-amd64 
+	make -C hiddify-core -f Makefile linux-amd64 EXTRA_TAGS="$(EXTRA_TAGS)"
 
 build-macos-libs:
-	make -C hiddify-core -f Makefile macos
+	make -C hiddify-core -f Makefile macos EXTRA_TAGS="$(EXTRA_TAGS)"
 
-build-ios-libs: 
-	rm -rf $(IOS_OUT)/HiddifyCore.xcframework 
-	make -C hiddify-core -f Makefile ios  
+build-ios-libs:
+	rm -rf $(IOS_OUT)/HiddifyCore.xcframework
+	make -C hiddify-core -f Makefile ios EXTRA_TAGS="$(EXTRA_TAGS)"
 	mv $(BINDIR)/HiddifyCore.xcframework $(IOS_OUT)/HiddifyCore.xcframework
 
 release: # Create a new tag for release.

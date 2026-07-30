@@ -45,14 +45,6 @@ class RouteOptionsPage extends HookConsumerWidget {
         value: ref.watch(ConfigOptions.resolveDestination),
         onChanged: ref.read(ConfigOptions.resolveDestination.notifier).update,
       ),
-      ChoicePreferenceWidget(
-        selected: ref.watch(ConfigOptions.ipv6Mode),
-        preferences: ref.watch(ConfigOptions.ipv6Mode.notifier),
-        choices: IPv6Mode.values,
-        title: t.pages.settings.routing.ipv6Route,
-        icon: Icons.looks_6_rounded,
-        presentChoice: (value) => value.present(t),
-      ),
     ];
 
     return RaynPageScaffold(

@@ -11,7 +11,7 @@ void main() {
   group("parse", () {
     test("Should use filename in url with no headers and fragment", () {
       final profile = ProfileParser.parse(
-        tempFilePath: '',
+        content: '',
         profile: ProfileEntity.remote(
           id: const Uuid().v4(),
           active: true,
@@ -37,7 +37,7 @@ void main() {
 
     test("Should use fragment in url with no headers", () {
       final profile = ProfileParser.parse(
-        tempFilePath: '',
+        content: '',
         profile: ProfileEntity.remote(
           id: const Uuid().v4(),
           active: true,
@@ -80,7 +80,7 @@ void main() {
       expect(allHeaders.isRight(), true);
       allHeaders.match((l) {}, (r) {
         final profile = ProfileParser.parse(
-          tempFilePath: '',
+          content: '',
           profile: ProfileEntity.remote(
             id: const Uuid().v4(),
             active: true,
@@ -135,7 +135,7 @@ void main() {
       expect(allHeaders.isRight(), true);
       allHeaders.match((l) {}, (r) {
         final profile = ProfileParser.parse(
-          tempFilePath: '',
+          content: '',
           profile: RemoteProfileEntity(
             id: const Uuid().v4(),
             active: true,
@@ -177,7 +177,7 @@ void main() {
       expect(allHeaders.isRight(), true);
       allHeaders.match((l) {}, (r) {
         final profile = ProfileParser.parse(
-          tempFilePath: '',
+          content: '',
           profile: RemoteProfileEntity(
             id: const Uuid().v4(),
             active: true,
@@ -217,7 +217,7 @@ void main() {
         final allHeaders = ProfileParser.populateHeaders(content: '', remoteHeaders: fixedHeaders);
         allHeaders.match((l) {}, (r) {
           final profile = ProfileParser.parse(
-            tempFilePath: '',
+            content: '',
             profile: RemoteProfileEntity(
               id: const Uuid().v4(),
               active: true,

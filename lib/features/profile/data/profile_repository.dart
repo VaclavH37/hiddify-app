@@ -6,6 +6,7 @@ import 'package:hiddify/core/db/db.dart';
 
 import 'package:hiddify/core/utils/exception_handler.dart';
 import 'package:hiddify/features/profile/data/profile_data_mapper.dart';
+import 'package:hiddify/features/profile/data/profile_config_cipher.dart';
 import 'package:hiddify/features/profile/data/profile_data_source.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/data/profile_path_resolver.dart';
@@ -36,9 +37,12 @@ abstract interface class ProfileRepository {
   });
   TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride});
   TaskEither<ProfileFailure, Unit> offlineUpdate(ProfileEntity nProfile, String nContent);
-  TaskEither<ProfileFailure, Unit> validateConfig(String path, String tempPath, String? profileOverride, bool debug);
   TaskEither<ProfileFailure, String> generateConfig(String id);
   TaskEither<ProfileFailure, String> getRawConfig(String id);
+
+  /// Opens `configs/<id>.enc` for the connection layer. Returns the normalised
+  /// sing-box JSON, which is handed to the core in memory — never via a path.
+  TaskEither<ProfileFailure, String> readConfig(String id);
 }
 
 class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements ProfileRepository {
@@ -48,7 +52,9 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     required RaynCoreService singbox,
     required ConfigOptionRepository configOptionRepository,
     required ProfileParser profileParser,
-  }) : _profileParser = profileParser,
+    required ProfileConfigCipher configCipher,
+  }) : _configCipher = configCipher,
+       _profileParser = profileParser,
        _configOptionRepo = configOptionRepository,
        _singbox = singbox,
        _profilePathResolver = profilePathResolver,
@@ -59,6 +65,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
   final RaynCoreService _singbox;
   final ConfigOptionRepository _configOptionRepo;
   final ProfileParser _profileParser;
+  final ProfileConfigCipher _configCipher;
 
   @override
   TaskEither<ProfileFailure, Unit> init() {
@@ -94,12 +101,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     for (final p in all) {
       if (p.id == keeper.id) continue;
       await _profileDataSource.deleteById(p.id, false);
-      try {
-        final f = _profilePathResolver.file(p.id);
-        if (await f.exists()) await f.delete();
-      } catch (e, st) {
-        loggy.warning('failed to delete config file for [${p.id}]', e, st);
-      }
+      await _deleteConfigFiles(p.id);
     }
     if (!keeper.active) {
       await _profileDataSource.edit(keeper.id, const ProfileEntriesCompanion(active: Value(true)));
@@ -126,7 +128,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
   TaskEither<ProfileFailure, Unit> deleteById(String id, bool isActive) {
     return TaskEither.tryCatch(() async {
       await _profileDataSource.deleteById(id, isActive);
-      await _profilePathResolver.file(id).delete();
+      await _deleteConfigFiles(id);
       return unit;
     }, ProfileUnexpectedFailure.new);
   }
@@ -174,135 +176,157 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
       ).flatMap((profEntity) {
         // if profile is null, generate id
         final id = profEntity?.id ?? const Uuid().v4();
-        final file = _profilePathResolver.file(id);
-        final tempFile = _profilePathResolver.tempFile(id);
-        try {
-          if (profEntity != null && profEntity is RemoteProfileEntity) {
-            // Update
-            if (userOverride != null) {
-              profEntity = profEntity.copyWith(userOverride: userOverride);
-            }
-            return _profileParser
-                .updateRemote(rp: profEntity, tempFilePath: tempFile.path, cancelToken: cancelToken)
-                .flatMap(
-                  (profEntity) =>
-                      validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
-                        (unit) => TaskEither.tryCatch(() async {
-                          await _profileDataSource.edit(id, profEntity);
-                          return unit;
-                        }, ProfileFailure.unexpected),
-                      ),
-                );
-          } else {
-            // Add
-            return _profileParser
-                .addRemote(
-                  id: id,
-                  url: url,
-                  tempFilePath: tempFile.path,
-                  userOverride: userOverride,
-                  sourceToken: sourceToken,
-                  cancelToken: cancelToken,
-                )
-                .flatMap(
-                  (profEntity) =>
-                      validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
-                        (unit) => TaskEither.tryCatch(() async {
-                          await _profileDataSource.insert(profEntity);
-                          return unit;
-                        }, ProfileFailure.unexpected),
-                      ),
-                );
+        if (profEntity != null && profEntity is RemoteProfileEntity) {
+          // Update
+          if (userOverride != null) {
+            profEntity = profEntity.copyWith(userOverride: userOverride);
           }
-        } finally {
-          if (tempFile.existsSync()) tempFile.deleteSync();
+          return _profileParser
+              .updateRemote(rp: profEntity, cancelToken: cancelToken)
+              .flatMap((parsed) => _sealAndPersist(id: id, parsed: parsed, isUpdate: true));
         }
+        // Add
+        return _profileParser
+            .addRemote(
+              id: id,
+              url: url,
+              userOverride: userOverride,
+              sourceToken: sourceToken,
+              cancelToken: cancelToken,
+            )
+            .flatMap((parsed) => _sealAndPersist(id: id, parsed: parsed, isUpdate: false));
       });
 
   @override
-  TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride}) =>
-      TaskEither.tryCatch(() async {
-        final id = const Uuid().v4();
-        final file = _profilePathResolver.file(id);
-        final tempFile = _profilePathResolver.tempFile(id);
-        try {
-          await tempFile.writeAsString(content);
-          final task = _profileParser
-              .addLocal(id: id, content: content, tempFilePath: tempFile.path, userOverride: userOverride)
-              .flatMap(
-                (profEntity) =>
-                    validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
-                      (unit) => TaskEither.tryCatch(() async {
-                        await _profileDataSource.insert(profEntity);
-                        return unit;
-                      }, ProfileFailure.unexpected),
-                    ),
-              );
-          return (await task.run()).getOrElse((l) => throw l);
-        } finally {
-          if (tempFile.existsSync()) tempFile.deleteSync();
-        }
-      }, ProfileFailure.unexpected);
+  TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride}) {
+    final id = const Uuid().v4();
+    return _profileParser
+        .addLocal(id: id, content: content, userOverride: userOverride)
+        .flatMap((parsed) => _sealAndPersist(id: id, parsed: parsed, isUpdate: false));
+  }
 
   @override
-  TaskEither<ProfileFailure, Unit> offlineUpdate(ProfileEntity profile, String nContent) =>
-      TaskEither.tryCatch(
-        () async => await _profileDataSource.getById(profile.id).then((profEntry) => profEntry?.toEntity()),
-        ProfileFailure.unexpected,
-      ).flatMap((oProfile) {
-        if (oProfile == null || oProfile.runtimeType != profile.runtimeType) throw const ProfileFailure.notFound();
-        if (profile.userOverride == null) loggy.warning('Updaing profile content with "userOverride" == null');
-        final id = oProfile.id;
-        final file = _profilePathResolver.file(id);
-        final tempFile = _profilePathResolver.tempFile(id);
-        try {
-          return TaskEither.tryCatch(
-            () async => await tempFile.writeAsString(nContent),
-            ProfileFailure.unexpected,
-          ).flatMap(
-            (_) =>
-                TaskEither.fromEither(
-                  _profileParser.offlineUpdate(
-                    profile: oProfile.copyWith(userOverride: profile.userOverride),
-                    tempFilePath: tempFile.path,
-                  ),
-                ).flatMap(
-                  (profEntity) =>
-                      validateConfig(file.path, tempFile.path, profEntity.profileOverride.value, false).flatMap(
-                        (unit) => TaskEither.tryCatch(() async {
-                          await _profileDataSource.edit(id, profEntity);
-                          return unit;
-                        }, ProfileFailure.unexpected),
-                      ),
-                ),
-          );
-        } finally {
-          if (tempFile.existsSync()) tempFile.deleteSync();
-        }
-      });
+  TaskEither<ProfileFailure, Unit> offlineUpdate(ProfileEntity profile, String nContent) => TaskEither.tryCatch(
+    () async => await _profileDataSource.getById(profile.id).then((profEntry) => profEntry?.toEntity()),
+    ProfileFailure.unexpected,
+  ).flatMap((oProfile) {
+    if (oProfile == null || oProfile.runtimeType != profile.runtimeType) throw const ProfileFailure.notFound();
+    if (profile.userOverride == null) loggy.warning('Updaing profile content with "userOverride" == null');
+    final id = oProfile.id;
+    return TaskEither.fromEither(
+      _profileParser.offlineUpdate(
+        profile: oProfile.copyWith(userOverride: profile.userOverride),
+        content: nContent,
+      ),
+    ).flatMap((parsed) => _sealAndPersist(id: id, parsed: parsed, isUpdate: true));
+  });
 
-  @override
-  TaskEither<ProfileFailure, Unit> validateConfig(String path, String tempPath, String? profileOverride, bool debug) =>
+  /// Normalises the subscription body through the core, seals the result to
+  /// `configs/<id>.enc`, then writes the Drift row.
+  ///
+  /// Ordering is deliberate and matches the previous file-based flow: the config
+  /// is on disk before the row exists, so a crash mid-way leaves an orphaned
+  /// file (harmless, overwritten on the next import) rather than a profile row
+  /// pointing at a config that was never written.
+  ///
+  /// Nothing here touches a plaintext path. The core parses from `content` and
+  /// hands the normalised JSON straight back — see `RaynCoreService.validateConfig`.
+  TaskEither<ProfileFailure, Unit> _sealAndPersist({
+    required String id,
+    required ParsedProfile parsed,
+    required bool isUpdate,
+  }) => _validate(parsed.content, parsed.entry.profileOverride.value).flatMap(
+    (normalised) => TaskEither.tryCatch(() async {
+      final sealed = await _configCipher.encrypt(profileId: id, json: normalised);
+      final target = _profilePathResolver.encFile(id);
+      if (!await target.parent.exists()) await target.parent.create(recursive: true);
+      await target.writeAsBytes(sealed, flush: true);
+      // An older install may still have the plaintext next to it.
+      await _deleteLegacyPlaintext(id);
+      isUpdate ? await _profileDataSource.edit(id, parsed.entry) : await _profileDataSource.insert(parsed.entry);
+      return unit;
+    }, _mapCipherFailure),
+  );
+
+  /// Pushes the effective options into the core and parses [content], returning
+  /// the normalised sing-box JSON.
+  TaskEither<ProfileFailure, String> _validate(String content, String? profileOverride) =>
       TaskEither.fromEither(_configOptionRepo.fullOptionsOverrided(profileOverride))
           .mapLeft((configOptionFailure) => ProfileFailure.invalidConfig(null, configOptionFailure))
           .flatMap(
             (overridedOptions) => _singbox
                 .changeOptions(overridedOptions)
                 .mapLeft(ProfileFailure.invalidConfig)
-                .flatMap(
-                  (_) => _singbox.validateConfigByPath(path, tempPath, debug).mapLeft(ProfileFailure.invalidConfig),
-                ),
+                .flatMap((_) => _singbox.validateConfig(content).mapLeft(ProfileFailure.invalidConfig)),
           );
 
-  @override
-  TaskEither<ProfileFailure, String> generateConfig(String id) => TaskEither.fromEither(
-    Either.tryCatch(() => _profilePathResolver.file(id), ProfileFailure.unexpected),
-  ).flatMap((configFile) => _singbox.generateFullConfigByPath(configFile.path).mapLeft(ProfileFailure.unexpected));
+  ProfileFailure _mapCipherFailure(Object err, StackTrace st) => err is ConfigCipherException
+      ? const ProfileFailure.configUnreadable()
+      : ProfileFailure.unexpected(err, st);
+
+  /// Removes every on-disk trace of a profile's config: the sealed file and any
+  /// plaintext an older install left behind.
+  Future<void> _deleteConfigFiles(String id) async {
+    try {
+      final sealed = _profilePathResolver.encFile(id);
+      if (await sealed.exists()) await sealed.delete();
+    } catch (e) {
+      loggy.warning('failed to delete sealed config for [$id]: ${e.runtimeType}');
+    }
+    await _deleteLegacyPlaintext(id);
+  }
+
+  Future<void> _deleteLegacyPlaintext(String id) async {
+    for (final f in [_profilePathResolver.legacyFile(id), _profilePathResolver.legacyTempFile(id)]) {
+      try {
+        if (await f.exists()) await f.delete();
+      } catch (e) {
+        loggy.warning('failed to remove legacy plaintext config for [$id]: ${e.runtimeType}');
+      }
+    }
+  }
 
   @override
-  TaskEither<ProfileFailure, String> getRawConfig(String id) {
-    return TaskEither.fromEither(
-      Either.tryCatch(() => _profilePathResolver.file(id), ProfileFailure.unexpected),
-    ).flatMap((configFile) => TaskEither.tryCatch(() => configFile.readAsString(), ProfileFailure.unexpected));
-  }
+  TaskEither<ProfileFailure, String> readConfig(String id) => TaskEither(() async {
+    final file = _profilePathResolver.encFile(id);
+    if (!await file.exists()) {
+      loggy.warning('no stored config for [$id]');
+      return left(const ProfileFailure.configUnreadable());
+    }
+    final result = await _configCipher.decrypt(profileId: id, blob: await file.readAsBytes());
+    switch (result) {
+      case ConfigDecryptOk(:final json):
+        return right(json);
+      case ConfigDecryptFailed(:final reason):
+        // Report by reason — never by value; the plaintext is the user's node
+        // list.
+        //
+        // Only discard the ciphertext when the blob itself is proven bad.
+        // `keyUnavailable` means we could not read the KEY, which says nothing
+        // about the config: a transient keystore failure (a DPAPI blip, the
+        // Android Keystore not ready when `:bg` starts before the app has run,
+        // an iOS keychain still locked before first unlock) would otherwise
+        // destroy a perfectly good config and force a re-fetch the user cannot
+        // perform offline — defeating the reason we keep an encrypted copy on
+        // disk rather than going memory-only.
+        final blobIsBad = reason != ConfigCipherRejection.keyUnavailable;
+        loggy.error(
+          'stored config for [$id] could not be opened (${reason.name})'
+          '${blobIsBad ? "; discarding" : "; keeping it, the key was unreadable"}',
+        );
+        if (blobIsBad) {
+          try {
+            await file.delete();
+          } catch (_) {}
+        }
+        return left(const ProfileFailure.configUnreadable());
+    }
+  });
+
+  @override
+  TaskEither<ProfileFailure, String> generateConfig(String id) =>
+      readConfig(id).flatMap((content) => _singbox.generateFullConfig(content).mapLeft(ProfileFailure.unexpected));
+
+  @override
+  TaskEither<ProfileFailure, String> getRawConfig(String id) => readConfig(id);
 }

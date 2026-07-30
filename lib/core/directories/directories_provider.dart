@@ -6,6 +6,7 @@ import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/model/environment.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hiddify/utils/platform_utils.dart';
+import 'package:loggy/loggy.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -36,10 +37,17 @@ class AppDirectories extends _$AppDirectories with InfraLogger {
       final portableDir = getPortableDirectory();
       dirs = (baseDir: portableDir, workingDir: portableDir, tempDir: await getTemporaryDirectory());
     } else {
+      // Android used to put workingDir on external storage
+      // (/sdcard/Android/data/<pkg>/files), which put the sealed configs, the
+      // core's LevelDB, the rule-sets and box.log somewhere `adb pull` and
+      // Shizuku-privileged file managers can reach without root. Internal
+      // app-private storage is root-only, so baseDir == workingDir on every
+      // platform now. `_migrateAndroidWorkingDir` moves an upgraded install's
+      // data across.
       final baseDir = await getApplicationSupportDirectory();
-      final workingDir = Platform.isAndroid ? await _getAndroidWorkingDirectory() : baseDir;
       final tempDir = await getTemporaryDirectory();
-      dirs = (baseDir: baseDir, workingDir: workingDir!, tempDir: tempDir);
+      if (Platform.isAndroid) await _migrateAndroidWorkingDir(baseDir);
+      dirs = (baseDir: baseDir, workingDir: baseDir, tempDir: tempDir);
     }
 
     if (!dirs.baseDir.existsSync()) {
@@ -52,15 +60,43 @@ class AppDirectories extends _$AppDirectories with InfraLogger {
     return dirs;
   }
 
-  static Future<Directory> _getAndroidWorkingDirectory() async {
+  /// Moves an upgraded install's working data off external storage.
+  ///
+  /// Only `configs/` is carried across: it holds the sealed profile config, and
+  /// losing it would force a subscription re-fetch (and break offline connect
+  /// until one succeeded). Everything else is regenerated — rule-sets re-extract
+  /// because the new directory has no MANIFEST, and the core rebuilds its
+  /// LevelDB. The old tree is then deleted, which is the point of the exercise:
+  /// leaving it behind would keep the very files this move exists to hide.
+  ///
+  /// Best-effort throughout. A failure here costs a re-fetch, not data, and must
+  /// never stop the app from starting.
+  static Future<void> _migrateAndroidWorkingDir(Directory target) async {
     try {
-      final extDir = await getExternalStorageDirectory();
-      if (extDir == null) return getApplicationDocumentsDirectory();
-      if (extDir.existsSync()) return extDir;
-      await extDir.create(recursive: true);
-      return extDir;
-    } catch (_) {}
-    return getApplicationDocumentsDirectory();
+      final legacy = await getExternalStorageDirectory();
+      if (legacy == null || !legacy.existsSync()) return;
+      if (p.equals(legacy.path, target.path)) return;
+
+      final legacyConfigs = Directory(p.join(legacy.path, 'configs'));
+      if (legacyConfigs.existsSync()) {
+        final targetConfigs = Directory(p.join(target.path, 'configs'));
+        if (!targetConfigs.existsSync()) await targetConfigs.create(recursive: true);
+        await for (final entity in legacyConfigs.list()) {
+          if (entity is! File) continue;
+          final dest = File(p.join(targetConfigs.path, p.basename(entity.path)));
+          // Never clobber a config already written to the new location.
+          if (dest.existsSync()) continue;
+          try {
+            await entity.copy(dest.path);
+          } catch (_) {}
+        }
+      }
+
+      await legacy.delete(recursive: true);
+      Loggy('directories').info('migrated Android working dir off external storage');
+    } catch (e) {
+      Loggy('directories').warning('Android working-dir migration failed: ${e.runtimeType}');
+    }
   }
 
   static Future<Directory> getDatabaseDirectory() async {

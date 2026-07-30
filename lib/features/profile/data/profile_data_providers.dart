@@ -1,6 +1,7 @@
 import 'package:hiddify/core/db/provider/db_providers.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/http_client/http_client_provider.dart';
+import 'package:hiddify/features/profile/data/profile_config_cipher.dart';
 import 'package:hiddify/features/profile/data/profile_data_source.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/data/profile_path_resolver.dart';
@@ -20,6 +21,7 @@ Future<ProfileRepository> profileRepository(Ref ref) async {
     singbox: ref.watch(raynCoreServiceProvider),
     configOptionRepository: ref.watch(configOptionRepositoryProvider),
     profileParser: ref.watch(profileParserProvider),
+    configCipher: ref.watch(profileConfigCipherProvider),
   );
   await repo.init().getOrElse((l) => throw l).run();
   return repo;

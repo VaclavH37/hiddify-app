@@ -75,8 +75,33 @@ open class ExtensionProvider: NEPacketTunnelProvider {
             LibboxSetMemoryLimit(!disableMemoryLimit)
             
             writeMessage("(packet-tunnel) setup completed successfully")
-            if (config==""){
-                try await startService1(config)
+
+            // An empty "Config" option means the system started us, not the app:
+            // an on-demand rule, or a reconnect after the extension was killed.
+            // When the app IS driving, it passes the sealed config's path here
+            // and then starts the core itself over gRPC with the plaintext, so
+            // there is nothing to do in that case.
+            //
+            // The core can no longer restore a config on its own — nothing is
+            // persisted for it to reload (see saveLastStartRequest in
+            // v2/hcore/start.go) — so open configs/<id>.enc here and hand the
+            // plaintext to MobileStart. The key never crosses into Go.
+            if config.isEmpty {
+                guard let sealedURL = ConfigCipher.locateSealedConfig() else {
+                    writeFatalError("(packet-tunnel) error: no stored configuration; open the app to refresh")
+                    return
+                }
+                guard let key = ConfigKey.peek() else {
+                    // The app creates the key at startup, so this means the
+                    // keychain item is gone. Only the app can recover.
+                    writeFatalError("(packet-tunnel) error: configuration key unavailable; open the app")
+                    return
+                }
+                guard let json = ConfigCipher.open(url: sealedURL, key: key) else {
+                    writeFatalError("(packet-tunnel) error: stored configuration could not be opened; open the app to refresh")
+                    return
+                }
+                try await startService1(json)
             }
 
             
@@ -87,12 +112,14 @@ open class ExtensionProvider: NEPacketTunnelProvider {
         }
     }
     
-    private func startService1(_ config: String) async throws {
+    /// `MobileStart(configPath, configContent)` — the config arrives as
+    /// *content*, never a path, so the core never opens the sealed file itself.
+    private func startService1(_ configContent: String) async throws {
         writeMessage("Starting service")
         var error: NSError?
-//        
+//
         do {
-            try MobileStart(config, "", &error)
+            try MobileStart("", configContent, &error)
             if let error = error {
                 throw error
             }

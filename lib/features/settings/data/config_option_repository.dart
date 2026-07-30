@@ -41,13 +41,6 @@ abstract class ConfigOptions {
 
   static final resolveDestination = PreferencesNotifier.create<bool, bool>("resolve-destination", false);
 
-  static final ipv6Mode = PreferencesNotifier.create<IPv6Mode, String>(
-    "ipv6-mode",
-    IPv6Mode.disable,
-    mapFrom: (value) => IPv6Mode.values.firstWhere((e) => e.key == value),
-    mapTo: (value) => value.key,
-  );
-
   static final remoteDnsAddress = PreferencesNotifier.create<String, String>(
     "remote-dns-address",
     "https://1.1.1.1/dns-query",
@@ -237,7 +230,6 @@ abstract class ConfigOptions {
     "service-mode": serviceMode,
     "log-level": logLevel,
     "resolve-destination": resolveDestination,
-    "ipv6-mode": ipv6Mode,
     "remote-dns-address": remoteDnsAddress,
     "remote-dns-domain-strategy": remoteDnsDomainStrategy,
     "direct-dns-address": directDnsAddress,
@@ -278,7 +270,6 @@ abstract class ConfigOptions {
       // hiddify_option.go, whose default is likewise empty.
       logFile: kReleaseMode ? "" : "data/box.log",
       resolveDestination: ref.watch(resolveDestination),
-      ipv6Mode: ref.watch(ipv6Mode),
       remoteDnsAddress: ref.watch(remoteDnsAddress),
       remoteDnsDomainStrategy: ref.watch(remoteDnsDomainStrategy),
       directDnsAddress: ref.watch(directDnsAddress),

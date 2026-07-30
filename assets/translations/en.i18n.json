@@ -420,13 +420,6 @@
         "blockAds": "Block advertisements",
         "bypassLan": "Bypass LAN",
         "resolveDestination": "Resolve destination",
-        "ipv6Route": "IPv6 route",
-        "ipv6Modes": {
-          "disable": "Disable",
-          "enable": "Enable",
-          "prefer": "Preferred",
-          "only": "Exclusive"
-        },
         "routeRule": {
           "title": "Route rules",
           "options": {
@@ -745,7 +738,8 @@
       "invalidUrl": "Invalid URL",
       "canceledByUser": "Canceled by user",
       "subscriptionExpired": "Your subscription has expired. Please renew to continue.",
-      "unsupportedLinkVersion": "App update required"
+      "unsupportedLinkVersion": "App update required",
+      "configUnreadable": "Your saved configuration couldn't be read. Connect to the internet to refresh it."
     },
     "connectivity": {
       "unexpected": "Unexpected failure",

@@ -54,16 +54,19 @@ class PreferencesVersion1Migration extends PreferencesMigrationStep with InfraLo
         "proxy" || "system-proxy" || "vpn" => serviceMode,
         "systemProxy" => "system-proxy",
         "tun" => "vpn",
-        _ => PlatformUtils.isDesktop ? "system-proxy" : "vpn",
+        // An unrecognised stored value falls through to the current default,
+        // which is now TUN on every platform — see ServiceMode.defaultMode.
+        _ => "vpn",
       };
       loggy.debug("changing service-mode from [$serviceMode] to [$newMode]");
       await sharedPreferences.setString("service-mode", newMode);
     }
 
-    if (sharedPreferences.getString("ipv6-mode") case final String ipv6Mode) {
-      loggy.debug("changing ipv6-mode from [$ipv6Mode] to [${_ipv6Mapper(ipv6Mode)}]");
-      await sharedPreferences.setString("ipv6-mode", _ipv6Mapper(ipv6Mode));
-    }
+    // `ipv6-mode` backed a Settings picker that the core never read; the control
+    // is gone (see singbox_config_enum.dart), so drop the key instead of
+    // rewriting it. Installs already past this migration keep a dead entry that
+    // nothing reads.
+    await sharedPreferences.remove("ipv6-mode");
 
     if (sharedPreferences.getString("remote-domain-dns-strategy") case final String remoteDomainStrategy) {
       loggy.debug(
@@ -93,15 +96,6 @@ class PreferencesVersion1Migration extends PreferencesMigrationStep with InfraLo
 
     await sharedPreferences.remove("cron_profiles_update");
   }
-
-  String _ipv6Mapper(String persisted) => switch (persisted) {
-    "ipv4_only" || "prefer_ipv4" || "prefer_ipv4" || "ipv6_only" => persisted,
-    "disable" => "ipv4_only",
-    "enable" => "prefer_ipv4",
-    "prefer" => "prefer_ipv6",
-    "only" => "ipv6_only",
-    _ => "ipv4_only",
-  };
 
   String _domainStrategyMapper(String persisted) => switch (persisted) {
     "ipv4_only" || "prefer_ipv4" || "prefer_ipv4" || "ipv6_only" => persisted,

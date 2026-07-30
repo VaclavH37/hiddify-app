@@ -236,13 +236,6 @@
         "blockAds": "مسدودسازی تبلیغات",
         "bypassLan": "دور زدن LAN",
         "resolveDestination": "تحلیل آدرس مقصد",
-        "ipv6Route": "مسیریابی IPv6",
-        "ipv6Modes": {
-          "disable": "غیرفعال",
-          "enable": "فعال",
-          "prefer": "ترجیحی",
-          "only": "انحصاری"
-        },
         "routeRule": {
           "title": "قوانین مسیریابی",
           "options": {

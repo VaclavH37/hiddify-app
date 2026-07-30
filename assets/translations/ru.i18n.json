@@ -240,13 +240,6 @@
         "blockAds": "Блокировать рекламу",
         "bypassLan": "Обход LAN",
         "resolveDestination": "Определять адрес назначения",
-        "ipv6Route": "Маршрут IPv6",
-        "ipv6Modes": {
-          "disable": "Отключить",
-          "enable": "Включить",
-          "prefer": "Предпочтительно",
-          "only": "Только"
-        },
         "routeRule": {
           "title": "Правила маршрутизации",
           "options": {

@@ -3,6 +3,7 @@ package com.raynlabs.app
 import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.PowerManager
@@ -21,6 +22,14 @@ class Application : Application() {
         super.onCreate()
 
         Seq.setContext(this)
+
+        // Fails loudly in the log if this build's AES-GCM reader has drifted
+        // from the envelope Dart writes. Debug builds only — see
+        // ConfigCipher.debugSelfTest. Read off the manifest flag rather than
+        // BuildConfig, which AGP 8 no longer generates unless explicitly enabled.
+        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            ConfigCipher.debugSelfTest()
+        }
     }
 
     companion object {

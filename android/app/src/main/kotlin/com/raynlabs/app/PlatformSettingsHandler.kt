@@ -28,6 +28,7 @@ class PlatformSettingsHandler : FlutterPlugin, MethodChannel.MethodCallHandler, 
         enum class Trigger(val method: String) {
             IsIgnoringBatteryOptimizations("is_ignoring_battery_optimizations"),
             RequestIgnoreBatteryOptimizations("request_ignore_battery_optimizations"),
+            GetConfigKey("get_config_key"),
         }
     }
 
@@ -84,6 +85,23 @@ class PlatformSettingsHandler : FlutterPlugin, MethodChannel.MethodCallHandler, 
                             true
                         }
                     )
+                }
+            }
+
+            // Returns the per-install key that seals configs/<id>.enc, creating
+            // it on first call. This channel is registered on a background task
+            // queue, so the AndroidKeyStore round-trip never touches the main
+            // thread. Only the main process reaches this — `:bg` uses
+            // ConfigKey.peek(), which never creates.
+            Trigger.GetConfigKey.method -> {
+                result.runCatching {
+                    try {
+                        success(ConfigKey.getOrCreate())
+                    } catch (e: Exception) {
+                        // Report by exception type only — never echo a message
+                        // that could carry key material.
+                        error("CONFIG_KEY", e.javaClass.simpleName, null)
+                    }
                 }
             }
 

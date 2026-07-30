@@ -26,6 +26,15 @@ public class PlatformMethodHandler: NSObject, FlutterPlugin {
         switch call.method {
         case "get_paths":
             result(getPaths(args: call.arguments) as NSDictionary)
+        case "get_config_key":
+            // Returns the per-install key that seals configs/<id>.enc, creating
+            // it on first call. Only the app reaches this; the packet-tunnel
+            // extension uses ConfigKey.peek(), which never creates.
+            if let key = ConfigKey.getOrCreate() {
+                result(FlutterStandardTypedData(bytes: key))
+            } else {
+                result(FlutterError(code: "CONFIG_KEY", message: "keychain unavailable", details: nil))
+            }
         default:
             result(FlutterMethodNotImplemented)
         }

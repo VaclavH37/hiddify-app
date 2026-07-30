@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:dartx/dartx.dart';
 import 'package:dio/dio.dart';
@@ -36,6 +35,20 @@ import 'package:meta/meta.dart';
 /// randomised, so re-encrypting the same URL yields a different string every
 /// time (RAYN-LINK-SYMMETRIC-MIGRATION.md §4).
 typedef SubscriptionRotation = ({String url, String sourceToken});
+
+/// The terminal response of a subscription request: the headers, the `url` and
+/// `sourceToken` that produced it (the renewed pair when a `new-url` rotation
+/// was followed), and the body.
+typedef _ResolvedSubscription = ({Map<String, dynamic> headers, String url, String? sourceToken, String content});
+
+/// A parsed profile plus the subscription body it came from.
+///
+/// The body is carried in memory, never through a file: it holds the hub IP,
+/// the per-user UUIDs and the Reality shortIDs, and the caller seals it into
+/// `configs/<id>.enc` immediately. Writing it to a temp file first — as this
+/// parser used to — left plaintext on disk for the length of the request, and
+/// permanently if the process was killed before the cleanup `finally` ran.
+typedef ParsedProfile = ({ProfileEntriesCompanion entry, String content});
 
 class ProfileParser {
   static const infiniteTrafficThreshold = 920_233_720_368;
@@ -74,56 +87,56 @@ class ProfileParser {
   static final _log = Loggy('profile_parser');
 
   ProfileParser({required Ref ref, required DioHttpClient httpClient}) : _ref = ref, _httpClient = httpClient;
-  TaskEither<ProfileFailure, ProfileEntriesCompanion> addLocal({
+  TaskEither<ProfileFailure, ParsedProfile> addLocal({
     required String id,
     required String content,
-    required String tempFilePath,
     required UserOverride? userOverride,
   }) {
-    return TaskEither.tryCatch(() async {
-          await expandRemoteLinesInParallel(
-            tempFilePath: tempFilePath,
-            httpClient: _httpClient,
-            cancelToken: CancelToken(),
-            ref: _ref,
-          );
-        }, (_, __) => ProfileFailure.unexpected())
-        .flatMap((_) => TaskEither.fromEither(populateHeaders(content: content)))
+    return TaskEither.tryCatch(
+          () => expandRemoteLines(content: content, httpClient: _httpClient, cancelToken: CancelToken(), ref: _ref),
+          (_, _) => const ProfileFailure.unexpected(),
+        )
         .flatMap(
-          (populatedHeaders) => TaskEither.fromEither(
+          (expanded) => TaskEither.fromEither(
+            populateHeaders(content: expanded).map((h) => (headers: h, content: expanded)),
+          ),
+        )
+        .flatMap(
+          (resolved) => TaskEither.fromEither(
             parse(
-              tempFilePath: tempFilePath,
+              content: resolved.content,
               profile: ProfileEntity.local(
                 id: id,
                 active: true,
                 name: '',
                 lastUpdate: DateTime.now(),
                 userOverride: userOverride,
-                populatedHeaders: populatedHeaders,
+                populatedHeaders: resolved.headers,
               ),
-            ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected)),
+            )
+                .flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected))
+                .map((entry) => (entry: entry, content: resolved.content)),
           ),
         );
   }
 
-  TaskEither<ProfileFailure, ProfileEntriesCompanion> addRemote({
+  TaskEither<ProfileFailure, ParsedProfile> addRemote({
     required String id,
     required String url,
-    required String tempFilePath,
     required UserOverride? userOverride,
     String? sourceToken,
     CancelToken? cancelToken,
-  }) => _resolveDownload(url, sourceToken, tempFilePath, cancelToken).flatMap((resolved) {
+  }) => _resolveDownload(url, sourceToken, cancelToken).flatMap((resolved) {
     final fallback = extractFallback(resolved.headers);
     if (fallback != null) {
       _log.info('capturing fallback URL on import (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
     }
     return TaskEither.fromEither(
-      populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: resolved.headers),
+      populateHeaders(content: resolved.content, remoteHeaders: resolved.headers),
     ).flatMap(
       (populatedHeaders) => TaskEither.fromEither(
         parse(
-          tempFilePath: tempFilePath,
+          content: resolved.content,
           profile: ProfileEntity.remote(
             id: id,
             active: true,
@@ -138,16 +151,17 @@ class ProfileParser {
             fallbackUrl: fallback?.url,
             fallbackSourceToken: fallback?.sourceToken,
           ),
-        ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected)),
+        )
+            .flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected))
+            .map((entry) => (entry: entry, content: resolved.content)),
       ),
     );
   });
 
-  TaskEither<ProfileFailure, ProfileEntriesCompanion> updateRemote({
+  TaskEither<ProfileFailure, ParsedProfile> updateRemote({
     required RemoteProfileEntity rp,
-    required String tempFilePath,
     CancelToken? cancelToken,
-  }) => _downloadWithFailover(rp, tempFilePath, cancelToken).flatMap((resolved) {
+  }) => _downloadWithFailover(rp, cancelToken).flatMap((resolved) {
     var rotated = rp;
     // `_resolveDownload` already followed any `new-url`; persist the resulting
     // token when it changed.
@@ -163,39 +177,41 @@ class ProfileParser {
       rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.sourceToken);
     }
     return TaskEither.fromEither(
-      populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: resolved.headers),
+      populateHeaders(content: resolved.content, remoteHeaders: resolved.headers),
     ).flatMap(
       (populatedHeaders) => TaskEither.fromEither(
         parse(
-          tempFilePath: tempFilePath,
+          content: resolved.content,
           profile: rotated.copyWith(populatedHeaders: populatedHeaders),
-        ).flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected)),
+        )
+            .flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected))
+            .map((entry) => (entry: entry, content: resolved.content)),
       ),
     );
   });
 
-  Either<ProfileFailure, ProfileEntriesCompanion> offlineUpdate({
+  Either<ProfileFailure, ParsedProfile> offlineUpdate({
     required ProfileEntity profile,
-    required String tempFilePath,
+    required String content,
   }) => profile
       .map(
-        remote: (rp) => parse(profile: rp, tempFilePath: tempFilePath),
-        local: (lp) => parse(tempFilePath: tempFilePath, profile: lp),
+        remote: (rp) => parse(profile: rp, content: content),
+        local: (lp) => parse(content: content, profile: lp),
       )
-      .flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected));
+      .flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected))
+      .map((entry) => (entry: entry, content: content));
 
-  TaskEither<ProfileFailure, Map<String, dynamic>> _downloadProfile(
+  TaskEither<ProfileFailure, ({Map<String, dynamic> headers, String content})> _downloadProfile(
     String url,
-    String tempFilePath,
     CancelToken? cancelToken,
   ) => TaskEither.tryCatch(() async {
     // if (url.startsWith("http://"))
     //   throw const ProfileFailure.invalidUrl('HTTP is not supported. Please use HTTPS for secure connection.');
 
+    // getText, not download: the body must stay in memory (see [ParsedProfile]).
     final rs = await _httpClient
-        .download(
+        .getText(
           url.trim(),
-          tempFilePath,
           cancelToken: cancelToken,
           userAgent: _ref.read(appInfoProvider).requireValue.subscriptionUserAgent,
         )
@@ -205,17 +221,18 @@ class ProfileParser {
           }
           throw err;
         });
-    await expandRemoteLinesInParallel(
-      tempFilePath: tempFilePath,
+    final content = await expandRemoteLines(
+      content: rs.data ?? '',
       httpClient: _httpClient,
       cancelToken: cancelToken ?? CancelToken(),
       ref: _ref,
     );
     // fixing headers before return
-    return rs.headers.map.map((key, value) {
+    final headers = rs.headers.map.map((key, value) {
       if (value.length == 1) return MapEntry(key, value.first);
       return MapEntry(key, value);
     });
+    return (headers: headers, content: content);
   }, (err, st) => err is ProfileFailure ? err : ProfileFailure.unexpected(err, st));
 
   /// One subscription request that follows `new-url` token rotation to the
@@ -224,14 +241,13 @@ class ProfileParser {
   /// renewed token when a `new-url` was followed). A terminal `4010` envelope
   /// with no (further) `new-url` is a lapsed subscription →
   /// [ProfileFailure.subscriptionExpired]. Capped at [_maxRotationHops].
-  TaskEither<ProfileFailure, ({Map<String, dynamic> headers, String url, String? sourceToken})> _resolveDownload(
+  TaskEither<ProfileFailure, _ResolvedSubscription> _resolveDownload(
     String url,
     String? sourceToken,
-    String tempFilePath,
     CancelToken? cancelToken, {
     int depth = 0,
-  }) => _downloadProfile(url, tempFilePath, cancelToken).flatMap((headers) {
-    final rotation = extractRotation(headers);
+  }) => _downloadProfile(url, cancelToken).flatMap((downloaded) {
+    final rotation = extractRotation(downloaded.headers);
     // Compare the DECRYPTED url, not the cryptolink: the envelope is randomised,
     // so the same URL re-encrypts to a different string on every response and a
     // string comparison would follow a "rotation" on every single refresh (§4).
@@ -239,15 +255,18 @@ class ProfileParser {
       _log.info(
         'following `new-url` to renewed token (hop ${depth + 1}, host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
       );
-      return _resolveDownload(rotation.url, rotation.sourceToken, tempFilePath, cancelToken, depth: depth + 1);
+      return _resolveDownload(rotation.url, rotation.sourceToken, cancelToken, depth: depth + 1);
     }
-    if (isExpiredEnvelope(File(tempFilePath).readAsStringSync())) {
+    if (isExpiredEnvelope(downloaded.content)) {
       _log.warning('subscription token expired with no renewal available');
-      return TaskEither<ProfileFailure, ({Map<String, dynamic> headers, String url, String? sourceToken})>.left(
-        const ProfileFailure.subscriptionExpired(),
-      );
+      return TaskEither<ProfileFailure, _ResolvedSubscription>.left(const ProfileFailure.subscriptionExpired());
     }
-    return TaskEither.right((headers: headers, url: url, sourceToken: sourceToken));
+    return TaskEither.right((
+      headers: downloaded.headers,
+      url: url,
+      sourceToken: sourceToken,
+      content: downloaded.content,
+    ));
   });
 
   /// Wraps [_resolveDownload] with the fallback-URL failover policy. Used by
@@ -257,12 +276,11 @@ class ProfileParser {
   /// [ProfileCancelByUserFailure] (user intent) and
   /// [ProfileSubscriptionExpiredFailure] (an account state — the fallback host
   /// would return the same `4010`, so we surface the lapse instead).
-  TaskEither<ProfileFailure, ({Map<String, dynamic> headers, String url, String? sourceToken})> _downloadWithFailover(
+  TaskEither<ProfileFailure, _ResolvedSubscription> _downloadWithFailover(
     RemoteProfileEntity rp,
-    String tempFilePath,
     CancelToken? cancelToken,
   ) => TaskEither(() async {
-    final primary = await _resolveDownload(rp.url, rp.sourceToken, tempFilePath, cancelToken).run();
+    final primary = await _resolveDownload(rp.url, rp.sourceToken, cancelToken).run();
     final primaryFailure = primary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (primaryFailure == null) return primary;
     if (primaryFailure is ProfileCancelByUserFailure) return primary;
@@ -273,7 +291,7 @@ class ProfileParser {
       'primary subscription URL failed (${Uri.tryParse(rp.url)?.host ?? "?"}); '
       'attempting fallback (${Uri.tryParse(fallback)?.host ?? "?"})',
     );
-    final secondary = await _resolveDownload(fallback, rp.fallbackSourceToken, tempFilePath, cancelToken).run();
+    final secondary = await _resolveDownload(fallback, rp.fallbackSourceToken, cancelToken).run();
     final secondaryFailure = secondary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (secondaryFailure == null) {
       _log.info('fallback subscription URL succeeded');
@@ -365,14 +383,20 @@ class ProfileParser {
     }
   }
 
-  Future<void> expandRemoteLinesInParallel({
-    required String tempFilePath,
+  /// Expands a line-list subscription: any line that is itself an http(s) URL is
+  /// fetched and substituted inline. Returns the expanded body.
+  ///
+  /// Everything here is in memory. The previous file-based version downloaded
+  /// each nested URL to `<temp>.<index>` and never deleted those fragments —
+  /// the caller's cleanup only removed the base temp file — so a line-list
+  /// subscription left plaintext node data in `configs/` indefinitely.
+  Future<String> expandRemoteLines({
+    required String content,
     required DioHttpClient httpClient,
     required CancelToken cancelToken,
     required Ref ref,
     int parallelism = 4,
   }) async {
-    final content = await File(tempFilePath).readAsString();
     final lines = content.split('\n');
 
     final results = List<String?>.filled(lines.length, null);
@@ -395,16 +419,12 @@ class ProfileParser {
         }
 
         try {
-          final tmpPath = '$tempFilePath.$currentIndex';
-
-          await httpClient.download(
+          final rs = await httpClient.getText(
             line,
-            tmpPath,
             cancelToken: cancelToken,
             userAgent: ref.read(appInfoProvider).requireValue.subscriptionUserAgent,
           );
-
-          results[currentIndex] = (await File(tmpPath).readAsString()).trim();
+          results[currentIndex] = (rs.data ?? '').trim();
         } catch (err) {
           if (err is DioException && CancelToken.isCancel(err)) {
             return;
@@ -418,9 +438,9 @@ class ProfileParser {
     await Future.wait(List.generate(parallelism, (_) => worker()));
 
     if (results.any((e) => e != null)) {
-      final newContent = results.join("\n");
-      await File(tempFilePath).writeAsString(newContent);
+      return results.join("\n");
     }
+    return content;
   }
 
   static Either<ProfileFailure, Map<String, dynamic>> populateHeaders({
@@ -484,7 +504,7 @@ class ProfileParser {
   }
 
   @visibleForTesting
-  static Either<ProfileFailure, ProfileEntity> parse({required String tempFilePath, required ProfileEntity profile}) =>
+  static Either<ProfileFailure, ProfileEntity> parse({required String content, required ProfileEntity profile}) =>
       Either.tryCatch(() {
         final headers = Map<String, dynamic>.from(profile.populatedHeaders ?? {});
         var name = '';
@@ -521,7 +541,7 @@ class ProfileParser {
               name = "Remote Profile";
 
             case LocalProfileEntity():
-              name = protocol(File(tempFilePath).readAsStringSync());
+              name = protocol(content);
           }
         }
 

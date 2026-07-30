@@ -104,9 +104,19 @@ class DioHttpClient with InfraLogger {
     );
   }
 
-  Future<Response> download(
-    String url,
-    String path, {
+  /// Fetches a response body into memory as text.
+  ///
+  /// Used for subscription bodies, which must never be written to disk: they
+  /// carry the hub IP, per-user UUIDs and Reality shortIDs, and the whole point
+  /// of sealing `configs/<id>.enc` is undone if the plaintext lands in a temp
+  /// file first — a file that survives a hard kill, because its cleanup is a
+  /// `finally` block.
+  ///
+  /// `ResponseType.plain` is required: with the default `json`, dio decodes any
+  /// `application/json` response into a Map and the `Response<String>` cast
+  /// throws — which would look like a network failure rather than a type error.
+  Future<Response<String>> getText(
+    String url, {
     CancelToken? cancelToken,
     String? userAgent,
     ({String username, String password})? credentials,
@@ -117,16 +127,30 @@ class DioHttpClient with InfraLogger {
         : await isPortOpen("127.0.0.1", port)
         ? "both"
         : "direct";
-    final dio = _dio[mode]!;
-    return dio.download(
+    return _dio[mode]!.get<String>(
       url,
-      path,
       cancelToken: cancelToken,
-      options: _options(url, userAgent: userAgent, credentials: credentials),
+      options: _options(
+        url,
+        userAgent: userAgent,
+        credentials: credentials,
+        responseType: ResponseType.plain,
+      ),
     );
   }
 
-  Options _options(String url, {String? userAgent, ({String username, String password})? credentials}) {
+  // There is deliberately no `download(url, path)` here any more. Its only
+  // callers were the subscription fetch paths, and streaming a response body
+  // straight to disk is exactly what the at-rest encryption work removed. If a
+  // future feature genuinely needs a file, write it through the cipher rather
+  // than reinstating a raw one.
+
+  Options _options(
+    String url, {
+    String? userAgent,
+    ({String username, String password})? credentials,
+    ResponseType? responseType,
+  }) {
     final uri = Uri.parse(url);
 
     String? userInfo;
@@ -142,6 +166,7 @@ class DioHttpClient with InfraLogger {
     }
 
     return Options(
+      responseType: responseType,
       headers: {
         if (userAgent != null) "User-Agent": userAgent,
         if (basicAuth != null) "authorization": basicAuth,

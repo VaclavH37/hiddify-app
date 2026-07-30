@@ -236,13 +236,6 @@
         "blockAds": "Blokir iklan",
         "bypassLan": "Lewati LAN",
         "resolveDestination": "Resolusi tujuan",
-        "ipv6Route": "Rute IPv6",
-        "ipv6Modes": {
-          "disable": "Nonaktifkan",
-          "enable": "Aktifkan",
-          "prefer": "Prioritaskan",
-          "only": "Hanya"
-        },
         "routeRule": {
           "title": "Aturan perutean",
           "options": {

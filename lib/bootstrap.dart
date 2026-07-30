@@ -15,6 +15,8 @@ import 'package:hiddify/core/preferences/preferences_migration.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/rulesets/ruleset_extractor.dart';
 import 'package:hiddify/features/app/widget/app.dart';
+import 'package:hiddify/features/profile/data/config_at_rest_migration.dart';
+import 'package:hiddify/features/profile/data/profile_config_cipher.dart';
 import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
 import 'package:hiddify/features/log/data/log_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
@@ -43,11 +45,14 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
 
   // Extract bundled CN rule-sets into the Go core's working directory. Must
   // run before the Go core boots so `Type: Local` rule-sets in builder.go can
-  // load. NOTE: this is workingDir, NOT baseDir — the core os.Chdir()s to the
-  // working path and resolves relative Local rule-set paths against it (CWD).
-  // On Android baseDir (internal filesDir) and workingDir (external files dir)
-  // diverge, so writing to baseDir leaves the .srs files where the core never
-  // looks → "failed to start background core". On desktop the two are equal.
+  // load: the core os.Chdir()s to the working path and resolves relative Local
+  // rule-set paths against it (CWD), so a .srs written anywhere else makes every
+  // `RuleSet:`-keyed rule fail to open and the core refuses to start.
+  //
+  // baseDir and workingDir are now the same directory on every platform. They
+  // used to diverge on Android, where workingDir was the external files dir —
+  // see `_migrateAndroidWorkingDir`. Keep passing workingDir explicitly: it is
+  // the contract the core actually depends on.
   await _safeInit("rulesets", () async {
     final dirs = await container.read(appDirectoriesProvider.future);
     await RulesetExtractor.ensureExtracted(dirs.workingDir);
@@ -88,6 +93,17 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
   Logger.bootstrap.info(appInfo.format());
 
   await _init("profile repository", () => container.read(profileRepositoryProvider.future));
+
+  // Seal any plaintext config an older install left behind and remove the
+  // debug artefact the Go core used to write. Best-effort: a failure here must
+  // not block startup — the config is re-derivable from the subscription.
+  await _safeInit("config at-rest migration", () async {
+    await ConfigAtRestMigration(
+      pathResolver: container.read(profilePathResolverProvider),
+      cipher: container.read(profileConfigCipherProvider),
+      workingDir: (await container.read(appDirectoriesProvider.future)).workingDir,
+    ).run();
+  });
 
   await _init("translations", () => container.read(translationsProvider.future));
 

@@ -6,8 +6,6 @@ import com.raynlabs.app.bg.ProxyService
 import com.raynlabs.app.bg.VPNService
 import com.raynlabs.app.constant.ServiceMode
 import com.raynlabs.app.constant.SettingsKey
-import org.json.JSONObject
-import java.io.File
 
 
 object Settings {
@@ -76,19 +74,9 @@ object Settings {
         return true
     }
 
-    private suspend fun needVPNService(): Boolean {
-        val filePath = activeConfigPath
-        if (filePath.isBlank()) return false
-        val content = JSONObject(File(filePath).readText())
-        val inbounds = content.getJSONArray("inbounds")
-        for (index in 0 until inbounds.length()) {
-            val inbound = inbounds.getJSONObject(index)
-            if (inbound.getString("type") == "tun") {
-                return true
-            }
-        }
-        return false
-    }
+    // `needVPNService()` used to live here: it read activeConfigPath as plain
+    // JSON to look for a tun inbound. It had no callers, and the config at that
+    // path is now sealed, so it is gone rather than taught to decrypt.
 
     var workingDir: String
         get() = preferences.getString(SettingsKey.WORKING_DIR, "./")!!

@@ -236,13 +236,6 @@
         "blockAds": "攔截廣告",
         "bypassLan": "繞過區域網路",
         "resolveDestination": "解析目的地",
-        "ipv6Route": "IPv6 路由",
-        "ipv6Modes": {
-          "disable": "停用",
-          "enable": "啟用",
-          "prefer": "首選",
-          "only": "僅"
-        },
         "routeRule": {
           "title": "路由規則",
           "options": {

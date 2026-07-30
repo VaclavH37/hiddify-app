@@ -181,9 +181,35 @@ class BoxService(
             }
             status.postValue(Status.Started)
 
-            if (Settings.startCoreAfterStartingService){
-                Mobile.start("","")
+            // Reached when the system started us with no Flutter engine alive —
+            // the quick-settings tile or an always-on trigger. The app-driven
+            // path leaves this flag false and starts the core over gRPC with the
+            // config content instead.
+            //
+            // The core can no longer restore a config on its own: nothing is
+            // persisted for it to reload (see saveLastStartRequest in
+            // v2/hcore/start.go). So decrypt configs/<id>.enc here and hand the
+            // plaintext straight to Mobile.start. The key never crosses into Go.
+            if (Settings.startCoreAfterStartingService) {
+                val key = com.raynlabs.app.ConfigKey.peek()
+                if (key == null) {
+                    // The app creates the key at bootstrap, so this means the
+                    // keystore was wiped or the entry was invalidated. Recovery
+                    // is a re-fetch, which only the app can do.
+                    stopAndAlert(Alert.EmptyConfiguration)
+                    return
                 }
+                val configJson = try {
+                    com.raynlabs.app.ConfigCipher.open(selectedConfigPath, key)
+                } finally {
+                    key.fill(0)
+                }
+                if (configJson == null) {
+                    stopAndAlert(Alert.EmptyConfiguration)
+                    return
+                }
+                Mobile.start("", configJson)
+            }
 //            if (delayStart) {
 //                delay(1000L)
 //            }

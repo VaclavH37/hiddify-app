@@ -26,7 +26,6 @@ class SingboxConfigOption with _$SingboxConfigOption {
     /// naming servers and domains is a liability on an inspectable device.
     required String logFile,
     required bool resolveDestination,
-    required IPv6Mode ipv6Mode,
     required String remoteDnsAddress,
     required DomainStrategy remoteDnsDomainStrategy,
     required String directDnsAddress,

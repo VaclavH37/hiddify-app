@@ -236,13 +236,6 @@
         "blockAds": "Bloquear anúncios",
         "bypassLan": "Ignorar LAN",
         "resolveDestination": "Resolver destino",
-        "ipv6Route": "Rota IPv6",
-        "ipv6Modes": {
-          "disable": "Desativar",
-          "enable": "Ativar",
-          "prefer": "Preferencial",
-          "only": "Exclusivo"
-        },
         "routeRule": {
           "title": "Regras de Roteamento",
           "options": {

@@ -156,10 +156,9 @@ void main() {
     test('primary succeeds → fallback never attempted', () async {
       final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
-      final tempPath = '${tempDir.path}/profile';
 
       final result = await parser
-          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'), tempFilePath: tempPath)
+          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'))
           .run();
 
       expect(result.isRight(), isTrue);
@@ -170,10 +169,9 @@ void main() {
     test('primary fails → fallback succeeds', () async {
       final fake = _FakeHttpClient(steps: [_FakeStep.networkError(), _FakeStep.ok(headers: {})]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
-      final tempPath = '${tempDir.path}/profile';
 
       final result = await parser
-          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'), tempFilePath: tempPath)
+          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'))
           .run();
 
       expect(result.isRight(), isTrue);
@@ -184,10 +182,9 @@ void main() {
     test('primary fails → fallback fails → original primary failure surfaces', () async {
       final fake = _FakeHttpClient(steps: [_FakeStep.networkError(), _FakeStep.networkError()]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
-      final tempPath = '${tempDir.path}/profile';
 
       final result = await parser
-          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'), tempFilePath: tempPath)
+          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'))
           .run();
 
       expect(result.isLeft(), isTrue);
@@ -203,9 +200,8 @@ void main() {
     test('primary fails → no fallback configured → primary failure surfaces', () async {
       final fake = _FakeHttpClient(steps: [_FakeStep.networkError()]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
-      final tempPath = '${tempDir.path}/profile';
 
-      final result = await parser.updateRemote(rp: buildEntity(), tempFilePath: tempPath).run();
+      final result = await parser.updateRemote(rp: buildEntity()).run();
 
       expect(result.isLeft(), isTrue);
       expect(fake.callCount, 1);
@@ -214,10 +210,9 @@ void main() {
     test('cancellation during primary → fallback never attempted', () async {
       final fake = _FakeHttpClient(steps: [_FakeStep.cancelled()]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
-      final tempPath = '${tempDir.path}/profile';
 
       final result = await parser
-          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'), tempFilePath: tempPath)
+          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'))
           .run();
 
       expect(result.isLeft(), isTrue);
@@ -233,21 +228,19 @@ void main() {
       final existingToken = _raynLink(existingFallback);
       final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
-      final tempPath = '${tempDir.path}/profile';
 
       final result = await parser
           .updateRemote(
-            rp: buildEntity(fallbackUrl: existingFallback, fallbackSourceToken: existingToken),
-            tempFilePath: tempPath,
+            rp: buildEntity(fallbackUrl: existingFallback, fallbackSourceToken: existingToken)
           )
           .run();
 
       expect(result.isRight(), isTrue);
       result.fold(
         (_) => fail('expected Right'),
-        (companion) {
-          expect(companion.fallbackUrl.value, existingFallback);
-          expect(companion.fallbackSourceToken.value, existingToken);
+        (parsed) {
+          expect(parsed.entry.fallbackUrl.value, existingFallback);
+          expect(parsed.entry.fallbackSourceToken.value, existingToken);
         },
       );
     });
@@ -257,16 +250,15 @@ void main() {
       final newLink = _raynLink(newFallback);
       final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {'fallback-url': newLink})]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
-      final tempPath = '${tempDir.path}/profile';
 
-      final result = await parser.updateRemote(rp: buildEntity(), tempFilePath: tempPath).run();
+      final result = await parser.updateRemote(rp: buildEntity()).run();
 
       expect(result.isRight(), isTrue);
       result.fold(
         (_) => fail('expected Right'),
-        (companion) {
-          expect(companion.fallbackUrl.value, newFallback);
-          expect(companion.fallbackSourceToken.value, newLink);
+        (parsed) {
+          expect(parsed.entry.fallbackUrl.value, newFallback);
+          expect(parsed.entry.fallbackSourceToken.value, newLink);
         },
       );
     });
@@ -286,20 +278,19 @@ void main() {
       final result = await parser
           .updateRemote(
             rp: buildEntity(fallbackUrl: existingFallback, fallbackSourceToken: storedLink),
-            tempFilePath: '${tempDir.path}/profile',
           )
           .run();
 
       expect(result.isRight(), isTrue);
       result.fold(
         (_) => fail('expected Right'),
-        (companion) {
-          expect(companion.fallbackUrl.value, existingFallback);
+        (parsed) {
+          expect(parsed.entry.fallbackUrl.value, existingFallback);
           // The load-bearing assertion: with a raw-string comparison the stored
           // token would have been overwritten with `freshLink` on this refresh,
           // and on every refresh thereafter.
-          expect(companion.fallbackSourceToken.value, storedLink);
-          expect(companion.fallbackSourceToken.value, isNot(freshLink));
+          expect(parsed.entry.fallbackSourceToken.value, storedLink);
+          expect(parsed.entry.fallbackSourceToken.value, isNot(freshLink));
         },
       );
     });
@@ -369,7 +360,6 @@ void main() {
           .addRemote(
             id: 'id-1',
             url: 'https://primary.example.com/sub',
-            tempFilePath: '${tempDir.path}/profile',
             userOverride: null,
             sourceToken: 'rayn://import/original',
           )
@@ -378,9 +368,9 @@ void main() {
       expect(result.isRight(), isTrue);
       result.fold(
         (_) => fail('expected Right'),
-        (companion) {
-          expect(companion.url.value, renewedUrl);
-          expect(companion.sourceToken.value, renewedLink);
+        (parsed) {
+          expect(parsed.entry.url.value, renewedUrl);
+          expect(parsed.entry.sourceToken.value, renewedLink);
         },
       );
       expect(fake.callCount, 2);
@@ -395,7 +385,6 @@ void main() {
           .addRemote(
             id: 'id-1',
             url: 'https://primary.example.com/sub',
-            tempFilePath: '${tempDir.path}/profile',
             userOverride: null,
             sourceToken: 'rayn://import/original',
           )
@@ -417,7 +406,6 @@ void main() {
           .addRemote(
             id: 'id-1',
             url: 'https://primary.example.com/sub',
-            tempFilePath: '${tempDir.path}/profile',
             userOverride: null,
             sourceToken: 'rayn://import/original',
           )
@@ -440,14 +428,14 @@ void main() {
       );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser.updateRemote(rp: buildEntity(), tempFilePath: '${tempDir.path}/profile').run();
+      final result = await parser.updateRemote(rp: buildEntity()).run();
 
       expect(result.isRight(), isTrue);
       result.fold(
         (_) => fail('expected Right'),
-        (companion) {
-          expect(companion.url.value, renewedUrl);
-          expect(companion.sourceToken.value, renewedLink);
+        (parsed) {
+          expect(parsed.entry.url.value, renewedUrl);
+          expect(parsed.entry.sourceToken.value, renewedLink);
         },
       );
       expect(fake.callCount, 2);
@@ -460,7 +448,6 @@ void main() {
       final result = await parser
           .updateRemote(
             rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'),
-            tempFilePath: '${tempDir.path}/profile',
           )
           .run();
 
@@ -482,7 +469,7 @@ void main() {
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
       final result = await parser
-          .updateRemote(rp: buildEntity(sourceToken: storedLink), tempFilePath: '${tempDir.path}/profile')
+          .updateRemote(rp: buildEntity(sourceToken: storedLink))
           .run();
 
       expect(result.isRight(), isTrue);
@@ -497,7 +484,7 @@ void main() {
       );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser.updateRemote(rp: buildEntity(), tempFilePath: '${tempDir.path}/profile').run();
+      final result = await parser.updateRemote(rp: buildEntity()).run();
 
       expect(result.isRight(), isTrue);
       expect(fake.callCount, 1);
@@ -514,14 +501,14 @@ void main() {
       );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser.updateRemote(rp: buildEntity(), tempFilePath: '${tempDir.path}/profile').run();
+      final result = await parser.updateRemote(rp: buildEntity()).run();
 
       expect(result.isRight(), isTrue);
       result.fold(
         (_) => fail('expected Right'),
-        (companion) {
-          expect(companion.url.value, migratedUrl);
-          expect(companion.sourceToken.value, migratedLink);
+        (parsed) {
+          expect(parsed.entry.url.value, migratedUrl);
+          expect(parsed.entry.sourceToken.value, migratedLink);
         },
       );
       expect(fake.callCount, 2);
@@ -569,9 +556,8 @@ class _FakeHttpClient extends DioHttpClient {
   final List<String> calledUrls = [];
 
   @override
-  Future<Response> download(
-    String url,
-    String path, {
+  Future<Response<String>> getText(
+    String url, {
     CancelToken? cancelToken,
     String? userAgent,
     ({String username, String password})? credentials,
@@ -581,7 +567,7 @@ class _FakeHttpClient extends DioHttpClient {
     callCount++;
     calledUrls.add(url);
     if (idx >= steps.length) {
-      throw StateError('unexpected extra download call: $url');
+      throw StateError('unexpected extra subscription request: $url');
     }
     final step = steps[idx];
     if (step.error != null) {
@@ -597,7 +583,6 @@ class _FakeHttpClient extends DioHttpClient {
         message: 'fake network error',
       );
     }
-    await File(path).writeAsString(step.body);
     final headersMap = <String, List<String>>{};
     step.headers!.forEach((k, v) {
       if (v is List) {
@@ -606,10 +591,11 @@ class _FakeHttpClient extends DioHttpClient {
         headersMap[k] = [v.toString()];
       }
     });
-    return Response(
+    return Response<String>(
       requestOptions: RequestOptions(path: url),
       headers: Headers.fromMap(headersMap),
       statusCode: 200,
+      data: step.body,
     );
   }
 

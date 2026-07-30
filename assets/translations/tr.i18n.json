@@ -236,13 +236,6 @@
         "blockAds": "Reklamları engelle",
         "bypassLan": "LAN'ı atla",
         "resolveDestination": "Hedefi çözümle",
-        "ipv6Route": "IPv6 rotası",
-        "ipv6Modes": {
-          "disable": "Devre dışı bırak",
-          "enable": "Etkinleştir",
-          "prefer": "Tercih et",
-          "only": "Sadece"
-        },
         "routeRule": {
           "title": "Yönlendirme kuralları",
           "options": {
