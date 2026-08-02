@@ -1,12 +1,16 @@
-# sing-box 1.14 bump — open regression, handoff
+# sing-box 1.14 bump — tunnel regression, RESOLVED
 
-Branch `rayn/integration-2026-08` (both repos). `custom-main` is untouched,
-green, and known-good — there is no pressure to resolve this quickly.
+Branch `rayn/integration-2026-08` (both repos).
+
+**Root cause:** five DNS servers detoured to a direct outbound carrying no dial
+options, which sing-box 1.14 refuses to start.
+**Fix:** hiddify-core `4f1c652`, with the two gate gaps closed in `e3153a6`.
+**Status:** verified in-process; a device rebuild is still required to confirm.
 
 ## Symptom
 
-Tunnel enters "connecting" for well under a second, then disconnects. On Windows
-the core restarts internally in a loop. `box.log` repeats, forever:
+Tunnel entered "connecting" for well under a second, then disconnected, and the
+core restarted internally, forever. `box.log` repeated:
 
 ```
 INFO monitoring: starting outbound monitoring initialize
@@ -15,89 +19,103 @@ INFO monitoring: registered 3 outbound groups for monitoring
 INFO network: updated default interface Wi-Fi, index 6
 ```
 
-No ERROR, WARN, FATAL or panic anywhere in the log. The teardown is silent.
+No ERROR, WARN, FATAL or panic anywhere. `H CORE STARTING:` appeared once while
+the block repeated, so the restart was below the gRPC entry point.
 
-`H CORE STARTING:` appears **once** in the console while the block above repeats,
-so the restart is internal to the core, below the gRPC entry point — the Flutter
-app is not retrying.
+## Cause
 
-## Ruled out, with evidence
+sing-box 1.14 added a check in `common/dialer/detour.go`: a detour that resolves
+to a direct outbound with no dial options is rejected —
+`detour to an empty direct outbound makes no sense`. Five DNS servers did that:
+
+| Server | Detour | Why it is empty |
+|---|---|---|
+| `dns-direct`, `dns-cn-direct`, `dns-cn-direct-fallback` | `direct §hide§` | always was `&option.DirectOutboundOptions{}` |
+| `dns-trick-direct`, `dns-remote-no-warp` | `direct-fragment §hide§` | *became* empty in this bump — 1.14 removed `TLSFragment` from `DialerOptions`, so builder.go's fragment block had to go |
+
+The fix blanks those detours. That is behaviour-preserving: with no detour and
+`DefaultOutbound` unset (`dns/transport_dialer.go` never sets it),
+`dialer.NewWithOptions` falls through to `NewDefault` — a plain direct system
+dial, exactly what detouring to an option-less direct outbound did. Domain
+resolution is unchanged; it runs off `DomainResolver`, set either way.
+
+`dns-trick-direct` still fragments — its `#fragment=300` sets fragmentation on
+the server's own TLS options, independent of the dialer, and the golden pins it.
+What was lost is the dialer-level fragmentation `direct-fragment §hide§` applied
+to traffic routed *through* it; its only users were that detour and WARP
+(removed), so there is no live consumer. Recorded, not repaired.
+
+## Why the gate missed it — the part worth keeping
+
+**`libbox.CheckConfigOptions` never starts a box.** It calls `box.New` then
+`Close`. The detour check runs when the transport's dialer is initialised, in
+`Start`. So the real profile validated clean while the shipped core could not
+bring a tunnel up. Anything that fails in a `Start(stage)` method was invisible.
+
+**The goldens pinned almost nothing.** `canonicalize` used plain
+`encoding/json`. sing-box resolves the concrete options of every inbound,
+outbound and DNS server through a registry on the context, so that reduced all
+of them to `{tag, type}` — no tun MTU or stack, no DNS addresses, no TLS
+settings, no detours. The fix commit changed five detours and produced a
+**zero-byte golden diff**. Marshalling through `MarshalJSONContext` with
+`include.Context` added 672 lines of previously unpinned shipped config.
+
+Both are closed in `e3153a6`. `TestRealProfileStartsTheBox` starts a real box;
+`RAYN_START_CONFIG=synthetic` needs no subscription, so it can run in CI.
+
+## What was ruled out first (all still valid)
 
 | Theory | Evidence |
 |---|---|
-| Deprecated/removed config option | `TestRealProfileBuildsAValidConfig` passes: the real 4-VLESS profile builds and `CheckConfigOptions` accepts it on `170d8315` — router, DNS, rule-sets, every outbound |
+| Deprecated/removed config option | real profile passed `CheckConfigOptions` |
 | Zero outbounds | 4 proxy outbounds present and valid |
-| DNS rule-action `strategy` migration | Router init succeeds, which is where a bad DNS rule fails |
-| Bundled rule-sets | All load once staged |
-| The app / Dart side | Same app built against `custom-main`'s core (`3a1c923e`) connects normally. Only app commit on the branch is Android-only Kotlin |
-| The log-recursion bug | Fixed in `367e8a1`; log is now quiet and the loop persists |
-| `experimental.monitoring` block | Removing it does **not** disable monitoring — 1.14 has it on by default and the block only tunes it. The log still said `monitoring enabled: true` with the block absent. Diagnostic was **invalid**, reverted in `c8eb9cd` |
-| The `balance` outbound group | Omitting it verifiably worked (9→8 outbounds, 4→3 groups, balancer line gone) and the loop **persisted**. Reverted in `c91bef8` |
+| DNS rule-action `strategy` migration | router init succeeded |
+| Bundled rule-sets | all load once staged |
+| The app / Dart side | same app on `custom-main`'s core connects normally |
+| Log recursion | fixed in `367e8a1`; loop persisted |
+| `experimental.monitoring` | removing the block does not disable it — diagnostic was **invalid**, reverted in `c8eb9cd` |
+| The `balance` outbound group | omitting it verifiably worked and the loop persisted; reverted in `c91bef8` |
+| tun creation / interface loop | **wrong lead.** `notifyInterfaceUpdate` only calls `ResetNetwork()`, never restarts. The log said `Wi-Fi`, not the tun adapter — it was the *initial* interface detection, i.e. simply the last line before start died |
 
-## The remaining lead — untested
+The bisect plan drawn up here was never needed and has been dropped.
 
-Every cycle ends on `network: updated default interface Wi-Fi, index 6`.
+## Verification status
 
-Creating the tun **itself changes the default interface**. So the loop may be:
+Done, in WSL, on `170d8315`:
 
-    service start → tun created → default interface changes →
-    interface monitor fires → service restarts → tun created → …
+- `go build ./v2/...`, full `go test ./v2/...` — green
+- `TestRealProfileStartsTheBox` with `RAYN_START_CONFIG=synthetic` — **`sing-box started (0.08s)`**, where before the fix it failed at `start dns/https[dns-cn-direct]`
+- goldens regenerated and reviewed
 
-That would explain the silence (no error — it is a "legitimate" restart), the
-sub-second timing, and why it is Windows-specific in what we have observed so
-far. Android is untested.
-
-Things to try, cheapest first:
-
-1. Build with `enable-tun: false` (proxy-only). If the loop stops, tun creation
-   is the trigger and the interface monitor is the mechanism.
-2. Look at what consumes the interface-monitor callback on the desktop path and
-   whether 1.14 changed its debounce or its notion of "changed".
-3. `strict_route` / `auto_route` interaction — both are on, and both manipulate
-   routes in ways that move the default interface.
-
-## If that fails: bisect
-
-`3a1c923e..170d8315` is linear, 396 commits, ~9 rebuilds.
-
-```
-cd hiddify-core/hiddify-sing-box
-git bisect start 170d8315 3a1c923e
-```
-
-Two things that will otherwise waste steps:
-
-- `9b0342f`'s API migrations (`WARPEndpointOptions`, no `TLSFragmentOptions`, no
-  `common/conntrack`) only compile against the **newer** half of the range. Early
-  steps will fail to build for reasons unrelated to the bug — `git bisect skip`
-  those, do not mark them bad.
-- Each step needs `make build-windows-libs EXTRA_TAGS=raynconfigdump`, then
-  `flutter build windows --debug`, then a connect attempt.
+**Not yet done — this is what remains:** a real device rebuild (Windows + Android
+core, then the Flutter app) and a live connect. The in-process test starts a box
+with tun OFF; tun creation, the Windows service path and Android are unproven.
 
 ## Tooling built during this investigation
 
 | Tool | Use |
 |---|---|
-| `scripts/verify_core_singbox.sh` | Which sing-box a built artifact actually contains. Written because a "rebuilt and tested" run turned out to be the old engine — checkout and artifact disagreed |
-| `v2/config/checkconfig_test.go` | Validate a real profile's outbounds against the pinned sing-box, offline, via `RAYN_CHECK_CONFIG=<config.json>` |
-| `v2/hcore/log_recursion_test.go` | Guards the platform-writer echo loop from returning |
+| `v2/config/startprofile_test.go` | actually starts a box; `synthetic` mode needs no real profile |
+| `v2/config/checkconfig_test.go` | validates a real profile's outbounds offline (construction only) |
+| `scripts/verify_core_singbox.sh` | which sing-box a built artifact actually contains |
+| `v2/hcore/log_recursion_test.go` | guards the platform-writer echo loop |
 
 ## Process notes worth keeping
 
 **Always move the submodule with the branch.** `git -C hiddify-core checkout X`
-leaves `hiddify-sing-box` where it was; the mismatched tree then fails with
-errors that look like real code faults. Cost two builds this session.
+leaves `hiddify-sing-box` behind; the mismatched tree then fails with errors that
+look like real code faults. Cost two builds.
 
     git -C hiddify-core checkout <branch> && \
       git -C hiddify-core submodule update --init hiddify-sing-box
 
 **Verify a diagnostic did what you intended before believing its result.** The
-monitoring experiment produced a clean negative that meant nothing, because
-removing the config block did not disable the feature. The balancer experiment
-was checked against the emitted config first, and its negative is trustworthy.
+monitoring experiment gave a clean negative that meant nothing.
 
-**The gate cannot see this class of fault.** `go build`, `go test`,
-`CheckConfigOptions` and the golden configs all pass. None of them start a
-tunnel. A scripted "start the core against a real profile and assert the tunnel
-comes up" check would have caught both this and the log recursion, and is the
-single highest-value thing to add before the next engine bump.
+**Reproduce in-process before rebuilding.** Every earlier experiment cost a full
+core + Flutter rebuild and returned one bit. The Go test that found this took
+minutes, named the failing server, and needed no device. Reach for it first.
+
+**A green gate is only as good as what it executes.** Build, vet, unit tests,
+`CheckConfigOptions` and the goldens all passed on a core that could not open a
+tunnel — two of them because they were testing far less than they appeared to.
