@@ -34,9 +34,19 @@ that file's own unavoidable `flutter_test` import.
 ## Go core — green
 
 ```bash
-go build ./v2/...
-go test -tags with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_conntrack ./v2/...
+go build -ldflags=-checklinkname=0 ./v2/...
+go test -tags with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_conntrack -ldflags=-checklinkname=0 ./v2/...
 ```
+
+`-ldflags=-checklinkname=0` is required from hiddify-sing-box `170d8315`
+onward: `libbox/internal/oomprofile` uses `//go:linkname` to reach
+`runtime/pprof.parseProcSelfMaps`, which the linker rejects by default. It is
+already in the Makefile's `LDFLAGS` for production builds; these commands and
+`rayn-checks.yml` now carry it too.
+
+Set now rather than when the bump lands, and verified harmless against the
+current pin `3a1c923e` — it only disables a check nothing here currently trips,
+and the suite is green with it.
 
 | Package | Baseline |
 |---|---|

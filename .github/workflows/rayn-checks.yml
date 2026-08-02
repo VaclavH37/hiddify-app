@@ -43,6 +43,11 @@ env:
   # SIGABRT in Go runtime init.
   GO_VERSION: '1.25.6'
   GO_TAGS: with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_conntrack
+  # Required from hiddify-sing-box 170d8315 onward: libbox/internal/oomprofile
+  # go:linknames into runtime/pprof, which the linker rejects by default. Harmless
+  # against the current pin -- it only disables a check nothing currently trips --
+  # so it is set now rather than becoming a surprise when the bump lands.
+  GO_LDFLAGS: -ldflags=-checklinkname=0
 
 jobs:
   dart:
@@ -133,7 +138,7 @@ jobs:
       # c-shared library, so it cannot link standalone.
       - name: Build
         working-directory: hiddify-core
-        run: go build ./v2/...
+        run: go build $GO_LDFLAGS ./v2/...
 
       # The tag list is mandatory, not decorative. Without it
       # TestBundledRuleSetFilesSatisfyConfig calls t.Skipf and the package reports
@@ -146,4 +151,4 @@ jobs:
       # loosening this -- `|| true` on a whole test run hides regressions.
       - name: Test
         working-directory: hiddify-core
-        run: go test -tags "$GO_TAGS" ./v2/...
+        run: go test -tags "$GO_TAGS" $GO_LDFLAGS ./v2/...
