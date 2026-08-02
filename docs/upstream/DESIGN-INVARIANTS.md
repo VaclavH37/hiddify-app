@@ -294,6 +294,21 @@ changes live in `hiddify-core/v2/**`.
 Confirmed clean as of campaign 2026-08: the gitlink is byte-identical at the
 merge base and at `custom-main`.
 
+### <a id="no-v2ray-parser"></a>V2Ray-format subscription content must not parse
+
+Fork commit `9a5601d "Remove Ray2Sing"` deleted the
+`ray2sing.Ray2SingboxOptions` branch from `parseConfigContent`, along with the
+`ray2sing` submodule and its `go.mod` entry. That removal took the xray-core code
+path out of the client; this fork only consumes configs the middleware issues,
+reached through a `rayn://import/<token>` subscription URL.
+
+Restoring the parser is the easy-looking way to "fix" upstream's
+`TestAddByContent`, which is why the intent is pinned separately and offline.
+
+- **Enforced by:** `v2/config/design_invariants_test.go` ·
+  `TestV2RayFormatIsNotParsed`
+- **See also:** K2 in `BASELINE.md`
+
 ### <a id="no-xray"></a>The xray core is removed
 
 ### <a id="warp-removed"></a>WARP is removed

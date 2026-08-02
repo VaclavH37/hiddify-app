@@ -31,7 +31,7 @@ Moved from 292/256 to 326/257 in slice S0.7, which added
 `test/design/design_invariants_test.dart` (34 cases). The single extra info is
 that file's own unavoidable `flutter_test` import.
 
-## Go core — **NOT green**. Two known failures, both understood.
+## Go core — green
 
 ```bash
 go build ./v2/...
@@ -41,16 +41,19 @@ go test -tags with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with
 | Package | Baseline |
 |---|---|
 | `go build ./v2/...` | **exit 0** |
-| `v2/config` | **ok** — includes the golden and design-invariant tests |
-| `v2/hcore` | **ok** — includes the debug-gating scans |
-| `v2/hcore/tunnelservice` | **BUILD FAILED (vet)** — see K1 |
-| `v2/profile/test` | **FAIL** `TestAddByContent` — see K2 |
+| `v2/config` | **ok** — golden, design-invariant and rule-set tests |
+| `v2/hcore` | **ok** — debug-gating scans |
+| `v2/hcore/tunnelservice` | **ok** (no test files) |
+| `v2/profile/test` | **ok** — `TestAddByContent` skipped, see K2 |
 
 `go build ./...` (unscoped) fails at `undefined reference to parseCli` and always
 has: `cmd/bydll/clibydll.go` links against a symbol exported from the c-shared
 library. Not a regression, not fixable by scoping differently. Use `./v2/...`.
 
-### K1 — `v2/hcore/tunnelservice` fails `go vet`, so its tests never run
+### K1 — resolved 2026-08-02
+
+`v2/hcore/tunnelservice` used to fail `go vet`, which runs before `go test`, so
+the package would not build under test and had no coverage at all:
 
 ```
 admin_service_commander.go:20:25  fmt.Sprint call has possible Printf formatting directive %d
@@ -58,51 +61,35 @@ tunnel_platform_service.go:162:15 non-constant format string in call to fmt.Prin
 tunnel_platform_service.go:168:15 non-constant format string in call to log.Printf
 ```
 
-**Inherited from upstream, not fork-introduced.** Verified: the fork's only edits
-to these two files are the `RaynVPNCli` / `RaynVPNTunnelService` branding strings
-at other lines. Line 20 is byte-identical at the merge base `a82d2b8f` and at
-`custom-main`.
+Inherited from upstream, not fork-introduced — the fork's only edits to those
+files are the `RaynVPNCli` / `RaynVPNTunnelService` branding strings at other
+lines. Line 20 was a real bug: `fmt.Sprint` does not interpret verbs, so
+`tunnelServiceAddress` evaluated to the literal `"127.0.0.1:%d18020"`, which is
+what `grpc.Dial` received at three call sites in the desktop tunnel-service
+commander this fork ships.
 
-Line 20 is a **real bug**, not a lint nit:
+Latent rather than live: `grpc.Dial` is lazy and all three sites immediately
+`defer conn.Close()` without issuing an RPC, so nothing failed against the
+malformed address. It would the moment anyone added a real call.
 
-```go
-tunnelServiceAddress = fmt.Sprint("127.0.0.1:%d", tunnelServicePort)
-```
+Fixed by cherry-picking upstream `b6c85f4` — the first row in `LEDGER-core.tsv`.
+Note the package builds and vets clean now but still has **no test files**; the
+fix removed an obstruction, it did not add coverage.
 
-`fmt.Sprint` does not interpret verbs, so this evaluates to the literal
-`"127.0.0.1:%d18020"` — and that string is what `grpc.Dial` receives at three
-call sites (`admin_service_commander.go:66, 90, 111`), the desktop tunnel-service
-commander this fork renamed and actively ships.
+### K2 — resolved 2026-08-02
 
-**Upstream already fixed it**, in `b6c85f4 "fix: correct fmt usage and formatting
-issues"` — one of the pending core commits. `upstream/main` has `fmt.Sprintf`.
-This is a Phase 1 `TAKE` candidate, and until it lands the tunnelservice package
-has no test coverage at all because vet stops the build.
+`v2/profile/test` `TestAddByContent` fetches a live V2Ray-format WARP
+subscription from `raw.githubusercontent.com` and asserts the parsed title is
+`🔥 WARP 🔥`. It cannot pass here: fork commit `9a5601d "Remove Ray2Sing"` deleted
+the `ray2sing.Ray2SingboxOptions` branch from `v2/config/parser.go`, so parsing
+falls through to Clash, which cannot read that format. WARP is removed too, and
+the test needs network access it should not have in a gate.
 
-### K2 — `v2/profile/test` `TestAddByContent` fails, and should
-
-The test fetches a live V2Ray-format WARP subscription from
-`raw.githubusercontent.com/hiddify/hiddify-next/.../test.configs/warp` and asserts
-the parsed title is `🔥 WARP 🔥`.
-
-It fails with `unable to determine config format` because this fork **deliberately
-removed the V2Ray parser**: fork commit `9a5601d "Remove Ray2Sing"` deleted the
-`ray2sing.Ray2SingboxOptions` branch from `v2/config/parser.go`, so parsing falls
-through to Clash, which cannot read that format. WARP is removed here too.
-
-So this is an upstream test for functionality this fork does not have. It is
-**not** evidence of a regression, and it must not be "fixed" by restoring the
-parser.
-
-It should be quarantined with an explicit skip so that a *genuine* future failure
-in `v2/profile` is visible — right now the package is red for a known reason,
-which masks everything else. Not done yet; tracked as a Phase 0 follow-up.
-
-### Consequence for the gate
-
-Until K1 and K2 are resolved, "`go test ./v2/...` is green" is not a usable pass
-condition. Compare **per-package** results against the table above: `v2/config`
-and `v2/hcore` must stay `ok`, and neither known failure may grow new symptoms.
+`t.Skip`ped with that reasoning in place, rather than deleted, so the question
+resurfaces at the right spot if the parser ever returns. The intent it was
+accidentally testing is now pinned offline by `TestV2RayFormatIsNotParsed` in
+`v2/config/design_invariants_test.go`, which asserts V2Ray content is rejected —
+see [no-v2ray-parser](DESIGN-INVARIANTS.md#no-v2ray-parser).
 
 ## Golden configs
 

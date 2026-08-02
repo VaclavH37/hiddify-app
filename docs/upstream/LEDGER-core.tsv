@@ -1,1 +1,2 @@
 upstream_sha	date	subject	bucket	disposition	rayn_sha	invariant	evidence	reviewer	campaign
+b6c85f4b3f8b1578df6dee27177e1dd910b8a268	2026-04-21	fix: correct fmt usage and formatting issues	CLEAN	TAKE	0e517f878bee02b486c303212098d33e9cb741f5		E1: merge base a82d2b8f and custom-main byte-identical at all 3 lines. E3: unblocks K1 - go vet stopped v2/hcore/tunnelservice building under test. Sprint->Sprintf; latent since grpc.Dial is lazy and no RPC is issued.	claude	2026-08

@@ -139,36 +139,11 @@ jobs:
       # TestBundledRuleSetFilesSatisfyConfig calls t.Skipf and the package reports
       # ok while checking nothing.
       #
-      # Two packages are known-red and recorded as K1/K2 in BASELINE.md, so a
-      # bare pass/fail on the whole tree is not usable. Compare the SET of failing
-      # packages instead: a new failure fails CI, and so does a known failure
-      # disappearing -- that means BASELINE.md is now wrong and should be updated.
-      - name: Test against the recorded per-package baseline
+      # ./v2/... is green as of the K1/K2 fixes, so a plain exit-code gate is
+      # enough. It was not: two packages used to be known-red, and this step
+      # compared the SET of failing packages against an allowlist. If a package
+      # ever has to be accepted as red again, restore that shape rather than
+      # loosening this -- `|| true` on a whole test run hides regressions.
+      - name: Test
         working-directory: hiddify-core
-        run: |
-          set -uo pipefail
-
-          # K1: v2/hcore/tunnelservice fails go vet (inherited upstream fmt bugs;
-          #     upstream fixed them in b6c85f4, pending adoption).
-          # K2: v2/profile/test TestAddByContent needs the ray2sing V2Ray parser,
-          #     removed from this fork in 9a5601d.
-          known_failures="github.com/hiddify/hiddify-core/v2/hcore/tunnelservice
-          github.com/hiddify/hiddify-core/v2/profile/test"
-          expected=$(echo "$known_failures" | tr -d ' ' | sort)
-
-          go test -tags "$GO_TAGS" ./v2/... 2>&1 | tee test.txt || true
-          # NF>1 skips `go test`'s trailing bare "FAIL" summary line, which would
-          # otherwise contribute an empty entry and never match.
-          actual=$(grep -E '^(FAIL|ok)' test.txt | awk '$1=="FAIL" && NF>1 {print $2}' | sort -u)
-
-          echo "--- expected failures ---"; echo "$expected"
-          echo "--- actual failures ---";   echo "${actual:-(none)}"
-
-          if [ "$actual" != "$expected" ]; then
-            echo "::error::The set of failing Go packages changed."
-            echo "New failures are regressions. A known failure disappearing means"
-            echo "docs/upstream/BASELINE.md (K1/K2) is stale and should be updated."
-            diff <(echo "$expected") <(echo "$actual") || true
-            exit 1
-          fi
-          echo "Failing set matches the recorded baseline."
+        run: go test -tags "$GO_TAGS" ./v2/...
