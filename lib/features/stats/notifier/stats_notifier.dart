@@ -10,16 +10,18 @@ part 'stats_notifier.g.dart';
 @riverpod
 class StatsNotifier extends _$StatsNotifier with AppLogger {
   @override
-  Stream<SystemInfo> build() async* {
+  // Synchronous build: no `await` before the first value, so the whole build
+  // stays inside the build phase. See serviceRunning in connection_notifier.dart.
+  Stream<SystemInfo> build() {
     ref.disposeDelay(const Duration(seconds: 10));
-    final serviceRunning = await ref.watch(serviceRunningProvider.future);
+    final serviceRunning = ref.watch(serviceRunningProvider);
     if (serviceRunning) {
-      yield* ref
-          .watch(statsRepositoryProvider)
+      return ref
+          .read(statsRepositoryProvider)
           .watchStats()
           .map((event) => event.getOrElse((_) => SystemInfo.create()));
     } else {
-      yield* Stream.value(SystemInfo.create());
+      return Stream.value(SystemInfo.create());
     }
   }
 }

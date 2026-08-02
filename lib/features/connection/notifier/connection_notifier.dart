@@ -64,7 +64,10 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
 
     yield* _connectionRepo.watchConnectionStatus().doOnData((event) {
       if (event case Disconnected(connectionFailure: final _?) when PlatformUtils.isDesktop) {
-        ref.read(Preferences.startedByUser.notifier).update(false);
+        // Deferred to a microtask: this runs inside the connection-status stream,
+        // so updating a provider here mutates state during another provider's
+        // build phase.
+        Future.microtask(() => ref.read(Preferences.startedByUser.notifier).update(false));
       }
       loggy.info("connection status: ${event.format()}");
     });
@@ -173,12 +176,23 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
   }
 }
 
+/// Synchronous on purpose.
+///
+/// This used to be `Future<bool>` built with `selectAsync`, which meant every
+/// consumer had to `await ref.watch(serviceRunningProvider.future)` inside its
+/// own build. That `await` suspends the build, so the provider's dependencies
+/// are registered *after* the synchronous build phase has finished — and when
+/// several siblings on one page do it against a high-frequency stream (the
+/// connection status), Riverpod flushes a lazy build in the middle of another
+/// one and they collide.
+///
+/// Reading the already-materialised `AsyncValue` instead keeps the whole thing
+/// inside the build phase. `valueOrNull` covers loading and error alike, which
+/// is what `.onError(... => false)` was doing.
 @Riverpod(keepAlive: true)
-Future<bool> serviceRunning(Ref ref) async {
+bool serviceRunning(Ref ref) {
   // ref.watch(coreRestartSignalProvider);
-  return await ref
-      .watch(connectionNotifierProvider.selectAsync((data) => data.isConnected))
-      .onError((error, stackTrace) => false);
+  return ref.watch(connectionNotifierProvider).valueOrNull?.isConnected ?? false;
 }
 
 class SingleCall {

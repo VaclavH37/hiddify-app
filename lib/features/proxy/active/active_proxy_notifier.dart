@@ -32,7 +32,7 @@ class IpInfoNotifier extends _$IpInfoNotifier with AppLogger {
     ref.listen(serviceRunningProvider, (_, next) => _idle = false);
 
     final autoCheck = ref.watch(Preferences.autoCheckIp);
-    final serviceRunning = await ref.watch(serviceRunningProvider.future);
+    final serviceRunning = ref.watch(serviceRunningProvider);
     // loggy.debug(
     //   "idle? [$_idle], forced? [$_forceCheck], connected? [$serviceRunning]",
     // );
@@ -73,16 +73,21 @@ class IpInfoNotifier extends _$IpInfoNotifier with AppLogger {
 
 @Riverpod(keepAlive: true)
 class ActiveProxyNotifier extends _$ActiveProxyNotifier with AppLogger {
+  // Synchronous build, returning the stream rather than `async*` + `yield*`.
+  // With no `await` before the first yield the whole build stays inside the
+  // synchronous build phase, which is what stops this provider colliding with its
+  // siblings on the home page. The repository is read, not watched, because a
+  // watch registered from inside the returned stream would land after the build.
   @override
-  Stream<OutboundInfo> build() async* {
+  Stream<OutboundInfo> build() {
     // ref.disposeDelay(const Duration(seconds: 20));
     ref.watch(coreRestartSignalProvider);
-    final serviceRunning = await ref.watch(serviceRunningProvider.future);
+    final serviceRunning = ref.watch(serviceRunningProvider);
     if (!serviceRunning) {
-      throw const ServiceNotRunning();
+      return Stream.error(const ServiceNotRunning());
     }
-    final proxyprovider = ref.watch(proxyRepositoryProvider);
-    yield* proxyprovider
+    return ref
+        .read(proxyRepositoryProvider)
         .watchActiveProxies()
         .map((event) => event.getOrElse((l) => List<OutboundGroup>.empty()))
         .map((event) => event.firstOrNull?.items.first ?? OutboundInfo());

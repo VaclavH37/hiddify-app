@@ -60,7 +60,7 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
   Stream<OutboundGroup?> build() async* {
     ref.disposeDelay(const Duration(seconds: 15));
     ref.watch(coreRestartSignalProvider);
-    final serviceRunning = await ref.watch(serviceRunningProvider.future);
+    final serviceRunning = ref.watch(serviceRunningProvider);
     final sortBy = ref.watch(proxiesSortNotifierProvider);
     if (!serviceRunning) {
       // Pre-connect: there is no core, so render the cached snapshot captured on

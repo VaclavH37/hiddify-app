@@ -12,7 +12,7 @@ part 'config_option_notifier.g.dart';
 class ConfigOptionNotifier extends _$ConfigOptionNotifier with AppLogger {
   @override
   Future<bool> build() async {
-    final serviceRunning = await ref.watch(serviceRunningProvider.future);
+    final serviceRunning = ref.watch(serviceRunningProvider);
     final serviceSingboxOptions = ref.read(connectionRepositoryProvider).configOptionsSnapshot;
 
     ref.listen(ConfigOptions.singboxConfigOptions, (previous, next) async {

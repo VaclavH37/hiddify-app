@@ -21,6 +21,7 @@ import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
 import 'package:hiddify/features/log/data/log_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
+import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
 import 'package:hiddify/hiddifycore/rayn_core_service_provider.dart';
@@ -120,6 +121,12 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
   // surfacing as a connection failure the user can see and retry. Every other
   // fallible step in this function is already _safeInit for the same reason.
   await _safeInit("rayn-core", () => container.read(raynCoreServiceProvider).init());
+
+  // Force activeProxyNotifierProvider to evaluate eagerly, here, rather than
+  // lazily on first read from the home page. Its first build would otherwise be
+  // flushed part-way through building a sibling that shares its dependencies,
+  // which is the collision this whole change is about.
+  container.listen(activeProxyNotifierProvider, (_, _) {});
 
   if (!kIsWeb) {
     // await _safeInit(

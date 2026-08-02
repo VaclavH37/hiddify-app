@@ -129,7 +129,7 @@ class ProxySnapshot {
 @Riverpod(keepAlive: true)
 Stream<OutboundGroup?> liveProxyGroup(Ref ref) async* {
   ref.watch(coreRestartSignalProvider);
-  final running = await ref.watch(serviceRunningProvider.future);
+  final running = ref.watch(serviceRunningProvider);
   if (!running) {
     yield null;
     return;
