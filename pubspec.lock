@@ -33,14 +33,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.13.4"
-  animated_notch_bottom_bar:
-    dependency: "direct main"
-    description:
-      name: animated_notch_bottom_bar
-      sha256: efea7a4e8a0fc9bfd5679a059f98025c4f8bc878e016921b898303b0e5a26882
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.4"
   ansicolor:
     dependency: transitive
     description:
@@ -129,14 +121,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
-  bottom_navy_bar:
-    dependency: "direct main"
-    description:
-      name: bottom_navy_bar
-      sha256: ed54e0a18748106cc4d3648390bf94e88c0913db6bd3018dd30ab0810f0c26d6
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.1.0"
   build:
     dependency: transitive
     description:
@@ -298,14 +282,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  combine:
-    dependency: "direct main"
-    description:
-      name: combine
-      sha256: "548476e2b314699e02345842b560d62d0090c49052b1464da607e09121a9d07b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.8"
   convert:
     dependency: transitive
     description:
@@ -402,14 +378,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.4"
-  dependency_validator:
-    dependency: "direct main"
-    description:
-      name: dependency_validator
-      sha256: d6084f8df7677843c8fd0e08b66c11d9c2ce9bae1bb1f18cc574bcb28ebe71b0
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.0.5"
   dio:
     dependency: "direct main"
     description:
@@ -636,22 +604,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_loggy:
-    dependency: "direct main"
-    description:
-      name: flutter_loggy
-      sha256: f7640f2d06e64a6141b2210e18cac3146f30bcb4b92349da53f969f59b78c04b
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.3+1"
-  flutter_loggy_dio:
-    dependency: "direct main"
-    description:
-      name: flutter_loggy_dio
-      sha256: d17d26bb85667c14aefa6dce9b12bd2c1ae13cd75e89d25b0c799b063be55e3c
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.0"
   flutter_markdown_plus:
     dependency: "direct main"
     description:
@@ -1367,7 +1319,7 @@ packages:
     source: hosted
     version: "1.5.2"
   posix:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: posix
       sha256: "185ef7606574f789b40f289c233efa52e96dead518aed988e040a10737febb07"
@@ -1646,14 +1598,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.2"
-  showcaseview:
-    dependency: "direct main"
-    description:
-      name: showcaseview
-      sha256: f236c1f44b286e1ba888f8701adca067af92c33e29ea937d0fe9b4a29d4cd41e
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.0"
   simple_icons:
     dependency: "direct main"
     description:
@@ -2012,7 +1956,7 @@ packages:
     source: hosted
     version: "15.2.0"
   watcher:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: watcher
       sha256: "1398c9f081a753f9226febe8900fce8f7d0a67163334e1c94a2438339d79d635"
