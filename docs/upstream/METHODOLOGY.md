@@ -298,29 +298,32 @@ the reviewer's shortcut.
 
 ### Three honesty checks
 
-**1. Completeness** — every backlog SHA appears exactly once:
+All three are implemented in `scripts/upstream_ledger_check.sh`. Run it before
+closing a campaign, and any time a ledger has been edited by hand:
 
 ```bash
-comm -3 <(git log --no-merges --format=%H <watermark>..<snapshot> | sort) \
-        <(cut -f1 docs/upstream/LEDGER-app.tsv | tail -n +2 | sort)
-# must be empty
+./scripts/upstream_ledger_check.sh 2026-08
 ```
 
-**2. Non-repudiation** — every `TAKE`/`ADAPT` names a commit that really landed:
+**1. Completeness** — every backlog SHA appears in the ledger exactly once, and
+the ledger contains nothing that is not in the backlog. This is the one that
+catches a commit quietly skipped rather than triaged.
 
-```bash
-git merge-base --is-ancestor $rayn_sha custom-main
-```
+**2. Non-repudiation** — every `TAKE`/`ADAPT` row names a `rayn_sha` that exists
+and is an ancestor of `custom-main`. A disposition claiming work landed, where
+the work did not land, is worse than no ledger.
 
 **3. Reverse traceability** — every campaign commit carries an `Upstream: <sha>`
-or `Upstream: none` trailer:
+or `Upstream: none` line. This is what stops something being picked and then not
+recorded. Worth keeping permanently, not just during a campaign.
 
-```bash
-git log --format='%H %(trailers:key=Upstream,valueonly)' <watermark>..custom-main
-```
-
-Check 3 is what stops something being picked and then not recorded. Worth keeping
-permanently, not just during a campaign.
+> Check 3 greps the **message body**, deliberately, rather than using
+> `git log --format='%(trailers:key=Upstream,valueonly)'`. Git parses only the
+> *last paragraph* of a message as trailers, so an `Upstream:` line sitting above
+> a blank line and `Co-Authored-By` is body text as far as that accessor is
+> concerned. The accessor reported every commit in this campaign as missing a
+> trailer when all of them carried one. If you want `Upstream:` to be a real git
+> trailer, it has to be adjacent to `Co-Authored-By` with no blank line between.
 
 ---
 
