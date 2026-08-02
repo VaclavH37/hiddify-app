@@ -115,12 +115,24 @@ it is deterministic. The `raynconfigdump` path remains the way to verify a
 
 | Fixture | sha256 |
 |---|---|
-| `shipped.json` | `cd5420e251a4614af6fbb60306b78fb40a44a982339a209e3874e5fc299da5dc` |
-| `shipped-blockads-off.json` | `0a09dd233b143fc23e309a7b76d4a233becea8bfdbafaecc7d114a2c66ac124e` |
-| `shipped-blockquic-off.json` | `f8105577593eed881a011ce3e99900a02a60440ceb13df39da1c5c75e248c26e` |
-| `shipped-debug.json` | `a0b8e8e6291fc3ba5ab1f93d4c7510721ce39415427b59cee153496091fc5afd` |
-| `shipped-many-outbounds.json` | `b42e9512c1685dee2a9c3255560a2765a2b1e74350bc681ac8a04ed5f13ae93c` |
-| `go-defaults.json` | `78dde984b61da456c7c235f3650b60c5e0a2cecd96ca30d38fb9b14ba64c12bc` |
+| `shipped.json` | `8e7b73891707f4ab743feaf81c2155a7694cc60dc9b93fdcdf3e255d98492cf9` |
+| `shipped-blockads-off.json` | `ff3c28809329477eb370c1a137b335adddbdd867366ca17ba5e01efbbda234e2` |
+| `shipped-blockquic-off.json` | `fb93053ade213e7402727cf6b6bc75dacb5d97e30319cd7780bc0d6f364ae262` |
+| `shipped-debug.json` | `a5761151ec5a1d6c8df328e2f83fd4e9ec58314dc673f59f84a30af214a45697` |
+| `shipped-many-outbounds.json` | `6e13d4c94515e38e34c89dbf350ed1473904e3922693f874a478f31750fc43fe` |
+| `go-defaults.json` | `245b816a71dcb32cd03af8d422f79f8b87d61245a638eb6edab1141c7d9cf85d` |
+
+Rebaselined at hiddify-core `e3153a6`, which is also the point these fixtures
+first became worth much. Until then `canonicalize` marshalled with plain
+`encoding/json`, and because sing-box resolves the concrete options of every
+inbound, outbound and DNS server through a registry on the context, all of them
+were pinned as `{tag, type}` and nothing else — no tun MTU or stack, no DNS
+server addresses, no TLS settings, no dialer detours. The commit that fixed the
+sing-box 1.14 tunnel regression changed five detours and produced a **zero-byte**
+diff against the old fixtures. Marshalling through `MarshalJSONContext` with
+`include.Context` added 672 lines of shipped config that had never been pinned.
+The earlier hashes above this line were real, just far less load-bearing than
+they looked.
 
 Two things worth knowing before trusting these:
 
