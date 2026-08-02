@@ -115,7 +115,11 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
   await _init("translations", () => container.read(translationsProvider.future));
 
   await _safeInit("active profile", () => container.read(activeProfileProvider.future), timeout: 1000);
-  await _init("hiddify-core", () => container.read(raynCoreServiceProvider).init());
+  // _safeInit, not _init: a throw here used to kill lazyBootstrap outright, so a
+  // core that failed to initialise took the whole app down at launch rather than
+  // surfacing as a connection failure the user can see and retry. Every other
+  // fallible step in this function is already _safeInit for the same reason.
+  await _safeInit("rayn-core", () => container.read(raynCoreServiceProvider).init());
 
   if (!kIsWeb) {
     // await _safeInit(
