@@ -22,13 +22,23 @@ code at all, and 30 touch exactly one file.
 
 ---
 
-## The list that matters: genuine fix candidates — EVIDENCE PASS COMPLETE
+## The list that matters: genuine fix candidates — DONE
 
-E1–E4 run on all eight. Four rejected and written to the ledger; **four should
-land**, and are left untriaged until the work exists, because `TAKE`/`ADAPT` rows
-must name a `rayn_sha` that really landed.
+E1–E4 run on all eight. Four rejected, four landed as slice S2.4. All eight have
+ledger rows; the four that landed name the fork commit that carries them.
 
-### Should land
+| Commit | Disposition | Landed as |
+|---|---|---|
+| `3d9f7c93` | `TAKE` | `55423269` |
+| `6b116d2f` | `ADAPT` | `54207334` |
+| `116c79e7` | `ADAPT` | `2f763cb1` |
+| `ac4d26fd` | `ADAPT` | `87c3af8e` |
+
+`787dcf9a` (AppImage desktop-entry localization) remains untriaged — it touches
+the branding block of the same file and is better handled with the outstanding
+Linux rebrand than as a fix.
+
+### What landed, and why
 
 **`3d9f7c93` — `TAKE`. A live defect in this fork's own notification feature.**
 
