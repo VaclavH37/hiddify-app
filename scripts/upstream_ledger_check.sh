@@ -20,6 +20,7 @@ CAMPAIGN=${1:-2026-08}
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT" || exit 1
 
+EXCEPTIONS=docs/upstream/TRACEABILITY-EXCEPTIONS.tsv
 CORE=hiddify-core
 PRE=rayn/pre-catchup-$CAMPAIGN
 
@@ -126,7 +127,7 @@ reverted_target_is_traceable() { # repo sha -> 0 if this is a revert of a tracea
 
 check_traceability() { # repo label
   local repo=$1 label=$2
-  local missing=0 total=0 reverts=0
+  local missing=0 total=0 reverts=0 waived=0
   for sha in $(git -C "$repo" log --format=%H "$PRE..custom-main" 2>/dev/null); do
     total=$((total + 1))
     if git -C "$repo" log -1 --format=%B "$sha" | grep -q '^Upstream: '; then
@@ -136,15 +137,26 @@ check_traceability() { # repo label
       reverts=$((reverts + 1))
       continue
     fi
+    # A narrow, per-SHA allowlist for commits published before the omission was
+    # spotted, where the only correction would be rewriting pushed history. The
+    # provenance still exists — it is in the ledger row — so what is waived is
+    # the location of the record, not the record. Deliberately keyed to exact
+    # SHAs so it can never widen to cover a commit nobody looked at.
+    if [ -f "$EXCEPTIONS" ] && awk -F'\t' -v s="$sha" -v r="$label" \
+         'NR>1 && $1==s && $2==r {found=1} END {exit !found}' "$EXCEPTIONS"; then
+      waived=$((waived + 1))
+      continue
+    fi
     fail "$label ${sha:0:8} has no 'Upstream:' line — $(git -C "$repo" log -1 --format=%s "$sha" | cut -c1-50)"
     missing=$((missing + 1))
   done
   if [ "$missing" -eq 0 ]; then
-    if [ "$reverts" -gt 0 ]; then
-      echo "  ok  $total $label commit(s), all carry provenance ($reverts via the commit they revert)"
-    else
-      echo "  ok  $total $label commit(s), all carry provenance"
-    fi
+    local note=""
+    [ "$reverts" -gt 0 ] && note=" ($reverts via the commit they revert"
+    [ "$reverts" -gt 0 ] && [ "$waived" -gt 0 ] && note="$note, $waived waived in TRACEABILITY-EXCEPTIONS.tsv"
+    [ "$reverts" -eq 0 ] && [ "$waived" -gt 0 ] && note=" ($waived waived in TRACEABILITY-EXCEPTIONS.tsv"
+    [ -n "$note" ] && note="$note)"
+    echo "  ok  $total $label commit(s), all carry provenance$note"
   fi
 }
 
