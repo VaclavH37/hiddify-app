@@ -1,0 +1,174 @@
+name: Rayn checks
+
+# The validation gate for this fork's own branches.
+#
+# Deliberately separate from ci.yml. That workflow calls build.yml, which builds
+# every platform and pulls Hiddify's PREBUILT core from
+# github.com/hiddify/hiddify-next-core/releases -- so it is both expensive and
+# validates the wrong binary. It has also never run on custom-main: its push
+# branch list is main/dev/android-fix-action-bug/new-design-v2, all upstream.
+#
+# This one builds nothing native. It runs the checks that actually catch a
+# regression in this fork: the analyzer, the Dart suite (including the design
+# invariants), and the Go config/invariant tests. Under five minutes, no
+# secrets, no artifacts.
+#
+# See docs/upstream/METHODOLOGY.md and docs/upstream/BASELINE.md.
+
+on:
+  push:
+    branches:
+      - custom-main
+      - 'rayn/integration-*'
+    paths-ignore:
+      - '**.md'
+      - '.vscode/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '.vscode/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # MUST match docs/upstream/BASELINE.md. Analyzer counts are lint-rule- and
+  # SDK-sensitive, so a different Flutter here produces different numbers and the
+  # comparison below turns into noise.
+  FLUTTER_VERSION: '3.41.9'
+  # hiddify-core/go.mod pins `go 1.25.6` with no toolchain directive, so an older
+  # 1.25.x refuses to build. 1.26 must not be used: it produces .so files that
+  # SIGABRT in Go runtime init.
+  GO_VERSION: '1.25.6'
+  GO_TAGS: with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_conntrack
+
+jobs:
+  dart:
+    name: Dart — analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        # No submodules: nothing here needs the core. Skipping them avoids
+        # cloning hiddify-sing-box for a job that never compiles Go.
+
+      - uses: subosito/flutter-action@v2.21.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # Generated code is not tracked (.gitignore covers **/*.g.dart,
+      # **/*.freezed.dart, …), so nothing compiles until codegen has run.
+      # common-prepare is `get gen translate` and is safe -- unlike the *-prepare
+      # targets, which pull the prebuilt core.
+      - name: Codegen
+        run: make common-prepare
+
+      # flutter analyze exits non-zero on warnings and infos, so the exit code is
+      # useless as a gate here. Compare counts against BASELINE.md instead, and
+      # read the expected numbers out of that file so it cannot silently drift
+      # from what CI enforces.
+      - name: Analyze against the recorded baseline
+        run: |
+          set -uo pipefail
+
+          baseline=$(grep -oP '\*\*\d+ errors · \d+ warnings · \d+ infos\*\*' \
+            docs/upstream/BASELINE.md | head -1)
+          if [ -z "$baseline" ]; then
+            echo "::error::Could not parse the analyzer baseline out of docs/upstream/BASELINE.md."
+            echo "Expected a row containing: **<n> errors · <n> warnings · <n> infos**"
+            exit 1
+          fi
+          want_e=$(echo "$baseline" | grep -oP '\d+(?= errors)')
+          want_w=$(echo "$baseline" | grep -oP '\d+(?= warnings)')
+          want_i=$(echo "$baseline" | grep -oP '\d+(?= infos)')
+          echo "baseline: ${want_e} errors, ${want_w} warnings, ${want_i} infos"
+
+          flutter analyze > analyze.txt 2>&1 || true
+          got_e=$(grep -c '^ *error -'   analyze.txt || true)
+          got_w=$(grep -c '^ *warning -' analyze.txt || true)
+          got_i=$(grep -c '^ *info -'    analyze.txt || true)
+          echo "actual:   ${got_e} errors, ${got_w} warnings, ${got_i} infos"
+
+          status=0
+          if [ "$got_e" -gt 0 ]; then
+            echo "::error::${got_e} analyzer error(s). Errors are never acceptable."
+            grep '^ *error -' analyze.txt || true
+            status=1
+          fi
+          # Regressions fail. Improvements also fail, on purpose: the baseline is
+          # only useful while it describes reality, and "I fixed some lints" is a
+          # one-line edit to BASELINE.md in the same commit.
+          if [ "$got_w" -ne "$want_w" ] || [ "$got_i" -ne "$want_i" ]; then
+            echo "::error::Analyzer counts moved (warnings ${want_w}→${got_w}, infos ${want_i}→${got_i})."
+            echo "If deliberate, update docs/upstream/BASELINE.md in the same commit."
+            echo "--- all warnings ---"
+            grep '^ *warning -' analyze.txt || true
+            echo "--- infos, grouped by rule ---"
+            grep '^ *info -' analyze.txt | sed 's/.* - //' | sort | uniq -c | sort -rn
+            status=1
+          fi
+          exit $status
+
+      - name: Test
+        run: flutter test
+
+  core:
+    name: Go core — build and invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive # hiddify-core, and hiddify-sing-box inside it
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: hiddify-core/go.sum
+
+      # Scoped to ./v2/... on purpose. `go build ./...` has never worked in this
+      # repo: cmd/bydll/clibydll.go is cgo that calls parseCli, exported from the
+      # c-shared library, so it cannot link standalone.
+      - name: Build
+        working-directory: hiddify-core
+        run: go build ./v2/...
+
+      # The tag list is mandatory, not decorative. Without it
+      # TestBundledRuleSetFilesSatisfyConfig calls t.Skipf and the package reports
+      # ok while checking nothing.
+      #
+      # Two packages are known-red and recorded as K1/K2 in BASELINE.md, so a
+      # bare pass/fail on the whole tree is not usable. Compare the SET of failing
+      # packages instead: a new failure fails CI, and so does a known failure
+      # disappearing -- that means BASELINE.md is now wrong and should be updated.
+      - name: Test against the recorded per-package baseline
+        working-directory: hiddify-core
+        run: |
+          set -uo pipefail
+
+          # K1: v2/hcore/tunnelservice fails go vet (inherited upstream fmt bugs;
+          #     upstream fixed them in b6c85f4, pending adoption).
+          # K2: v2/profile/test TestAddByContent needs the ray2sing V2Ray parser,
+          #     removed from this fork in 9a5601d.
+          known_failures="github.com/hiddify/hiddify-core/v2/hcore/tunnelservice
+          github.com/hiddify/hiddify-core/v2/profile/test"
+          expected=$(echo "$known_failures" | tr -d ' ' | sort)
+
+          go test -tags "$GO_TAGS" ./v2/... 2>&1 | tee test.txt || true
+          # NF>1 skips `go test`'s trailing bare "FAIL" summary line, which would
+          # otherwise contribute an empty entry and never match.
+          actual=$(grep -E '^(FAIL|ok)' test.txt | awk '$1=="FAIL" && NF>1 {print $2}' | sort -u)
+
+          echo "--- expected failures ---"; echo "$expected"
+          echo "--- actual failures ---";   echo "${actual:-(none)}"
+
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::The set of failing Go packages changed."
+            echo "New failures are regressions. A known failure disappearing means"
+            echo "docs/upstream/BASELINE.md (K1/K2) is stale and should be updated."
+            diff <(echo "$expected") <(echo "$actual") || true
+            exit 1
+          fi
+          echo "Failing set matches the recorded baseline."

@@ -362,6 +362,35 @@ slice's review artifact.**
 A slice ships if and only if every count matches or beats `BASELINE.md` and the
 golden diff is empty or explained.
 
+### CI
+
+`.github/workflows/rayn-checks.yml` runs the Dart and Go halves of the above on
+push to `custom-main` and `rayn/integration-*`, and on every pull request.
+
+It is deliberately **separate from `ci.yml`**, which was left untouched.
+`ci.yml` calls `build.yml`, which builds every platform and pulls Hiddify's
+*prebuilt* core from `hiddify-next-core/releases` — so it is expensive and
+validates the wrong binary. It had also never run on `custom-main`: its push
+branch list is `main`/`dev`/`android-fix-action-bug`/`new-design-v2`, all
+upstream branches. `rayn-checks.yml` builds nothing native and finishes in
+minutes.
+
+Two things it does that a plain `flutter analyze && flutter test` cannot:
+
+- **Analyzer counts are compared against `BASELINE.md`, parsed out of the file
+  itself** rather than duplicated in the workflow, so the two cannot drift.
+  `flutter analyze` exits non-zero on warnings and infos, making its exit code
+  useless as a gate. An *improvement* in the counts also fails — the baseline is
+  only worth having while it describes reality, and updating it is a one-line
+  edit in the same commit.
+- **Go results are compared as a set of failing packages**, not pass/fail,
+  because two packages are known-red (K1, K2 in `BASELINE.md`). A new failure
+  fails CI; so does a known failure vanishing, which means the baseline is stale.
+
+Pin `FLUTTER_VERSION` in the workflow to whatever `BASELINE.md` records. Analyzer
+counts are SDK- and lint-rule-sensitive, so a different Flutter turns the
+comparison into noise.
+
 ---
 
 ## Stop conditions
