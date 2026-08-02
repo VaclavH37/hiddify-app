@@ -328,6 +328,28 @@ the work did not land, is worse than no ledger.
 or `Upstream: none` line. This is what stops something being picked and then not
 recorded. Worth keeping permanently, not just during a campaign.
 
+Two commits can satisfy it without carrying the line themselves:
+
+- **Reverts** inherit the provenance of what they undo. `git revert` writes its
+  own message, so the line is easy to forget. The check follows the
+  `This reverts commit <sha>.` line git generates and requires *that* commit to
+  carry provenance — so a revert of an untraceable commit still fails, which is
+  the case actually worth catching. Blanket-exempting anything titled `Revert`
+  would have been a hole big enough to push an untracked change through.
+- **`docs/upstream/TRACEABILITY-EXCEPTIONS.tsv`** waives specific published
+  commits, keyed to exact `(rayn_sha, repo)` pairs so it can never widen. Use it
+  only when the commit is already pushed and the sole correction would be
+  rewriting public history — and only when the provenance genuinely exists in the
+  ledger row. What is waived is the *location* of the record, not the record. The
+  check prints the waiver count rather than passing silently, so an exception can
+  never quietly become invisible.
+
+A missing trailer is a symptom worth reading, not just a lint to silence. Both
+waived entries here turned out to sit on ledger rows still marked `DEFER` with no
+`rayn_sha`, long after the work had landed — the ledger was claiming
+`custom-main` did not carry the sing-box 1.14 bump it had been running for a
+week. Fix the row first; reach for the exceptions file only for what is left.
+
 > Check 3 greps the **message body**, deliberately, rather than using
 > `git log --format='%(trailers:key=Upstream,valueonly)'`. Git parses only the
 > *last paragraph* of a message as trailers, so an `Upstream:` line sitting above
