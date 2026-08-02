@@ -269,6 +269,33 @@ Upstream copy does not follow this rule.
 
 ## Data layer
 
+### <a id="profile-override-is-the-backend-channel"></a>`profile_override` is the backend's per-subscription config channel and stays persisted
+
+`ProfileParser` takes the subscription response headers, filters them to
+`allowedOverrideConfigs`, JSON-encodes the survivors and stores them in the
+`profile_override` column (`profile_parser.dart:601-615`). At connect,
+`connection_repository.dart:153` calls
+`configOptionRepository.fullOptionsOverrided(prof.profileOverride)` and merges
+them over the serialised options.
+
+That is what lets the backend retune `remote-dns-address`, `direct-dns-address`,
+`block-quic`, `url-test-tolerance` and the rest **per subscription, without a
+client rebuild**. Several settings were removed from the UI specifically because
+this channel keeps them adjustable.
+
+It is derived-then-persisted, not derivable on demand: the unfiltered headers are
+discarded at parse time, and `populated_headers` holds a different subset
+(billing period, payment provider, manage URL). Upstream regenerates its
+equivalent dynamically via `ProfileParser.profileOverrideHelper(profile:)` and
+drops the column in its own v6 — that approach cannot be lifted here without
+first persisting something else to regenerate from.
+
+- **Enforced by:** *nothing yet.* An end-to-end assertion that an
+  `allowedOverrideConfigs` header survives parse → persist → `fullOptionsOverrided`
+  would close it. `profile_parser_test.dart` covers the parsing half only.
+- **Rejected upstream commits:** `e6822e2c` (drops the column), `30f30f5d`
+  (replaces the stored value with dynamic generation)
+
 ### <a id="drift-schema-numbering"></a>Drift schema numbers are append-only; upstream's numbering is discarded
 
 This fork is at `schemaVersion => 10` and owns `from5To6`…`from9To10` plus
