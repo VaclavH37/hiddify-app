@@ -8,8 +8,8 @@ right. It was 292.
 Re-measure and update whenever the baseline legitimately moves (a slice that adds
 tests, a deliberate lint fix). Never edit it to make a slice pass.
 
-**Measured:** 2026-08-02
-**Commit:** `55f594e2` (`rayn/pre-catchup-2026-08`)
+**Measured:** 2026-08-02, re-measured after S0.7
+**Commit:** end of Phase 0 slice S0.7
 
 ---
 
@@ -17,15 +17,19 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 
 | Check | Command | Baseline |
 |---|---|---|
-| Analyzer | `flutter analyze` | **0 errors · 28 warnings · 256 infos** (284 issues) |
-| Tests | `flutter test` | **292 passing**, 0 failing |
+| Analyzer | `flutter analyze` | **0 errors · 28 warnings · 257 infos** (285 issues) |
+| Tests | `flutter test` | **326 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
 fatal by default. Compare the counts, not the exit code.
 
-Of the 256 infos, 15 are `depend_on_referenced_packages` for `flutter_test` in
-`test/**` — noise from `flutter_test` being a dev dependency. They are part of
+Of the 257 infos, **16** are `depend_on_referenced_packages` for `flutter_test`
+in `test/**` — noise from `flutter_test` being a dev dependency. They are part of
 the baseline; do not "fix" them during a catch-up slice.
+
+Moved from 292/256 to 326/257 in slice S0.7, which added
+`test/design/design_invariants_test.dart` (34 cases). The single extra info is
+that file's own unavoidable `flutter_test` import.
 
 ## Go core — **NOT green**. Two known failures, both understood.
 
@@ -37,8 +41,8 @@ go test -tags with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with
 | Package | Baseline |
 |---|---|
 | `go build ./v2/...` | **exit 0** |
-| `v2/config` | **ok** |
-| `v2/hcore` | **ok** |
+| `v2/config` | **ok** — includes the golden and design-invariant tests |
+| `v2/hcore` | **ok** — includes the debug-gating scans |
 | `v2/hcore/tunnelservice` | **BUILD FAILED (vet)** — see K1 |
 | `v2/profile/test` | **FAIL** `TestAddByContent` — see K2 |
 

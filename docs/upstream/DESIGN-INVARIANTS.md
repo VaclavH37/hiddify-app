@@ -51,8 +51,10 @@ fork before.
 The hub runs `domainStrategy: AsIs` and needs real addresses. FakeIP was removed
 along with `fakeip-remote-sites.srs`; `store_fakeip` is false.
 
-- **Enforced by:** *nothing yet* — golden config assertion pending (no `fakeip`
-  key, `inet4_range` absent)
+- **Enforced by:** `v2/config/design_invariants_test.go` · `TestNoFakeIP`, which
+  also pins the stronger claim `config_option_repository.dart` makes in a comment
+  but never verified: asking for FakeIP explicitly (`EnableFakeDNS = true`) must
+  still not produce one, so a subscription override cannot switch it back on.
 - **Background:** `Makefile` `fetch-rulesets` comments, `RULESETS.md`
 
 ### <a id="no-ntp"></a>No NTP block in the built config
@@ -83,8 +85,10 @@ a runtime flag — a flag is something a shipped binary can be talked into openi
 If an upstream commit reintroduces the write, the only acceptable adoption is
 behind `//go:build raynconfigdump`.
 
-- **Enforced by:** *nothing yet* — assertion pending (the only `SaveCurrentConfig`
-  call site must be under the build tag)
+- **Enforced by:** `v2/hcore/debug_gating_test.go` ·
+  `TestSaveCurrentConfigOnlyCalledUnderBuildTag`. The function itself still
+  exists in `v2/config/debug.go`; what is pinned is that no file outside the
+  build tag calls it.
 - **Background:** `CORE_BUILD.md`
 
 ### <a id="config-encrypted-at-rest"></a>Config is encrypted at rest, and LevelDB never holds config content
@@ -93,11 +97,13 @@ Profiles live at `configs/<id>.enc` under AES-256-GCM with a per-install keystor
 key. The core receives `configContent`, never `configPath`. `saveLastStartRequest`
 persists the profile **name** only.
 
-This one is explicitly flagged in `CORE_BUILD.md` as the regression that "silently
-undoes everything above while every test still passes".
+`CORE_BUILD.md` flags this as the regression that "silently undoes everything
+above while every test still passes".
 
-- **Enforced by:** *nothing yet* — assertion pending (a fixture hub hostname must
-  not appear in plaintext in produced artifacts)
+- **Enforced by:** *nothing yet.* Needs artifact inspection — assert a fixture
+  hub hostname never appears in plaintext in `configs/` or in LevelDB — which the
+  in-process harness the other tests use cannot do. **This is the largest
+  remaining gap in this document.**
 - **Background:** `CORE_BUILD.md`
 
 ### <a id="rayn-link-wire-format"></a>`rayn://import/<token>` is AES-256-GCM, and is obfuscation not authentication
@@ -117,25 +123,52 @@ Legacy schemes, raw `https` paste, base64 config paste, the manual-URL form and
 the `?url=` parameter were all removed. Upstream continues to develop
 profile-import deep links; adopting any of it re-opens the surface.
 
-- **Enforced by:** *nothing yet* — parser assertion pending (`hiddify://`, `sn://`,
-  `clash://` must be rejected)
+- **Enforced by:** `test/utils/link_parsers_test.dart` — 12 cases, including the
+  *legacy schemes are rejected* group and a check that the `protocols` list
+  contains only `rayn`. Already covered before this campaign; recorded here so it
+  is not duplicated.
 
 ---
 
 ## Diagnostics
 
-### <a id="pprof-behind-build-tag"></a>pprof and goroutine dumps only exist behind `raynconfigdump`
+### <a id="pprof-behind-build-tag"></a>pprof is unreachable in shipped builds
 
-Upstream starts `net/http/pprof` on `localhost:6060` gated on a **user-settable**
-debug flag, and writes a goroutine dump naming sing-box and hiddify-core on any
-failed `CloseService()`. Both are compiled out here: the code lives in
-`v2/hcore/debugtools.go` / `debugtools_disabled.go` behind the build tag.
+**Corrected 2026-08-02.** This entry previously read "pprof … only exist behind
+`raynconfigdump`", which is false and was caught by the test written to enforce
+it. `/debug/pprof/*` **is** registered on `http.DefaultServeMux` in every shipped
+build: the imported sing-box imports `net/http/pprof` itself, from three separate
+packages (`github.com/sagernet/sing-box`, `.../experimental/libbox`,
+`go-chi/chi/v5/middleware`), and that submodule is not ours to edit. Removing the
+linkage would require forking it — see [never-edit-singbox](#never-edit-singbox).
+The comment in `platform/mobile/mobile.go` had this right all along.
 
-A build tag is the only gate a shipped binary cannot be talked into opening.
+So the invariant is about **reachability**, and has two halves, both required:
 
-- **Enforced by:** *nothing yet* — assertion pending (`go list -deps` for a
-  shipped-tag build must not contain `net/http/pprof`)
-- **Background:** `CORE_BUILD.md`
+1. Nothing in a shipped build serves `http.DefaultServeMux`. Passing `nil` as a
+   handler means exactly that, and it is a one-word edit away at all times.
+   Upstream did precisely this — `http.ListenAndServe("localhost:6060", nil)`
+   gated on a user-settable Debug flag, i.e. an unauthenticated local profiling
+   endpoint any user could switch on. That listener now lives in
+   `v2/hcore/debugtools.go` behind the build tag.
+2. `experimental.debug` is never set in the built config. sing-box serves its own
+   `/debug/pprof/*` on `experimental.debug.listen` independently of anything we
+   write, so leaving that key unset is what keeps *its* listener from starting.
+
+Writing the first test found a live instance of half 1:
+`v2/extension/server/run_server.go` served `DefaultServeMux` as its static-file
+router behind a TLS listener on `:12346`, so `/debug/pprof/heap` would have been
+reachable there. Latent rather than exploited — nothing calls
+`StartExtensionServer`, and `cmd/cmd_extension.go` imports the *top-level*
+`extension/server`, a different package — but fixed.
+
+- **Enforced by:** `v2/hcore/debug_gating_test.go` ·
+  `TestNothingServesDefaultServeMux` and `TestPprofImportOnlyUnderBuildTag`;
+  `v2/config/design_invariants_test.go` ·
+  `TestExperimentalDebugListenerNeverConfigured` (which also exercises
+  `debug`/`trace` log levels, the realistic route by which someone would wire
+  `experimental.debug` up)
+- **Background:** `CORE_BUILD.md`, `platform/mobile/mobile.go`
 
 ### <a id="debug-log-level-debug-builds-only"></a>Debug mode and Log level exist only in debug builds
 
@@ -161,16 +194,19 @@ Removed entirely, including the DSN dart-defines in the Makefile and the native
 crashpad checkouts under `external/`. No ambient telemetry may be reintroduced
 without explicit approval.
 
-- **Enforced by:** *nothing yet* — assertion pending (`sentry` absent from
-  `pubspec.lock`; no `import 'package:sentry`)
+- **Enforced by:** `test/design/design_invariants_test.dart`, group
+  *Sentry stays removed* — the pubspec.yaml declaration, the pubspec.lock
+  resolution (which catches a transitive reintroduction), and any
+  `package:sentry` import under `lib/`.
 
 ### <a id="no-query-all-packages"></a>`QUERY_ALL_PACKAGES` is not requested
 
 Removed with the per-app-proxy feature for Play compliance. An upstream manifest
 change re-adds a permission that blocks release.
 
-- **Enforced by:** *nothing yet* — assertion pending (absent from the merged
-  `AndroidManifest.xml`)
+- **Enforced by:** `test/design/design_invariants_test.dart`, *QUERY_ALL_PACKAGES
+  is not requested in any manifest*. XML comments are stripped first, so the prose
+  in `main/AndroidManifest.xml` explaining the removal does not trip it.
 - **Background:** `PLAY-SUBMISSION.md`
 
 ### <a id="obfuscate-shipped-artifacts"></a>Every shipped artifact is built with `--obfuscate --split-debug-info`
@@ -179,8 +215,9 @@ This is the layer that hides the `rayn://` key derivation. Note obfuscation does
 **not** strip string literals, which is why key-path logging is `kDebugMode`-gated
 separately.
 
-- **Enforced by:** *nothing yet* — assertion pending (over the Makefile release
-  targets)
+- **Enforced by:** `test/design/design_invariants_test.dart`, group *shipped
+  artifacts are obfuscated* — one case per leaf release target (all nine), plus a
+  check that `FF_OBFUSCATE` still carries both flags.
 
 ### <a id="no-upstream-autoupdate"></a>No in-app auto-update
 
