@@ -1,14 +1,21 @@
 {
-  "version": "2026-07-24",
-  "fetched_at": "2026-07-24T07:01:14Z",
+  "version": "2026-08-01",
+  "fetched_at": "2026-08-01T08:17:44Z",
   "upstream_commit": {
-    "sing-geosite": "a9958574d2c9c8c1f01b726ef9930e0244b10b23",
-    "sing-geoip": "5605651c12ed5b2fcf3b5de580c041eb9d8d938e"
+    "sing-geosite": "9953333be9b05d6e654fe08d53b2b3bcef996a05",
+    "sing-geoip": "5605651c12ed5b2fcf3b5de580c041eb9d8d938e",
+    "hiddify-geo": "2d10b96cea8abfe851f60cb0b051f9f9008cf2ef"
   },
   "files": [
     {"name": "direct-private.srs", "sha256": "260491243e0266e5ba543f509ca7f13b07d6f4c2c26ade3f675ddea1661f3213", "size": 754},
     {"name": "direct-apple.srs", "sha256": "de3e9c5f167da7f8d9158fb96fe524e70a91590573da91340f3a2b05c488b7e5", "size": 2304},
-    {"name": "direct-regional-sites.srs", "sha256": "fd59e77230a922813d26b7ce0c1f8f1a185f7ebf0fd5097d56dc39de9a591b64", "size": 53989},
-    {"name": "direct-regional-ips.srs", "sha256": "bc1a9eb66f9c6a0fe9fc5300cf5b5e885e0f9eadd7213b085b767a95d6af3d2a", "size": 33920}
+    {"name": "direct-regional-sites.srs", "sha256": "6e2e96bb11be418aebd12ea1cfc469ba0ac0dd97ebae605ff069a7a4913aca42", "size": 54718},
+    {"name": "direct-regional-ips.srs", "sha256": "bc1a9eb66f9c6a0fe9fc5300cf5b5e885e0f9eadd7213b085b767a95d6af3d2a", "size": 33920},
+    {"name": "block-ads.srs", "sha256": "b234ba34074bf25f83b96918d3529d9289d51f0a0b6ffe30996422013a5545de", "size": 359288},
+    {"name": "block-malware.srs", "sha256": "3b64a98638c52d8db83a4c4d04cc5281eaa55a576ec552b512dc5e83df267008", "size": 6831},
+    {"name": "block-phishing.srs", "sha256": "f6f37a81c3db0a0353536c59898fddfa71d15fcec7a28e0069ae41c701387816", "size": 434517},
+    {"name": "block-cryptominers.srs", "sha256": "24dfd49e3b4cf3faff9155d4ba682516389a6c21f8e3a837b9144d2d5669827e", "size": 3301},
+    {"name": "block-malware-ips.srs", "sha256": "c5095af5d0a8a6037d132dd57af54a491f5f9e6017b593225b913b6fdfe87982", "size": 5109},
+    {"name": "block-phishing-ips.srs", "sha256": "856d948b4fba36124c8d7af7d0ec383cd949d28e2d3d3e043831a175401b5df9", "size": 252}
   ]
 }
