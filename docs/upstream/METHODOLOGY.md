@@ -53,8 +53,19 @@ second machine or agent inherits the state.
 **The watermark tag is the entire durable state the next campaign needs:**
 
 ```bash
-git log --oneline --no-merges rayn/upstream-triaged-<watermark>..upstream/main
+git log --oneline --no-merges rayn/upstream-triaged-<latest>..upstream/main
 ```
+
+Closing a campaign moves the watermark forward by tagging its snapshot as
+`rayn/upstream-triaged-<campaign>`. The range each campaign actually covered is
+recorded in `CAMPAIGNS.tsv`, and `scripts/upstream_ledger_check.sh` reads it from
+there rather than hardcoding one — otherwise every past campaign's completeness
+check would silently re-scope itself to a range it was never triaged against, and
+start reporting green for the wrong reason.
+
+Starting a new campaign means: fetch, add a row to `CAMPAIGNS.tsv` with the
+previous `upstream-triaged-*` tag as its watermark, tag the new snapshot, and
+create the `pre-catchup` tag and integration branch.
 
 Branch `main` in each repo tracks `upstream/main` and is a **read-only mirror**.
 Never merge it into `custom-main`.

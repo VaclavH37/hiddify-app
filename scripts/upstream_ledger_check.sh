@@ -21,10 +21,22 @@ ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT" || exit 1
 
 CORE=hiddify-core
-WATERMARK_APP=rayn/upstream-triaged-2026-04
-WATERMARK_CORE=rayn/upstream-triaged-2026-04
-SNAPSHOT=rayn/upstream-snapshot-$CAMPAIGN
 PRE=rayn/pre-catchup-$CAMPAIGN
+
+# The range a campaign covers is looked up rather than hardcoded. It has to be:
+# closing a campaign moves the watermark forward, so a hardcoded one would make
+# every past campaign's completeness check silently re-scope itself to a range it
+# was never triaged against, and start reporting green for the wrong reason.
+CAMPAIGNS=docs/upstream/CAMPAIGNS.tsv
+row=$(awk -F'\t' -v c="$CAMPAIGN" '$1==c{print; exit}' "$CAMPAIGNS" 2>/dev/null)
+if [ -z "$row" ]; then
+  echo "::error::campaign '$CAMPAIGN' is not in $CAMPAIGNS"
+  echo "Known campaigns: $(tail -n +2 "$CAMPAIGNS" 2>/dev/null | cut -f1 | paste -sd' ' -)"
+  exit 1
+fi
+WATERMARK_APP=$(echo "$row" | cut -f2)
+WATERMARK_CORE=$WATERMARK_APP
+SNAPSHOT=$(echo "$row" | cut -f3)
 
 status=0
 fail() { echo "  FAIL: $*"; status=1; }
