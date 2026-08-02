@@ -10,14 +10,12 @@ import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcommon/common.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
 import 'package:hiddify/hiddifycore/init_signal.dart';
 import 'package:hiddify/singbox/model/singbox_config_option.dart';
-import 'package:hiddify/features/log/model/log_level.dart' as config_log_level;
 import 'package:hiddify/singbox/model/core_status.dart';
 import 'package:hiddify/singbox/model/warp_account.dart';
 
@@ -503,12 +501,31 @@ class RaynCoreService with InfraLogger {
   }
 
   Future<void> startListeningLogs(String key, CoreClient cc) async {
-    final logLevel = ref.read(ConfigOptions.logLevel);
-    final coreLogLevel = getCoreLogLevel(logLevel);
     final listenKey = "${key}LogListener";
     // await stopListenSingle(listenKey);
     await listenSingle<LogMessage>(listenKey, () {
-      return cc.logListener(LogRequest(level: coreLogLevel), options: grpcOptions).map((event) {
+      // Subscribe at TRACE and let the core decide what to emit. Filtering by
+      // level HERE was wrong twice over.
+      //
+      // It was stale: the level was read once with ref.read when the stream was
+      // established, so changing it afterwards left the request pinned to the
+      // old threshold for the life of the subscription.
+      //
+      // And it filtered on a label that does not mean anything for most lines.
+      // Everything originating inside sing-box reaches us through
+      // daemon.WriteMessage -> handler.WriteDebugMessage(message), which drops
+      // the real severity and hard-codes log.LevelDebug, so every proxy, DNS and
+      // routing line arrives tagged DEBUG whatever it actually was. With the
+      // request pinned at info or warn, LogListener's `info.Level < req.Level`
+      // check then discarded ALL of them — an empty Logs page rather than a
+      // quieter one.
+      //
+      // Nothing is lost by widening it: both sources are already filtered at
+      // source by the same user setting. sing-box lines only exist if they pass
+      // options.Log.Level, and every message then passes PublishLog's
+      // `level < static.logLevel` guard, which buildconfighelper.go sets from
+      // that same setting. This request was a third application of it.
+      return cc.logListener(LogRequest(level: LogLevel.TRACE), options: grpcOptions).map((event) {
         // Handle incoming event
         logBuffer.add(event);
         if (logBuffer.length > 300) {
@@ -576,18 +593,8 @@ class RaynCoreService with InfraLogger {
     };
   }
 
-  LogLevel getCoreLogLevel(config_log_level.LogLevel level) {
-    return switch (level) {
-      config_log_level.LogLevel.trace => LogLevel.TRACE,
-      config_log_level.LogLevel.debug => LogLevel.DEBUG,
-      config_log_level.LogLevel.info => LogLevel.INFO,
-      config_log_level.LogLevel.warn => LogLevel.WARNING,
-      config_log_level.LogLevel.error => LogLevel.ERROR,
-      config_log_level.LogLevel.fatal => LogLevel.FATAL,
-      config_log_level.LogLevel.panic => LogLevel.FATAL,
-      _ => LogLevel.INFO, // Default case
-    };
-  }
+// getCoreLogLevel lived here. Its only caller was startListeningLogs, which no
+// longer maps the setting onto the subscription — see the note there.
 
   Future<void> closeFront() async {
     if (!core.isInitialized()) {
