@@ -356,3 +356,48 @@ Restoring the parser is the easy-looking way to "fix" upstream's
 
 Note upstream converged on this independently (`a447f038`), which *reduces*
 future divergence.
+
+---
+
+## Product scope
+
+These four exist because upstream keeps building in directions this product does
+not go. Without them the same commits get re-triaged every campaign, and
+"we don't do that" lives only in someone's memory.
+
+### <a id="no-clash-format"></a>Clash-format subscriptions are never served
+
+The middleware issues sing-box JSON. Nothing in the product produces or consumes
+a Clash config, so the Clash parsing path is unexercised surface, not a feature.
+Upstream actively maintains it (clash2singbox), and adopting those changes would
+mean carrying a parser for a format we never emit.
+
+*Enforced by:* nothing automatic — this is a middleware contract. If the MW ever
+serves Clash, this invariant is what has to be revisited first.
+
+### <a id="no-lan-sharing"></a>LAN sharing is not a product feature
+
+`allow-connection-from-lan` ships false and there is no UI to change it. Upstream
+adds supporting RPCs (GetLANIP); they have no call site here.
+
+*Enforced by:* the absence of the settings surface. A new RPC alone cannot expose
+it, but a UI addition would need this row revisited.
+
+### <a id="no-linux-release"></a>No Linux release is planned
+
+Linux builds exist in the Makefile inherited from upstream and are not shipped.
+Desktop-entry, AppImage and packaging commits are therefore out of scope.
+
+*Enforced by:* release process — Linux is not a release target.
+
+### <a id="fork-owns-its-dependency-set"></a>The fork owns its own dependency set
+
+Upstream's periodic "update dependencies / remove unused packages" sweeps are
+computed against upstream's import graph, which is not ours: we deleted large
+subsystems and added `crypto`, `pointycastle`, `flutter_secure_storage` and
+`pigeon`. Adopting a sweep wholesale can remove something load-bearing here or
+force codegen we did not choose — the protobuf-5 case additionally regenerates
+the gRPC bindings, where a silent wire mismatch fails only at runtime.
+
+*Enforced by:* `flutter pub get` + build; and for protobuf, the rule that
+generated files are regenerated, never cherry-picked.
