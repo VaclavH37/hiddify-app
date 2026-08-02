@@ -10,6 +10,7 @@ import androidx.annotation.RequiresApi
 import com.raynlabs.app.Application
 import com.raynlabs.core.libbox.InterfaceUpdateListener
 import com.raynlabs.core.libbox.Libbox
+import com.raynlabs.core.libbox.NeighborUpdateListener
 import com.raynlabs.core.libbox.NetworkInterfaceIterator
 import com.raynlabs.core.libbox.PlatformInterface
 import com.raynlabs.core.libbox.StringIterator
@@ -65,7 +66,11 @@ interface PlatformInterfaceWrapper : PlatformInterface {
             if (uid!=Process.INVALID_UID) {
                 val packages = Application.packageManager.getPackagesForUid(uid)
                 owner.userName = packages?.firstOrNull() ?: ""
-                owner.androidPackageName = owner.userName
+                // ConnectionOwner.androidPackageName (a single String) became a list in
+                // sing-box 1.14, reached through setAndroidPackageNames(StringIterator).
+                // A uid can genuinely map to several packages when apps share one, so
+                // pass everything getPackagesForUid returned rather than just the first.
+                owner.setAndroidPackageNames(StringArray((packages?.toList() ?: emptyList()).iterator()))
             }
             return owner
         } catch (e: Exception) {
@@ -81,6 +86,26 @@ interface PlatformInterfaceWrapper : PlatformInterface {
 
     override fun closeDefaultInterfaceMonitor(listener: InterfaceUpdateListener) {
         DefaultNetworkMonitor.setListener(null)
+    }
+
+    // Neighbor (ARP/NDP) monitoring, added to PlatformInterface in sing-box 1.14.
+    // Implemented as no-ops on purpose: it feeds LAN-facing features this client does
+    // not ship, and reading the neighbor table would need extra permissions for
+    // nothing. Both are deliberately silent rather than throwing -- the core calls
+    // startNeighborMonitor during service start and propagates a failure, so throwing
+    // "unsupported" here would stop the tunnel coming up. Reporting success and never
+    // delivering an update is indistinguishable, to the core, from a device whose
+    // neighbor table is empty.
+    override fun startNeighborMonitor(listener: NeighborUpdateListener) {
+    }
+
+    override fun closeNeighborMonitor(listener: NeighborUpdateListener) {
+    }
+
+    // Lets the core tell the platform which interface it created, so the platform can
+    // exclude it from its own monitoring. Nothing here acts on that: DefaultNetworkMonitor
+    // already filters the tun by name.
+    override fun registerMyInterface(name: String) {
     }
 
     override fun getInterfaces(): NetworkInterfaceIterator {

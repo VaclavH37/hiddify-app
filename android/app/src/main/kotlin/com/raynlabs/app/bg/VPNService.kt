@@ -111,7 +111,14 @@ class VPNService : VpnService(), PlatformInterfaceWrapper {
         }
 
         if (options.autoRoute) {
-            builder.addDnsServer(options.dnsServerAddress.value)
+            // getDNSServerAddress() returned a StringBox (single .value) before
+            // sing-box 1.14 and returns a StringIterator now, so the tun can be given
+            // more than one resolver. Add all of them: taking only the first would
+            // silently drop a fallback the core expects Android to honour.
+            val dnsServers = options.dnsServerAddress
+            while (dnsServers.hasNext()) {
+                builder.addDnsServer(dnsServers.next())
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val inet4RouteAddress = options.inet4RouteAddress
