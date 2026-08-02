@@ -25,3 +25,7 @@ assets/rulesets/MANIFEST text eol=lf
 
 # Shell scripts are executed by Git Bash and WSL; CRLF breaks the shebang.
 *.sh text eol=lf
+
+# The upstream-sync ledgers are read with cut/comm/join/awk; a trailing CR would
+# contaminate the last field. See docs/upstream/METHODOLOGY.md.
+*.tsv text eol=lf
