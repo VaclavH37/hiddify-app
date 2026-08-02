@@ -22,20 +22,84 @@ code at all, and 30 touch exactly one file.
 
 ---
 
-## The list that matters: genuine fix candidates
+## The list that matters: genuine fix candidates — EVIDENCE PASS COMPLETE
 
-These are the reason the campaign exists. Each still needs E1–E4.
+E1–E4 run on all eight. Four rejected and written to the ledger; **four should
+land**, and are left untriaged until the work exists, because `TAKE`/`ADAPT` rows
+must name a `rayn_sha` that really landed.
 
-| Commit | Touches | Question to answer |
+### Should land
+
+**`3d9f7c93` — `TAKE`. A live defect in this fork's own notification feature.**
+
+The most valuable find of the pass, and the one that nearly got rejected on a bad
+assumption. It looked like `ALREADY`: the `total == 0` check the subject implies
+was present at the merge base and still is (`profile_parser.dart:494`). That is
+not what the commit does. It raises `infiniteTrafficThreshold` from
+`920_233_720_368` (~857 GiB) to `1_099_511_627_776_000` (1000 TiB).
+
+Upstream cared about display — the sentinel sat below the 10 TB gate in
+`isInfinitSize()`, so unlimited plans rendered as a finite cap. **That half does
+not apply here**: `isInfinitSize()` has no consumers in this fork, its UI having
+been deleted.
+
+The half that does apply is worse. `notification_evaluator.dart:31` reads
+
+```dart
+final unlimitedTraffic = subInfo.total > ProfileParser.infiniteTrafficThreshold;
+if (!unlimitedTraffic && subInfo.total > 0) { ...80/90/100% quota alerts... }
+```
+
+With the threshold at ~857 GiB, **every plan larger than that is classified as
+unlimited and receives no quota notifications at all** — no 80%, no 90%, no
+100%. Raising the sentinel fixes it for every realistic plan size. Note the
+sentinel arithmetic still works afterwards: unlimited is stored as
+`threshold + 1`, which stays above the new threshold.
+
+**`6b116d2f` — `TAKE`. One word, into an idiom this fork already uses.**
+
+`await _init("hiddify-core", …)` → `_safeInit`. E1: the fork has the unpatched
+line at `bootstrap.dart:118`. E3: `_init` propagates, so a core init failure
+kills bootstrap and the app does not start; `_safeInit` logs and continues. The
+fork already calls `_safeInit` five times (lines 56, 107, 117, 134, 141), so the
+helper and the convention both exist.
+
+**`116c79e7` — `ADAPT`. Largest real footprint in the backlog.**
+
+Riverpod lazy build-phase collision under high-frequency stream updates. E1: the
+fork has none of it — `stats_notifier.dart`, `connection_notifier.dart`,
+`active_proxy_notifier.dart` and `proxies_overview_notifier.dart` all still carry
+the `async*` + `await ref.watch(x.future)` + `yield*` shape upstream replaces
+with a synchronous `Stream` return. E3: the fork is structurally exposed —
+`connection_button.dart:26-27` watches `connectionNotifierProvider` and
+`activeProxyNotifierProvider` in the same build, which is the sibling collision
+described.
+
+`ADAPT` rather than `TAKE`: the hunk for `config_option_notifier.dart` will not
+apply, since this fork gutted that file from 174 lines to 39. Upstream itself
+calls this a temporary patch and recommends a core-communication redesign.
+
+**`ac4d26fd` — `ADAPT`. Real AppImage launch crash.**
+
+Filters the desktop-entry placeholders `%u %U %f %F` out of `$@` before argument
+processing; without it a launcher passing `%u` makes AppRun treat it as a real
+argument. E1: the fork's `AppRun` changes are branding only (`StartupWMClass`,
+`exec ./RaynVPN`), so the argument-handling block is upstream's and carries the
+bug. Expect a trivial conflict — upstream's hunk sits next to the `exec` line,
+and `./hiddify` must stay `./RaynVPN`.
+
+`787dcf9a` (desktop-entry localization and AppImage update keys) touches the same
+file and the branding block this fork rewrote. Lower value; triage with
+`ac4d26fd` when that lands.
+
+### Rejected — rows written
+
+| Commit | Disposition | Why |
 |---|---|---|
-| `116c79e7` | `bootstrap.dart` + 5 notifiers | Riverpod lazy build-phase collision on connection-status change. Six surviving files, the largest real-code footprint in the backlog. Does the fork hit the same collision? |
-| `6b116d2f` | `bootstrap.dart` | Makes hiddify-core init non-fatal. The fork rewrote bootstrap (35% churn) — does it already tolerate a failed init? |
-| `bf1006d9` | `in_app_notification_controller.dart` | Guards against a missing toast overlay. The fork has its own notification system; is this controller still on a live path? |
-| `98bd20bd` | `in_app_notification_controller.dart` | Toast positioning. Same question, same file — triage together. |
-| `3d9f7c93` | `profile_parser.dart` | **Likely `ALREADY`.** `(total == null \|\| total == 0)` was already present at the merge base (line 287) and still is (line 494). Confirm what else it changes before rejecting. |
-| `ac4d26fd` `787dcf9a` | `linux/packaging/appimage/AppRun` | AppImage launch crash (`%u` args) and desktop-entry localization. Same file, take or reject together. |
-| `14654bd0` | `Makefile` | Linux docker build fix **and** a core-download URL fix. The fork rewrote the Makefile heavily and must never adopt a `CORE_URL` change that pulls Hiddify's prebuilt core. Read carefully. |
-| `ce76702c` | `lib/utils/validators.dart` | Port-range separator `-` → `:`. Introduced for the route-rule editor, which is deleted — check whether the fork still calls the port-range validator at all. |
+| `bf1006d9` | `REJECT-DEAD` | `inAppNotificationControllerProvider` has no consumers outside its own generated file. This fork replaced the toastification surface with its own bell inbox and swipe banner, so the controller is orphaned and guarding it changes nothing a user can see. |
+| `98bd20bd` | `REJECT-DEAD` | Same orphaned controller — repositions a toast this fork never shows. |
+| `ce76702c` | `REJECT-DEAD` | The port-range validator has no callers; it existed for the route-rule editor, deleted with `lib/features/route_rules/`. |
+| `14654bd0` | `REJECT-DESIGN` | **E2 hit.** Repoints `CORE_URL` from `hiddify-next-core` to `hiddify-core` releases — the URL used by the `*-libs` targets that pull Hiddify's *prebuilt* core over a custom build. Those targets are fenced off; fixing their URL has no value and makes a forbidden path look maintained. |
 
 ## Needs a decision, not just evidence
 

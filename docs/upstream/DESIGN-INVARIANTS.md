@@ -219,6 +219,20 @@ separately.
   artifacts are obfuscated* — one case per leaf release target (all nine), plus a
   check that `FF_OBFUSCATE` still carries both flags.
 
+### <a id="never-adopt-prebuilt-core-url"></a>Never adopt upstream changes to the prebuilt-core download URL
+
+`Makefile`'s `windows-libs`, `android-libs`, `macos-libs` and `linux-*-libs`
+targets `curl $(CORE_URL)` and untar **Hiddify's prebuilt core** over whatever
+was built locally. They are fenced off — only the `build-*` targets are safe.
+
+Upstream keeps them working and will keep changing `CORE_URL` (it moved from
+`hiddify-next-core` to `hiddify-core` releases in `14654bd0`). Adopting those
+changes has no value here and makes a forbidden path look maintained.
+
+- **Enforced by:** *nothing yet* — a ledger row and this anchor. An assertion
+  that no release target depends on a `*-libs` target would close it.
+- **Background:** `CORE_BUILD.md`, `METHODOLOGY.md` (§ Never)
+
 ### <a id="no-upstream-autoupdate"></a>No in-app auto-update
 
 `lib/features/app_update/` and `appcast.xml` were deleted. Upstream continues to
