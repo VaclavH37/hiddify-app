@@ -110,17 +110,42 @@ check_non_repudiation() { # repo ledger
 # message as trailers, so an `Upstream:` line above a blank line and
 # Co-Authored-By is body text to that accessor -- which is how every commit in
 # this campaign is written. The accessor reported every commit as missing.
+# A revert inherits the provenance of the commit it undoes, so it does not need
+# an 'Upstream:' line of its own — `git revert` writes its message for you and
+# adding one by hand is easy to forget. Rather than exempt reverts outright, we
+# follow the "This reverts commit <sha>." line git generates and require THAT
+# commit to carry provenance. A revert of an untraceable commit still fails,
+# which is the case actually worth catching.
+reverted_target_is_traceable() { # repo sha -> 0 if this is a revert of a traceable commit
+  local repo=$1 sha=$2 target
+  target=$(git -C "$repo" log -1 --format=%B "$sha" \
+    | sed -n 's/^This reverts commit \([0-9a-f]\{7,40\}\)\.$/\1/p' | head -1)
+  [ -n "$target" ] || return 1
+  git -C "$repo" log -1 --format=%B "$target" 2>/dev/null | grep -q '^Upstream: '
+}
+
 check_traceability() { # repo label
   local repo=$1 label=$2
-  local missing=0 total=0
+  local missing=0 total=0 reverts=0
   for sha in $(git -C "$repo" log --format=%H "$PRE..custom-main" 2>/dev/null); do
     total=$((total + 1))
-    if ! git -C "$repo" log -1 --format=%B "$sha" | grep -q '^Upstream: '; then
-      fail "$label ${sha:0:8} has no 'Upstream:' line — $(git -C "$repo" log -1 --format=%s "$sha" | cut -c1-50)"
-      missing=$((missing + 1))
+    if git -C "$repo" log -1 --format=%B "$sha" | grep -q '^Upstream: '; then
+      continue
     fi
+    if reverted_target_is_traceable "$repo" "$sha"; then
+      reverts=$((reverts + 1))
+      continue
+    fi
+    fail "$label ${sha:0:8} has no 'Upstream:' line — $(git -C "$repo" log -1 --format=%s "$sha" | cut -c1-50)"
+    missing=$((missing + 1))
   done
-  [ "$missing" -eq 0 ] && echo "  ok  $total $label commit(s), all carry provenance"
+  if [ "$missing" -eq 0 ]; then
+    if [ "$reverts" -gt 0 ]; then
+      echo "  ok  $total $label commit(s), all carry provenance ($reverts via the commit they revert)"
+    else
+      echo "  ok  $total $label commit(s), all carry provenance"
+    fi
+  fi
 }
 
 echo "campaign $CAMPAIGN"
