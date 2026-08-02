@@ -4,8 +4,18 @@ Output of the mechanical filter over the 81 non-merge commits in
 `fbc6cbd4..rayn/upstream-snapshot-2026-08`. The 85 in the raw count include 4
 merges, which carry no unique content.
 
-**31 are decided and written to `LEDGER-app.tsv`. 50 remain, listed here so the
-evidence pass does not repeat the mechanical work.**
+**COMPLETE.** All 81 have ledger rows and
+`./scripts/upstream_ledger_check.sh` passes all three checks. This document is
+kept as the reasoning behind those rows — the ledger holds the decisions, this
+holds why.
+
+Final dispositions: 70 `REJECT-DEAD`, 4 `ADAPT`, 3 `REJECT-DESIGN`, 2 `DEFER`,
+1 `TAKE`, 1 `ALREADY`.
+
+That ratio is the honest shape of a hard fork's backlog, and worth stating
+plainly: five commits out of eighty-one were worth landing. The value of the pass
+is not the five — it is knowing, with cited evidence, that the other seventy-six
+are not silently owed.
 
 | Bucket | n | Status |
 |---|---|---|
