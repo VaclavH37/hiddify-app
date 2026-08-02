@@ -1,11 +1,12 @@
-# sing-box 1.14 bump — tunnel regression, RESOLVED
+# sing-box 1.14 bump — tunnel regression, RESOLVED and VERIFIED ON DEVICE
 
 Branch `rayn/integration-2026-08` (both repos).
 
 **Root cause:** five DNS servers detoured to a direct outbound carrying no dial
 options, which sing-box 1.14 refuses to start.
 **Fix:** hiddify-core `4f1c652`, with the two gate gaps closed in `e3153a6`.
-**Status:** verified in-process; a device rebuild is still required to confirm.
+**Status:** closed. Verified in-process, then on Windows and Android devices
+(2026-08-03).
 
 ## Symptom
 
@@ -87,9 +88,16 @@ Done, in WSL, on `170d8315`:
 - `TestRealProfileStartsTheBox` with `RAYN_START_CONFIG=synthetic` — **`sing-box started (0.08s)`**, where before the fix it failed at `start dns/https[dns-cn-direct]`
 - goldens regenerated and reviewed
 
-**Not yet done — this is what remains:** a real device rebuild (Windows + Android
-core, then the Flutter app) and a live connect. The in-process test starts a box
-with tun OFF; tun creation, the Windows service path and Android are unproven.
+Done on device, 2026-08-03:
+
+- **Windows** — core + Flutter rebuilt from this branch, tunnel connects and
+  holds. Console logging confirmed after the `41abbec` fix.
+- **Android** — release built and tested, confirmed working. This was the last
+  open gap: the Kotlin platform-interface adaptation (`38a62cc2`) had only ever
+  been compile-tested, and the in-process Go test starts a box with tun OFF, so
+  tun creation and the platform interface were both unproven until this.
+
+Nothing about the bump remains unverified.
 
 ## Tooling built during this investigation
 
