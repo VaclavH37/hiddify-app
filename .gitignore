@@ -80,3 +80,10 @@ Claude.md
 .vscode/settings.json
 pubspec.lock
 macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Orphaned getsentry crashpad checkouts, left on disk after Sentry was removed.
+# These were untracked gitlinks (no .gitmodules entry), which made
+# `git submodule status` fail outright. Nothing in any build file references
+# them; the directories can be deleted whenever convenient.
+external/
+
