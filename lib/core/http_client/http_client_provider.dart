@@ -15,6 +15,11 @@ DioHttpClient httpClient(Ref ref) {
     debug: kDebugMode,
   );
 
-  ref.listen(ConfigOptions.mixedPort, (_, next) => client.setProxyPort(next), fireImmediately: true);
+  // The mixed port is a compile-time constant now that it is not user-editable, so
+  // this no longer needs to be a subscription. That is the point: the listener used
+  // to fire the instant the preference changed, while the core kept its old listener
+  // until restart — leaving this client pointed at a closed port, where it fell back
+  // to DIRECT and sent subscription/API traffic outside the tunnel.
+  client.setProxyPort(ConfigOptions.kMixedPort);
   return client;
 }

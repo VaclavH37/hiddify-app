@@ -173,6 +173,7 @@
     "settings": {
       "title": "Ayarlar",
       "resetTunnel": "VPN profilini sıfırla",
+      "troubleshooting": "Sorun giderme",
       "general": {
         "title": "Genel",
         "locale": "Dil",
@@ -184,6 +185,7 @@
           "black": "Siyah mod"
         },
         "autoIpCheck": "Bağlantı IP'sini otomatik kontrol et",
+        "blockAds": "Reklamları engelle",
         "dynamicNotification": "Hızı bildirimde göster",
         "hapticFeedback": "Dokunsal geri bildirim",
         "actionAtClosing": "Kapatma eylemi",
@@ -200,174 +202,6 @@
         "urlTestInterval": "URL testi aralığı",
         "ignoreBatteryOptimizationsDialogTitle": "VPN arka planda çalışmaya devam etsin mi?",
         "ignoreBatteryOptimizationsDialogBody": "Kararlı, kesintisiz bir bağlantı için Rayn VPN, ekran kapalıyken çalışmaya devam etmelidir. Sonraki ekran, uygulamayı pil optimizasyonundan hariç tutmanıza olanak tanır. Bu isteğe bağlıdır — istediğiniz zaman sistem ayarlarından değiştirebilirsiniz."
-      },
-      "routing": {
-        "title": "Yönlendirme",
-        "perAppProxy": {
-          "title": "Uygulama bazlı proxy",
-          "hideSysApps": "Sistem uygulamalarını gizle",
-          "options": {
-            "import": {
-              "clipboard": "Seçimi panodan içe aktar",
-              "file": "Seçimi dosyadan içe aktar",
-              "msg": "İçe aktarma mevcut seçimlerinizin üzerine yazacaktır. Devam etmek istediğinizden emin misiniz?"
-            },
-            "export": {
-              "clipboard": "Seçimi panoya kopyala",
-              "file": "Seçimi dosyaya aktar"
-            },
-            "clearAllSelections": "Tüm seçimleri temizle"
-          },
-          "modes": {
-            "all": "Tümü",
-            "proxy": "Proxy",
-            "bypass": "Atla",
-            "allMsg": "Tüm uygulamaları proxy'le",
-            "proxyMsg": "Yalnızca seçili uygulamaları proxy'le",
-            "bypassMsg": "Seçili uygulamaları proxy'leme"
-          }
-        },
-        "balancerStrategy": {
-          "title": "Balancer stratejisi",
-          "roundRobin": "Round robin",
-          "consistentHash": "Consistent hash",
-          "stickySession": "Sticky session"
-        },
-        "blockAds": "Reklamları engelle",
-        "bypassLan": "LAN'ı atla",
-        "resolveDestination": "Hedefi çözümle",
-        "routeRule": {
-          "title": "Yönlendirme kuralları",
-          "options": {
-            "import": {
-              "clipboard": "Kuralları panodan içe aktar",
-              "file": "Kuralları dosyadan içe aktar"
-            },
-            "export": {
-              "clipboard": "Kuralları panoya kopyala",
-              "file": "Kuralları dosyaya kaydet"
-            },
-            "reset": "Kuralları sıfırla"
-          },
-          "deleteRule": "Kuralı sil",
-          "createRule": "Yeni kural oluştur",
-          "rule": {
-            "title": "Kural",
-            "ruleChanged": "Kural değiştirildi",
-            "ruleChangedMsg": "Düzenlemelerinizi kaydetmek istiyor musunuz?",
-            "onlyTunMode": "Yalnızca TUN modunda kullanılabilir",
-            "notAvailabeInThisPlatform": "Bu platformda mevcut değil",
-            "canNotBeEmpty": "Boş olamaz",
-            "validUrlEx": "https://example.com",
-            "validUrl": "Geçerli \"URL\", örn.\n@:pages.settings.routing.routeRule.rule.validUrlEx",
-            "validProcessNameEx": "Chrome.exe veya google chrome veya chrome",
-            "validProcessName": "Geçerli \"İşlem Adı\", örn.\n@:pages.settings.routing.routeRule.rule.validProcessNameEx",
-            "validProcessPathEx": "C:\\Pro...\\chrome.exe\n/App.../Google Chrome\n/usr/lib.../chrome",
-            "validProcessPath": "Geçerli \"İşlem Yolu\", örn.\n@:pages.settings.routing.routeRule.rule.validProcessPathEx",
-            "validPortRangeEx": "80 veya 1-65000",
-            "validPortRange": "Geçerli \"Port\" veya \"Port Aralığı\", örn.\n@:pages.settings.routing.routeRule.rule.validPortRangeEx",
-            "validIpCidrEx": "8.8.8.8 veya 10.0.0.0/24",
-            "validIpCidr": "Geçerli IP CIDR, örn.\n@:pages.settings.routing.routeRule.rule.validIpCidrEx",
-            "validDomainEx": "Google.com veya dl.google.com",
-            "validDomain": "Geçerli \"Alan Adı\", örn.\n@:pages.settings.routing.routeRule.rule.validDomainEx",
-            "validDomainSuffixEx": ".com veya .tr",
-            "validDomainSuffix": "Geçerli \"Alan Adı Son Eki\", örn.\n@:pages.settings.routing.routeRule.rule.validDomainSuffixEx",
-            "tileTitle(map)": {
-              "name": "İsim",
-              "outbound": "Eşleşirse giden",
-              "rule_set": "Kural seti URL'si",
-              "package_name": "Paket adları",
-              "process_name": "İşlem adları",
-              "process_path": "İşlem yolları",
-              "network": "Ağlar",
-              "port_range": "Hedef portlar",
-              "source_port_range": "Kaynak portlar",
-              "protocol": "Protokol",
-              "ip_cidr": "Hedef IP CIDR",
-              "source_ip_cidr": "Kaynak IP CIDR",
-              "domain": "Alan adı",
-              "domain_suffixe": "Alan adı son eki",
-              "domain_keyword": "Alan adı anahtar kelimesi",
-              "domain_regex": "Alan adı regex"
-            },
-            "outbound(map)": {
-              "proxy": "Proxy",
-              "direct": "Doğrudan",
-              "direct_with_fragment": "Doğrudan (fragment ile)",
-              "block": "Engelle"
-            },
-            "network(map)": {
-              "all": "Tümü",
-              "tcp": "TCP",
-              "udp": "UDP"
-            },
-            "protocol(map)": {
-              "": "Tümü",
-              "tls": "TLS",
-              "http": "HTTP",
-              "quic": "QUIC",
-              "stun": "STUN",
-              "dns": "DNS",
-              "bittorrent": "BitTorrent"
-            }
-          },
-          "genericList": {
-            "addNew": "Yeni değer ekle",
-            "update": "Değeri güncelle",
-            "clearList": "Listeyi temizle",
-            "clearListMsg": "Tüm öğeler silindi"
-          },
-          "androidApps": {
-            "pageTitle": "Android uygulamaları",
-            "showSystemApps": "Sistem uygulamalarını göster",
-            "hideSystemApps": "Sistem uygulamalarını gizle",
-            "clearSelection": "Seçimi temizle",
-            "uninstalled": "Kaldırıldı"
-          }
-        }
-      },
-      "dns": {
-        "title": "DNS",
-        "remoteDns": "Uzak DNS",
-        "remoteDnsDomainStrategy": "Uzak DNS alan adı stratejisi",
-        "directDns": "Giden sunucu çözümleyicisi (doğrudan)",
-        "directDnsDomainStrategy": "Giden alan adı stratejisi",
-        "enableDnsRouting": "DNS yönlendirmeyi etkinleştir",
-        "enableFakeDns": "Sahte DNS'i etkinleştir",
-        "domainStrategy": {
-          "auto": "Otomatik",
-          "preferIpv6": "IPv6 tercih et",
-          "preferIpv4": "IPv4 tercih et",
-          "ipv4Only": "Sadece IPv4",
-          "ipv6Only": "Sadece IPv6"
-        }
-      },
-      "inbound": {
-        "title": "Gelen",
-        "serviceMode": "Servis modu",
-        "serviceModes": {
-          "proxy": "Yalnızca proxy servisi",
-          "systemProxy": "Sistem proxy'sini ayarla",
-          "tun": "VPN",
-          "tunService": "VPN servisi"
-        },
-        "shortServiceModes": {
-          "proxy": "Proxy",
-          "systemProxy": "Sistem proxy'si",
-          "tun": "VPN",
-          "tunService": "VPN servisi"
-        },
-        "strictRoute": "Katı yönlendirme",
-        "tunImplementation": "TUN uygulaması",
-        "tunImplementations": {
-          "mixed": "Karışık",
-          "system": "Sistem",
-          "gvisor": "gVisor"
-        },
-        "mixedPort": "Karışık port",
-        "tproxyPort": "Şeffaf proxy portu",
-        "directPort": "Direct portu",
-        "redirectPort": "Yönlendirme portu"
       },
       "tlsTricks": {
         "title": "TLS hileleri",

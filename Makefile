@@ -349,7 +349,7 @@ android-aab-release: check-rulesets-fresh rayn-link-key
 
 windows-release: windows-zip-release windows-exe-release windows-msix-release
 
-windows-zip-release: rayn-link-key
+windows-zip-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets zip \
@@ -372,7 +372,7 @@ windows-zip-release: rayn-link-key
 	rm -rf RaynVPN; \
 	$(GREEN)Successful$(DONE)
 
-windows-exe-release: rayn-link-key
+windows-exe-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets exe \
@@ -381,7 +381,7 @@ windows-exe-release: rayn-link-key
 	  --build-target=$(TARGET) \
 	  $(FF_OBFUSCATE)
 
-windows-msix-release: rayn-link-key
+windows-msix-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	  --platform windows \
 	  --targets msix \
@@ -398,7 +398,7 @@ linux-amd64-musl-release: linux-release
 linux-arm64-musl-release: linux-release
 
 
-linux-deb-release: rayn-link-key
+linux-deb-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	--platform linux \
 	--targets deb \
@@ -437,7 +437,7 @@ linux-deb-release: rayn-link-key
 # their own unresolved dependencies. It increases maintenance cost and may cause
 # runtime instability. Use only for specific edge cases where standard linking fails.
 # ==============================================================================
-linux-appimage-release: rayn-link-key
+linux-appimage-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	--platform linux \
 	--targets appimage \
@@ -531,10 +531,10 @@ linux-docker-release:
 
 	@$(GREEN)Successful. Output is in 'dist_docker' folder.$(DONE)
 
-macos-release: rayn-link-key
+macos-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package --platform macos --targets dmg,pkg $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE)
 
-ios-release: rayn-link-key #not tested
+ios-release: check-rulesets-fresh rayn-link-key #not tested
 	$(FASTFORGE) package --platform ios --targets ipa --build-export-options-plist  ios/exportOptions.plist $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE)
 
 android-libs:
@@ -589,6 +589,12 @@ get-geo-assets:
 RULESETS_DIR := assets$(SEP)rulesets
 RULESETS_GEOSITE_BASE := https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set
 RULESETS_GEOIP_BASE := https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set
+# Blocklists come from hiddify-geo rather than SagerNet. SagerNet publishes
+# geosite-category-ads-all but it is the small upstream v2fly list (~900 rules,
+# 8 KB); hiddify-geo's is a merged list with 42,619 domain suffixes. It also
+# carries malware/phishing/cryptominer sets that SagerNet's rule-set branch does
+# not have at all. Build-time dependency only — the client never fetches these.
+RULESETS_BLOCK_BASE := https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block
 
 .PHONY: fetch-rulesets check-rulesets-fresh
 
@@ -612,17 +618,61 @@ fetch-rulesets:
 	curl -fSL "$(RULESETS_GEOSITE_BASE)/geosite-apple@cn.srs"        -o $(RULESETS_DIR)/direct-apple.srs
 	curl -fSL $(RULESETS_GEOSITE_BASE)/geosite-cn.srs                -o $(RULESETS_DIR)/direct-regional-sites.srs
 	curl -fSL $(RULESETS_GEOIP_BASE)/geoip-cn.srs                    -o $(RULESETS_DIR)/direct-regional-ips.srs
+	@$(BLUE)Fetching blocklist rule-sets$(DONE)
+	# Gated at runtime by the `block-ads` option, but always bundled so enabling it
+	# costs no network. Local names match the Tag/Path literals in builder.go's
+	# BlockAds branch:
+	#   geosite-category-ads-all -> block-ads
+	#   geosite-malware          -> block-malware
+	#   geosite-phishing         -> block-phishing
+	#   geosite-cryptominers     -> block-cryptominers
+	#   geoip-malware            -> block-malware-ips
+	#   geoip-phishing           -> block-phishing-ips
+	curl -fSL $(RULESETS_BLOCK_BASE)/geosite-category-ads-all.srs    -o $(RULESETS_DIR)/block-ads.srs
+	curl -fSL $(RULESETS_BLOCK_BASE)/geosite-malware.srs             -o $(RULESETS_DIR)/block-malware.srs
+	curl -fSL $(RULESETS_BLOCK_BASE)/geosite-phishing.srs            -o $(RULESETS_DIR)/block-phishing.srs
+	curl -fSL $(RULESETS_BLOCK_BASE)/geosite-cryptominers.srs        -o $(RULESETS_DIR)/block-cryptominers.srs
+	curl -fSL $(RULESETS_BLOCK_BASE)/geoip-malware.srs               -o $(RULESETS_DIR)/block-malware-ips.srs
+	curl -fSL $(RULESETS_BLOCK_BASE)/geoip-phishing.srs              -o $(RULESETS_DIR)/block-phishing-ips.srs
 	@$(BLUE)Regenerating MANIFEST$(DONE)
 	bash scripts/regen_rulesets_manifest.sh
 	@$(GREEN)Rule-sets refreshed. Commit assets/rulesets/ before cutting a release.$(DONE)
 
 # Soft warning hook for release builds — does not fail the build, just nags if
 # the bundled rule-sets look stale (>30 days since last `make fetch-rulesets`).
+# Two tiers, because the bundle mixes two rates of decay. The CN routing sets
+# (geosite-cn / geoip-cn) move slowly. The blocklists do not: ad, phishing and
+# malware domains churn continuously, and a months-old block-ads.srs keeps loading
+# cleanly while quietly blocking less and less. A single 30-day threshold was set
+# when only the CN sets were bundled.
+RULESETS_STALE_NOTICE_DAYS := 14
+RULESETS_STALE_WARN_DAYS   := 30
+
+# Soft by design — warns, never fails. A hotfix must never be blocked by a stale
+# blocklist. Age comes from the MANIFEST's own `fetched_at`, NOT the file's mtime:
+# a fresh clone or a branch switch rewrites mtime to "now", which is exactly the
+# case where the committed rule-sets are most likely to be months old and the
+# warning most needed. Falls back gracefully when the timestamp can't be parsed
+# (BSD and GNU `date` disagree on how to read one).
 check-rulesets-fresh:
-	@if [ ! -f "$(RULESETS_DIR)/MANIFEST" ]; then \
-	  $(YELLOW)WARNING: $(RULESETS_DIR)/MANIFEST missing — run 'make fetch-rulesets' before release$(DONE); \
-	elif find "$(RULESETS_DIR)/MANIFEST" -mtime +30 -print 2>/dev/null | grep -q MANIFEST; then \
-	  $(YELLOW)WARNING: rule-set MANIFEST is older than 30 days — consider 'make fetch-rulesets'$(DONE); \
+	@MANIFEST="$(RULESETS_DIR)/MANIFEST"; \
+	if [ ! -f "$$MANIFEST" ]; then \
+	  $(YELLOW)WARNING: $$MANIFEST missing — run 'make fetch-rulesets' before release$(DONE); \
+	  exit 0; \
+	fi; \
+	FETCHED=$$(sed -n 's/.*"fetched_at"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$$MANIFEST" | head -n1); \
+	THEN=$$(date -u -d "$$FETCHED" +%s 2>/dev/null \
+	     || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$$FETCHED" +%s 2>/dev/null \
+	     || echo ""); \
+	if [ -z "$$THEN" ]; then \
+	  $(YELLOW)WARNING: could not read fetched_at from $$MANIFEST — run 'make fetch-rulesets' if in doubt$(DONE); \
+	  exit 0; \
+	fi; \
+	AGE=$$(( ( $$(date -u +%s) - $$THEN ) / 86400 )); \
+	if [ "$$AGE" -ge $(RULESETS_STALE_WARN_DAYS) ]; then \
+	  $(YELLOW)WARNING: rule-sets are $$AGE days old (>= $(RULESETS_STALE_WARN_DAYS)) — run 'make fetch-rulesets' before shipping. Blocklists this old have measurably degraded.$(DONE); \
+	elif [ "$$AGE" -ge $(RULESETS_STALE_NOTICE_DAYS) ]; then \
+	  $(YELLOW)NOTICE: rule-sets are $$AGE days old — consider 'make fetch-rulesets' before release$(DONE); \
 	fi
 
 # Extra Go build tags for the core, forwarded to hiddify-core/Makefile where they

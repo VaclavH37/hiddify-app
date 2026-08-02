@@ -173,6 +173,7 @@
     "settings": {
       "title": "Pengaturan",
       "resetTunnel": "Setel ulang profil VPN",
+      "troubleshooting": "Pemecahan masalah",
       "general": {
         "title": "Umum",
         "locale": "Bahasa",
@@ -184,6 +185,7 @@
           "black": "Mode hitam"
         },
         "autoIpCheck": "Periksa IP koneksi secara otomatis",
+        "blockAds": "Blokir iklan",
         "dynamicNotification": "Tampilkan kecepatan di notifikasi",
         "hapticFeedback": "Umpan balik haptik",
         "actionAtClosing": "Tindakan saat menutup",
@@ -200,174 +202,6 @@
         "urlTestInterval": "Interval uji URL",
         "ignoreBatteryOptimizationsDialogTitle": "Biarkan VPN berjalan di latar belakang?",
         "ignoreBatteryOptimizationsDialogBody": "Untuk koneksi yang stabil dan tanpa gangguan, Rayn VPN perlu terus berjalan saat layar mati. Layar berikutnya memungkinkan Anda mengecualikan aplikasi dari pengoptimalan baterai. Ini opsional — Anda dapat mengubahnya kapan saja di pengaturan sistem."
-      },
-      "routing": {
-        "title": "Perutean",
-        "perAppProxy": {
-          "title": "Proxy per aplikasi",
-          "hideSysApps": "Sembunyikan aplikasi sistem",
-          "options": {
-            "import": {
-              "clipboard": "Impor pilihan dari papan klip",
-              "file": "Impor pilihan dari file",
-              "msg": "Mengimpor akan menggantikan pilihan Anda saat ini. Anda yakin ingin melanjutkan?"
-            },
-            "export": {
-              "clipboard": "Salin pilihan ke papan klip",
-              "file": "Ekspor pilihan ke file"
-            },
-            "clearAllSelections": "Hapus semua pilihan"
-          },
-          "modes": {
-            "all": "Semua",
-            "proxy": "Proxy",
-            "bypass": "Lewati",
-            "allMsg": "Proxy semua aplikasi",
-            "proxyMsg": "Proxy hanya aplikasi yang dipilih",
-            "bypassMsg": "Jangan proxy aplikasi yang dipilih"
-          }
-        },
-        "balancerStrategy": {
-          "title": "Strategi Balancer",
-          "roundRobin": "Round robin",
-          "consistentHash": "Consistent hash",
-          "stickySession": "Sticky session"
-        },
-        "blockAds": "Blokir iklan",
-        "bypassLan": "Lewati LAN",
-        "resolveDestination": "Resolusi tujuan",
-        "routeRule": {
-          "title": "Aturan perutean",
-          "options": {
-            "import": {
-              "clipboard": "Impor aturan dari papan klip",
-              "file": "Impor aturan dari file"
-            },
-            "export": {
-              "clipboard": "Salin aturan ke papan klip",
-              "file": "Simpan aturan ke file"
-            },
-            "reset": "Setel ulang aturan"
-          },
-          "deleteRule": "Hapus aturan",
-          "createRule": "Buat aturan baru",
-          "rule": {
-            "title": "Aturan",
-            "ruleChanged": "Aturan diubah",
-            "ruleChangedMsg": "Apakah Anda ingin menyimpan editan Anda?",
-            "onlyTunMode": "Hanya tersedia dalam mode TUN",
-            "notAvailabeInThisPlatform": "Tidak tersedia di platform ini",
-            "canNotBeEmpty": "Tidak boleh kosong",
-            "validUrlEx": "https://example.com",
-            "validUrl": "\"URL\" yang valid seperti\n@:pages.settings.routing.routeRule.rule.validUrlEx",
-            "validProcessNameEx": "Chrome.exe atau google chrome atau chrome",
-            "validProcessName": "\"Nama Proses\" yang valid seperti\n@:pages.settings.routing.routeRule.rule.validProcessNameEx",
-            "validProcessPathEx": "C:\\Pro...\\chrome.exe\n/App.../Google Chrome\n/usr/lib.../chrome",
-            "validProcessPath": "\"Jalur Proses\" yang valid seperti\n@:pages.settings.routing.routeRule.rule.validProcessPathEx",
-            "validPortRangeEx": "80 atau 1-65000",
-            "validPortRange": "\"Port\" atau \"Rentang Port\" yang valid seperti\n@:pages.settings.routing.routeRule.rule.validPortRangeEx",
-            "validIpCidrEx": "8.8.8.8 atau 10.0.0.0/24",
-            "validIpCidr": "IP CIDR yang valid seperti\n@:pages.settings.routing.routeRule.rule.validIpCidrEx",
-            "validDomainEx": "Google.com atau dl.google.com",
-            "validDomain": "\"Domain\" yang valid seperti\n@:pages.settings.routing.routeRule.rule.validDomainEx",
-            "validDomainSuffixEx": ".com atau .ir",
-            "validDomainSuffix": "\"Sufiks Domain\" yang valid seperti\n@:pages.settings.routing.routeRule.rule.validDomainSuffixEx",
-            "tileTitle(map)": {
-              "name": "Nama",
-              "outbound": "Keluar jika cocok",
-              "rule_set": "URL set aturan",
-              "package_name": "Nama paket",
-              "process_name": "Nama proses",
-              "process_path": "Jalur proses",
-              "network": "Jaringan",
-              "port_range": "Port tujuan",
-              "source_port_range": "Port sumber",
-              "protocol": "Protokol",
-              "ip_cidr": "IP CIDR tujuan",
-              "source_ip_cidr": "IP CIDR sumber",
-              "domain": "Domain",
-              "domain_suffixe": "Sufiks domain",
-              "domain_keyword": "Kata kunci domain",
-              "domain_regex": "Regex domain"
-            },
-            "outbound(map)": {
-              "proxy": "Proxy",
-              "direct": "Langsung",
-              "direct_with_fragment": "Langsung dengan fragmen",
-              "block": "Blokir"
-            },
-            "network(map)": {
-              "all": "Semua",
-              "tcp": "TCP",
-              "udp": "UDP"
-            },
-            "protocol(map)": {
-              "": "Semua",
-              "tls": "TLS",
-              "http": "HTTP",
-              "quic": "QUIC",
-              "stun": "STUN",
-              "dns": "DNS",
-              "bittorrent": "BitTorrent"
-            }
-          },
-          "genericList": {
-            "addNew": "Tambah nilai baru",
-            "update": "Perbarui nilai",
-            "clearList": "Bersihkan daftar",
-            "clearListMsg": "Semua item dihapus"
-          },
-          "androidApps": {
-            "pageTitle": "Aplikasi Android",
-            "showSystemApps": "Tampilkan aplikasi sistem",
-            "hideSystemApps": "Sembunyikan aplikasi sistem",
-            "clearSelection": "Hapus pilihan",
-            "uninstalled": "Dihapus"
-          }
-        }
-      },
-      "dns": {
-        "title": "DNS",
-        "remoteDns": "DNS jarak jauh",
-        "remoteDnsDomainStrategy": "Strategi domain DNS jarak jauh",
-        "directDns": "Penyelesai server keluar (langsung)",
-        "directDnsDomainStrategy": "Strategi domain keluar",
-        "enableDnsRouting": "Aktifkan perutean DNS",
-        "enableFakeDns": "Aktifkan DNS palsu",
-        "domainStrategy": {
-          "auto": "Otomatis",
-          "preferIpv6": "Pilih IPv6",
-          "preferIpv4": "Pilih IPv4",
-          "ipv4Only": "Hanya IPv4",
-          "ipv6Only": "Hanya IPv6"
-        }
-      },
-      "inbound": {
-        "title": "Masuk",
-        "serviceMode": "Mode layanan",
-        "serviceModes": {
-          "proxy": "Hanya layanan proksi",
-          "systemProxy": "Atur proksi sistem",
-          "tun": "VPN",
-          "tunService": "Layanan VPN"
-        },
-        "shortServiceModes": {
-          "proxy": "Proxy",
-          "systemProxy": "Proxy sistem",
-          "tun": "VPN",
-          "tunService": "Layanan VPN"
-        },
-        "strictRoute": "Rute ketat",
-        "tunImplementation": "Implementasi TUN",
-        "tunImplementations": {
-          "mixed": "Campuran",
-          "system": "Sistem",
-          "gvisor": "gVisor"
-        },
-        "mixedPort": "Port campuran",
-        "tproxyPort": "Port proksi transparan",
-        "directPort": "Port direct",
-        "redirectPort": "Port pengalihan"
       },
       "tlsTricks": {
         "title": "Trik TLS",

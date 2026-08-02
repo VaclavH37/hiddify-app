@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:hiddify/core/rulesets/ruleset_manifest.dart';
 import 'package:loggy/loggy.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 /// Extracts bundled CN routing rule-sets (`assets/rulesets/*.srs`) into the
@@ -27,11 +29,18 @@ import 'package:path/path.dart' as p;
 /// egg of trying to download rule-sets from `raw.githubusercontent.com` on
 /// first launch inside the GFW.
 ///
-/// Re-extraction is gated by a one-field version compare against
-/// `<basePath>/rulesets/MANIFEST`: when the bundle MANIFEST in the AAB has a
-/// different `version`, every file is rewritten and the on-disk MANIFEST is
-/// updated last (so a crash mid-extract leaves the previous version marker
-/// behind and we retry on the next launch).
+/// Re-extraction is gated on `<basePath>/rulesets/MANIFEST` matching the bundled
+/// one on BOTH counts: the same `version`, and every listed file present on disk
+/// with the expected sha256. When either differs, every file is rewritten and the
+/// on-disk MANIFEST is updated last (so a crash mid-extract leaves the previous
+/// version marker behind and we retry on the next launch).
+///
+/// The digest check is what makes that self-healing. An existence check alone
+/// let a truncated or corrupted `.srs` — an interrupted extract, a half-written
+/// file from a device that lost power — survive every subsequent launch, because
+/// the version marker had already been written. The failure surfaced far from its
+/// cause: the core opens Local rule-sets at config-load time, so a bad file means
+/// "failed to start background core" with nothing pointing at the rule-set.
 abstract class RulesetExtractor {
   static const _bundleAssetPath = 'assets/rulesets/MANIFEST';
   static const _bundleAssetDir = 'assets/rulesets';
@@ -58,7 +67,7 @@ abstract class RulesetExtractor {
 
     if (onDiskManifest != null &&
         onDiskManifest.version == bundleManifest.version &&
-        await _allFilesPresent(targetDir, bundleManifest)) {
+        await allFilesMatch(targetDir, bundleManifest)) {
       _log.debug('rule-sets up to date (version ${bundleManifest.version})');
       return false;
     }
@@ -97,9 +106,39 @@ abstract class RulesetExtractor {
     }
   }
 
-  static Future<bool> _allFilesPresent(Directory targetDir, RulesetManifest manifest) async {
+  /// True when every file the [manifest] lists is on disk in [targetDir] AND
+  /// hashes to the digest recorded for it. Any mismatch returns false, which
+  /// puts the caller into the re-extraction branch.
+  ///
+  /// This reads every rule-set into memory on each cold start. That is fine at
+  /// the current bundle size (four files, ~91 KB total — well under a
+  /// millisecond of hashing) and the check is worth far more than it costs, but
+  /// it is a per-launch cost proportional to the bundle: revisit if the rule-set
+  /// set ever grows by an order of magnitude.
+  ///
+  /// A genuinely corrupt asset in the bundle makes this return false forever, so
+  /// the app re-extracts on every launch. That is deliberate — re-extracting
+  /// 91 KB is cheap, it is logged, and the alternative is running with rule-sets
+  /// the core will reject anyway.
+  @visibleForTesting
+  static Future<bool> allFilesMatch(Directory targetDir, RulesetManifest manifest) async {
     for (final file in manifest.files) {
-      if (!await File(p.join(targetDir.path, file.name)).exists()) {
+      final onDisk = File(p.join(targetDir.path, file.name));
+      try {
+        if (!await onDisk.exists()) {
+          _log.info('rule-set ${file.name} missing, re-extracting');
+          return false;
+        }
+        final digest = sha256.convert(await onDisk.readAsBytes()).toString();
+        if (digest != file.sha256.toLowerCase()) {
+          // Log the name and the verdict, never the digests — they are not
+          // secret, but a mismatch line full of hex is unreadable in a bug
+          // report and the name is what identifies the file to re-extract.
+          _log.warning('rule-set ${file.name} failed checksum, re-extracting');
+          return false;
+        }
+      } on FileSystemException catch (e) {
+        _log.warning('rule-set ${file.name} unreadable, re-extracting: $e');
         return false;
       }
     }

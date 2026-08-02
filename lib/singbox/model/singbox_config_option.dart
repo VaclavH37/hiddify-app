@@ -17,7 +17,6 @@ class SingboxConfigOption with _$SingboxConfigOption {
   @JsonSerializable(fieldRename: FieldRename.kebab)
   const factory SingboxConfigOption({
     required String region,
-    required BalancerStrategy balancerStrategy,
     required bool blockAds,
     required bool executeConfigAsIs,
     required LogLevel logLevel,
@@ -25,7 +24,6 @@ class SingboxConfigOption with _$SingboxConfigOption {
     /// console only), which is what release builds send — a persistent log
     /// naming servers and domains is a liability on an inspectable device.
     required String logFile,
-    required bool resolveDestination,
     required String remoteDnsAddress,
     required DomainStrategy remoteDnsDomainStrategy,
     required String directDnsAddress,

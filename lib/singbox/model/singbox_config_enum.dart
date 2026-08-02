@@ -1,80 +1,44 @@
-import 'dart:io';
-
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/utils/platform_utils.dart';
 
-@JsonEnum(valueField: 'key')
-enum ServiceMode {
-  proxy("proxy"),
-  systemProxy("system-proxy"),
-  tun("vpn")
-  // tunService("vpn-service")
-  ;
+// `ServiceMode` used to live here: a proxy / system-proxy / vpn enum backing a
+// Settings → Inbound picker and a desktop tray submenu. It is gone, and the app is
+// locked to TUN — `ConfigOptions` sends `enableTun: true` / `setSystemProxy: false`
+// unconditionally.
+//
+// It was removed because it was the most dangerous control in the settings menu, not
+// merely a redundant one. "Proxy service only" cleared BOTH booleans, so the core
+// built a loopback mixed inbound and nothing else: no TUN, no system proxy, nothing
+// claiming the routing table — while the UI still reported Connected. On Android it
+// additionally selected ProxyService over VPNService, so no tun fd was ever opened.
+// Making `tun` the default fixed the fresh-install case but left the control that
+// undid it reachable from two surfaces.
+//
+// Android's native side reads the `flutter.service-mode` SharedPreferences key
+// directly (SettingsKey.kt) and Dart was its only writer, so preferences migration
+// v6 clears it — the Kotlin getter then falls back to its own VPN default. If a
+// service-mode concept is ever reintroduced, that native reader is the constraint to
+// design around, not the Dart enum.
 
-  const ServiceMode(this.key);
-
-  final String key;
-
-  /// Desktop used to default to [systemProxy]. That left a fresh Windows
-  /// install with `enableTun == false`, so builder.go never created a TUN
-  /// inbound: nothing claimed the routing table, and everything the Windows
-  /// system-proxy setting does not cover — all IPv6, and any app that ignores
-  /// it — went out natively while the UI reported "connected". Sensible for a
-  /// general-purpose proxy client, wrong for a VPN.
-  ///
-  /// Only affects installs with no stored `service-mode`; an explicit choice is
-  /// untouched.
-  static ServiceMode get defaultMode => tun;
-
-  /// supported service mode based on platform, use this instead of [values] in UI
-  static List<ServiceMode> get choices {
-    if (Platform.isWindows || Platform.isLinux) {
-      return values;
-    } else if (Platform.isMacOS) {
-      return [proxy, systemProxy, tun];
-    }
-    // mobile
-    return [proxy, tun];
-  }
-
-  // bool get isExperimental => switch (this) {
-  //       tun => PlatformUtils.isDesktop,
-  //       tunService => PlatformUtils.isDesktop,
-  //       _ => false,
-  //     };
-
-  String present(TranslationsEn t) => switch (this) {
-    proxy => t.pages.settings.inbound.serviceModes.proxy,
-    systemProxy => t.pages.settings.inbound.serviceModes.systemProxy,
-    tun => t.pages.settings.inbound.serviceModes.tun,
-    // tunService => t.pages.settings.inbound.serviceModes.tunService,
-  };
-
-  String presentShort(TranslationsEn t) => switch (this) {
-    proxy => t.pages.settings.inbound.shortServiceModes.proxy,
-    systemProxy => t.pages.settings.inbound.shortServiceModes.systemProxy,
-    tun => t.pages.settings.inbound.shortServiceModes.tun,
-    // tunService => t.pages.settings.inbound.shortServiceModes.tunService,
-  };
-}
-
-@JsonEnum(valueField: 'key')
-enum BalancerStrategy {
-  roundRobin("round-robin"),
-  consistentHash("consistent-hashing"),
-  stickySession("sticky-sessions");
-
-  const BalancerStrategy(this.key);
-
-  final String key;
-
-  String present(TranslationsEn t) => switch (this) {
-    roundRobin => t.pages.settings.routing.balancerStrategy.roundRobin,
-    consistentHash => t.pages.settings.routing.balancerStrategy.consistentHash,
-    stickySession => t.pages.settings.routing.balancerStrategy.stickySession,
-  };
-}
+// `BalancerStrategy` used to live here (round-robin / consistent-hashing /
+// sticky-sessions), backing a Settings → Routing picker and the `balancer-strategy`
+// field on SingboxConfigOption. Both are gone and the client no longer sends the
+// key at all.
+//
+// The picker was removed because it could not do what it claimed: it only fed the
+// `balance` outbound group, which the selector does not default to, and two of its
+// three options were broken anyway — builder.go never set the group's `MaxRetry`,
+// so consistent-hashing degenerated to "first alive node" and sticky-sessions
+// returned a time-seeded pick with no liveness check.
+//
+// The field then followed once the core stopped needing it: DefaultHiddifyOptions()
+// sets round-robin and normalizeBalancerStrategy() in builder.go rejects anything
+// unusable, so an absent key resolves correctly. Before that fix the key HAD to be
+// sent — the Go default was "", which the balancer rejects with "unknown load
+// balance strategy", failing service start on any profile with >1 outbound.
+//
+// If a strategy control is ever reintroduced, note the constraint that bit here:
+// omitting the key is safe, but sending an empty string is not — it overwrites the
+// core's default with the one value that cannot work.
 
 // `IPv6Mode` used to live here, backing a Settings → Routing picker. It was
 // serialised, sent to the core over gRPC and persisted — and read by nothing:
@@ -98,6 +62,12 @@ enum BalancerStrategy {
 //      and cover it with a test asserting the tun address list actually changes.
 //      Step 3 without step 1 recreates exactly the dead control removed here.
 
+/// Wire mapping only — the Settings → DNS pickers that used to present these are
+/// gone. `ConfigOptions` sends [ipv4Only] for both the remote and direct strategy;
+/// see the comments there for why, and note that neither value decides the
+/// connection's address family (the core's pre-dial `resolve` action hardcodes
+/// IPv4-only). The full value set is retained because the core accepts all of them
+/// and a subscription override could legitimately supply one.
 @JsonEnum(valueField: 'key')
 enum DomainStrategy {
   auto(""),
@@ -109,27 +79,15 @@ enum DomainStrategy {
   const DomainStrategy(this.key);
 
   final String key;
-
-  String present(TranslationsEn t) => switch (this) {
-    auto => t.pages.settings.dns.domainStrategy.auto,
-    preferIpv6 => t.pages.settings.dns.domainStrategy.preferIpv6,
-    preferIpv4 => t.pages.settings.dns.domainStrategy.preferIpv4,
-    ipv4Only => t.pages.settings.dns.domainStrategy.ipv4Only,
-    ipv6Only => t.pages.settings.dns.domainStrategy.ipv6Only,
-  };
 }
 
-enum TunImplementation {
-  mixed,
-  system,
-  gvisor;
-
-  String present(TranslationsEn t) => switch (this) {
-    mixed => t.pages.settings.inbound.tunImplementations.mixed,
-    system => t.pages.settings.inbound.tunImplementations.system,
-    gvisor => t.pages.settings.inbound.tunImplementations.gvisor,
-  };
-}
+/// Wire mapping only — the Settings → Inbound picker is gone and `ConfigOptions`
+/// always sends [gvisor]. Serialised by constant name, which is exactly what the
+/// core's `tun-implementation` field expects.
+///
+/// `present()` was removed with the picker, but it had already been dead: the
+/// picker rendered choices with `value.name`, not the translated labels.
+enum TunImplementation { mixed, system, gvisor }
 
 enum MuxProtocol { h2mux, smux, yamux }
 

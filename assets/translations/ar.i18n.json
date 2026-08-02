@@ -179,6 +179,7 @@
     "settings": {
       "title": "الإعدادات",
       "resetTunnel": "إعادة تعيين ملف VPN",
+      "troubleshooting": "استكشاف الأخطاء وإصلاحها",
       "general": {
         "title": "عام",
         "locale": "اللغة",
@@ -190,6 +191,7 @@
           "black": "الوضع الأسود"
         },
         "autoIpCheck": "التحقق التلقائي من IP الاتصال",
+        "blockAds": "حظر الإعلانات",
         "dynamicNotification": "عرض السرعة في الإشعار",
         "hapticFeedback": "ردود الفعل اللمسية",
         "actionAtClosing": "الإجراء عند الإغلاق",
@@ -206,174 +208,6 @@
         "urlTestInterval": "فاصل اختبار الرابط",
         "ignoreBatteryOptimizationsDialogTitle": "هل تريد إبقاء VPN يعمل في الخلفية؟",
         "ignoreBatteryOptimizationsDialogBody": "للحصول على اتصال مستقر دون انقطاع، يحتاج Rayn VPN إلى مواصلة العمل أثناء إيقاف تشغيل الشاشة. تتيح لك الشاشة التالية استثناء التطبيق من تحسين البطارية. هذا اختياري — يمكنك تغييره في أي وقت من إعدادات النظام."
-      },
-      "routing": {
-        "title": "التوجيه",
-        "perAppProxy": {
-          "title": "بروكسي لكل تطبيق",
-          "hideSysApps": "إخفاء تطبيقات النظام",
-          "options": {
-            "import": {
-              "clipboard": "استيراد التحديد من الحافظة",
-              "file": "استيراد التحديد من ملف",
-              "msg": "سيؤدي الاستيراد إلى استبدال تحديداتك الحالية. هل أنت متأكد من رغبتك في المتابعة؟"
-            },
-            "export": {
-              "clipboard": "نسخ التحديد إلى الحافظة",
-              "file": "تصدير التحديد إلى ملف"
-            },
-            "clearAllSelections": "مسح جميع التحديدات"
-          },
-          "modes": {
-            "all": "الكل",
-            "proxy": "بروكسي",
-            "bypass": "تجاوز",
-            "allMsg": "استخدام البروكسي لجميع التطبيقات",
-            "proxyMsg": "استخدام البروكسي للتطبيقات المحددة فقط",
-            "bypassMsg": "عدم استخدام البروكسي للتطبيقات المحددة"
-          }
-        },
-        "balancerStrategy": {
-          "title": "استراتيجية Balancer",
-          "roundRobin": "Round robin",
-          "consistentHash": "Consistent hash",
-          "stickySession": "Sticky session"
-        },
-        "blockAds": "حظر الإعلانات",
-        "bypassLan": "تجاوز الشبكة المحلية",
-        "resolveDestination": "تحديد وجهة الاتصال",
-        "routeRule": {
-          "title": "قواعد التوجيه",
-          "options": {
-            "import": {
-              "clipboard": "استيراد القواعد من الحافظة",
-              "file": "استيراد القواعد من ملف"
-            },
-            "export": {
-              "clipboard": "نسخ القواعد إلى الحافظة",
-              "file": "حفظ القواعد في ملف"
-            },
-            "reset": "إعادة تعيين القواعد"
-          },
-          "deleteRule": "حذف القاعدة",
-          "createRule": "إنشاء قاعدة جديدة",
-          "rule": {
-            "title": "قاعدة",
-            "ruleChanged": "تم تغيير القاعدة",
-            "ruleChangedMsg": "هل تريد حفظ تعديلاتك؟",
-            "onlyTunMode": "متوفر فقط في وضع TUN",
-            "notAvailabeInThisPlatform": "غير متوفر على هذا النظام",
-            "canNotBeEmpty": "لا يمكن أن يكون فارغًا",
-            "validUrlEx": "https://example.com",
-            "validUrl": "\"URL\" صالح مثل\n@:pages.settings.routing.routeRule.rule.validUrlEx",
-            "validProcessNameEx": "Chrome.exe or google chrome or chrome",
-            "validProcessName": "\"اسم العملية\" صالح مثل\n@:pages.settings.routing.routeRule.rule.validProcessNameEx",
-            "validProcessPathEx": "C:\\Pro...\\chrome.exe\n/App.../Google Chrome\n/usr/lib.../chrome",
-            "validProcessPath": "\"مسار العملية\" صالح مثل\n@:pages.settings.routing.routeRule.rule.validProcessPathEx",
-            "validPortRangeEx": "80 or 1-65000",
-            "validPortRange": "\"منفذ\" أو \"نطاق منافذ\" صالح مثل\n@:pages.settings.routing.routeRule.rule.validPortRangeEx",
-            "validIpCidrEx": "8.8.8.8 or 10.0.0.0/24",
-            "validIpCidr": "IP CIDR صالح مثل\n@:pages.settings.routing.routeRule.rule.validIpCidrEx",
-            "validDomainEx": "Google.com or dl.google.com",
-            "validDomain": "\"نطاق\" صالح مثل\n@:pages.settings.routing.routeRule.rule.validDomainEx",
-            "validDomainSuffixEx": ".com or .ir",
-            "validDomainSuffix": "\"لاحقة نطاق\" صالحة مثل\n@:pages.settings.routing.routeRule.rule.validDomainSuffixEx",
-            "tileTitle(map)": {
-              "name": "الاسم",
-              "outbound": "التوجيه عند التطابق",
-              "rule_set": "رابط مجموعة القواعد",
-              "package_name": "أسماء الحزم",
-              "process_name": "أسماء العمليات",
-              "process_path": "مسارات العمليات",
-              "network": "الشبكات",
-              "port_range": "منافذ الوجهة",
-              "source_port_range": "منافذ المصدر",
-              "protocol": "البروتوكول",
-              "ip_cidr": "IP CIDR الوجهة",
-              "source_ip_cidr": "IP CIDR المصدر",
-              "domain": "النطاق",
-              "domain_suffixe": "لاحقة النطاق",
-              "domain_keyword": "كلمة مفتاحية للنطاق",
-              "domain_regex": "تعبير نمطي للنطاق"
-            },
-            "outbound(map)": {
-              "proxy": "بروكسي",
-              "direct": "مباشر",
-              "direct_with_fragment": "مباشر مع Fragment",
-              "block": "حظر"
-            },
-            "network(map)": {
-              "all": "الكل",
-              "tcp": "TCP",
-              "udp": "UDP"
-            },
-            "protocol(map)": {
-              "": "الكل",
-              "tls": "TLS",
-              "http": "HTTP",
-              "quic": "QUIC",
-              "stun": "STUN",
-              "dns": "DNS",
-              "bittorrent": "BitTorrent"
-            }
-          },
-          "genericList": {
-            "addNew": "إضافة قيمة جديدة",
-            "update": "تحديث القيمة",
-            "clearList": "مسح القائمة",
-            "clearListMsg": "تم حذف جميع العناصر"
-          },
-          "androidApps": {
-            "pageTitle": "تطبيقات أندرويد",
-            "showSystemApps": "عرض تطبيقات النظام",
-            "hideSystemApps": "إخفاء تطبيقات النظام",
-            "clearSelection": "مسح التحديد",
-            "uninstalled": "غير مثبت"
-          }
-        }
-      },
-      "dns": {
-        "title": "DNS",
-        "remoteDns": "DNS البعيد",
-        "remoteDnsDomainStrategy": "استراتيجية نطاق DNS البعيد",
-        "directDns": "محلل خادم الصادر (مباشر)",
-        "directDnsDomainStrategy": "استراتيجية النطاق الصادر",
-        "enableDnsRouting": "تمكين توجيه DNS",
-        "enableFakeDns": "تمكين DNS الوهمي",
-        "domainStrategy": {
-          "auto": "تلقائي",
-          "preferIpv6": "تفضيل IPv6",
-          "preferIpv4": "تفضيل IPv4",
-          "ipv4Only": "IPv4 فقط",
-          "ipv6Only": "IPv6 فقط"
-        }
-      },
-      "inbound": {
-        "title": "الوارد",
-        "serviceMode": "وضع الخدمة",
-        "serviceModes": {
-          "proxy": "خدمة البروكسي فقط",
-          "systemProxy": "تعيين بروكسي النظام",
-          "tun": "VPN",
-          "tunService": "خدمة VPN"
-        },
-        "shortServiceModes": {
-          "proxy": "بروكسي",
-          "systemProxy": "بروكسي النظام",
-          "tun": "VPN",
-          "tunService": "خدمة VPN"
-        },
-        "strictRoute": "توجيه صارم",
-        "tunImplementation": "تنفيذ Tun",
-        "tunImplementations": {
-          "mixed": "مختلط",
-          "system": "النظام",
-          "gvisor": "gVisor"
-        },
-        "mixedPort": "منفذ مختلط",
-        "tproxyPort": "منفذ البروكسي الشفاف",
-        "directPort": "منفذ مباشر",
-        "redirectPort": "منفذ إعادة التوجيه"
       },
       "tlsTricks": {
         "title": "حيل TLS",

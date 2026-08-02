@@ -7,11 +7,9 @@ import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:hiddify/singbox/model/singbox_config_enum.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -48,15 +46,14 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
           return const ConnectionStatus.disconnected();
         })
         .then((connection) => _modifyConnectionStatus(connection, urlTestDelay));
-    final serviceMode = ref.watch(ConfigOptions.serviceMode);
     final hasProfile = ref.watch(hasAnyProfileProvider).valueOrNull ?? false;
 
     await trayManager.setIcon(_trayIconPath(connection), isTemplate: PlatformUtils.isMacOS);
     if (!PlatformUtils.isLinux) await trayManager.setToolTip(_trayTooltip(connection, urlTestDelay, t));
-    await trayManager.setContextMenu(_trayMenu(connection, serviceMode, t, hasProfile));
+    await trayManager.setContextMenu(_trayMenu(connection, t, hasProfile));
   }
 
-  Menu _trayMenu(ConnectionStatus connection, ServiceMode serviceMode, Translations t, bool hasProfile) => Menu(
+  Menu _trayMenu(ConnectionStatus connection, Translations t, bool hasProfile) => Menu(
     items: [
       if (PlatformUtils.isLinux) ...[MenuItem(key: 'dashboard', label: t.common.dashboard), MenuItem.separator()],
       MenuItem(
@@ -71,17 +68,10 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
         // nothing to connect to and the connection notifier no-ops anyway.
         disabled: connection.isSwitching || !hasProfile,
       ),
-      MenuItem.submenu(
-        label: t.pages.settings.inbound.serviceMode,
-        icon: Assets.images.trayIconIco,
-        submenu: Menu(
-          items: [
-            ...ServiceMode.values.map(
-              (e) => MenuItem.checkbox(checked: e == serviceMode, key: e.name, label: e.present(t)),
-            ),
-          ],
-        ),
-      ),
+      // A "Service mode" submenu used to sit here, offering Proxy / System proxy /
+      // VPN straight from the tray — and unlike the settings page it listed
+      // ServiceMode.values unfiltered, so it offered modes the current platform did
+      // not support. The app is locked to TUN now; there is nothing to switch.
       MenuItem.separator(),
       MenuItem(key: 'quit', label: t.common.quit),
     ],
@@ -138,10 +128,6 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
       await ref.read(connectionNotifierProvider.notifier).toggleConnection();
     } else if (menuItem.key == 'quit') {
       await ref.read(windowNotifierProvider.notifier).exit();
-    } else {
-      final newMode = ServiceMode.values.byName(menuItem.key!);
-      loggy.debug("switching service mode: [$newMode]");
-      await ref.read(ConfigOptions.serviceMode.notifier).update(newMode);
     }
   }
 

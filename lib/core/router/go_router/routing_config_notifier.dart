@@ -21,10 +21,6 @@ import 'package:hiddify/features/home/widget/home_page.dart';
 import 'package:hiddify/features/notifications/widget/notifications_inbox_page.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_page.dart';
-import 'package:hiddify/features/settings/overview/sections/dns_options_page.dart';
-import 'package:hiddify/features/settings/overview/sections/general_page.dart';
-import 'package:hiddify/features/settings/overview/sections/inbound_options_page.dart';
-import 'package:hiddify/features/settings/overview/sections/route_options_page.dart';
 import 'package:hiddify/features/settings/overview/settings_page.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -156,30 +152,9 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                     ),
                   ),
                   routes: <GoRoute>[
-                    GoRoute(
-                      name: 'general',
-                      path: '/general',
-                      pageBuilder: (_, state) =>
-                          customTransition(TransitionType.slide, state.pageKey, const GeneralPage()),
-                    ),
-                    GoRoute(
-                      name: 'routeOptions',
-                      path: '/route-options',
-                      pageBuilder: (_, state) =>
-                          customTransition(TransitionType.slide, state.pageKey, const RouteOptionsPage()),
-                    ),
-                    GoRoute(
-                      name: 'dnsOptions',
-                      path: '/dns-options',
-                      pageBuilder: (_, state) =>
-                          customTransition(TransitionType.slide, state.pageKey, const DnsOptionsPage()),
-                    ),
-                    GoRoute(
-                      name: 'inboundOptions',
-                      path: '/inbound-options',
-                      pageBuilder: (_, state) =>
-                          customTransition(TransitionType.slide, state.pageKey, const InboundOptionsPage()),
-                    ),
+                    // Settings has no sub-pages left. General was the last one; its
+                    // tiles render inline on SettingsPage now, and Routing / DNS /
+                    // Inbound were removed entirely.
                     if (isMobileBreakpoint)
                       GoRoute(
                         name: 'about',

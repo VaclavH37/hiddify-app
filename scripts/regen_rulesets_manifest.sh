@@ -29,6 +29,7 @@ fetch_commit() {
 
 GEOSITE_COMMIT="$(fetch_commit SagerNet/sing-geosite)"
 GEOIP_COMMIT="$(fetch_commit SagerNet/sing-geoip)"
+BLOCK_COMMIT="$(fetch_commit hiddify/hiddify-geo)"
 
 # Local (neutral) names — must match the -o targets in the Makefile
 # fetch-rulesets target and the Path: literals in builder.go. The names are
@@ -43,11 +44,26 @@ GEOIP_COMMIT="$(fetch_commit SagerNet/sing-geoip)"
 # DNS path that consumed it was removed, and it was 61% of the bundle size.
 # This list must stay in sync with the curl targets in the Makefile's
 # fetch-rulesets and with the Path: literals in builder.go.
+# The block-* sets are the blocklists, bundled rather than fetched at runtime.
+# They are only loaded when the `block-ads` option is on, but they are always
+# present in the bundle so enabling it costs no network. Upstream -> local:
+#   geosite-category-ads-all -> block-ads
+#   geosite-malware          -> block-malware
+#   geosite-phishing         -> block-phishing
+#   geosite-cryptominers     -> block-cryptominers
+#   geoip-malware            -> block-malware-ips
+#   geoip-phishing           -> block-phishing-ips
 FILES=(
   "direct-private.srs"
   "direct-apple.srs"
   "direct-regional-sites.srs"
   "direct-regional-ips.srs"
+  "block-ads.srs"
+  "block-malware.srs"
+  "block-phishing.srs"
+  "block-cryptominers.srs"
+  "block-malware-ips.srs"
+  "block-phishing-ips.srs"
 )
 
 files_json=""
@@ -70,7 +86,8 @@ cat > "${MANIFEST}" <<EOF
   "fetched_at": "${FETCHED_AT}",
   "upstream_commit": {
     "sing-geosite": "${GEOSITE_COMMIT}",
-    "sing-geoip": "${GEOIP_COMMIT}"
+    "sing-geoip": "${GEOIP_COMMIT}",
+    "hiddify-geo": "${BLOCK_COMMIT}"
   },
   "files": [${files_json}
   ]

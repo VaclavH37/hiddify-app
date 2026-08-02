@@ -173,6 +173,7 @@
     "settings": {
       "title": "設定",
       "resetTunnel": "重設 VPN 設定檔",
+      "troubleshooting": "疑難排解",
       "general": {
         "title": "一般",
         "locale": "語言",
@@ -184,6 +185,7 @@
           "black": "純黑模式"
         },
         "autoIpCheck": "自動檢查連線 IP",
+        "blockAds": "攔截廣告",
         "dynamicNotification": "在通知中顯示速度",
         "hapticFeedback": "觸覺回饋",
         "actionAtClosing": "關閉時操作",
@@ -200,174 +202,6 @@
         "urlTestInterval": "URL 測試間隔",
         "ignoreBatteryOptimizationsDialogTitle": "讓 VPN 在背景保持執行？",
         "ignoreBatteryOptimizationsDialogBody": "為了穩定且不中斷的連線，Rayn VPN 需要在螢幕關閉時保持執行。下一個畫面可讓您將應用程式排除在電池最佳化之外。此為選用項目——您可以隨時在系統設定中變更。"
-      },
-      "routing": {
-        "title": "路由",
-        "perAppProxy": {
-          "title": "依應用程式代理",
-          "hideSysApps": "隱藏系統應用程式",
-          "options": {
-            "import": {
-              "clipboard": "從剪貼簿匯入選擇",
-              "file": "從檔案匯入選擇",
-              "msg": "匯入將取代您目前的選擇。確定要繼續嗎？"
-            },
-            "export": {
-              "clipboard": "複製選擇到剪貼簿",
-              "file": "匯出選擇到檔案"
-            },
-            "clearAllSelections": "清除所有選擇"
-          },
-          "modes": {
-            "all": "全部",
-            "proxy": "代理",
-            "bypass": "繞過",
-            "allMsg": "代理所有應用程式",
-            "proxyMsg": "僅代理選定應用程式",
-            "bypassMsg": "不代理選定應用程式"
-          }
-        },
-        "balancerStrategy": {
-          "title": "Balancer 策略",
-          "roundRobin": "Round robin",
-          "consistentHash": "Consistent hash",
-          "stickySession": "Sticky session"
-        },
-        "blockAds": "攔截廣告",
-        "bypassLan": "繞過區域網路",
-        "resolveDestination": "解析目的地",
-        "routeRule": {
-          "title": "路由規則",
-          "options": {
-            "import": {
-              "clipboard": "從剪貼簿匯入規則",
-              "file": "從檔案匯入規則"
-            },
-            "export": {
-              "clipboard": "複製規則到剪貼簿",
-              "file": "儲存規則到檔案"
-            },
-            "reset": "重設規則"
-          },
-          "deleteRule": "刪除規則",
-          "createRule": "建立新規則",
-          "rule": {
-            "title": "規則",
-            "ruleChanged": "規則已變更",
-            "ruleChangedMsg": "您想儲存您的編輯嗎？",
-            "onlyTunMode": "僅在 TUN 模式下可用",
-            "notAvailabeInThisPlatform": "在此平台上不可用",
-            "canNotBeEmpty": "不能為空",
-            "validUrlEx": "https://example.com",
-            "validUrl": "有效的「URL」，例如\n@:pages.settings.routing.routeRule.rule.validUrlEx",
-            "validProcessNameEx": "Chrome.exe 或 google chrome 或 chrome",
-            "validProcessName": "有效的「處理程序名稱」，例如\n@:pages.settings.routing.routeRule.rule.validProcessNameEx",
-            "validProcessPathEx": "C:\\Pro...\\chrome.exe\n/App.../Google Chrome\n/usr/lib.../chrome",
-            "validProcessPath": "有效的「處理程序路徑」，例如\n@:pages.settings.routing.routeRule.rule.validProcessPathEx",
-            "validPortRangeEx": "80 或 1-65000",
-            "validPortRange": "有效的「連接埠」或「連接埠範圍」，例如\n@:pages.settings.routing.routeRule.rule.validPortRangeEx",
-            "validIpCidrEx": "8.8.8.8 或 10.0.0.0/24",
-            "validIpCidr": "有效的 IP CIDR，例如\n@:pages.settings.routing.routeRule.rule.validIpCidrEx",
-            "validDomainEx": "Google.com 或 dl.google.com",
-            "validDomain": "有效的「網域」，例如\n@:pages.settings.routing.routeRule.rule.validDomainEx",
-            "validDomainSuffixEx": ".com 或 .tw",
-            "validDomainSuffix": "有效的「網域後綴」，例如\n@:pages.settings.routing.routeRule.rule.validDomainSuffixEx",
-            "tileTitle(map)": {
-              "name": "名稱",
-              "outbound": "符合時出站",
-              "rule_set": "規則集 URL",
-              "package_name": "套件名稱",
-              "process_name": "處理程序名稱",
-              "process_path": "處理程序路徑",
-              "network": "網路",
-              "port_range": "目標連接埠",
-              "source_port_range": "來源連接埠",
-              "protocol": "協定",
-              "ip_cidr": "目標 IP CIDR",
-              "source_ip_cidr": "來源 IP CIDR",
-              "domain": "網域",
-              "domain_suffixe": "網域後綴",
-              "domain_keyword": "網域關鍵字",
-              "domain_regex": "網域正規表示式"
-            },
-            "outbound(map)": {
-              "proxy": "代理",
-              "direct": "直連",
-              "direct_with_fragment": "直連並分片",
-              "block": "攔截"
-            },
-            "network(map)": {
-              "all": "全部",
-              "tcp": "TCP",
-              "udp": "UDP"
-            },
-            "protocol(map)": {
-              "": "全部",
-              "tls": "TLS",
-              "http": "HTTP",
-              "quic": "QUIC",
-              "stun": "STUN",
-              "dns": "DNS",
-              "bittorrent": "BitTorrent"
-            }
-          },
-          "genericList": {
-            "addNew": "新增值",
-            "update": "更新值",
-            "clearList": "清除清單",
-            "clearListMsg": "所有項目已刪除"
-          },
-          "androidApps": {
-            "pageTitle": "Android 應用程式",
-            "showSystemApps": "顯示系統應用程式",
-            "hideSystemApps": "隱藏系統應用程式",
-            "clearSelection": "清除選擇",
-            "uninstalled": "已解除安裝"
-          }
-        }
-      },
-      "dns": {
-        "title": "DNS",
-        "remoteDns": "遠端 DNS",
-        "remoteDnsDomainStrategy": "遠端 DNS 網域策略",
-        "directDns": "出站伺服器解析器（直連）",
-        "directDnsDomainStrategy": "出站網域策略",
-        "enableDnsRouting": "啟用 DNS 路由",
-        "enableFakeDns": "啟用偽造 DNS",
-        "domainStrategy": {
-          "auto": "自動",
-          "preferIpv6": "偏好 IPv6",
-          "preferIpv4": "偏好 IPv4",
-          "ipv4Only": "僅 IPv4",
-          "ipv6Only": "僅 IPv6"
-        }
-      },
-      "inbound": {
-        "title": "入站",
-        "serviceMode": "服務模式",
-        "serviceModes": {
-          "proxy": "僅代理服務",
-          "systemProxy": "設定系統代理",
-          "tun": "VPN",
-          "tunService": "VPN 服務"
-        },
-        "shortServiceModes": {
-          "proxy": "代理",
-          "systemProxy": "系統代理",
-          "tun": "VPN",
-          "tunService": "VPN 服務"
-        },
-        "strictRoute": "嚴格路由",
-        "tunImplementation": "TUN 實現",
-        "tunImplementations": {
-          "mixed": "混合",
-          "system": "系統",
-          "gvisor": "gVisor"
-        },
-        "mixedPort": "混合連接埠",
-        "tproxyPort": "透明代理連接埠",
-        "directPort": "本地 Direct 連接埠",
-        "redirectPort": "重新導向連接埠"
       },
       "tlsTricks": {
         "title": "TLS 技巧",

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:fpdart/fpdart.dart';
 import 'package:grpc/grpc.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
@@ -91,7 +92,12 @@ class RaynCoreService with InfraLogger {
     return TaskEither(() async {
       try {
         final directories = ref.read(appDirectoriesProvider).requireValue;
-        final debug = ref.read(debugModeNotifierProvider);
+        // `kDebugMode &&` is load-bearing, not belt-and-braces: the Debug mode tile
+        // is compiled out of release builds, but the preference behind it is
+        // persisted — so an install that enabled it before upgrading would keep
+        // sending `true` here forever, with no UI left to turn it off. This feeds
+        // SetupRequest.Debug -> static.debug in the core.
+        final debug = kDebugMode && ref.read(debugModeNotifierProvider);
         final setupResponse = await core.setup(directories, debug, 3);
 
         if (setupResponse.isNotEmpty) {

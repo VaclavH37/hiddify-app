@@ -173,6 +173,7 @@
     "settings": {
       "title": "تنظیمات",
       "resetTunnel": "بازنشانی پروفایل VPN",
+      "troubleshooting": "عیب‌یابی",
       "general": {
         "title": "عمومی",
         "locale": "زبان",
@@ -184,6 +185,7 @@
           "black": "حالت مشکی"
         },
         "autoIpCheck": "بررسی خودکار IP اتصال",
+        "blockAds": "مسدودسازی تبلیغات",
         "dynamicNotification": "نمایش سرعت در اعلان",
         "hapticFeedback": "بازخورد لرزشی",
         "actionAtClosing": "اقدام هنگام بستن",
@@ -200,174 +202,6 @@
         "urlTestInterval": "فاصله زمانی تست URL",
         "ignoreBatteryOptimizationsDialogTitle": "VPN در پس‌زمینه فعال بماند؟",
         "ignoreBatteryOptimizationsDialogBody": "برای اتصالی پایدار و بدون وقفه، Rayn VPN باید هنگام خاموش بودن صفحه به کار خود ادامه دهد. صفحه بعدی به شما امکان می‌دهد برنامه را از بهینه‌سازی باتری مستثنا کنید. این کار اختیاری است — هر زمان می‌توانید آن را در تنظیمات سیستم تغییر دهید."
-      },
-      "routing": {
-        "title": "مسیریابی",
-        "perAppProxy": {
-          "title": "پروکسی برای هر برنامه",
-          "hideSysApps": "پنهان کردن برنامه‌های سیستمی",
-          "options": {
-            "import": {
-              "clipboard": "وارد کردن انتخاب‌ها از کلیپ‌بورد",
-              "file": "وارد کردن انتخاب‌ها از فایل",
-              "msg": "وارد کردن، انتخاب‌های فعلی شما را جایگزین خواهد کرد. آیا مطمئن هستید که می‌خواهید ادامه دهید؟"
-            },
-            "export": {
-              "clipboard": "کپی انتخاب‌ها به کلیپ‌بورد",
-              "file": "خروجی انتخاب‌ها به فایل"
-            },
-            "clearAllSelections": "پاک کردن تمام انتخاب‌ها"
-          },
-          "modes": {
-            "all": "همه",
-            "proxy": "پروکسی",
-            "bypass": "دور زدن",
-            "allMsg": "پروکسی کردن تمام برنامه‌ها",
-            "proxyMsg": "فقط برنامه‌های انتخاب‌شده پروکسی شوند",
-            "bypassMsg": "برنامه‌های انتخاب‌شده پروکسی نشوند"
-          }
-        },
-        "balancerStrategy": {
-          "title": "استراتژی Balancer",
-          "roundRobin": "Round robin",
-          "consistentHash": "Consistent hash",
-          "stickySession": "Sticky session"
-        },
-        "blockAds": "مسدودسازی تبلیغات",
-        "bypassLan": "دور زدن LAN",
-        "resolveDestination": "تحلیل آدرس مقصد",
-        "routeRule": {
-          "title": "قوانین مسیریابی",
-          "options": {
-            "import": {
-              "clipboard": "وارد کردن قوانین از کلیپ‌بورد",
-              "file": "وارد کردن قوانین از فایل"
-            },
-            "export": {
-              "clipboard": "کپی قوانین در کلیپ‌بورد",
-              "file": "ذخیره قوانین در فایل"
-            },
-            "reset": "بازنشانی قوانین"
-          },
-          "deleteRule": "حذف قانون",
-          "createRule": "ایجاد قانون جدید",
-          "rule": {
-            "title": "قانون",
-            "ruleChanged": "قانون تغییر کرد",
-            "ruleChangedMsg": "آیا می‌خواهید ویرایش‌های خود را ذخیره کنید؟",
-            "onlyTunMode": "فقط در حالت TUN در دسترس است",
-            "notAvailabeInThisPlatform": "در این پلتفرم در دسترس نیست",
-            "canNotBeEmpty": "نمی‌تواند خالی باشد",
-            "validUrlEx": "https://example.com",
-            "validUrl": "«URL» معتبر مانند\n@:pages.settings.routing.routeRule.rule.validUrlEx",
-            "validProcessNameEx": "Chrome.exe یا google chrome یا chrome",
-            "validProcessName": "«نام فرآیند» معتبر مانند\n@:pages.settings.routing.routeRule.rule.validProcessNameEx",
-            "validProcessPathEx": "C:\\Pro...\\chrome.exe\n/App.../Google Chrome\n/usr/lib.../chrome",
-            "validProcessPath": "«مسیر فرآیند» معتبر مانند\n@:pages.settings.routing.routeRule.rule.validProcessPathEx",
-            "validPortRangeEx": "80 یا 1-65000",
-            "validPortRange": "«پورت» یا «محدوده پورت» معتبر مانند\n@:pages.settings.routing.routeRule.rule.validPortRangeEx",
-            "validIpCidrEx": "8.8.8.8 یا 10.0.0.0/24",
-            "validIpCidr": "IP CIDR معتبر مانند\n@:pages.settings.routing.routeRule.rule.validIpCidrEx",
-            "validDomainEx": "Google.com یا dl.google.com",
-            "validDomain": "«دامنه» معتبر مانند\n@:pages.settings.routing.routeRule.rule.validDomainEx",
-            "validDomainSuffixEx": ".com یا .ir",
-            "validDomainSuffix": "«پسوند دامنه» معتبر مانند\n@:pages.settings.routing.routeRule.rule.validDomainSuffixEx",
-            "tileTitle(map)": {
-              "name": "نام",
-              "outbound": "خروجی در صورت تطابق",
-              "rule_set": "URL مجموعه قوانین",
-              "package_name": "نام‌های بسته",
-              "process_name": "نام‌های فرآیند",
-              "process_path": "مسیرهای فرآیند",
-              "network": "شبکه‌ها",
-              "port_range": "پورت‌های مقصد",
-              "source_port_range": "پورت‌های مبدأ",
-              "protocol": "پروتکل",
-              "ip_cidr": "IP CIDR مقصد",
-              "source_ip_cidr": "IP CIDR مبدأ",
-              "domain": "دامنه",
-              "domain_suffixe": "پسوند دامنه",
-              "domain_keyword": "کلمه کلیدی دامنه",
-              "domain_regex": "عبارت منظم دامنه"
-            },
-            "outbound(map)": {
-              "proxy": "پروکسی",
-              "direct": "مستقیم",
-              "direct_with_fragment": "مستقیم با فرگمنت",
-              "block": "مسدود"
-            },
-            "network(map)": {
-              "all": "همه",
-              "tcp": "TCP",
-              "udp": "UDP"
-            },
-            "protocol(map)": {
-              "": "همه",
-              "tls": "TLS",
-              "http": "HTTP",
-              "quic": "QUIC",
-              "stun": "STUN",
-              "dns": "DNS",
-              "bittorrent": "BitTorrent"
-            }
-          },
-          "genericList": {
-            "addNew": "افزودن مقدار جدید",
-            "update": "به‌روزرسانی مقدار",
-            "clearList": "پاک کردن لیست",
-            "clearListMsg": "تمام موارد حذف شدند"
-          },
-          "androidApps": {
-            "pageTitle": "برنامه‌های اندروید",
-            "showSystemApps": "نمایش برنامه‌های سیستمی",
-            "hideSystemApps": "پنهان کردن برنامه‌های سیستمی",
-            "clearSelection": "پاک کردن انتخاب‌ها",
-            "uninstalled": "نصب نشده"
-          }
-        }
-      },
-      "dns": {
-        "title": "DNS",
-        "remoteDns": "DNS اصلی (ریموت)",
-        "remoteDnsDomainStrategy": "استراتژی دامنه DNS",
-        "directDns": "DNS پروکسی‌ها (مستقیم)",
-        "directDnsDomainStrategy": "استراتژی دامنه DNS مستقیم",
-        "enableDnsRouting": "فعال‌سازی مسیریابی DNS",
-        "enableFakeDns": "فعال‌سازی DNS جعلی",
-        "domainStrategy": {
-          "auto": "خودکار",
-          "preferIpv6": "ترجیح IPv6",
-          "preferIpv4": "ترجیح IPv4",
-          "ipv4Only": "فقط IPv4",
-          "ipv6Only": "فقط IPv6"
-        }
-      },
-      "inbound": {
-        "title": "ورودی",
-        "serviceMode": "حالت سرویس",
-        "serviceModes": {
-          "proxy": "فقط سرویس پروکسی",
-          "systemProxy": "تنظیم پروکسی سیستم",
-          "tun": "VPN",
-          "tunService": "سرویس VPN"
-        },
-        "shortServiceModes": {
-          "proxy": "پروکسی",
-          "systemProxy": "پروکسی سیستم",
-          "tun": "VPN",
-          "tunService": "سرویس VPN"
-        },
-        "strictRoute": "مسیربندی سخت‌گیرانه",
-        "tunImplementation": "پیاده‌سازی Tun",
-        "tunImplementations": {
-          "mixed": "ترکیبی",
-          "system": "سیستم",
-          "gvisor": "gVisor"
-        },
-        "mixedPort": "پورت ترکیبی",
-        "tproxyPort": "پورت پروکسی شفاف",
-        "directPort": "پورت مستقیم",
-        "redirectPort": "پورت تغییر مسیر"
       },
       "tlsTricks": {
         "title": "ترفندهای TLS",

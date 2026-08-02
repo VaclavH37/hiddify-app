@@ -114,9 +114,9 @@ class ClosingPrefTile extends ConsumerWidget {
   }
 }
 
-/// Inline switch row used for `Preferences.<bool>` toggles inside a
-/// [RaynPreferenceGroup]. Composes a [RaynSettingsTile] with a [Switch] in
-/// the trailing slot — the whole row is tappable.
+/// Inline switch row used for `Preferences.<bool>` toggles. Composes a
+/// [RaynSettingsTile] with a [Switch] in the trailing slot — the whole row is
+/// tappable.
 class RaynSwitchTile extends StatelessWidget {
   const RaynSwitchTile({
     super.key,

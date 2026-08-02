@@ -73,7 +73,14 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
     }
   });
 
-  final debug = container.read(debugModeNotifierProvider) || kDebugMode;
+  // Compile-time only. This used to read the Debug mode preference OR'd with
+  // kDebugMode — which meant a debug build was always `true` regardless of the
+  // toggle, so the switch only ever had an effect in RELEASE builds. Exactly
+  // backwards: it did nothing for developers and everything for an adversary.
+  //
+  // Now a debug build is always on and a shipped build always off, including for
+  // installs that already have `true` persisted from an older version.
+  const debug = kDebugMode;
 
   if (PlatformUtils.isDesktop) {
     await _init("window controller", () => container.read(windowNotifierProvider.future));

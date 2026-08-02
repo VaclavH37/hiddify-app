@@ -17,6 +17,8 @@ class PreferencesMigration with InfraLogger {
       PreferencesVersion3Migration(sharedPreferences),
       PreferencesVersion4Migration(sharedPreferences),
       PreferencesVersion5Migration(sharedPreferences),
+      PreferencesVersion6Migration(sharedPreferences),
+      PreferencesVersion7Migration(sharedPreferences),
     ];
 
     if (currentVersion == migrationSteps.length) {
@@ -54,11 +56,13 @@ class PreferencesVersion1Migration extends PreferencesMigrationStep with InfraLo
         "proxy" || "system-proxy" || "vpn" => serviceMode,
         "systemProxy" => "system-proxy",
         "tun" => "vpn",
-        // An unrecognised stored value falls through to the current default,
-        // which is now TUN on every platform — see ServiceMode.defaultMode.
+        // An unrecognised stored value falls through to VPN.
         _ => "vpn",
       };
       loggy.debug("changing service-mode from [$serviceMode] to [$newMode]");
+      // Superseded by v6, which deletes this key outright now that the app is
+      // locked to TUN. Kept as-is rather than removed: a partially-migrated install
+      // must still reach v6 through the same sequence of steps it would have before.
       await sharedPreferences.setString("service-mode", newMode);
     }
 
@@ -204,6 +208,71 @@ class PreferencesVersion5Migration extends PreferencesMigrationStep with InfraLo
   Future<void> migrate() async {
     const keysToClear = [
       "direct-dns-domain-strategy",
+    ];
+    for (final key in keysToClear) {
+      await sharedPreferences.remove(key);
+    }
+  }
+}
+
+/// v6 — drop the stored service mode. The app is locked to TUN and the Settings
+/// picker and tray submenu that set this are gone, so nothing writes the key any
+/// more.
+///
+/// Clearing it is NOT cosmetic. Android's native side reads this SharedPreferences
+/// entry directly (`flutter.service-mode` in SettingsKey.kt) to choose between
+/// VPNService and ProxyService, and Dart is its only writer. An install that had
+/// "proxy" or "system-proxy" stored would otherwise keep launching ProxyService —
+/// no tun fd, no tunnel — forever, with no UI left to change it back. Removing the
+/// key makes the Kotlin getter fall through to its own default of VPN.
+///
+/// Follows the `ipv6-mode` precedent in v1: drop a key that is no longer read
+/// rather than rewriting it.
+class PreferencesVersion6Migration extends PreferencesMigrationStep with InfraLogger {
+  PreferencesVersion6Migration(super.sharedPreferences);
+
+  @override
+  Future<void> migrate() async {
+    await sharedPreferences.remove("service-mode");
+  }
+}
+
+/// v7 — drop the remaining Routing / DNS / Inbound settings keys.
+///
+/// These backed controls that were removed for one of three reasons: the core never
+/// read them (`resolve-destination`, and `direct-dns-address`, whose only routing rule
+/// is gated on an NTP block that is commented out); they duplicated always-on
+/// behaviour (`bypass-lan`, already covered by the bundled private-address rule-set);
+/// or they were live footguns (`strict-route` off is a leak, `mixed-port` changed
+/// while connected sent API traffic outside the tunnel, `direct-dns-domain-strategy`
+/// set to `auto` reintroduces the poisoned-AAAA bug that migration v5 exists to fix).
+///
+/// Every one of these values is now a constant in ConfigOptions.singboxConfigOptions,
+/// set to what the default already was, so clearing the stored keys changes nothing at
+/// runtime — it only stops dead entries accumulating in SharedPreferences. Purely
+/// hygienic, unlike v6, which is load-bearing for Android.
+class PreferencesVersion7Migration extends PreferencesMigrationStep with InfraLogger {
+  PreferencesVersion7Migration(super.sharedPreferences);
+
+  @override
+  Future<void> migrate() async {
+    const keysToClear = [
+      // routing
+      "balancer-strategy",
+      "bypass-lan",
+      "resolve-destination",
+      // dns
+      "remote-dns-address",
+      "remote-dns-domain-strategy",
+      "direct-dns-address",
+      "direct-dns-domain-strategy",
+      // inbound
+      "mixed-port",
+      "tproxy-port",
+      "redirect-port",
+      "direct-port",
+      "strict-route",
+      "tun-implementation",
     ];
     for (final key in keysToClear) {
       await sharedPreferences.remove(key);

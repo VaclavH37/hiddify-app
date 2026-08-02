@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/preferences/general_preferences.dart';
+import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
@@ -10,7 +14,12 @@ import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
 import 'package:hiddify/core/widget/rayn_section_header.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auth/widget/account_section.dart';
+import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
+import 'package:hiddify/features/common/general_pref_tiles.dart';
+import 'package:hiddify/features/log/model/log_level.dart';
+import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/settings/notifier/reset_tunnel/reset_tunnel_notifier.dart';
+import 'package:hiddify/features/settings/widget/preference_tile.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -35,6 +44,127 @@ class SettingsPage extends HookConsumerWidget {
     final t = ref.watch(translationsProvider).requireValue;
     final isMobile = Breakpoint(context).isMobile();
 
+    // Preferences, formerly the Settings → General sub-page. That page was the last
+    // sub-page left once Routing, DNS and Inbound were removed, which left a
+    // "General" section header whose only child was a "General" tile — a navigation
+    // hop that revealed everything behind it. With this few settings the level of
+    // hierarchy earned nothing, so the tiles live here directly.
+    final generalTiles = <Widget>[
+      const LocalePrefTile(),
+      const ThemeModePrefTile(),
+      RaynSwitchTile(
+        icon: Icons.flag_rounded,
+        title: t.pages.settings.general.autoIpCheck,
+        value: ref.watch(Preferences.autoCheckIp),
+        onChanged: ref.read(Preferences.autoCheckIp.notifier).update,
+      ),
+      RaynSwitchTile(
+        icon: Icons.block_rounded,
+        title: t.pages.settings.general.blockAds,
+        value: ref.watch(ConfigOptions.blockAds),
+        onChanged: ref.read(ConfigOptions.blockAds.notifier).update,
+      ),
+      if (PlatformUtils.isAndroid) ...[
+        RaynSwitchTile(
+          icon: Icons.speed_rounded,
+          title: t.pages.settings.general.dynamicNotification,
+          value: ref.watch(Preferences.dynamicNotification),
+          onChanged: ref.read(Preferences.dynamicNotification.notifier).update,
+        ),
+        RaynSwitchTile(
+          icon: Icons.vibration_rounded,
+          title: t.pages.settings.general.hapticFeedback,
+          value: ref.watch(hapticServiceProvider),
+          onChanged: ref.read(hapticServiceProvider.notifier).updatePreference,
+        ),
+      ],
+      if (PlatformUtils.isDesktop) ...[
+        const ClosingPrefTile(),
+        RaynSwitchTile(
+          icon: Icons.auto_mode_rounded,
+          title: t.pages.settings.general.autoStart,
+          value: ref.watch(autoStartNotifierProvider).asData?.value ?? false,
+          onChanged: (value) async => value
+              ? await ref.read(autoStartNotifierProvider.notifier).enable()
+              : await ref.read(autoStartNotifierProvider.notifier).disable(),
+        ),
+        RaynSwitchTile(
+          icon: Icons.visibility_off_rounded,
+          title: t.pages.settings.general.silentStart,
+          value: ref.watch(Preferences.silentStart),
+          onChanged: ref.read(Preferences.silentStart.notifier).update,
+        ),
+      ],
+      if (PlatformUtils.isAndroid) const BatteryOptimizationWidget(),
+    ];
+
+    // Diagnostics, deliberately kept in their own group rather than mixed in above.
+    // These are for investigating a problem, not for configuring the product:
+    // debug mode warns before enabling, and the connection-test URL feeds a hostname
+    // the core pins to the CN-direct resolver for 24h — a bad value there breaks
+    // ordinary browsing, not just the probe. Grouping them signals that.
+    final troubleshootingTiles = <Widget>[
+      RaynSwitchTile(
+        icon: Icons.memory_rounded,
+        title: t.pages.settings.general.memoryLimit,
+        subtitle: t.pages.settings.general.memoryLimitMsg,
+        value: !ref.watch(Preferences.disableMemoryLimit),
+        onChanged: (value) async => await ref.read(Preferences.disableMemoryLimit.notifier).update(!value),
+      ),
+      // Debug mode and Log level exist only in a debug build. `kDebugMode` is a
+      // const, so in release AOT these two tiles and their string literals are
+      // dead-code-eliminated rather than merely hidden.
+      //
+      // They were removed from shipped builds because they are enumeration tools,
+      // not user settings: below `warn` the core logs every connection destination
+      // and every DNS lookup, which documents both the user's activity and this
+      // client's routing/DNS design. Selecting `debug`/`trace` also sets static.debug
+      // in the core, which used to write a goroutine dump naming sing-box and
+      // hiddify-core — undoing the de-branding done elsewhere.
+      //
+      // Nothing is lost in development: a debug build gets both tiles, and
+      // bootstrap forces the core's debug flag on regardless.
+      if (kDebugMode) ...[
+        RaynSwitchTile(
+          icon: Icons.bug_report_rounded,
+          title: t.pages.settings.general.debugMode,
+          value: ref.watch(debugModeNotifierProvider),
+          onChanged: (value) async {
+            if (value) {
+              await ref
+                  .read(dialogNotifierProvider.notifier)
+                  .showOk(t.pages.settings.general.debugMode, t.pages.settings.general.debugModeMsg);
+            }
+            await ref.read(debugModeNotifierProvider.notifier).update(value);
+          },
+        ),
+        ChoicePreferenceWidget(
+          selected: ref.watch(ConfigOptions.logLevel),
+          preferences: ref.watch(ConfigOptions.logLevel.notifier),
+          choices: LogLevel.choices,
+          title: t.pages.settings.general.logLevel,
+          icon: Icons.description_rounded,
+          presentChoice: (value) => value.name.toUpperCase(),
+        ),
+      ],
+      ValuePreferenceWidget(
+        value: ref.watch(ConfigOptions.connectionTestUrl),
+        preferences: ref.watch(ConfigOptions.connectionTestUrl.notifier),
+        title: t.pages.settings.general.connectionTestUrl,
+        icon: Icons.link_rounded,
+      ),
+      // Was stranded on the settings root under no header at all, left behind when
+      // the Network section was removed. It is a recovery action, so it belongs here.
+      if (PlatformUtils.isIOS)
+        RaynSettingsTile(
+          leading: Icons.autorenew_rounded,
+          title: t.pages.settings.resetTunnel,
+          onTap: () async {
+            await ref.read(resetTunnelNotifierProvider.notifier).run();
+          },
+        ),
+    ];
+
     return RaynPageScaffold(
       body: ListView(
         padding: const EdgeInsets.only(bottom: RaynSpacing.xl),
@@ -48,36 +178,10 @@ class SettingsPage extends HookConsumerWidget {
           const AccountSection(),
           const _SectionDivider(),
           RaynSectionHeader(t.pages.settings.general.title),
-          _Tile(
-            title: t.pages.settings.general.title,
-            icon: Icons.layers_rounded,
-            location: context.namedLocation('general'),
-          ),
+          _TileColumn(children: generalTiles),
           const _SectionDivider(),
-          RaynSectionHeader(t.pages.settings.network),
-          _Tile(
-            title: t.pages.settings.routing.title,
-            icon: Icons.route_rounded,
-            location: context.namedLocation('routeOptions'),
-          ),
-          _Tile(
-            title: t.pages.settings.dns.title,
-            icon: Icons.dns_rounded,
-            location: context.namedLocation('dnsOptions'),
-          ),
-          _Tile(
-            title: t.pages.settings.inbound.title,
-            icon: Icons.input_rounded,
-            location: context.namedLocation('inboundOptions'),
-          ),
-          if (PlatformUtils.isIOS)
-            _Tile(
-              title: t.pages.settings.resetTunnel,
-              icon: Icons.autorenew_rounded,
-              onTap: () async {
-                await ref.read(resetTunnelNotifierProvider.notifier).run();
-              },
-            ),
+          RaynSectionHeader(t.pages.settings.troubleshooting),
+          _TileColumn(children: troubleshootingTiles),
           if (isMobile) ...[
             const _SectionDivider(),
             RaynSectionHeader(t.pages.about.title),
@@ -89,9 +193,34 @@ class SettingsPage extends HookConsumerWidget {
   }
 }
 
+/// A section's tiles, stacked and inset to line up with the section headers.
+///
+/// Deliberately plain: no `RaynPreferenceGroup` wrapper. These tiles used to live
+/// on sub-pages, where a filled, bordered, hairline-separated container set them
+/// apart from the page around them. Inlined onto the settings root that container
+/// read as a foreign element — the Account block above and the About row below are
+/// bare [RaynSettingsTile]s on the page background, so General and Troubleshooting
+/// were the only boxed sections on the screen.
+///
+/// Matches [AccountSection]'s layout exactly (same padding, same bare Column) so
+/// every section on this page shares one treatment.
+class _TileColumn extends StatelessWidget {
+  const _TileColumn({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+      child: Column(children: children),
+    );
+  }
+}
+
 /// Hairline divider between top-level section groups (Account → General →
-/// Network → About on mobile). Indented to align with tile content rather
-/// than running edge-to-edge.
+/// Troubleshooting → About on mobile). Indented to align with tile content
+/// rather than running edge-to-edge.
 class _SectionDivider extends StatelessWidget {
   const _SectionDivider();
 

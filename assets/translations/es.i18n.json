@@ -173,6 +173,7 @@
     "settings": {
       "title": "Ajustes",
       "resetTunnel": "Restablecer perfil de VPN",
+      "troubleshooting": "Solución de problemas",
       "general": {
         "title": "General",
         "locale": "Idioma",
@@ -184,6 +185,7 @@
           "black": "Modo negro"
         },
         "autoIpCheck": "Comprobar IP de conexión automáticamente",
+        "blockAds": "Bloquear anuncios",
         "dynamicNotification": "Mostrar velocidad en la notificación",
         "hapticFeedback": "Respuesta háptica",
         "actionAtClosing": "Acción al cerrar",
@@ -200,174 +202,6 @@
         "urlTestInterval": "Intervalo de prueba de URL",
         "ignoreBatteryOptimizationsDialogTitle": "¿Mantener la VPN activa en segundo plano?",
         "ignoreBatteryOptimizationsDialogBody": "Para una conexión estable e ininterrumpida, Rayn VPN necesita seguir funcionando con la pantalla apagada. La siguiente pantalla te permite excluir la aplicación de la optimización de batería. Es opcional: puedes cambiarlo cuando quieras en los ajustes del sistema."
-      },
-      "routing": {
-        "title": "Enrutamiento",
-        "perAppProxy": {
-          "title": "Proxy por aplicación",
-          "hideSysApps": "Ocultar aplicaciones del sistema",
-          "options": {
-            "import": {
-              "clipboard": "Importar selección desde el portapapeles",
-              "file": "Importar selección desde un archivo",
-              "msg": "La importación reemplazará tus selecciones actuales. ¿Estás seguro de que quieres continuar?"
-            },
-            "export": {
-              "clipboard": "Copiar selección al portapapeles",
-              "file": "Exportar selección a un archivo"
-            },
-            "clearAllSelections": "Borrar todas las selecciones"
-          },
-          "modes": {
-            "all": "Todo",
-            "proxy": "Proxy",
-            "bypass": "Omitir",
-            "allMsg": "Usar proxy en todas las aplicaciones",
-            "proxyMsg": "Usar proxy solo en aplicaciones seleccionadas",
-            "bypassMsg": "No usar proxy en aplicaciones seleccionadas"
-          }
-        },
-        "balancerStrategy": {
-          "title": "Estrategia de Balancer",
-          "roundRobin": "Round robin",
-          "consistentHash": "Consistent hash",
-          "stickySession": "Sticky session"
-        },
-        "blockAds": "Bloquear anuncios",
-        "bypassLan": "Omitir LAN",
-        "resolveDestination": "Resolver destino",
-        "routeRule": {
-          "title": "Reglas de enrutamiento",
-          "options": {
-            "import": {
-              "clipboard": "Importar reglas desde el portapapeles",
-              "file": "Importar reglas desde un archivo"
-            },
-            "export": {
-              "clipboard": "Copiar reglas al portapapeles",
-              "file": "Guardar reglas en un archivo"
-            },
-            "reset": "Restablecer reglas"
-          },
-          "deleteRule": "Eliminar regla",
-          "createRule": "Crear nueva regla",
-          "rule": {
-            "title": "Regla",
-            "ruleChanged": "Regla modificada",
-            "ruleChangedMsg": "¿Quieres guardar tus cambios?",
-            "onlyTunMode": "Disponible solo en modo TUN",
-            "notAvailabeInThisPlatform": "No disponible en esta plataforma",
-            "canNotBeEmpty": "No puede estar vacío",
-            "validUrlEx": "https://example.com",
-            "validUrl": "\"URL\" válida como\n@:pages.settings.routing.routeRule.rule.validUrlEx",
-            "validProcessNameEx": "Chrome.exe or google chrome or chrome",
-            "validProcessName": "\"Nombre de proceso\" válido como\n@:pages.settings.routing.routeRule.rule.validProcessNameEx",
-            "validProcessPathEx": "C:\\Pro...\\chrome.exe\n/App.../Google Chrome\n/usr/lib.../chrome",
-            "validProcessPath": "\"Ruta de proceso\" válida como\n@:pages.settings.routing.routeRule.rule.validProcessPathEx",
-            "validPortRangeEx": "80 or 1-65000",
-            "validPortRange": "\"Puerto\" o \"Rango de puertos\" válido como\n@:pages.settings.routing.routeRule.rule.validPortRangeEx",
-            "validIpCidrEx": "8.8.8.8 or 10.0.0.0/24",
-            "validIpCidr": "IP CIDR válido como\n@:pages.settings.routing.routeRule.rule.validIpCidrEx",
-            "validDomainEx": "Google.com or dl.google.com",
-            "validDomain": "\"Dominio\" válido como\n@:pages.settings.routing.routeRule.rule.validDomainEx",
-            "validDomainSuffixEx": ".com or .ir",
-            "validDomainSuffix": "\"Sufijo de dominio\" válido como\n@:pages.settings.routing.routeRule.rule.validDomainSuffixEx",
-            "tileTitle(map)": {
-              "name": "Nombre",
-              "outbound": "Salida si coincide",
-              "rule_set": "URL del conjunto de reglas",
-              "package_name": "Nombres de paquetes",
-              "process_name": "Nombres de procesos",
-              "process_path": "Rutas de procesos",
-              "network": "Redes",
-              "port_range": "Puertos de destino",
-              "source_port_range": "Puertos de origen",
-              "protocol": "Protocolo",
-              "ip_cidr": "IP CIDR de destino",
-              "source_ip_cidr": "IP CIDR de origen",
-              "domain": "Dominio",
-              "domain_suffixe": "Sufijo de dominio",
-              "domain_keyword": "Palabra clave de dominio",
-              "domain_regex": "Expresión regular de dominio"
-            },
-            "outbound(map)": {
-              "proxy": "Proxy",
-              "direct": "Directo",
-              "direct_with_fragment": "Directo con fragmento",
-              "block": "Bloquear"
-            },
-            "network(map)": {
-              "all": "Todo",
-              "tcp": "TCP",
-              "udp": "UDP"
-            },
-            "protocol(map)": {
-              "": "Todos",
-              "tls": "TLS",
-              "http": "HTTP",
-              "quic": "QUIC",
-              "stun": "STUN",
-              "dns": "DNS",
-              "bittorrent": "BitTorrent"
-            }
-          },
-          "genericList": {
-            "addNew": "Añadir nuevo valor",
-            "update": "Actualizar valor",
-            "clearList": "Limpiar lista",
-            "clearListMsg": "Todos los elementos han sido eliminados"
-          },
-          "androidApps": {
-            "pageTitle": "Aplicaciones de Android",
-            "showSystemApps": "Mostrar aplicaciones del sistema",
-            "hideSystemApps": "Ocultar aplicaciones del sistema",
-            "clearSelection": "Borrar selección",
-            "uninstalled": "Desinstalado"
-          }
-        }
-      },
-      "dns": {
-        "title": "DNS",
-        "remoteDns": "DNS remoto",
-        "remoteDnsDomainStrategy": "Estrategia de dominio de DNS remoto",
-        "directDns": "Resolución del servidor de salida (directo)",
-        "directDnsDomainStrategy": "Estrategia de dominio de salida",
-        "enableDnsRouting": "Habilitar enrutamiento de DNS",
-        "enableFakeDns": "Habilitar DNS falso",
-        "domainStrategy": {
-          "auto": "Automático",
-          "preferIpv6": "Preferir IPv6",
-          "preferIpv4": "Preferir IPv4",
-          "ipv4Only": "Solo IPv4",
-          "ipv6Only": "Solo IPv6"
-        }
-      },
-      "inbound": {
-        "title": "Entrada",
-        "serviceMode": "Modo de servicio",
-        "serviceModes": {
-          "proxy": "Solo servicio de proxy",
-          "systemProxy": "Establecer proxy del sistema",
-          "tun": "VPN",
-          "tunService": "Servicio VPN"
-        },
-        "shortServiceModes": {
-          "proxy": "Proxy",
-          "systemProxy": "Proxy del sistema",
-          "tun": "VPN",
-          "tunService": "Servicio VPN"
-        },
-        "strictRoute": "Ruta estricta",
-        "tunImplementation": "Implementación de TUN",
-        "tunImplementations": {
-          "mixed": "Mixto",
-          "system": "Sistema",
-          "gvisor": "gVisor"
-        },
-        "mixedPort": "Puerto mixto",
-        "tproxyPort": "Puerto de proxy transparente",
-        "directPort": "Puerto de Directo",
-        "redirectPort": "Puerto de redirección"
       },
       "tlsTricks": {
         "title": "Trucos de TLS",

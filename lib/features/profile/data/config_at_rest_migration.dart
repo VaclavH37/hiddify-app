@@ -74,7 +74,22 @@ class ConfigAtRestMigration {
     // `raynconfigdump` core respectively — neither can occur in a shipped build,
     // but an install that was once a debug build would otherwise keep the
     // plaintext forever after moving to release.
-    for (final name in const ['current-config.json', 'debug-profile-config.json', 'debug-built-config.json']) {
+    //
+    // The two `goroutine-*.log` files are the same class of leftover, with one
+    // difference that makes sweeping them necessary rather than merely tidy: they
+    // USED to be written by shipped builds. `-start` on any launch where the user
+    // had enabled Debug mode or picked log level debug/trace; `-stop` on any failed
+    // service stop, with no user action and no gate at all. Both are now behind the
+    // `raynconfigdump` build tag, which stops new ones — only this removes the ones
+    // already on disk. They are full goroutine dumps, so they name sing-box and
+    // hiddify-core in cleartext.
+    for (final name in const [
+      'current-config.json',
+      'debug-profile-config.json',
+      'debug-built-config.json',
+      'goroutine-start.log',
+      'goroutine-stop.log',
+    ]) {
       await _deleteIfPresent(File(p.join(workingDir.path, 'data', name)));
     }
 

@@ -41,9 +41,14 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   /// themes so the content area sits visually above the rail.
   final Color pageBackground;
 
-  /// Fill color of [RaynPreferenceGroup] — the bordered container that
-  /// wraps a column of rows on settings sub-pages. One step further from
-  /// the page background.
+  /// Fill for a surface raised one step above [pageBackground] — used by the
+  /// payment flow's plan cards and detail rows.
+  ///
+  /// Named for `RaynPreferenceGroup`, the bordered settings container it was
+  /// introduced for. That widget is gone: its rows were inlined onto the settings
+  /// page, where a filled, bordered box read as a foreign element next to the bare
+  /// tiles around it. The colour outlived it because the payment surfaces use the
+  /// same one-step-raised relationship.
   final Color groupFill;
 
   /// Default body-text color. Inherited via DefaultTextStyle.
