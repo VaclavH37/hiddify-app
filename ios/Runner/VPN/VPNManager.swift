@@ -115,7 +115,12 @@ class VPNManager: ObservableObject {
         manager.isEnabled = true
         let rule = NEOnDemandRuleConnect()
         rule.interfaceTypeMatch = .any
-        rule.probeURL = URL(string: "http://captive.apple.com")
+        // No probeURL. It was http://captive.apple.com -- cleartext, and a
+        // third-party host outside the set this client is allowed to reach
+        // (api.raynlabs.io, the MW API, the nodes). probeURL is optional on an
+        // on-demand rule and only narrows when the rule fires; dropping it makes
+        // the rule fire on any matching interface, which is what "connect on any
+        // network" was meant to say in the first place.
         manager.onDemandRules = [rule]
         manager.isOnDemandEnabled = true
         
