@@ -73,6 +73,8 @@ public class MethodHandler: NSObject, FlutterPlugin {
                         result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
                         return
                     }
+                    // Dart does not send `debug` on every path; absent means off.
+                    let debug = (args["debug"] as? NSNumber)?.boolValue ?? false
                     VPNConfig.shared.baseDir=baseDir
                     VPNConfig.shared.workingDir=workingDir
                     VPNConfig.shared.tempDir=tempDir
@@ -83,8 +85,19 @@ public class MethodHandler: NSObject, FlutterPlugin {
                     opts.tempDir = tempDir
                     opts.listen = "127.0.0.1:\(grpcPort)"
                     opts.secret = ""
-                    opts.debug = false
-                    opts.mode = 4
+                    // Both were hardcoded, ignoring the arguments parsed above.
+                    // `mode` mattered twice over: the app process is the
+                    // FOREGROUND core (Dart sends 3 = GRPC_NORMAL_INSECURE,
+                    // rayn_core_service.dart:99) and pinning it to 4 meant
+                    //   * it set up as a background core while Dart later closed
+                    //     mode 3 (rayn_core_service.dart:607) — the wrong server;
+                    //   * hcore redirects stderr to data/stderr<mode>.log
+                    //     (v2/hcore/grpc_server.go:67), so this process and the
+                    //     packet-tunnel extension — which is legitimately mode 4 —
+                    //     interleaved into one file.
+                    // Android has always forwarded both (MethodHandler.kt:94).
+                    opts.debug = debug
+                    opts.mode = mode
                     opts.fixAndroidStack = false
                     MobileSetup(opts,
                         nil,
