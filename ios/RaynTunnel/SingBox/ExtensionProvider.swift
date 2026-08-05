@@ -1,11 +1,11 @@
 import Foundation
-import HiddifyCore
+import RaynCore
 import NetworkExtension
 import os.log
 
 open class ExtensionProvider: NEPacketTunnelProvider {
     public static let errorFile = FilePath.workingDirectory.appendingPathComponent("network_extension_error.log")
-    private let logger = Logger(subsystem: "com.raynlabs.app.HiddifyPacketTunnel", category: "PacketTunnel")
+    private let logger = Logger(subsystem: "com.raynlabs.app.RaynTunnel", category: "PacketTunnel")
     
 //    private var commandServer: LibboxCommandServer!
     private var systemProxyAvailable = false

@@ -1,6 +1,6 @@
 import UIKit
 import Flutter
-import HiddifyCore
+import RaynCore
 @main
 @objc class AppDelegate: FlutterAppDelegate {
     

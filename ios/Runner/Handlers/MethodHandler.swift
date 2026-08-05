@@ -7,7 +7,7 @@
 
 import Flutter
 import Combine
-import HiddifyCore
+import RaynCore
 
 public class MethodHandler: NSObject, FlutterPlugin {
     

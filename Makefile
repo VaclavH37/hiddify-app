@@ -573,7 +573,7 @@ macos-libs:
 
 ios-libs: #not tested
 	mkdir -p $(IOS_OUT)
-	rm -rf $(IOS_OUT)/HiddifyCore.xcframework
+	rm -rf $(IOS_OUT)/RaynCore.xcframework
 	curl -L $(CORE_URL)/$(CORE_NAME)-ios.tar.gz | tar xz -C "$(IOS_OUT)"
 
 get-geo-assets:
@@ -705,9 +705,9 @@ build-macos-libs:
 	make -C hiddify-core -f Makefile macos EXTRA_TAGS="$(EXTRA_TAGS)"
 
 build-ios-libs:
-	rm -rf $(IOS_OUT)/HiddifyCore.xcframework
+	rm -rf $(IOS_OUT)/RaynCore.xcframework
 	make -C hiddify-core -f Makefile ios EXTRA_TAGS="$(EXTRA_TAGS)"
-	mv $(BINDIR)/HiddifyCore.xcframework $(IOS_OUT)/HiddifyCore.xcframework
+	mv $(BINDIR)/RaynCore.xcframework $(IOS_OUT)/RaynCore.xcframework
 
 release: # Create a new tag for release.
 	@CORE_VERSION=$(core.version) bash -c ".github/change_version.sh "

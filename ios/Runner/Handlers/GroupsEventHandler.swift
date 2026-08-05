@@ -1,6 +1,6 @@
 import Foundation
 import Combine
-import HiddifyCore
+import RaynCore
 
 public class GroupsEventHandler: NSObject, FlutterPlugin, FlutterStreamHandler{
     

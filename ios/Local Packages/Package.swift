@@ -4,23 +4,23 @@
 import PackageDescription
 
 let package = Package(
-     name: "Hiddify Packages",
+     name: "Rayn Packages",
      platforms: [
         // Minimum platform version
          .iOS(.v13)
      ],
      products: [
          .library(
-             name: "HiddifyCore",
-             targets: ["HiddifyCore"]),
+             name: "RaynCore",
+             targets: ["RaynCore"]),
      ],
      dependencies: [
          // No dependencies
      ],
      targets: [
         .binaryTarget(
-            name: "HiddifyCore",
-            path: "../Frameworks/HiddifyCore.xcframework"
+            name: "RaynCore",
+            path: "../Frameworks/RaynCore.xcframework"
         )
      ]
  )

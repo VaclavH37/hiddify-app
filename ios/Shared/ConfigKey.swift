@@ -1,6 +1,6 @@
 //
 //  ConfigKey.swift
-//  Shared between Runner and HiddifyPacketTunnel.
+//  Shared between Runner and RaynTunnel.
 //
 
 import Foundation

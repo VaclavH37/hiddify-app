@@ -12,8 +12,8 @@
 	<dict>
 		<key>com.raynlabs.app</key>
 		<string>dist.com.raynlabs.app</string>
-		<key>com.raynlabs.app.HiddifyPacketTunnel</key>
-		<string>dist.com.raynlabs.app.hiddifypackettunnel</string>
+		<key>com.raynlabs.app.RaynTunnel</key>
+		<string>dist.com.raynlabs.app.rayntunnel</string>
 	</dict>
 	<key>signingCertificate</key>
 	<string>E2217AF6F3AD11BA09F9FD95E025D7E637F8B081</string>
