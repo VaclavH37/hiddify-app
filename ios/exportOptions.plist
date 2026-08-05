@@ -16,13 +16,13 @@
 		<string>dist.com.raynlabs.app.rayntunnel</string>
 	</dict>
 	<key>signingCertificate</key>
-	<string>E2217AF6F3AD11BA09F9FD95E025D7E637F8B081</string>
+	<string>Apple Distribution</string>
 	<key>signingStyle</key>
 	<string>manual</string>
 	<key>stripSwiftSymbols</key>
 	<true/>
 	<key>teamID</key>
-	<string>3JFTY5BP58</string>
+	<string>RPD5KQ8YA7</string>
 	<key>uploadSymbols</key>
 	<true/>
 </dict>
