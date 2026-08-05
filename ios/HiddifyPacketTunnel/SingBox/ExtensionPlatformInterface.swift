@@ -45,8 +45,22 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         if options.getAutoRoute() {
             settings.mtu = NSNumber(value: options.getMTU())
 
-           let dnsServer = try options.getDNSServerAddress()
-            let dnsSettings = NEDNSSettings(servers: [dnsServer.value,"fdfe:dcba:9876::1"])
+            // getDNSServerAddress() returned a StringBox (a single `.value`)
+            // before sing-box 1.14 and returns a StringIterator now, so the tun
+            // can be handed more than one resolver. Take all of them: keeping
+            // only the first would silently drop a fallback the core expects the
+            // platform to honour. Android does the same at
+            // bg/VPNService.kt:114-122.
+            var dnsServers: [String] = []
+            let dnsServerIterator = try options.getDNSServerAddress()
+            while dnsServerIterator.hasNext() {
+                dnsServers.append(dnsServerIterator.next())
+            }
+            // The tun's own IPv6 address (v2/config/builder.go:543 puts
+            // fdfe:dcba:9876::1/126 on the inbound). Appended, not substituted,
+            // so DNS still lands inside the tunnel on an IPv6-only network.
+            dnsServers.append("fdfe:dcba:9876::1")
+            let dnsSettings = NEDNSSettings(servers: dnsServers)
             dnsSettings.matchDomains = [""]
             dnsSettings.matchDomainsNoSearch = true
             settings.dnsSettings = dnsSettings
@@ -213,7 +227,11 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         }
     }
 
-    public func usePlatformAutoDetectControl() -> Bool {
+    // Renamed in sing-box 1.14: UsePlatformAutoDetectControl ->
+    // UsePlatformAutoDetectInterfaceControl. Still false — under a Network
+    // Extension the system owns interface selection, so there is nothing for the
+    // platform to bind. (Android answers true; see PlatformInterfaceWrapper.kt:36.)
+    public func usePlatformAutoDetectInterfaceControl() -> Bool {
         false
     }
     public func findConnectionOwner(_ ipProtocol: Int32, sourceAddress: String?, sourcePort: Int32, destinationAddress: String?, destinationPort: Int32) throws -> LibboxConnectionOwner {
@@ -245,15 +263,30 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         false
     }
 
-    public func writeLog(_ message: String?) {
-        guard let message else {
-            return
-        }
-        tunnel.writeMessage(message)
-    }
+    // `writeLog` and `writeDebugMessage` used to live on PlatformInterface and
+    // were how core output reached network_extension_error.log. sing-box 1.14
+    // moved both onto CommandServerHandler (command_server.go:39-43), which this
+    // extension does not implement — its command server has been disabled since
+    // the gRPC switch. Implementing them here again would compile and never be
+    // called, which is worse than not having them.
+    //
+    // Core output on iOS now reaches: <workingDir>/data/stderr4.log (redirected
+    // in v2/hcore/grpc_server.go:67) and the gRPC log stream the app subscribes
+    // to. The stderr file is the only one available for an on-demand start with
+    // the app closed. ExtensionProvider.writeMessage still records this
+    // extension's own lifecycle lines.
 
     private var nwMonitor: NWPathMonitor?
 
+    // Default-interface monitoring is disabled on iOS: the `return` short-circuits
+    // the NWPathMonitor wiring below, which is kept only so it can be switched
+    // back on in one line. Under a Network Extension the system already re-routes
+    // the tunnel across interface changes, and the fork saw the monitor's updates
+    // trigger redundant core-side network resets.
+    //
+    // FIRST SUSPECT if the tunnel misbehaves on a Wi-Fi/cellular handover after
+    // the sing-box 1.14 bump — 1.14 also pairs this with registerMyInterface,
+    // which is a no-op here for the same reason.
     public func startDefaultInterfaceMonitor(_ listener: LibboxInterfaceUpdateListenerProtocol?) throws {
         return
         guard let listener else {
@@ -456,13 +489,6 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         }
     }
 
-    public func writeDebugMessage(_ message: String?) {
-        guard let message else {
-            return
-        }
-//        tunnel.writeMessage(message)
-    }
-
     func reset() {
         networkSettings = nil
         nwMonitor?.cancel()
@@ -506,6 +532,27 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
     public func systemCertificates() -> (any LibboxStringIteratorProtocol)? {
         nil
     }
-    public func autoDetectControl(_: Int32) throws {}
+    // Renamed alongside usePlatformAutoDetectInterfaceControl above. Never
+    // reached while that returns false.
+    public func autoDetectInterfaceControl(_: Int32) throws {}
 
+    // Neighbor (ARP/NDP) monitoring, added to PlatformInterface in sing-box 1.14.
+    // No-ops on purpose: it backs LAN-facing features this client does not ship,
+    // and iOS gives a Network Extension no neighbor table to read anyway.
+    //
+    // Deliberately SILENT rather than throwing. route.platformNeighborResolver
+    // .Start() calls StartNeighborMonitor during service start and propagates the
+    // error, so throwing "unsupported" here would stop the tunnel coming up.
+    // Reporting success and never delivering an update is, to the core,
+    // indistinguishable from a device whose neighbor table is empty. Same
+    // reasoning as PlatformInterfaceWrapper.kt:91-104 on Android.
+    public func startNeighborMonitor(_: LibboxNeighborUpdateListenerProtocol?) throws {}
+
+    public func closeNeighborMonitor(_: LibboxNeighborUpdateListenerProtocol?) throws {}
+
+    // Lets the core tell the platform which interface it just created, so the
+    // platform can exclude it from its own monitoring. Nothing to do here: this
+    // fork does not run a default-interface monitor on iOS (see
+    // startDefaultInterfaceMonitor above).
+    public func registerMyInterface(_: String?) {}
 }
