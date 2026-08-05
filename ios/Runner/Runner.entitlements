@@ -2,12 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>aps-environment</key>
-	<string>development</string>
+	<!-- packet-tunnel-provider only. app-proxy-provider and dns-proxy were
+	     inherited from upstream and are not used: RaynTunnel is an
+	     NEPacketTunnelProvider and nothing else. An entitlement you do not use
+	     still has to be granted by the App ID, so asking for three widens the
+	     capability set for nothing.
+
+	     There is deliberately NO aps-environment here. It was `development`
+	     with zero push code in the tree, and the App ID is being created
+	     WITHOUT the Push capability -- a profile from a non-Push App ID does not
+	     authorize aps-environment and codesign fails outright, so this had to go
+	     before the profiles were generated rather than at submission time. -->
 	<key>com.apple.developer.networking.networkextension</key>
 	<array>
-		<string>app-proxy-provider</string>
-		<string>dns-proxy</string>
 		<string>packet-tunnel-provider</string>
 	</array>
 	<key>com.apple.developer.networking.vpn.api</key>

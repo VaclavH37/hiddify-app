@@ -2,12 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- Must stay a subset of Runner.entitlements. content-filter-provider in
+         particular is gone on purpose: this target is an
+         NEPacketTunnelProvider, it has never contained a content filter, and
+         asking a consumer VPN's App ID for the capability to inspect and block
+         other apps' traffic is a question you do not want to be answering in
+         App Review. -->
     <key>com.apple.developer.networking.networkextension</key>
     <array>
-        <string>app-proxy-provider</string>
-        <string>dns-proxy</string>
         <string>packet-tunnel-provider</string>
-        <string>content-filter-provider</string>
     </array>
     <key>com.apple.security.app-sandbox</key>
     <true/>
