@@ -7,7 +7,7 @@ let package = Package(
      name: "Rayn Packages",
      platforms: [
         // Minimum platform version
-         .iOS(.v13)
+         .iOS(.v15)
      ],
      products: [
          .library(

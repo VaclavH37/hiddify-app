@@ -33,9 +33,6 @@ class VPNConfig: ObservableObject {
 //    var grpcFlutterPublicKey: String = ""
     
     
-    @Stored(key: "VPN.ConfigOptions")
-    var configOptions: String = ""
-    
     @Stored(key: "VPN.DisableMemoryLimit")
     var disableMemoryLimit: Bool = false
 }

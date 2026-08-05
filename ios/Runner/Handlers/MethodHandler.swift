@@ -36,30 +36,6 @@ public class MethodHandler: NSObject, FlutterPlugin {
             result("")
         case "add_grpc_client_public_key":
             result("")
-        case "parse_config":
-            guard
-                let args = call.arguments as? [String:Any?],
-                let path = args["path"] as? String,
-                let tempPath = args["tempPath"] as? String,
-                let debug = (args["debug"] as? NSNumber)?.boolValue
-            else {
-                result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
-                return
-            }
-            var error: NSError?
-            //MobileParse(path, tempPath, debug, &error)
-            if let error {
-                result(FlutterError(code: String(error.code), message: error.description, details: nil))
-                return
-            }
-            result("")
-        case "change_hiddify_options":
-            guard let options = call.arguments as? String else {
-                result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
-                return
-            }
-            VPNConfig.shared.configOptions = options
-            result(true)
         case "setup":
                 Task {
                     guard
@@ -180,64 +156,21 @@ public class MethodHandler: NSObject, FlutterPlugin {
         case "reset":
             VPNManager.shared.reset()
             result(true)
-        case "url_test":
-            guard
-                let args = call.arguments as? [String:Any?]
-            else {
-                result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
-                return
-            }
-            let group = args["groupTag"] as? String
-            FileManager.default.changeCurrentDirectoryPath(FilePath.sharedDirectory.path)
-            do {
-                try LibboxNewStandaloneCommandClient()?.urlTest(group)
-            } catch {
-                result(FlutterError(code: "URL_TEST", message: error.localizedDescription, details: nil))
-                return
-            }
-            result(true)
-        case "select_outbound":
-            guard
-                let args = call.arguments as? [String:Any?],
-                let group = args["groupTag"] as? String,
-                let outbound = args["outboundTag"] as? String
-            else {
-                result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
-                return
-            }
-            FileManager.default.changeCurrentDirectoryPath(FilePath.sharedDirectory.path)
-            do {
-                try LibboxNewStandaloneCommandClient()?.selectOutbound(group, outboundTag: outbound)
-            } catch {
-                result(FlutterError(code: "SELECT_OUTBOUND", message: error.localizedDescription, details: nil))
-                return
-            }
-            result(true)
-        case "generate_config":
-            guard
-                let args = call.arguments as? [String:Any?],
-                let path = args["path"] as? String
-            else {
-                result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
-                return
-            }
-            var error: NSError?
-//            let config = MobileBuildConfig(path, VPNConfig.shared.configOptions, &error)
-//            if let error {
-//                result(FlutterError(code: "BUILD_CONFIG", message: error.localizedDescription, details: nil))
-//                return
-//            }
-//            result(config)
-        case "generate_warp_config":
-            guard let args = call.arguments as? [String: Any],
-                  let licenseKey = args["license-key"] as? String,
-                  let accountId = args["previous-account-id"] as? String,
-                  let accessToken = args["previous-access-token"] as? String else {
-                result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
-                return
-            }
-//            let warpConfig = MobileGenerateWarpConfig(licenseKey, accountId, accessToken, nil)
-//            result(warpConfig)
+        // Removed with this comment as their headstone, so nobody re-adds them:
+        //
+        //   select_outbound, url_test  -- called LibboxNewStandaloneCommandClient()
+        //     against a command server this extension has not started since the
+        //     gRPC switch (see the commented-out commandServer in
+        //     ExtensionProvider). Dart reaches both over gRPC instead
+        //     (rayn_core_service.dart:358 -> bgClient.selectOutbound), which is
+        //     also why the sing-box 1.14 selection-notify fix applies to iOS
+        //     without anything extra.
+        //   generate_config, parse_config -- bodies were commented out.
+        //     generate_config additionally never called result(), so invoking it
+        //     would have hung the Dart future forever.
+        //   generate_warp_config -- WARP was removed from this fork.
+        //   change_hiddify_options -- wrote VPNConfig.configOptions, which
+        //     nothing reads; the config now arrives from Dart already built.
         default:
             result(FlutterMethodNotImplemented)
         }
