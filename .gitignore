@@ -49,6 +49,18 @@ migrate_working_dir/
 /assets/core/*
 !/assets/core/.gitkeep
 
+# Code-signing material. None of this belongs in git, and a leaked private key
+# or .p8 lets someone ship a build as us. Generate it OUTSIDE the repo; these
+# rules are the second line of defence, not the first.
+**/*.p12
+**/*.p8
+**/*.cer
+**/*.certSigningRequest
+**/*.mobileprovision
+**/*.provisionprofile
+**/*.keystore
+**/*.jks
+
 # Symbolication related
 app.*.symbols
 
