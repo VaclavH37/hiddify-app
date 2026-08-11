@@ -354,6 +354,10 @@
       "title": "Settings",
       "subtitle": "Configure your account and application preferences.",
       "resetTunnel": "Reset VPN profile",
+      "exportDiagnostics": "Export diagnostics",
+      "exportDiagnosticsMsg": "Share the app and tunnel logs",
+      "exportDiagnosticsEmpty": "No logs yet — connect once, then try again",
+      "exportDiagnosticsFailed": "Couldn't share the logs",
       "troubleshooting": "Troubleshooting",
       "general": {
         "title": "General",

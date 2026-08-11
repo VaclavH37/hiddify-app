@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
@@ -16,12 +17,14 @@ import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auth/widget/account_section.dart';
 import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
 import 'package:hiddify/features/common/general_pref_tiles.dart';
+import 'package:hiddify/features/log/data/diagnostics_exporter.dart';
 import 'package:hiddify/features/log/model/log_level.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/settings/notifier/reset_tunnel/reset_tunnel_notifier.dart';
 import 'package:hiddify/features/settings/widget/preference_tile.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 enum ConfigOptionSection {
   fragment;
@@ -153,6 +156,44 @@ class SettingsPage extends HookConsumerWidget {
         title: t.pages.settings.general.connectionTestUrl,
         icon: Icons.link_rounded,
       ),
+      // On iOS this is the ONLY way to read the logs. The tunnel runs in a Network
+      // Extension, a separate process the system can start with the app closed, and
+      // everything it writes lands in the App Group container — reachable only from a
+      // Mac with the device physically attached, which a cloud build host cannot do.
+      // There is no in-app log viewer either. Android is no better placed: the working
+      // directory is internal storage, so reading it needs adb or root.
+      //
+      // Without this, the only diagnosis available on device is whatever reaches
+      // CoreAlert and shows in the UI — which covers a failed start, but not a tunnel
+      // that comes up and then quietly routes nothing.
+      if (PlatformUtils.isMobile)
+        RaynSettingsTile(
+          leading: Icons.share_rounded,
+          title: t.pages.settings.exportDiagnostics,
+          subtitle: t.pages.settings.exportDiagnosticsMsg,
+          onTap: () async {
+            final files = DiagnosticsExporter(
+              ref.read(appDirectoriesProvider).requireValue.workingDir,
+            ).collect();
+            if (files.isEmpty) {
+              if (context.mounted) {
+                CustomToast(t.pages.settings.exportDiagnosticsEmpty).show(context);
+              }
+              return;
+            }
+            try {
+              await Share.shareXFiles([
+                for (final file in files) XFile(file.path, mimeType: "text/plain"),
+              ]);
+            } catch (e) {
+              // Report by kind, never by value — a platform exception can carry
+              // absolute paths, and this is a share sheet the user may screenshot.
+              if (context.mounted) {
+                CustomToast.error(t.pages.settings.exportDiagnosticsFailed).show(context);
+              }
+            }
+          },
+        ),
       // Was stranded on the settings root under no header at all, left behind when
       // the Network section was removed. It is a recovery action, so it belongs here.
       if (PlatformUtils.isIOS)
