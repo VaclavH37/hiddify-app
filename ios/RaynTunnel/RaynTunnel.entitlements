@@ -18,12 +18,10 @@
     <array>
         <string>group.$(BASE_BUNDLE_IDENTIFIER)</string>
     </array>
-    <!-- Must match Runner.entitlements: the extension reads the config-sealing
-         key from this shared keychain group on an on-demand start. -->
-    <key>keychain-access-groups</key>
-    <array>
-        <string>group.$(BASE_BUNDLE_IDENTIFIER)</string>
-    </array>
+    <!-- No keychain-access-groups here either — see the long note in
+         Runner.entitlements. The application-groups entitlement above is what
+         lets ConfigKey.peek() read the sealed-config key out of
+         `group.com.raynlabs.app` on an on-demand start. -->
     <key>com.apple.security.network.client</key>
     <true/>
     <key>com.apple.security.network.server</key>

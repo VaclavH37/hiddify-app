@@ -10,7 +10,7 @@
 
 	     There is deliberately NO aps-environment here. It was `development`
 	     with zero push code in the tree, and the App ID is being created
-	     WITHOUT the Push capability -- a profile from a non-Push App ID does not
+	     WITHOUT the Push capability: a profile from a non-Push App ID does not
 	     authorize aps-environment and codesign fails outright, so this had to go
 	     before the profiles were generated rather than at submission time. -->
 	<key>com.apple.developer.networking.networkextension</key>
@@ -27,15 +27,20 @@
 	<array>
 		<string>group.$(BASE_BUNDLE_IDENTIFIER)</string>
 	</array>
-	<!-- Shares the config-sealing key with the packet-tunnel extension, which
-	     must read it on an on-demand start with the app not running. On iOS an
-	     App Group is already a valid keychain access group; listing it here
-	     makes the dependency explicit and keeps it working if the group and the
-	     access group ever diverge. -->
-	<key>keychain-access-groups</key>
-	<array>
-		<string>group.$(BASE_BUNDLE_IDENTIFIER)</string>
-	</array>
+	<!-- There is deliberately NO keychain-access-groups entitlement.
+	     ConfigKey.swift stores the config-sealing key under the access group
+	     `group.com.raynlabs.app` so the packet-tunnel extension can read it on an
+	     on-demand start with the app not running. On iOS an App Group is a valid
+	     keychain access group in its own right, authorised by the
+	     application-groups entitlement above — it does not need to be repeated
+	     here, and repeating it breaks signing:
+
+	       Provisioning profile "dist.com.raynlabs.app" doesn't match the
+	       entitlements file's value for the keychain-access-groups entitlement
+
+	     Apple issues profiles with keychain-access-groups = <TEAMID>.*, which
+	     covers team-prefixed groups only. An app-group identifier is not
+	     team-prefixed, so listing it can never match. -->
 	<key>com.apple.security.network.client</key>
 	<true/>
 	<key>com.apple.security.network.server</key>
