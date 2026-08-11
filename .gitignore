@@ -99,3 +99,11 @@ macos/Flutter/GeneratedPluginRegistrant.swift
 # them; the directories can be deleted whenever convenient.
 external/
 
+
+# Captured diagnostics. A single reproduction can drop a 105 MB box.log and a
+# copy of %APPDATA% (sealed configs, the Drift DB, the secure-storage blob) into
+# the tree — one `git add -A` from being published. Keep captures local.
+/diagnostic-logs/
+/CrashReport*.log
+/Build Runner*.txt
+/*.xcactivitylog
