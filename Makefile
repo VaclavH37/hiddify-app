@@ -111,7 +111,21 @@ FF_OBFUSCATE=--flutter-build-args=obfuscate,split-debug-info=build/symbols
 get:	
 	flutter pub get
 
+# Pigeon FIRST, and it is not optional on a fresh clone. Pigeon is a standalone
+# CLI, not a build_runner builder, so `build_runner build` never produces its
+# output — and that output, lib/features/auth/payment/data/rayn_billing.g.dart,
+# matches the `**/*.g.dart` gitignore rule and is therefore absent from every
+# fresh checkout. Its Kotlin twin RaynBilling.g.kt IS tracked (the ignore rule
+# covers .g.dart only), which is why Android kept building and nobody noticed
+# that a clean clone could not compile the Dart at all:
+#
+#   lib/features/auth/payment/.../purchase_notifier.dart: 'RaynOffer' isn't a type
+#   ...: The getter 'BillingConnState' isn't defined
+#
+# Before build_runner, because build_runner analyses all of lib/ and the files
+# importing the missing glue would otherwise be full of errors.
 gen:
+	dart run pigeon --input pigeons/rayn_billing.dart
 	dart run build_runner build --delete-conflicting-outputs
 
 translate:
