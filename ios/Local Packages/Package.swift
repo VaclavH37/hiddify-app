@@ -1,5 +1,8 @@
-// swift-tools-version: 5.4
+// swift-tools-version: 5.5
 // The swift-tools-version declares the minimum version of Swift required to build this package.
+// 5.5 specifically: SupportedPlatform.IOSVersion.v15 below was introduced in
+// PackageDescription 5.5, and under 5.4 it fails the manifest with "'v15' is
+// unavailable" before any target compiles.
 
 import PackageDescription
 
