@@ -227,11 +227,18 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         }
     }
 
-    // Renamed in sing-box 1.14: UsePlatformAutoDetectControl ->
-    // UsePlatformAutoDetectInterfaceControl. Still false — under a Network
-    // Extension the system owns interface selection, so there is nothing for the
-    // platform to bind. (Android answers true; see PlatformInterfaceWrapper.kt:36.)
-    public func usePlatformAutoDetectInterfaceControl() -> Bool {
+    // sing-box 1.14 renamed the GO method to UsePlatformAutoDetectInterfaceControl,
+    // but the SWIFT-facing name gomobile exposes is unchanged. Swift's ObjC importer
+    // prunes the redundant "Interface" (the enclosing protocol is already
+    // LibboxPlatformInterfaceProtocol), so writing the Go name fails with
+    // "'usePlatformAutoDetectInterfaceControl()' has been renamed to
+    // 'usePlatformAutoDetectControl()'". Do not "fix" this to match platform.go —
+    // the compiler is the authority on the Swift name, not the Go source.
+    //
+    // Still false: under a Network Extension the system owns interface selection,
+    // so there is nothing for the platform to bind. (Android answers true; see
+    // PlatformInterfaceWrapper.kt:36.)
+    public func usePlatformAutoDetectControl() -> Bool {
         false
     }
     public func findConnectionOwner(_ ipProtocol: Int32, sourceAddress: String?, sourcePort: Int32, destinationAddress: String?, destinationPort: Int32) throws -> LibboxConnectionOwner {
@@ -532,9 +539,10 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
     public func systemCertificates() -> (any LibboxStringIteratorProtocol)? {
         nil
     }
-    // Renamed alongside usePlatformAutoDetectInterfaceControl above. Never
-    // reached while that returns false.
-    public func autoDetectInterfaceControl(_: Int32) throws {}
+    // Go-side AutoDetectInterfaceControl; Swift name unchanged for the same
+    // importer reason as usePlatformAutoDetectControl above. Never reached while
+    // that returns false.
+    public func autoDetectControl(_: Int32) throws {}
 
     // Neighbor (ARP/NDP) monitoring, added to PlatformInterface in sing-box 1.14.
     // No-ops on purpose: it backs LAN-facing features this client does not ship,
