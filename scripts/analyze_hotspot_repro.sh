@@ -109,9 +109,15 @@ hr
 
 # --- 4. which outbound served the traffic ------------------------------------
 echo "4. OUTBOUND TAGS USED"
+# Node tags carry flag emoji (EXIT-Los Angeles, US<US flag>). Those survive the
+# pipeline fine but not always a terminal or a copy-paste into a bug report -- and
+# a silently dropped row here reads as "that outbound was never used", which sent
+# one investigation chasing a nonexistent anomaly. Transliterate to ASCII so the
+# output is safe to paste; the counts are what matter.
 grep -oE "outbound/[a-z]+\[[^]]*\]: outbound connection to" "$BOX_LOG" \
   | sed 's/: outbound connection to//' \
-  | sort | uniq -c | sort -rn | head -10 | sed 's/^/   /'
+  | LC_ALL=C sort | uniq -c | sort -rn | head -10 \
+  | LC_ALL=C sed 's/[^[:print:][:space:]]//g' | sed 's/^/   /'
 outbound_total=$(grep -c "outbound connection to" "$BOX_LOG" || true)
 echo
 echo "   total outbound connections: $outbound_total"
