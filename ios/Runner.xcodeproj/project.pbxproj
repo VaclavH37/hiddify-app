@@ -27,7 +27,9 @@
 		AA0001012C01000100000101 /* ConfigCipher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000012C01000100000001 /* ConfigCipher.swift */; };
 		AA0001022C01000100000102 /* ConfigCipher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000012C01000100000001 /* ConfigCipher.swift */; };
 		AA0001032C01000100000103 /* ConfigKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000022C01000100000002 /* ConfigKey.swift */; };
+		AA0001052C01000100000105 /* GrpcSecret.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000032C01000100000003 /* GrpcSecret.swift */; };
 		AA0001042C01000100000104 /* ConfigKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000022C01000100000002 /* ConfigKey.swift */; };
+		AA0001062C01000100000106 /* GrpcSecret.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000032C01000100000003 /* GrpcSecret.swift */; };
 		03E392D22ADDF1F4000ADF15 /* ExtensionPlatformInterface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E392D12ADDF1F4000ADF15 /* ExtensionPlatformInterface.swift */; };
 		03E392D42ADDF262000ADF15 /* Extension+RunBlocking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E392D32ADDF262000ADF15 /* Extension+RunBlocking.swift */; };
 		0736958B2B3AC96D007249BE /* Bundle+Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0736958A2B3AC96D007249BE /* Bundle+Properties.swift */; };
@@ -107,6 +109,7 @@
 		03E392CE2ADDEFC8000ADF15 /* FilePath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePath.swift; sourceTree = "<group>"; };
 		AA0000012C01000100000001 /* ConfigCipher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigCipher.swift; sourceTree = "<group>"; };
 		AA0000022C01000100000002 /* ConfigKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigKey.swift; sourceTree = "<group>"; };
+		AA0000032C01000100000003 /* GrpcSecret.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrpcSecret.swift; sourceTree = "<group>"; };
 		03E392D12ADDF1F4000ADF15 /* ExtensionPlatformInterface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionPlatformInterface.swift; sourceTree = "<group>"; };
 		03E392D32ADDF262000ADF15 /* Extension+RunBlocking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Extension+RunBlocking.swift"; sourceTree = "<group>"; };
 		040FA3EB0673B72D60CC7145 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
@@ -267,6 +270,7 @@
 				03E392CE2ADDEFC8000ADF15 /* FilePath.swift */,
 				AA0000012C01000100000001 /* ConfigCipher.swift */,
 				AA0000022C01000100000002 /* ConfigKey.swift */,
+				AA0000032C01000100000003 /* GrpcSecret.swift */,
 				D703EE922B764EA3001D88B3 /* CommandClient.swift */,
 				D7CC50852B768C50006BC140 /* Outbound.swift */,
 			);
@@ -658,6 +662,7 @@
 				03E392CF2ADDEFC8000ADF15 /* FilePath.swift in Sources */,
 				AA0001012C01000100000101 /* ConfigCipher.swift in Sources */,
 				AA0001032C01000100000103 /* ConfigKey.swift in Sources */,
+				AA0001052C01000100000105 /* GrpcSecret.swift in Sources */,
 				03E392D42ADDF262000ADF15 /* Extension+RunBlocking.swift in Sources */,
 				03B516762AE762F700EA47E2 /* Logger.swift in Sources */,
 			);
@@ -694,6 +699,7 @@
 				03E392D02ADDF1BD000ADF15 /* FilePath.swift in Sources */,
 				AA0001022C01000100000102 /* ConfigCipher.swift in Sources */,
 				AA0001042C01000100000104 /* ConfigKey.swift in Sources */,
+				AA0001062C01000100000106 /* GrpcSecret.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				03B5167D2AE7AC6200EA47E2 /* GroupsEventHandler.swift in Sources */,
 			);

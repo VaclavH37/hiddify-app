@@ -32,10 +32,40 @@ public class MethodHandler: NSObject, FlutterPlugin {
         }
         
         switch call.method {
+        // Returns the PEM certificate the Dart client pins for the secure gRPC
+        // modes. This used to `result("")` -- a stub that looked implemented,
+        // which is part of why the secure modes were believed to work.
+        //
+        // Delivered over the method channel deliberately: that is in-process and
+        // therefore trustworthy, whereas fetching it over the very connection it
+        // is meant to authenticate would authenticate nothing. Only valid after
+        // `setup` has run with a secure mode; before that the core has no
+        // certificate and this correctly returns nil.
         case "get_grpc_server_public_key":
-            result("")
+            if let pem = MobileGetServerPublicKey(), !pem.isEmpty {
+                result(FlutterStandardTypedData(bytes: pem))
+            } else {
+                result(nil)
+            }
+        // Client certificates are not used -- the client authenticates with the
+        // setup secret. Kept so an older Dart build calling it gets a clear
+        // answer rather than MissingPluginException.
         case "add_grpc_client_public_key":
-            result("")
+            result(FlutterError(code: "UNSUPPORTED",
+                                message: "client certificates are not used; the client authenticates with the setup secret",
+                                details: nil))
+        // The credential Dart attaches to every RPC. Creating on first call is
+        // correct here and only here: this runs in the app, whereas the extension
+        // only ever peeks, so a background start cannot race the app into
+        // generating a second secret and leave the two cores disagreeing.
+        case "get_grpc_secret":
+            if let secret = GrpcSecret.getOrCreate() {
+                result(secret)
+            } else {
+                result(FlutterError(code: "GRPC_SECRET",
+                                    message: "keychain unavailable",
+                                    details: nil))
+            }
         case "setup":
                 Task {
                     guard
@@ -60,7 +90,15 @@ public class MethodHandler: NSObject, FlutterPlugin {
                     opts.workingDir = workingDir
                     opts.tempDir = tempDir
                     opts.listen = "127.0.0.1:\(grpcPort)"
-                    opts.secret = ""
+                    // The credential the core requires on every RPC. Was hardcoded
+                    // empty, and the core read it into nothing -- plumbed the whole
+                    // way here and used by no one.
+                    //
+                    // Owned natively rather than passed from Dart, because the
+                    // packet-tunnel extension needs the SAME value and an
+                    // on-demand start has no app process to hand it one. Dart
+                    // fetches it back over `get_grpc_secret` for its call metadata.
+                    opts.secret = GrpcSecret.getOrCreate() ?? ""
                     // Both were hardcoded, ignoring the arguments parsed above.
                     // `mode` mattered twice over: the app process is the
                     // FOREGROUND core (Dart sends 3 = GRPC_NORMAL_INSECURE,

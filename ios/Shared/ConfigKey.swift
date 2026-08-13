@@ -12,8 +12,10 @@ import os.log
 /// Stored in the keychain under the app group, so the packet-tunnel extension —
 /// a separate process that the system can launch with the app not running — can
 /// read the same item. On iOS an App Group identifier is a valid keychain access
-/// group; it is also listed explicitly in `keychain-access-groups` in both
-/// targets' entitlements so the intent is visible rather than implied.
+/// group in its own right, authorised by `com.apple.security.application-groups`.
+/// It must NOT also be listed in `keychain-access-groups`: Apple issues profiles
+/// with `<TEAMID>.*`, an app-group identifier is not team-prefixed, so listing it
+/// can never match and signing fails. See the note in Runner.entitlements.
 ///
 /// Accessibility is `AfterFirstUnlockThisDeviceOnly`, and that is not
 /// negotiable: the default (`WhenUnlocked`) makes the item unreadable to an

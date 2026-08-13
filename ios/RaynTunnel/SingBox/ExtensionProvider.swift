@@ -61,7 +61,16 @@ open class ExtensionProvider: NEPacketTunnelProvider {
             opts.workingDir = workDir
             opts.tempDir = cacheDir
             opts.listen = "127.0.0.1:\(grpcServiceModePort)"
-            opts.secret = ""
+            // Same per-install credential the app's core uses, read from the
+            // shared keychain item. `peek`, never `getOrCreate`: this process can
+            // be launched by the system with the app not running, and creating
+            // here would race the app into a second secret that leaves the two
+            // cores disagreeing and every RPC failing Unauthenticated.
+            //
+            // Empty means the app has never run, so no secret exists yet. The
+            // core then fails closed, which is the right direction — but nothing
+            // can talk to this core until the app has been opened once.
+            opts.secret = GrpcSecret.peek() ?? ""
             opts.debug = false
             opts.mode = 4
             opts.fixAndroidStack = false

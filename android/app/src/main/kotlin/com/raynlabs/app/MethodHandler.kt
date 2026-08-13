@@ -52,17 +52,16 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
+            // Client certificates are not used — the client authenticates with the
+            // setup secret. This previously stored the key in Settings and returned
+            // success without ever reaching the core, so it read as implemented
+            // while doing nothing. Answer explicitly rather than silently.
             Trigger.AddGrpcClientPublicKey.method -> {
-                GlobalScope.launch {
-                    result.runCatching {
-                        val args = call.arguments as Map<*, *>
-                        val clientPub = args["clientPublicKey"] as ByteArray
-//                        Mobile.addGrpcClientPublicKey(clientPub)
-                        Settings.grpcFlutterPublicKey = clientPub
-                        success("")
-
-                    }
-                }
+                result.error(
+                    "UNSUPPORTED",
+                    "client certificates are not used; the client authenticates with the setup secret",
+                    null,
+                )
             }
 
             Trigger.GetGrpcServerPublicKey.method -> {
@@ -93,7 +92,12 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
                                     it.fixAndroidStack = Bugs.fixAndroidStack
                                     it.mode=mode.toLong()
                                     it.listen= "127.0.0.1:" + grpcPort
-                                    it.secret=""
+                                    // The credential the core requires on every RPC.
+                                    // Was hardcoded empty and read by nothing; the
+                                    // core now fails closed on an empty value, so an
+                                    // omitted secret yields Unauthenticated rather
+                                    // than an unauthenticated channel.
+                                    it.secret = (args["secret"] as String?) ?: ""
                                     it.debug = Settings.debugMode
                                 },null)
 
