@@ -23,7 +23,11 @@ open class ExtensionProvider: NEPacketTunnelProvider {
             
             // Extract options with better error handling
             let disableMemoryLimit = false && (options?["DisableMemoryLimit"] as? NSString as? String ?? "NO") == "YES" 
-            let grpcServiceModePort = (options?["GrpcServiceModePort"] as? NSNumber)?.intValue ?? 17079
+            // Fallback only — the app normally supplies this. Must match
+            // CoreInterfaceMobile.portBack: the mismatch case is an on-demand
+            // start with the app closed, where nothing supplies the option and
+            // this value is what the background core binds.
+            let grpcServiceModePort = (options?["GrpcServiceModePort"] as? NSNumber)?.intValue ?? 21979
             
             let config = options?["Config"] as? NSString as? String ?? ""
             

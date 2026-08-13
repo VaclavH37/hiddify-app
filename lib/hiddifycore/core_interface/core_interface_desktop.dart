@@ -59,7 +59,10 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
     }
   }
 
-  final port = 17078;
+  // Same collision as mobile — a desktop Hiddify install binds this too, and
+  // loopback is not isolated between processes on any desktop OS either. Kept in
+  // step with CoreInterfaceMobile.portFront; see the reasoning there.
+  final port = 21978;
   static String generateRandomPassword(int length) {
     const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final random = Random();

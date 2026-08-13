@@ -69,9 +69,30 @@ class RaynCoreService with InfraLogger {
       ParseResponse response;
       try {
         response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
-      } catch (e) {
-        await setup().run();
-        response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
+      } catch (first) {
+        // The foreground core is unreachable. Re-running setup is worth one
+        // attempt, but the retry has to be caught too: it used to be bare, so a
+        // second failure escaped this TaskEither entirely and reached the caller
+        // as a raw exception. That is how "the core is not listening" reached
+        // the user as `Failed to add profile: Unexpected error Error connecting:
+        // SocketException ... port 49465` — an ephemeral LOCAL port, which
+        // reads like a network fault and names nothing that exists in this
+        // codebase. The real destination is the foreground core on 127.0.0.1.
+        loggy.warning("foreground core unreachable during parse, re-running setup", first);
+        final setupResult = await setup().run();
+        final setupError = setupResult.getLeft().toNullable();
+        try {
+          response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
+        } catch (second) {
+          // Prefer setup's own message: it says WHY the core did not come up,
+          // where the parse failure only says that it is absent. Discarding it
+          // was the other half of the same bug.
+          return left(
+            setupError != null
+                ? "core did not start: $setupError"
+                : "cannot reach the local core to validate the configuration: $second",
+          );
+        }
       }
       if (response.responseCode != ResponseCode.OK) return left("${response.responseCode} ${response.message}");
       return right(response.content);
@@ -121,16 +142,36 @@ class RaynCoreService with InfraLogger {
     return TaskEither(() async {
       loggy.debug("changing options");
       // latestOptions = options;
+      final payload = jsonEncode(options.toJson());
+
+      // Deliberately two separate try blocks. They used to share one, and only
+      // the background core is allowed to be absent — it lives in the platform
+      // VPN service and does not exist until the tunnel starts. Sharing the
+      // block meant an unreachable FOREGROUND core hit the same branch and was
+      // logged as "background core is not started yet", so the one condition
+      // that should stop an import cold was reported as the one that is
+      // routine, and the caller carried on into validateConfig to fail there
+      // instead.
       try {
         final res = await core.fgClient.changeHiddifySettings(
-          ChangeHiddifySettingsRequest(hiddifySettingsJson: jsonEncode(options.toJson())),
+          ChangeHiddifySettingsRequest(hiddifySettingsJson: payload),
         );
         if (res.messageType != MessageType.EMPTY) return left("${res.messageType} ${res.message}");
+      } on GrpcError catch (e) {
+        if (e.code == StatusCode.unavailable) {
+          loggy.error("foreground core is unreachable", e);
+          return left("cannot reach the local core to apply settings: ${e.message ?? e.codeName}");
+        }
+        rethrow;
+      }
+
+      try {
         await core.bgClient.changeHiddifySettings(
-          ChangeHiddifySettingsRequest(hiddifySettingsJson: jsonEncode(options.toJson())),
+          ChangeHiddifySettingsRequest(hiddifySettingsJson: payload),
         );
       } on GrpcError catch (e) {
         if (e.code == StatusCode.unavailable) {
+          // Expected before the first connect.
           loggy.debug("background core is not started yet! $e");
         } else {
           rethrow;

@@ -100,8 +100,33 @@ object Settings {
             val encoded = Base64.encodeToString(value, Base64.DEFAULT)
             preferences.edit().putString(SettingsKey.GRPC_FLUTTER_PUBLIC_KEY, encoded).apply()
         }
+    // Loopback gRPC port for the BACKGROUND core — BoxService starts mode 4 on it.
+    // Keep in step with CoreInterfaceMobile.portBack, which is where the reasoning
+    // for moving off upstream's 17078/17079 lives.
+    //
+    // Two upstream problems fixed here:
+    //
+    //  * the default was 17078, the FRONT port. Harmless only because Dart sets
+    //    this on every connect (MethodHandler.kt:120) before the service reads it;
+    //    an on-demand start with the app never opened would have bound the wrong
+    //    one.
+    //  * a persisted value survives an app update, so a new default alone would be
+    //    ignored on every existing install — silently keeping the collision with
+    //    Hiddify that the new ports exist to remove. The legacy values are
+    //    therefore treated as unset rather than honoured.
+    private const val LEGACY_GRPC_PORT_FRONT = 17078
+    private const val LEGACY_GRPC_PORT_BACK = 17079
+    private const val DEFAULT_GRPC_PORT_BACK = 21979
+
     var grpcServiceModePort: Int
-        get() = preferences.getInt(SettingsKey.GRPC_PORT, 17078)!!
+        get() {
+            val stored = preferences.getInt(SettingsKey.GRPC_PORT, DEFAULT_GRPC_PORT_BACK)!!
+            return if (stored == LEGACY_GRPC_PORT_FRONT || stored == LEGACY_GRPC_PORT_BACK) {
+                DEFAULT_GRPC_PORT_BACK
+            } else {
+                stored
+            }
+        }
         set(value) = preferences.edit().putInt(SettingsKey.GRPC_PORT, value).apply()
 
     var startCoreAfterStartingService: Boolean

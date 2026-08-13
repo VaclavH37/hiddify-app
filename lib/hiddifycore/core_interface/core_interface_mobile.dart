@@ -28,8 +28,30 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   late Uint8List serverPublicKey;
   static final cert = CryptoUtils.generateEcKeyPair();
 
-  static const portBack = 17079;
-  static const portFront = 17078;
+  // Loopback gRPC ports for the two cores: `portFront` is the one embedded in
+  // this app process, `portBack` the one in the platform VPN service.
+  //
+  // MOVED OFF UPSTREAM'S 17078/17079, and that is the whole point. iOS and
+  // Android both share the loopback interface between apps, so whichever process
+  // binds first owns the port and the other app's client silently attaches to it.
+  // With Hiddify installed alongside, that is not hypothetical: a `rayn://`
+  // import succeeded by having *Hiddify's* core parse our decrypted subscription
+  // — hub address, per-user UUIDs and Reality shortIDs — over an unauthenticated
+  // socket. Any Hiddify-derived client collides the same way.
+  //
+  // Distinct ports remove the collision. They do NOT remove the exposure: a
+  // fixed port is still squattable, and the channel has no authentication in
+  // either direction (mode 3, GRPC_NORMAL_INSECURE). Completing the mTLS path so
+  // the client pins the server it fetched over the method channel is what
+  // actually closes it.
+  //
+  // Chosen below the ephemeral range (49152+) so the OS cannot assign them to
+  // something else, above 1024, and clear of the common development ports. Keep
+  // these in step with ExtensionProvider.swift and Settings.kt — the app supplies
+  // the port and the native values are fallbacks, so a mismatch surfaces only on
+  // an on-demand start, with the app closed.
+  static const portBack = 21979;
+  static const portFront = 21978;
 
   bool _isBgClientAvailable = false;
   bool _debug = false;
