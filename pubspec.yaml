@@ -1,7 +1,7 @@
 name: hiddify
 description: Cross Platform Multi Protocol Proxy Frontend.
 publish_to: "none"
-version: 1.3.5+10305
+version: 1.3.6+10306
 
 environment:
   sdk: ^3.10.4
@@ -202,6 +202,17 @@ flutter_native_splash:
 
 flutter_launcher_icons:
   android: "ic_launcher"
+  # iOS is NOT generated from here, and `image_path` below is unsuitable for it:
+  # logo_black_1024.png carries an alpha channel with pre-rounded transparent
+  # corners. Apple rejects icons with alpha, and iOS applies its own corner mask,
+  # so a pre-rounded source comes out double-rounded. Because this said `false`
+  # and nothing replaced it, the rebrand never touched the iOS icon and upstream
+  # Hiddify artwork shipped all the way to App Store Connect before anyone saw it.
+  #
+  # The iOS icon is maintained directly as the single 1024 entry in
+  # ios/Runner/Assets.xcassets/AppIcon.appiconset/ (Xcode generates every other
+  # size at build time). It must stay square, full-bleed and OPAQUE — flatten the
+  # artwork onto black rather than pointing this at a transparent PNG.
   ios: false
   image_path: "assets/images/source/logo_black_1024.png"
   adaptive_icon_background: "#000000"
