@@ -118,6 +118,35 @@ object Settings {
     private const val LEGACY_GRPC_PORT_BACK = 17079
     private const val DEFAULT_GRPC_PORT_BACK = 21979
 
+    /// Per-install credential the local gRPC cores require on every RPC.
+    ///
+    /// Android shares the loopback interface between apps exactly as iOS does, so
+    /// listening on 127.0.0.1 is not access control — any installed app can
+    /// connect, and any Hiddify-derived client is already looking for a core on a
+    /// nearby port. TLS with a pinned certificate stops us reaching the wrong
+    /// server; this stops the wrong client reaching us.
+    ///
+    /// PERSISTED, not per-launch, because the background core lives in the VPN
+    /// service and can be started by the system — always-on VPN, or
+    /// startCoreAfterStartingService — with no Flutter engine alive to hand it a
+    /// fresh value. SharedPreferences is readable by both, and by nothing outside
+    /// the app's sandbox.
+    ///
+    /// 32 bytes of SecureRandom, hex-encoded: this crosses the gomobile boundary
+    /// as a Go string and then travels as an HTTP/2 header value, and neither is
+    /// binary-safe.
+    val grpcSecret: String
+        get() {
+            preferences.getString(SettingsKey.GRPC_SECRET, null)?.let {
+                if (it.isNotEmpty()) return it
+            }
+            val bytes = ByteArray(32)
+            java.security.SecureRandom().nextBytes(bytes)
+            val generated = bytes.joinToString("") { "%02x".format(it) }
+            preferences.edit().putString(SettingsKey.GRPC_SECRET, generated).apply()
+            return generated
+        }
+
     var grpcServiceModePort: Int
         get() {
             val stored = preferences.getInt(SettingsKey.GRPC_PORT, DEFAULT_GRPC_PORT_BACK)!!

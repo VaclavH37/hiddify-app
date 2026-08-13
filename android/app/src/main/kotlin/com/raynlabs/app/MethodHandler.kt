@@ -34,6 +34,7 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
             Restart("restart"),
             AddGrpcClientPublicKey("add_grpc_client_public_key"),
             GetGrpcServerPublicKey("get_grpc_server_public_key"),
+            GetGrpcSecret("get_grpc_secret"),
 
         }
     }
@@ -72,6 +73,14 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
                 }
             }
 
+            // The credential Dart attaches to every RPC. Generating on first read
+            // is safe here because both readers — this process and the VPN service
+            // — go through the same SharedPreferences, so whichever asks first
+            // wins and the other sees the stored value.
+            Trigger.GetGrpcSecret.method -> {
+                result.success(Settings.grpcSecret)
+            }
+
             Trigger.Setup.method -> {
                 GlobalScope.launch {
                     result.runCatching {
@@ -93,11 +102,11 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
                                     it.mode=mode.toLong()
                                     it.listen= "127.0.0.1:" + grpcPort
                                     // The credential the core requires on every RPC.
-                                    // Was hardcoded empty and read by nothing; the
-                                    // core now fails closed on an empty value, so an
-                                    // omitted secret yields Unauthenticated rather
-                                    // than an unauthenticated channel.
-                                    it.secret = (args["secret"] as String?) ?: ""
+                                    // Owned here rather than passed from Dart: the
+                                    // VPN service needs the SAME value and can be
+                                    // started by the system with no Flutter engine
+                                    // alive. Dart reads it back over get_grpc_secret.
+                                    it.secret = Settings.grpcSecret
                                     it.debug = Settings.debugMode
                                 },null)
 

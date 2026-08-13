@@ -117,7 +117,15 @@ class RaynCoreService with InfraLogger {
         // sending `true` here forever, with no UI left to turn it off. This feeds
         // SetupRequest.Debug -> static.debug in the core.
         final debug = kDebugMode && ref.read(debugModeNotifierProvider);
-        final setupResponse = await core.setup(directories, debug, 3);
+        // Mode 1 = GRPC_NORMAL: TLS with a certificate this client pins, plus the
+        // per-install secret on every call. Was 3, GRPC_NORMAL_INSECURE — a plain
+        // channel on a loopback port that is not isolated between apps, which is
+        // how a rayn:// import came to be served by Hiddify's core, decrypted
+        // subscription and all.
+        //
+        // Mobile only in practice: CoreInterfaceDesktop hardcodes the insecure
+        // mode and ignores this argument until its own path is tested.
+        final setupResponse = await core.setup(directories, debug, 1);
 
         if (setupResponse.isNotEmpty) {
           return left(setupResponse);

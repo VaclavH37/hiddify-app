@@ -7,7 +7,6 @@ import 'package:grpc/grpc.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/gen/hiddify_core_generated_bindings.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
-import 'package:hiddify/hiddifycore/core_interface/mtls_channel_cred.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hello/hello.pb.dart';
@@ -96,6 +95,18 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
         directories.baseDir.path.toNativeUtf8().cast(),
         directories.workingDir.path.toNativeUtf8().cast(),
         directories.tempDir.path.toNativeUtf8().cast(),
+        // Hardcoded, and it deliberately IGNORES the `mode` argument this method
+        // was passed — so mobile moving to the authenticated mode does not drag
+        // desktop with it before desktop has been tested.
+        //
+        // Desktop has the same exposure: loopback is not isolated between
+        // processes here either, and a desktop Hiddify install binds a core of
+        // its own. The pieces exist — `secret` above is already generated and
+        // passed to Setup, and GetServerPublicKey is exported over FFI
+        // (hiddify_core_generated_bindings.dart) — so this is pinning the
+        // certificate and attaching the secret, exactly as mobile now does. It
+        // needs a Windows DLL rebuild and a connect test, which is why it is not
+        // in the same change.
         SetupMode.GRPC_NORMAL_INSECURE.value,
         "127.0.0.1:$port".toNativeUtf8().cast(),
         secret.toNativeUtf8().cast(),

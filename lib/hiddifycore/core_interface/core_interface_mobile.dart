@@ -1,16 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:basic_utils/basic_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:grpc/grpc.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/utils/laststeam.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
-import 'package:hiddify/hiddifycore/core_interface/mtls_channel_cred.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hello/hello.pb.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hello/hello_service.pbgrpc.dart';
 import 'package:hiddify/singbox/model/core_status.dart';
 
 import 'package:hiddify/utils/utils.dart';
@@ -25,8 +21,19 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   static const statusChannel = EventChannel("$channelPrefix/service.status", JSONMethodCodec());
   static const alertsChannel = EventChannel("$channelPrefix/service.alerts", JSONMethodCodec());
 
-  late Uint8List serverPublicKey;
-  static final cert = CryptoUtils.generateEcKeyPair();
+  // Was `late Uint8List serverPublicKey` plus a generated EC key pair for a
+  // client certificate. The client-certificate half is gone: the core rejected
+  // certificates outright and, for a public key, built an x509.Certificate with
+  // no Raw, Subject or signature — nothing can chain to that, so the mTLS mode
+  // could never have completed a handshake. The client authenticates with a
+  // shared secret instead; TLS is here for the half only it can do, which is
+  // letting us pin the server.
+  //
+  // Both are fetched over the METHOD CHANNEL, which is in-process and therefore
+  // trustworthy. Fetching either over the connection they are meant to
+  // authenticate would authenticate nothing.
+  Uint8List? _serverCertificate;
+  String? _secret;
 
   // Loopback gRPC ports for the two cores: `portFront` is the one embedded in
   // this app process, `portBack` the one in the platform VPN service.
@@ -39,11 +46,12 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   // — hub address, per-user UUIDs and Reality shortIDs — over an unauthenticated
   // socket. Any Hiddify-derived client collides the same way.
   //
-  // Distinct ports remove the collision. They do NOT remove the exposure: a
-  // fixed port is still squattable, and the channel has no authentication in
-  // either direction (mode 3, GRPC_NORMAL_INSECURE). Completing the mTLS path so
-  // the client pins the server it fetched over the method channel is what
-  // actually closes it.
+  // Distinct ports remove the collision but not the exposure — a fixed port is
+  // still squattable by anything that starts first. The channel is now
+  // authenticated in both directions (mode 1): TLS with a certificate this
+  // client pins, and a per-install secret the core requires on every call. The
+  // ports matter for the ordinary case; the credentials matter for the hostile
+  // one.
   //
   // Chosen below the ephemeral range (49152+) so the OS cannot assign them to
   // something else, above 1024, and clear of the common development ports. Keep
@@ -59,67 +67,96 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   late LastStream<CoreStatus> _status;
   @override
   Future<String> setup(Directories directories, bool debug, int mode) async {
-    final channelOption = [1, 2].contains(mode)
-        ? MTLSChannelCredentials(serverPublicKey: serverPublicKey, clientKey: cert)
-        : const ChannelCredentials.insecure();
     _debug = debug;
-    final helloClient = HelloClient(
-      ClientChannel(
-        '127.0.0.1',
-        port: portFront,
-        options: ChannelOptions(credentials: channelOption),
-      ),
-    );
+    final secureMode = [1, 2].contains(mode);
+
     final status = statusChannel.receiveBroadcastStream().map(CoreStatus.fromEvent);
     final alerts = alertsChannel.receiveBroadcastStream().map(CoreStatus.fromEvent);
-
     _status = LastStream(ValueConnectableStream(Rx.merge([status, alerts])).autoConnect());
-    try {
-      await helloClient.sayHello(HelloRequest(name: "test"));
-      loggy.info("core is already started!");
-    } catch (e) {
-      //core is not started yet
 
-      await methodChannel.invokeMethod("setup", {
-        "baseDir": directories.baseDir.path,
-        "workingDir": directories.workingDir.path,
-        "tempDir": directories.tempDir.path,
-        "grpcPort": portFront,
-        "mode": mode,
-        "debug": debug,
-      });
-      final res = await helloClient.sayHello(HelloRequest(name: "test"));
-      loggy.info(res.toString());
+    // Set the core up FIRST, unconditionally.
+    //
+    // This used to probe with sayHello and only call `setup` if the probe threw,
+    // which cannot work for a secure mode: the credentials needed to make that
+    // probe are produced BY the setup it is trying to avoid. It was also the
+    // shape behind the iOS import failure — a probe that failed while the server
+    // was up drove a retry into a refusal it could never clear.
+    //
+    // Calling it every time is safe: hcore.Setup returns early when a server for
+    // the mode already exists (grpc_server.go), so this is a no-op on the second
+    // and later calls.
+    await methodChannel.invokeMethod("setup", {
+      "baseDir": directories.baseDir.path,
+      "workingDir": directories.workingDir.path,
+      "tempDir": directories.tempDir.path,
+      "grpcPort": portFront,
+      "mode": mode,
+      "debug": debug,
+    });
+
+    ChannelCredentials channelOption = const ChannelCredentials.insecure();
+    if (secureMode) {
+      // Both over the method channel, in this order: the certificate does not
+      // exist until the core has been set up.
+      _serverCertificate = await methodChannel.invokeMethod<Uint8List>("get_grpc_server_public_key");
+      _secret = await methodChannel.invokeMethod<String>("get_grpc_secret");
+
+      if (_serverCertificate == null || _serverCertificate!.isEmpty) {
+        return "core did not provide a certificate to pin";
+      }
+      if (_secret == null || _secret!.isEmpty) {
+        // Fail rather than fall back to an insecure channel. A silent downgrade
+        // is the one outcome worse than not connecting, because everything keeps
+        // working and nothing says the channel is open to any local process.
+        return "core did not provide a credential";
+      }
+
+      // Pins the certificate and nothing else — ChannelCredentials.secure builds
+      // a SecurityContext with no trusted roots and adds only these bytes, so a
+      // handshake with any other core aborts instead of succeeding.
+      channelOption = ChannelCredentials.secure(certificates: _serverCertificate);
     }
 
-    // serverPublicKey = await methodChannel.invokeMethod<Uint8List>("get_grpc_server_public_key") ?? Uint8List.fromList([]);
-    // await methodChannel.invokeMethod(
-    //   "add_grpc_client_public_key",
-    //   {
-    //     "clientPublicKey": ascii.encode(CryptoUtils.encodeEcPublicKeyToPem(cert.publicKey as ECPublicKey)),
-    //   },
-    // );
-    // serverPublicKey = X509Utils.x509CertificateFromPem(String.fromCharCodes(serverPublicKey));
-    // var chanelOption = ChannelOptions(
-    //   credentials: MTLSChannelCredentials(serverPublicKey: serverPublicKey, clientPrivateKey: cert.privateKey as ECPrivateKey),
-    // );
     fgClient = CoreClient(
       ClientChannel(
         '127.0.0.1',
         port: portFront,
         options: ChannelOptions(credentials: channelOption),
       ),
+      options: _callOptions(),
     );
 
+    // Same credentials: the background core is a different process but the same
+    // install, so it presents the same certificate and requires the same secret.
+    // That is exactly why the secret is persisted rather than per-launch — the
+    // VPN service can be started by the system with no Flutter engine alive to
+    // hand it one.
     bgClient = CoreClient(
       ClientChannel(
         '127.0.0.1',
         port: portBack,
         options: ChannelOptions(credentials: channelOption),
       ),
+      options: _callOptions(),
     );
     // await start("/sdcard/Android/data/com.raynlabs.app/files/configs/cdc633e9-8cfc-4a67-948d-009f779a5c91.json", "hiddify");
     return "";
+  }
+
+  /// Call metadata carrying the shared secret, or none in an insecure mode.
+  ///
+  /// Set on the CLIENT rather than per call, so a future RPC cannot be added
+  /// without it — the core rejects an unauthenticated call, so forgetting one
+  /// would fail closed, but it would fail at runtime on a device rather than
+  /// here.
+  ///
+  /// The key must stay lower-case: gRPC normalises header names and rejects a
+  /// key containing upper case outright. It is asserted core-side too
+  /// (TestSecretMetadataKeyIsWireLegal).
+  CallOptions _callOptions() {
+    final secret = _secret;
+    if (secret == null || secret.isEmpty) return CallOptions();
+    return CallOptions(metadata: {'x-rayn-secret': secret});
   }
 
   @override

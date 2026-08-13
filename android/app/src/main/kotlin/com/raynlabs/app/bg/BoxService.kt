@@ -168,7 +168,10 @@ class BoxService(
                         it.fixAndroidStack = com.raynlabs.app.bg.Bugs.fixAndroidStack
                         it.mode=4L//mode.toLong()
                         it.listen= "127.0.0.1:${Settings.grpcServiceModePort}"
-                        it.secret=""
+                        // Same per-install credential the app's core uses. This
+                        // process can be started by the system, so it reads the
+                        // persisted value rather than being handed one.
+                        it.secret = Settings.grpcSecret
                         it.debug = Settings.debugMode
                     },platformInterface)
 
