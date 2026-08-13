@@ -106,6 +106,18 @@ DISTRIBUTOR_ARGS=--skip-clean --build-target $(TARGET) --artifact-name=$(FF_ARTI
 # `--flag`, `k=v` pairs become `--k v`.
 FF_OBFUSCATE=--flutter-build-args=obfuscate,split-debug-info=build/symbols
 
+# Opt-in dart-defines, empty by default. Exists so a RELEASE build can carry a
+# diagnostic affordance that is otherwise compiled out — TestFlight rejects debug
+# builds (`get-task-allow`), and with the build host in the cloud and no USB path
+# to the device, a kDebugMode-only gate is unreachable on the one topology that
+# needs it. See IOS_BUILD.md -> "Producing a diagnostic build".
+#
+#   make ios-release CHANNEL=prod \
+#     FF_DART_DEFINES=--build-dart-define=RAYN_DIAGNOSTICS=true
+#
+# Never set this for a shipping build.
+FF_DART_DEFINES=
+
 
 
 get:	
@@ -549,7 +561,22 @@ macos-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package --platform macos --targets dmg,pkg $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE)
 
 ios-release: check-rulesets-fresh rayn-link-key #not tested
-	$(FASTFORGE) package --platform ios --targets ipa --build-export-options-plist  ios/exportOptions.plist $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE)
+	$(FASTFORGE) package --platform ios --targets ipa --build-export-options-plist  ios/exportOptions.plist $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE) $(FF_DART_DEFINES)
+
+# Ad-hoc build for the fast device loop (ios-remote-mac-fast-testing-guide.md).
+# Depends on rayn-link-key for the same reason ios-release does: without it the
+# artifact carries the COMMITTED DEVELOPMENT rayn:// key and a live token will
+# not decrypt, so token import cannot be tested. Exporting from Xcode's Organizer
+# skips this and produces exactly that broken build.
+#
+# Not obfuscated: this never ships, and readable symbols make a crash log useful.
+# Named -adhoc so it can never be mistaken for a store artifact.
+ios-adhoc: check-rulesets-fresh rayn-link-key
+	$(FASTFORGE) package --platform ios --targets ipa \
+	  --build-export-options-plist ios/exportOptions-adhoc.plist \
+	  --skip-clean --build-target $(TARGET) \
+	  --artifact-name=RaynVPN-{{build_name}}+{{build_number}}-adhoc.{{ext}} \
+	  $(FF_DART_DEFINES)
 
 android-libs:
 	$(MKDIR) $(ANDROID_OUT) || echo Folder already exists. Skipping...

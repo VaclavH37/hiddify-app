@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Ad-hoc export, for the fast device loop documented in
+  ios-remote-mac-fast-testing-guide.md. Sibling of exportOptions.plist, which is
+  the App Store / TestFlight one; the differences are deliberate:
+
+    method              ad-hoc, not app-store. Xcode 15+ calls this
+                        "release-testing" and accepts either spelling; the legacy
+                        name is used here because fastforge and older toolchains
+                        also understand it.
+    provisioningProfiles  adhoc.* rather than dist.*. Two entries, because the
+                        packet-tunnel extension is separately signed — an export
+                        naming only the app fails on the .appex.
+    uploadSymbols       false. There is no App Store Connect in this path.
+    manageAppVersionAndBuildNumber  false. The whole point of ad-hoc is
+                        re-exporting the SAME build number, so nothing here may
+                        touch it.
+
+  The archive itself is still produced with the Release configuration and its
+  dist.* profiles; `xcodebuild -exportArchive` re-signs against the profiles
+  named below, so the pbxproj needs no ad-hoc variant.
+
+  An artifact exported with this file must NEVER be uploaded to App Store
+  Connect. `make ios-adhoc` names it -adhoc.ipa so the two cannot be confused.
+-->
+<plist version="1.0">
+<dict>
+	<key>destination</key>
+	<string>export</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<key>method</key>
+	<string>ad-hoc</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.raynlabs.app</key>
+		<string>adhoc.com.raynlabs.app</string>
+		<key>com.raynlabs.app.RaynTunnel</key>
+		<string>adhoc.com.raynlabs.app.rayntunnel</string>
+	</dict>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>stripSwiftSymbols</key>
+	<true/>
+	<key>teamID</key>
+	<string>RPD5KQ8YA7</string>
+	<key>uploadSymbols</key>
+	<false/>
+</dict>
+</plist>

@@ -1,17 +1,22 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
+import 'package:hiddify/features/log/data/diagnostics_exporter.dart';
 import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
+import 'package:hiddify/utils/alerts.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// First-screen the user sees when no profile is imported. Hosts the QR
 /// scanner (mobile only) and clipboard-paste affordances; both pipe into
@@ -125,6 +130,65 @@ class AuthPage extends HookConsumerWidget {
                         if (isLoading) ...[
                           const Gap(24),
                           const Center(child: CircularProgressIndicator()),
+                        ],
+                        // TEMPORARY — DELETE WHEN THE iOS IMPORT BUG IS CLOSED.
+                        //
+                        // The same export as Settings → Export diagnostics, hoisted
+                        // in front of the auth gate. It is needed here because the
+                        // failure being chased happens *during* import, so the user
+                        // never reaches Settings, and on iOS the logs are otherwise
+                        // unreachable: they live in the App Group container
+                        // (FilePath.sharedDirectory), which Xcode's Download
+                        // Container does not fetch, and `data/stderr3.log` is the
+                        // foreground core's own stderr so it never reaches the
+                        // Xcode console either.
+                        //
+                        // Gated so a normal release cannot carry it, but NOT on
+                        // kDebugMode alone: TestFlight rejects debug builds
+                        // (`get-task-allow`), and with the Mac in the cloud and no
+                        // USB path to the phone, TestFlight is the only way onto a
+                        // device — so a kDebugMode-only gate would be unreachable
+                        // exactly where it is needed. The dart-define makes an
+                        // opted-in RELEASE build possible:
+                        //
+                        //   make ios-release CHANNEL=prod \
+                        //     FF_DART_DEFINES=--build-dart-define=RAYN_DIAGNOSTICS=true
+                        //
+                        // Absent that flag it compiles out, same as before.
+                        //
+                        // Removal is this whole `if` block plus the five imports it
+                        // added (foundation, directories_provider,
+                        // diagnostics_exporter, alerts, share_plus).
+                        if ((kDebugMode || const bool.fromEnvironment('RAYN_DIAGNOSTICS')) &&
+                            PlatformUtils.isMobile) ...[
+                          const Gap(16),
+                          _AuthAction(
+                            icon: Icons.bug_report_outlined,
+                            label: t.pages.settings.exportDiagnostics,
+                            onTap: () async {
+                              final files = DiagnosticsExporter(
+                                ref.read(appDirectoriesProvider).requireValue.workingDir,
+                              ).collect();
+                              if (files.isEmpty) {
+                                if (context.mounted) {
+                                  CustomToast(t.pages.settings.exportDiagnosticsEmpty).show(context);
+                                }
+                                return;
+                              }
+                              try {
+                                await Share.shareXFiles([
+                                  for (final file in files) XFile(file.path, mimeType: "text/plain"),
+                                ]);
+                              } catch (_) {
+                                // By kind, never by value: a platform exception can
+                                // carry absolute paths, and this is a share sheet
+                                // the user may screenshot.
+                                if (context.mounted) {
+                                  CustomToast.error(t.pages.settings.exportDiagnosticsFailed).show(context);
+                                }
+                              }
+                            },
+                          ),
                         ],
                       ],
                     ),
