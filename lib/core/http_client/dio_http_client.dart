@@ -7,6 +7,36 @@ import 'package:dio_smart_retry/dio_smart_retry.dart';
 
 import 'package:hiddify/utils/custom_loggers.dart';
 
+/// Re-applies the response type a request asked for, on every attempt.
+///
+/// `DioMixin.fetch<T>` does not merely read `responseType` — it OVERWRITES it
+/// on the RequestOptions from the generic type argument (dio_mixin.dart:379):
+/// `String` becomes `plain`, and anything else that is not `dynamic` becomes
+/// `json`. `dio_smart_retry` re-issues a failed request as `dio.fetch<void>`,
+/// and `void` is neither, so a retry silently rewrites the request to `json` —
+/// on the same RequestOptions instance the first attempt used.
+///
+/// A subscription body served as `application/json` then comes back decoded to
+/// a Map, and the `Response<String>` cast in `assureResponse` fails with
+/// `_Map<String, dynamic> is not a subtype of type 'String?'`. That surfaces as
+/// `DioException [unknown]` — a type error wearing a network error's clothes,
+/// which is how it read as a broken token on the import path.
+///
+/// It needs BOTH a retry and a JSON-typed body, so it fires intermittently and
+/// only against servers that content-type their responses that way. Ours does.
+class _ResponseTypeGuard extends Interceptor {
+  static const key = 'rayn_response_type';
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final intended = options.extra[key];
+    if (intended is ResponseType) {
+      options.responseType = intended;
+    }
+    handler.next(options);
+  }
+}
+
 class DioHttpClient with InfraLogger {
   final Map<String, Dio> _dio = {};
   DioHttpClient({required Duration timeout, required this.userAgent, required bool debug}) {
@@ -19,6 +49,10 @@ class DioHttpClient with InfraLogger {
           headers: {"User-Agent": userAgent},
         ),
       );
+      // MUST stay ahead of RetryInterceptor, and must not be removed as
+      // cosmetic — see the class comment. Without it a retried subscription
+      // fetch decodes as JSON and the import fails with a type-cast error.
+      _dio[mode]!.interceptors.add(_ResponseTypeGuard());
       _dio[mode]!.interceptors.add(
         RetryInterceptor(
           dio: _dio[mode]!,
@@ -167,6 +201,9 @@ class DioHttpClient with InfraLogger {
 
     return Options(
       responseType: responseType,
+      // Restated in `extra` because dio overwrites `responseType` on the
+      // RequestOptions itself; this is the copy _ResponseTypeGuard restores.
+      extra: responseType == null ? null : {_ResponseTypeGuard.key: responseType},
       headers: {
         if (userAgent != null) "User-Agent": userAgent,
         if (basicAuth != null) "authorization": basicAuth,
