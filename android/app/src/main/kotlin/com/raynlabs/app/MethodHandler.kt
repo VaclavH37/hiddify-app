@@ -35,6 +35,7 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
             AddGrpcClientPublicKey("add_grpc_client_public_key"),
             GetGrpcServerPublicKey("get_grpc_server_public_key"),
             GetGrpcSecret("get_grpc_secret"),
+            RotateGrpcBgSecret("rotate_grpc_bg_secret"),
 
         }
     }
@@ -79,6 +80,19 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
             // wins and the other sees the stored value.
             Trigger.GetGrpcSecret.method -> {
                 result.success(Settings.grpcSecret)
+            }
+
+            // Minted fresh on every connect, and returned so Dart can attach it to
+            // the background channel it is about to use. Dart calls this BEFORE
+            // `start`, because the service reads the stored value once when it sets
+            // the core up — rotating afterwards would leave the two disagreeing and
+            // fail every background call.
+            //
+            // Rotation is what bounds the exposure of a secret that crosses a
+            // plaintext socket: a process that squats the port and captures one
+            // holds a value that is dead by the next connect.
+            Trigger.RotateGrpcBgSecret.method -> {
+                result.success(Settings.rotateGrpcBgSecret())
             }
 
             Trigger.Setup.method -> {

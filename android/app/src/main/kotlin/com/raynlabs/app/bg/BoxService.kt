@@ -168,10 +168,18 @@ class BoxService(
                         it.fixAndroidStack = com.raynlabs.app.bg.Bugs.fixAndroidStack
                         it.mode=4L//mode.toLong()
                         it.listen= "127.0.0.1:${Settings.grpcServiceModePort}"
-                        // Same per-install credential the app's core uses. This
-                        // process can be started by the system, so it reads the
-                        // persisted value rather than being handed one.
-                        it.secret = Settings.grpcSecret
+                        // The BACKGROUND credential, not the foreground one. This
+                        // channel is plaintext, so whatever it carries is readable
+                        // by a process that squats the port — and the foreground
+                        // secret guards the pinned channel that carries the
+                        // decrypted subscription, so the two must not be the same
+                        // value. The app rotates this on every connect.
+                        //
+                        // Read, never generated: the system can start this service
+                        // with no Flutter engine alive, and an empty value is valid
+                        // — the core does not enforce when it was set up without a
+                        // secret (requireSecret, enforceWhenUnset=false).
+                        it.secret = Settings.grpcBgSecret
                         it.debug = Settings.debugMode
                     },platformInterface)
 

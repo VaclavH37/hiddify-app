@@ -25,4 +25,5 @@ object SettingsKey {
     const val GRPC_PORT = "grpc_port"
     const val GRPC_FLUTTER_PUBLIC_KEY = "grpc_flutter_public_key"
     const val GRPC_SECRET = "grpc_secret"
+    const val GRPC_BG_SECRET = "grpc_bg_secret"
 }

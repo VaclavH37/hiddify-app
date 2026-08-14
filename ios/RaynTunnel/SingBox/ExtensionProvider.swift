@@ -61,16 +61,25 @@ open class ExtensionProvider: NEPacketTunnelProvider {
             opts.workingDir = workDir
             opts.tempDir = cacheDir
             opts.listen = "127.0.0.1:\(grpcServiceModePort)"
-            // Same per-install credential the app's core uses, read from the
-            // shared keychain item. `peek`, never `getOrCreate`: this process can
-            // be launched by the system with the app not running, and creating
-            // here would race the app into a second secret that leaves the two
-            // cores disagreeing and every RPC failing Unauthenticated.
+            // The BACKGROUND credential, not the foreground one, read from the
+            // shared keychain item. This channel is plaintext — the app cannot pin
+            // a certificate for a core that does not exist when its client is
+            // built, and the system can start this process with no app at all — so
+            // whatever it carries is readable by a process that squats the port.
+            // The foreground secret guards the pinned channel that carries the
+            // decrypted subscription, so the two must not be the same value.
             //
-            // Empty means the app has never run, so no secret exists yet. The
-            // core then fails closed, which is the right direction — but nothing
-            // can talk to this core until the app has been opened once.
-            opts.secret = GrpcSecret.peek() ?? ""
+            // `peekBackground`, never a create: only the app mints one, and it
+            // does so on every connect (rotate_grpc_bg_secret) immediately before
+            // starting the tunnel, so this reads the value minted for this session.
+            //
+            // Empty is VALID and expected in one case: an on-demand start after a
+            // reboot but before the first unlock cannot read the keychain at all
+            // (AfterFirstUnlockThisDeviceOnly). The core does not enforce when it
+            // was set up without a secret, so the app can still read status and
+            // logs from a tunnel that is running perfectly well. Failing closed
+            // there would break a session the user can neither see nor fix.
+            opts.secret = GrpcSecret.peekBackground() ?? ""
             opts.debug = false
             opts.mode = 4
             opts.fixAndroidStack = false

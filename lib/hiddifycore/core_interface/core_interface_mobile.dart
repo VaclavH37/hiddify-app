@@ -42,6 +42,15 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   Uint8List? _pinnedDer;
   String? _secret;
 
+  /// Credential for the BACKGROUND core, rotated by [setupBackground] on every
+  /// connect. Deliberately not the same value as [_secret] — see the note on
+  /// bgClient.
+  String? _bgSecret;
+
+  /// gRPC normalises header names and rejects a key containing upper case
+  /// outright. Asserted core-side too (TestSecretMetadataKeyIsWireLegal).
+  static const _grpcSecretMetadataKey = 'x-rayn-secret';
+
   // Loopback gRPC ports for the two cores: `portFront` is the one embedded in
   // this app process, `portBack` the one in the platform VPN service.
   //
@@ -160,32 +169,36 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
       options: _callOptions(),
     );
 
-    // INSECURE, deliberately, and it must stay that way until the background core
-    // can present the same certificate this client pinned.
+    // Authenticated, but NOT encrypted — see the matching note in
+    // StartGrpcServerByMode. The background core runs in the platform VPN service
+    // (Android `:bg`, the iOS packet-tunnel extension), which is started long
+    // after this client is built and can be started by the SYSTEM with no app
+    // process at all. It therefore has no certificate this client could have
+    // pinned, and publishing one would have to travel service -> app, the
+    // direction SharedPreferences cannot do reliably across Android processes.
     //
-    // The background core runs in the platform VPN service — a separate process,
-    // started as mode 4 (GRPC_BACKGROUND_INSECURE) in BoxService.kt and
-    // ExtensionProvider.swift. Giving this client the foreground credentials made
-    // it speak TLS to a plaintext server, so the handshake failed and the tunnel
-    // could not start at all.
+    // What the secret buys: OutboundsInfo streams every outbound's host and port,
+    // and Stop drops the tunnel. Loopback is shared between apps, so before this
+    // any installed app could enumerate the hub and node addresses or silently
+    // disconnect the user.
     //
-    // Raising that core to mode 2 is not a one-line change either: the server
-    // certificate is persisted in the core's LevelDB (grpc_server_private_key),
-    // and goleveldb takes a single-process file lock. The service cannot read the
-    // store the app process holds, so it would generate a DIFFERENT certificate
-    // and fail the pin anyway. Securing this channel means distributing the
-    // certificate the way GrpcSecret distributes the secret — keychain on iOS,
-    // SharedPreferences on Android — which is its own change.
-    //
-    // NO SECRET ON THIS CHANNEL. Sending it over a plaintext loopback socket
-    // would hand it to any local process listening, which is exactly what the
-    // foreground channel exists to prevent.
+    // A DIFFERENT secret from the foreground one, deliberately. This one crosses
+    // a plaintext socket, so a process that squats portBack before the service
+    // binds it receives a copy — and if that were the foreground secret it would
+    // unlock the pinned channel that carries the decrypted subscription. Scoped
+    // this way, a captured value reaches only this core, and only until the next
+    // connect rotates it (setupBackground).
     bgClient = CoreClient(
       ClientChannel(
         '127.0.0.1',
         port: portBack,
         options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
       ),
+      // A PROVIDER, not static metadata: providers run per RPC, so rotation is a
+      // field assignment rather than a client rebuild. Rebuilding would mean
+      // re-subscribing the status and log streams that RaynCoreService attaches
+      // to this client at bootstrap, which is the fragile part of this file.
+      options: _bgCallOptions(),
     );
     // await start("/sdcard/Android/data/com.raynlabs.app/files/configs/cdc633e9-8cfc-4a67-948d-009f779a5c91.json", "hiddify");
     return "";
@@ -299,6 +312,28 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
     return 'sha256=${sha256.convert(body.codeUnits).toString().substring(0, 16)}';
   }
 
+  /// Call metadata for the BACKGROUND core, resolved per RPC.
+  ///
+  /// A provider rather than a fixed map because [setupBackground] rotates the
+  /// secret on every connect: providers are invoked for each call, so the new
+  /// value is picked up without rebuilding the client and re-subscribing the
+  /// status and log streams attached to it at bootstrap.
+  ///
+  /// Sends nothing when there is no secret. The background core mirrors that —
+  /// it does not enforce when it was set up without one — so a tunnel the system
+  /// started before the first unlock, where the keychain is unreadable, still
+  /// reports status instead of failing every call.
+  CallOptions _bgCallOptions() => CallOptions(
+    providers: [
+      (metadata, uri) {
+        final secret = _bgSecret;
+        if (secret != null && secret.isNotEmpty) {
+          metadata[_grpcSecretMetadataKey] = secret;
+        }
+      },
+    ],
+  );
+
   /// Call metadata carrying the shared secret, or none in an insecure mode.
   ///
   /// Set on the CLIENT rather than per call, so a future RPC cannot be added
@@ -312,7 +347,7 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   CallOptions _callOptions() {
     final secret = _secret;
     if (secret == null || secret.isEmpty) return CallOptions();
-    return CallOptions(metadata: {'x-rayn-secret': secret});
+    return CallOptions(metadata: {_grpcSecretMetadataKey: secret});
   }
 
   @override
@@ -320,6 +355,19 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
     // if (!await waitUntilPort(portBack, false, stop)) return const CoreStatus.stopped(alert: CoreAlert.createService);
     if (!await stop()) return const CoreStatus.stopped(alert: CoreAlert.createService);
     _status.clean();
+
+    // ROTATE BEFORE START, and the order is the whole point.
+    //
+    // The service reads this value once, when it calls MobileSetup — so writing
+    // it after `start` would hand the core the previous secret and this client
+    // the next one, and every background RPC would fail authentication. `stop()`
+    // above has already torn down the old service, so nothing is mid-flight.
+    //
+    // Rotating per connect is what bounds the plaintext exposure: a process that
+    // squats portBack and captures one holds a value that is dead the next time
+    // the user connects.
+    _bgSecret = await methodChannel.invokeMethod<String>("rotate_grpc_bg_secret");
+
     await methodChannel.invokeMethod("start", {
       "path": path,
       "name": name,

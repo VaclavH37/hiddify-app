@@ -66,6 +66,23 @@ public class MethodHandler: NSObject, FlutterPlugin {
                                     message: "keychain unavailable",
                                     details: nil))
             }
+        // Minted fresh on every connect and returned so Dart can attach it to the
+        // background channel it is about to use. Dart calls this BEFORE `start`:
+        // the extension reads the stored value once when it sets its core up, so
+        // rotating afterwards would leave the two disagreeing and fail every
+        // background call.
+        //
+        // Rotation is what bounds the exposure of a secret that crosses a
+        // plaintext socket — a process that squats the port and captures one holds
+        // a value that is dead by the next connect.
+        case "rotate_grpc_bg_secret":
+            if let secret = GrpcSecret.rotateBackground() {
+                result(secret)
+            } else {
+                result(FlutterError(code: "GRPC_BG_SECRET",
+                                    message: "keychain unavailable",
+                                    details: nil))
+            }
         case "setup":
                 Task {
                     guard

@@ -41,7 +41,16 @@ public enum GrpcSecret {
     private static let log = Logger(subsystem: "com.raynlabs.app", category: "GrpcSecret")
 
     private static let service = "io.raynlabs.grpcsecret"
+    /// Foreground core (mode 1). Reached over pinned TLS, so it never crosses a
+    /// readable socket; created once and kept.
     private static let account = "rayn_grpc_secret"
+    /// Background core (mode 4). A SEPARATE value on purpose: that channel is
+    /// plaintext, because the extension can be started by the system with no app
+    /// process and so has no certificate the client could have pinned in advance.
+    /// A process that squats the port receives whatever the client sends — and if
+    /// that were the foreground secret it would unlock the pinned channel that
+    /// carries the decrypted subscription. Rotated by the app on every connect.
+    private static let backgroundAccount = "rayn_grpc_bg_secret"
     /// 32 bytes of entropy, hex-encoded to 64 characters. Hex rather than raw
     /// bytes because this crosses the gomobile boundary as a Go string and
     /// travels as an HTTP/2 header value, neither of which is binary-safe.
@@ -49,18 +58,27 @@ public enum GrpcSecret {
 
     private static var accessGroup: String { FilePath.groupName }
 
-    private static var baseQuery: [String: Any] {
+    private static func baseQuery(_ forAccount: String) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
+            kSecAttrAccount as String: forAccount,
             kSecAttrAccessGroup as String: accessGroup,
         ]
     }
 
     /// Returns the secret, or nil if it has not been created yet. Never creates.
-    public static func peek() -> String? {
-        var query = baseQuery
+    public static func peek() -> String? { peek(account) }
+
+    /// The background core's credential. Never creates: only the app mints one,
+    /// in `rotateBackground`. Returning nil here is valid and expected — an
+    /// on-demand tunnel started after a reboot but before the first unlock cannot
+    /// read the keychain, and the core does not enforce when it was set up
+    /// without a secret.
+    public static func peekBackground() -> String? { peek(backgroundAccount) }
+
+    private static func peek(_ forAccount: String) -> String? {
+        var query = baseQuery(forAccount)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
 
@@ -83,18 +101,9 @@ public enum GrpcSecret {
     public static func getOrCreate() -> String? {
         if let existing = peek() { return existing }
 
-        var bytes = Data(count: byteLength)
-        let generated = bytes.withUnsafeMutableBytes { buffer -> OSStatus in
-            guard let base = buffer.baseAddress else { return errSecAllocate }
-            return SecRandomCopyBytes(kSecRandomDefault, byteLength, base)
-        }
-        guard generated == errSecSuccess else {
-            log.error("could not generate a grpc secret")
-            return nil
-        }
-        let secret = bytes.map { String(format: "%02x", $0) }.joined()
+        guard let secret = randomHex() else { return nil }
 
-        var insert = baseQuery
+        var insert = baseQuery(account)
         insert[kSecValueData as String] = Data(secret.utf8)
         insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
 
@@ -105,5 +114,49 @@ public enum GrpcSecret {
         }
         log.info("generated a new per-install grpc secret")
         return secret
+    }
+
+    /// Mints a NEW background secret, replacing any previous one, and returns it.
+    /// App only — Dart calls this immediately before starting the tunnel, so the
+    /// extension reads the fresh value when it sets its core up.
+    ///
+    /// Rotation is what bounds the exposure of a secret that crosses a plaintext
+    /// socket: a process that squats the port and captures one holds a value that
+    /// is dead by the next connect.
+    public static func rotateBackground() -> String? {
+        guard let secret = randomHex() else { return nil }
+
+        // Delete-then-add rather than SecItemUpdate: this must overwrite, and
+        // SecItemAdd alone returns errSecDuplicateItem once one exists. Ignoring
+        // errSecItemNotFound makes the first call behave like every later one.
+        let deleteStatus = SecItemDelete(baseQuery(backgroundAccount) as CFDictionary)
+        if deleteStatus != errSecSuccess && deleteStatus != errSecItemNotFound {
+            log.error("could not clear the previous background secret (status \(deleteStatus))")
+            return nil
+        }
+
+        var insert = baseQuery(backgroundAccount)
+        insert[kSecValueData as String] = Data(secret.utf8)
+        insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+
+        let status = SecItemAdd(insert as CFDictionary, nil)
+        guard status == errSecSuccess else {
+            log.error("could not store the background grpc secret (status \(status))")
+            return nil
+        }
+        return secret
+    }
+
+    private static func randomHex() -> String? {
+        var bytes = Data(count: byteLength)
+        let generated = bytes.withUnsafeMutableBytes { buffer -> OSStatus in
+            guard let base = buffer.baseAddress else { return errSecAllocate }
+            return SecRandomCopyBytes(kSecRandomDefault, byteLength, base)
+        }
+        guard generated == errSecSuccess else {
+            log.error("could not generate a grpc secret")
+            return nil
+        }
+        return bytes.map { String(format: "%02x", $0) }.joined()
     }
 }

@@ -147,6 +147,37 @@ object Settings {
             return generated
         }
 
+    /// Credential for the BACKGROUND core (mode 4), deliberately NOT [grpcSecret].
+    ///
+    /// That channel is plaintext — the service is started by the app, or by the
+    /// system with no app at all, so there is no certificate the client could have
+    /// pinned. A process that squats the port before we bind it therefore receives
+    /// whatever the client sends. Were that the foreground secret, it would unlock
+    /// the pinned TLS channel that carries the decrypted subscription; scoped this
+    /// way, a captured value reaches only the background core.
+    ///
+    /// Read (not generated) here: only [rotateGrpcBgSecret] mints one. A system
+    /// start with no Flutter engine reuses the last value, and an empty string is
+    /// valid — the core does not enforce when it was set up without a secret.
+    val grpcBgSecret: String
+        get() = preferences.getString(SettingsKey.GRPC_BG_SECRET, "") ?: ""
+
+    /// Mints a fresh background secret and returns it, for the app to attach to
+    /// its own calls.
+    ///
+    /// commit(), not apply(). The caller starts the VPN service immediately after
+    /// this returns, and apply() only guarantees the in-memory value — a service
+    /// start that raced the asynchronous disk write would read the PREVIOUS
+    /// secret and reject every call from the client that just rotated it. commit()
+    /// is synchronous, and this runs once per connect, not on a hot path.
+    fun rotateGrpcBgSecret(): String {
+        val bytes = ByteArray(32)
+        java.security.SecureRandom().nextBytes(bytes)
+        val generated = bytes.joinToString("") { "%02x".format(it) }
+        preferences.edit().putString(SettingsKey.GRPC_BG_SECRET, generated).commit()
+        return generated
+    }
+
     var grpcServiceModePort: Int
         get() {
             val stored = preferences.getInt(SettingsKey.GRPC_PORT, DEFAULT_GRPC_PORT_BACK)!!
