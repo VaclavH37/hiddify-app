@@ -134,6 +134,40 @@ void main() {
     }
   });
 
+  group('the committed rayn:// key is the development one', () {
+    // CORE_BUILD.md states the committed key file is generated from a throwaway
+    // development secret and marked `kRaynLinkKeyIsDev = true`. It never was:
+    // every revision of the file in this repo's history carries `false`, i.e.
+    // the production key.
+    //
+    // The cause was `make rayn-link-key-dev`, which used to run the generator
+    // with no flags — so it produced the dev key only if RAYN_LINK_SECRET
+    // happened to be unset. It exists to be run immediately after a release
+    // build, in the same shell, where the secret still IS exported. It has a
+    // `--dev` flag now, and this is the assertion that would have caught it.
+    //
+    // What this does NOT claim: that the key is a secret. CORE_BUILD.md is
+    // explicit that it ships in every published binary and is public by
+    // construction. What matters here is that the flag stays a working signal —
+    // once `false` is normal in the repo, it can no longer distinguish a
+    // correctly-cut release from a build that skipped key generation entirely.
+    //
+    // Expect this to fail on a build host between `make rayn-link-key` and
+    // `make rayn-link-key-dev`. That is the intended reading: the tree is
+    // holding release key material and must not be committed as-is.
+    test('kRaynLinkKeyIsDev is true in the committed file', () {
+      final keyData = File('lib/utils/rayn_link_key_data.dart').readAsStringSync();
+      expect(
+        keyData.contains('const bool kRaynLinkKeyIsDev = true;'),
+        isTrue,
+        reason: 'lib/utils/rayn_link_key_data.dart was generated from a real '
+            'RAYN_LINK_SECRET. Run `make rayn-link-key-dev` before committing. '
+            'If you are mid-release-build, this failure is correct — finish the '
+            'build, then restore the dev key.',
+      );
+    });
+  });
+
   group('one version, not four', () {
     // The version lives in pubspec.yaml, in ios/Runner.xcodeproj (twice per
     // build configuration) and in the MSIX config. Only `make release` ever

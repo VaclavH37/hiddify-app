@@ -10,19 +10,19 @@ part of 'rayn_link_key.dart';
 /// True when this file was generated from the development secret rather than
 /// a real `RAYN_LINK_SECRET`. Release builds pass `--require-secret`, so a
 /// shipped artifact with this set to true is a broken build pipeline.
-const bool kRaynLinkKeyIsDev = false;
+const bool kRaynLinkKeyIsDev = true;
 
 /// One-way commitment to the derived key (first 4 bytes of SHA-256 over it).
 /// Safe to log — identifies which secret a build was cut with, reveals nothing.
-const String kRaynLinkKeyId = '12a1ed98';
+const String kRaynLinkKeyId = '5ac67027';
 
 const List<int> _t0 = <int>[
-  35, 123, 32, 99, 16, 245, 167, 145, 114, 197, 240, 255, 52, 149, 197, 144,
-  45, 24, 244, 40, 18, 237, 38, 158, 53, 207, 204, 201, 71, 3, 71, 225,
-  156, 68, 239, 190, 219, 240, 39, 157, 78, 17, 145, 128, 179, 162, 59, 218,
-  185, 21, 159, 61, 174, 85, 155, 91, 16, 239, 86, 107, 65, 6, 141, 104,
+  48, 21, 93, 84, 128, 185, 159, 0, 206, 84, 103, 5, 212, 245, 134, 64,
+  49, 199, 84, 223, 15, 190, 139, 97, 215, 36, 249, 126, 122, 162, 200, 27,
+  9, 183, 120, 167, 188, 235, 205, 180, 65, 63, 213, 218, 124, 88, 250, 162,
+  41, 59, 17, 68, 138, 77, 247, 114, 99, 33, 105, 19, 106, 112, 97, 178,
 ];
 
 const List<int> _t1 = <int>[
-  178, 83, 210, 236, 122, 43, 204, 121, 74, 29, 66, 48, 188, 248, 176, 35,
+  237, 134, 207, 215, 7, 121, 2, 192, 243, 247, 79, 212, 111, 202, 80, 175,
 ];

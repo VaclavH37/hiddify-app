@@ -49,8 +49,23 @@ const _outputPath = 'lib/utils/rayn_link_key_data.dart';
 
 void main(List<String> args) {
   final requireSecret = args.contains('--require-secret');
+  final forceDev = args.contains('--dev');
   final secret = Platform.environment['RAYN_LINK_SECRET'];
-  final isDev = secret == null || secret.isEmpty;
+
+  if (forceDev && requireSecret) {
+    stderr.writeln('gen_rayn_link_key: --dev and --require-secret are mutually exclusive.');
+    exit(1);
+  }
+
+  // --dev IGNORES the environment, and that is the entire point of it.
+  //
+  // Without it, "restore the dev key" meant "use the dev key IF no secret
+  // happens to be exported" — and the step exists to be run immediately after a
+  // release build, in the same shell, where the secret still IS exported. So it
+  // regenerated a PRODUCTION key file while looking like a routine restore, and
+  // that file got committed. Every version of rayn_link_key_data.dart in this
+  // repo's history carries kRaynLinkKeyIsDev = false for exactly that reason.
+  final isDev = forceDev || secret == null || secret.isEmpty;
 
   if (isDev && requireSecret) {
     stderr.writeln(

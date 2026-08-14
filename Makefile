@@ -157,10 +157,15 @@ translate:
 rayn-link-key:
 	@dart run tool/gen_rayn_link_key.dart --require-secret
 
-# Restores the committed development key file (no secret required). Use after a
-# release build so a local `flutter run` keeps working with the dev key.
+# Restores the committed development key file. Use after a release build so a
+# local `flutter run` keeps working with the dev key.
+#
+# --dev is load-bearing: this runs right after a release build, in the same
+# shell, where RAYN_LINK_SECRET is still exported. Without the flag the
+# generator would pick that up and write a PRODUCTION key file under the name
+# "restore the dev key".
 rayn-link-key-dev:
-	@dart run tool/gen_rayn_link_key.dart
+	@dart run tool/gen_rayn_link_key.dart --dev
 
 
 
