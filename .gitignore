@@ -107,3 +107,24 @@ external/
 /CrashReport*.log
 /Build Runner*.txt
 /*.xcactivitylog
+
+# Internal build/ops documentation — deliberately NOT published. These describe
+# the signing material, the build hosts, the secret-handling procedure and the
+# backend topology, and several quote host names and identifiers verbatim.
+#
+# Listed because they were untracked-by-convention and that is not a control:
+# a targeted `git add CORE_BUILD.md` alongside a real change put two of them
+# into commits that were only caught before push by luck. Ignoring them makes
+# `git add <path>` refuse without `-f`.
+#
+# Only the FILENAMES appear here, never the contents.
+/CORE_BUILD.md
+/IOS_BUILD.md
+/IOS_DEPLOYMENT.md
+/OUTSTANDING_ISSUES_REPORT.md
+/PLAY-SUBMISSION.md
+/RAYN-LINK-SYMMETRIC-MIGRATION.md
+/RULESETS.md
+/ios-remote-mac-fast-testing-guide.md
+/remnawave-hub-exit-architecture-review.md
+/IAP_Integration/
