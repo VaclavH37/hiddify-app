@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:grpc/grpc.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/utils/laststeam.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
@@ -33,6 +36,10 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   // trustworthy. Fetching either over the connection they are meant to
   // authenticate would authenticate nothing.
   Uint8List? _serverCertificate;
+
+  /// DER of [_serverCertificate], decoded once so the pin check is a byte
+  /// comparison rather than a parse on every handshake.
+  Uint8List? _pinnedDer;
   String? _secret;
 
   // Loopback gRPC ports for the two cores: `portFront` is the one embedded in
@@ -111,10 +118,37 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
         return "core did not provide a credential";
       }
 
+      _pinnedDer = _derFromPem(_serverCertificate!);
+      if (_pinnedDer == null) {
+        return "core certificate is not a valid PEM";
+      }
+
       // Pins the certificate and nothing else — ChannelCredentials.secure builds
       // a SecurityContext with no trusted roots and adds only these bytes, so a
       // handshake with any other core aborts instead of succeeding.
-      channelOption = ChannelCredentials.secure(certificates: _serverCertificate);
+      //
+      // `onBadCertificate` is not a relaxation of that, it is the same pin
+      // enforced a second way, and on iOS it is the ONLY way that works.
+      // `certificates:` asks the platform's trust engine to chain the peer to
+      // this certificate as an anchor, and on Apple platforms that engine is
+      // Security.framework, not BoringSSL — it applies Apple's own TLS server
+      // policy on top of chain validity, and it rejected this certificate with
+      // `CERTIFICATE_VERIFY_FAILED: application verification failure` while the
+      // bytes on both ends were identical. (A real mismatch reports
+      // `self signed certificate`; the two are distinguishable, which is how
+      // this was told apart from a plumbing bug.)
+      //
+      // Chain validation was never what this needed. The question here is not
+      // "does this certificate chain to something I trust" but "is this the
+      // exact certificate the core handed me in-process moments ago", and an
+      // equality check answers that directly — strictly narrower than anchor
+      // trust, since an anchor would also vouch for anything it signed. Nothing
+      // is accepted that the trust-store path would have refused.
+      channelOption = ChannelCredentials.secure(
+        certificates: _serverCertificate,
+        onBadCertificate: _isPinnedCertificate,
+      );
+      await _reportPinnedCertificate(channelOption);
     }
 
     fgClient = CoreClient(
@@ -155,6 +189,114 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
     );
     // await start("/sdcard/Android/data/com.raynlabs.app/files/configs/cdc633e9-8cfc-4a67-948d-009f779a5c91.json", "hiddify");
     return "";
+  }
+
+  /// The pin, enforced directly: true only when the peer presents byte-for-byte
+  /// the certificate this client fetched from the core over the method channel.
+  ///
+  /// Reached only after the platform's own verification has already failed, so
+  /// returning false here leaves the handshake exactly as it would have been.
+  /// Returning true accepts one specific certificate and no other — not a class
+  /// of certificates, not anything a CA signed, and not the peer's word for its
+  /// own hostname. Possessing the certificate is not enough to use it either:
+  /// the handshake still requires the matching private key, which never leaves
+  /// the core.
+  bool _isPinnedCertificate(X509Certificate certificate, String host) {
+    final pinned = _pinnedDer;
+    if (pinned == null) return false;
+
+    final presented = certificate.der;
+    if (presented.length != pinned.length) {
+      loggy.error("core certificate does not match the pin; refusing the channel");
+      return false;
+    }
+    var difference = 0;
+    for (var i = 0; i < pinned.length; i++) {
+      difference |= pinned[i] ^ presented[i];
+    }
+    if (difference != 0) {
+      loggy.error("core certificate does not match the pin; refusing the channel");
+      return false;
+    }
+    return true;
+  }
+
+  /// Decodes a PEM certificate to DER, or null if it is not one.
+  static Uint8List? _derFromPem(Uint8List pem) {
+    final body =
+        String.fromCharCodes(pem).replaceAll(RegExp('-----[^-]+-----'), '').replaceAll(RegExp(r'\s'), '');
+    if (body.isEmpty) return null;
+    try {
+      return base64.decode(body);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// Compares the certificate this client pinned against the one the core
+  /// actually presents, and says which of the two is wrong.
+  ///
+  /// Diagnostics builds only — it opens a second TLS connection purely to look
+  /// at the peer certificate, which a shipped build has no reason to do.
+  ///
+  /// It exists because a pinning failure reports nothing useful on its own: the
+  /// core generates the certificate and hands it to this client over the method
+  /// channel in the same process, so `CERTIFICATE_VERIFY_FAILED` says only that
+  /// the two disagree, not which one is unexpected. `onBadCertificate` fires
+  /// after built-in verification has already failed, so reaching it at all
+  /// answers half the question, and the peer certificate it carries answers the
+  /// rest — a subject other than `CN=rayn-core` means something else holds the
+  /// port, and a matching subject with a different fingerprint means the core
+  /// regenerated after this client fetched.
+  ///
+  /// Logs a fingerprint and the certificate's public fields, never key
+  /// material: the private half never leaves the core.
+  Future<void> _reportPinnedCertificate(ChannelCredentials credentials) async {
+    if (!Constants.diagnosticsBuild) return;
+    final pinned = _serverCertificate;
+    if (pinned == null) return;
+
+    // offsetInBytes / buffer length are here because platform channels hand
+    // back a Uint8List VIEW onto the message buffer rather than a standalone
+    // list, and an API that reads through `.buffer` would see the whole message
+    // instead of the certificate.
+    loggy.info(
+      'pinned certificate: ${_pemFingerprint(String.fromCharCodes(pinned))} len=${pinned.length} '
+      'offset=${pinned.offsetInBytes} buffer=${pinned.buffer.lengthInBytes} '
+      'header="${String.fromCharCodes(pinned.take(27).toList())}"',
+    );
+
+    try {
+      final probe = await SecureSocket.connect(
+        '127.0.0.1',
+        portFront,
+        context: credentials.securityContext,
+        timeout: const Duration(seconds: 5),
+        onBadCertificate: (certificate) {
+          loggy.warning(
+            'platform trust REJECTED the core certificate '
+            '(pin match: ${_isPinnedCertificate(certificate, "127.0.0.1")}): '
+            '${_pemFingerprint(certificate.pem)} '
+            'subject=${certificate.subject.trim()} issuer=${certificate.issuer.trim()} '
+            'from=${certificate.startValidity.toIso8601String()} '
+            'to=${certificate.endValidity.toIso8601String()}',
+          );
+          return _isPinnedCertificate(certificate, '127.0.0.1');
+        },
+      );
+      loggy.info('core certificate accepted');
+      await probe.close();
+    } catch (e) {
+      loggy.warning('certificate probe failed: $e');
+    }
+  }
+
+  /// SHA-256 over a PEM's base64 body, ignoring armour and line breaks, so a
+  /// certificate hashes the same whether Go or Dart re-encoded it.
+  static String _pemFingerprint(String pem) {
+    final body = pem.replaceAll(RegExp('-----[^-]+-----'), '').replaceAll(RegExp(r'\s'), '');
+    if (body.isEmpty) return 'sha256=<not a PEM>';
+    return 'sha256=${sha256.convert(body.codeUnits).toString().substring(0, 16)}';
   }
 
   /// Call metadata carrying the shared secret, or none in an insecure mode.
