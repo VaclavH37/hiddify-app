@@ -126,18 +126,32 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
       options: _callOptions(),
     );
 
-    // Same credentials: the background core is a different process but the same
-    // install, so it presents the same certificate and requires the same secret.
-    // That is exactly why the secret is persisted rather than per-launch — the
-    // VPN service can be started by the system with no Flutter engine alive to
-    // hand it one.
+    // INSECURE, deliberately, and it must stay that way until the background core
+    // can present the same certificate this client pinned.
+    //
+    // The background core runs in the platform VPN service — a separate process,
+    // started as mode 4 (GRPC_BACKGROUND_INSECURE) in BoxService.kt and
+    // ExtensionProvider.swift. Giving this client the foreground credentials made
+    // it speak TLS to a plaintext server, so the handshake failed and the tunnel
+    // could not start at all.
+    //
+    // Raising that core to mode 2 is not a one-line change either: the server
+    // certificate is persisted in the core's LevelDB (grpc_server_private_key),
+    // and goleveldb takes a single-process file lock. The service cannot read the
+    // store the app process holds, so it would generate a DIFFERENT certificate
+    // and fail the pin anyway. Securing this channel means distributing the
+    // certificate the way GrpcSecret distributes the secret — keychain on iOS,
+    // SharedPreferences on Android — which is its own change.
+    //
+    // NO SECRET ON THIS CHANNEL. Sending it over a plaintext loopback socket
+    // would hand it to any local process listening, which is exactly what the
+    // foreground channel exists to prevent.
     bgClient = CoreClient(
       ClientChannel(
         '127.0.0.1',
         port: portBack,
-        options: ChannelOptions(credentials: channelOption),
+        options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
       ),
-      options: _callOptions(),
     );
     // await start("/sdcard/Android/data/com.raynlabs.app/files/configs/cdc633e9-8cfc-4a67-948d-009f779a5c91.json", "hiddify");
     return "";
