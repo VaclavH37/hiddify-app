@@ -166,9 +166,10 @@ class AuthPage extends HookConsumerWidget {
                             icon: Icons.bug_report_outlined,
                             label: t.pages.settings.exportDiagnostics,
                             onTap: () async {
-                              final files = DiagnosticsExporter(
+                              final exporter = DiagnosticsExporter(
                                 ref.read(appDirectoriesProvider).requireValue.workingDir,
-                              ).collect();
+                              );
+                              final files = exporter.collect();
                               if (files.isEmpty) {
                                 if (context.mounted) {
                                   CustomToast(t.pages.settings.exportDiagnosticsEmpty).show(context);
@@ -180,11 +181,21 @@ class AuthPage extends HookConsumerWidget {
                                   for (final file in files) XFile(file.path, mimeType: "text/plain"),
                                 ]);
                               } catch (_) {
-                                // By kind, never by value: a platform exception can
-                                // carry absolute paths, and this is a share sheet
-                                // the user may screenshot.
+                                // Fall back to the clipboard rather than dead-ending.
+                                // The share sheet goes through a native plugin and a
+                                // UIActivityViewController; when that throws there is
+                                // nothing to debug from Dart and no second way off the
+                                // device, which is the exact position this button
+                                // exists to prevent. The clipboard needs no file URLs
+                                // and no reader with App Group access.
+                                //
+                                // Errors are reported by kind, never by value: a
+                                // platform exception can carry absolute paths, and
+                                // this is a screen the user may screenshot.
+                                final text = exporter.asText();
+                                await Clipboard.setData(ClipboardData(text: text));
                                 if (context.mounted) {
-                                  CustomToast.error(t.pages.settings.exportDiagnosticsFailed).show(context);
+                                  CustomToast(t.pages.settings.exportDiagnosticsCopied).show(context);
                                 }
                               }
                             },

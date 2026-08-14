@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/haptic/haptic_service.dart';
@@ -172,9 +173,10 @@ class SettingsPage extends HookConsumerWidget {
           title: t.pages.settings.exportDiagnostics,
           subtitle: t.pages.settings.exportDiagnosticsMsg,
           onTap: () async {
-            final files = DiagnosticsExporter(
+            final exporter = DiagnosticsExporter(
               ref.read(appDirectoriesProvider).requireValue.workingDir,
-            ).collect();
+            );
+            final files = exporter.collect();
             if (files.isEmpty) {
               if (context.mounted) {
                 CustomToast(t.pages.settings.exportDiagnosticsEmpty).show(context);
@@ -186,10 +188,16 @@ class SettingsPage extends HookConsumerWidget {
                 for (final file in files) XFile(file.path, mimeType: "text/plain"),
               ]);
             } catch (e) {
+              // Fall back to the clipboard rather than dead-ending. The share
+              // sheet goes through a native plugin and a UIActivityViewController;
+              // when that throws there is nothing to debug from Dart and, on iOS,
+              // no second route off the device. Observed failing on a real device.
+              //
               // Report by kind, never by value — a platform exception can carry
-              // absolute paths, and this is a share sheet the user may screenshot.
+              // absolute paths, and this is a screen the user may screenshot.
+              await Clipboard.setData(ClipboardData(text: exporter.asText()));
               if (context.mounted) {
-                CustomToast.error(t.pages.settings.exportDiagnosticsFailed).show(context);
+                CustomToast(t.pages.settings.exportDiagnosticsCopied).show(context);
               }
             }
           },

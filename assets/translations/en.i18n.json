@@ -358,6 +358,7 @@
       "exportDiagnosticsMsg": "Share the app and tunnel logs",
       "exportDiagnosticsEmpty": "No logs yet — connect once, then try again",
       "exportDiagnosticsFailed": "Couldn't share the logs",
+      "exportDiagnosticsCopied": "Sharing failed — logs copied to the clipboard instead",
       "troubleshooting": "Troubleshooting",
       "general": {
         "title": "General",

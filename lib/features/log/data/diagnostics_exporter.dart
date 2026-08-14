@@ -41,8 +41,21 @@ class DiagnosticsExporter {
     // hcore redirects stderr per setup mode (`v2/hcore/grpc_server.go`). Mode 4
     // is the background core: the iOS packet-tunnel extension, Android's `:bg`.
     'data/stderr4.log',
-    // Mode 3 is the foreground core, in the app process.
+    // Mode 1 is the foreground core in the app process, since the local channel
+    // was authenticated. It was mode 3 before that, and this list named only
+    // stderr3 — so the export silently omitted the one file worth reading while
+    // still looking like it had worked. Both stay: an install that has not been
+    // through a secure-mode start yet still has the old file.
+    'data/stderr1.log',
     'data/stderr3.log',
+    // Android's Kotlin calls Libbox.redirectStderr AGAIN after Mobile.setup, and
+    // the second call wins — so on Android the core's output lands here, in the
+    // working-directory root, rather than in data/. Named for a mode it no
+    // longer corresponds to (MethodHandler.kt), and left that way because
+    // renaming it would only move the confusion.
+    'stderr2.log',
+    // Android's `:bg` service, same override (BoxService.kt).
+    'stderr.log',
     // Loggy's own file. Always written on desktop; on mobile only when the core
     // debug flag is on.
     'app.log',
@@ -73,5 +86,44 @@ class DiagnosticsExporter {
       found.add(file);
     }
     return found;
+  }
+
+  /// The same logs as one block of text, for the clipboard.
+  ///
+  /// A fallback for when the share sheet refuses. `Share.shareXFiles` goes
+  /// through a native plugin and a UIActivityViewController, and when that throws
+  /// there is nothing to debug from the Dart side and no second route off the
+  /// device — which is the position this class exists to prevent. The clipboard
+  /// needs no file URLs, no activity controller and no reader with access to the
+  /// App Group container, so it fails in far fewer ways.
+  ///
+  /// Tail-truncated per file, because `box.log` reaches tens of megabytes and a
+  /// clipboard that large is not pasteable. The tail is the useful half: a
+  /// failure is at the end, not the start. Truncation is announced in-band so a
+  /// short paste is never mistaken for a short log.
+  String asText({int maxBytesPerFile = 40 * 1024}) {
+    final buffer = StringBuffer();
+    for (final file in collect()) {
+      final name = p.relative(file.path, from: workingDir.path);
+      String body;
+      try {
+        final bytes = file.readAsBytesSync();
+        if (bytes.length > maxBytesPerFile) {
+          body = '[truncated: showing the last $maxBytesPerFile of ${bytes.length} bytes]\n'
+              '${String.fromCharCodes(bytes.sublist(bytes.length - maxBytesPerFile))}';
+        } else {
+          body = String.fromCharCodes(bytes);
+        }
+      } on FileSystemException catch (e) {
+        // By reason, never by value: this runs over a directory that also holds
+        // the sealed config, and an exception can carry a path.
+        body = '[unreadable: ${e.osError?.errorCode ?? 'unknown'}]';
+      }
+      buffer
+        ..writeln('===== $name =====')
+        ..writeln(body)
+        ..writeln();
+    }
+    return buffer.toString();
   }
 }
