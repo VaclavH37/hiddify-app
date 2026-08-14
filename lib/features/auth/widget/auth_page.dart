@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
@@ -159,8 +160,7 @@ class AuthPage extends HookConsumerWidget {
                         // Removal is this whole `if` block plus the five imports it
                         // added (foundation, directories_provider,
                         // diagnostics_exporter, alerts, share_plus).
-                        if ((kDebugMode || const bool.fromEnvironment('RAYN_DIAGNOSTICS')) &&
-                            PlatformUtils.isMobile) ...[
+                        if (Constants.diagnosticsBuild && PlatformUtils.isMobile) ...[
                           const Gap(16),
                           _AuthAction(
                             icon: Icons.bug_report_outlined,

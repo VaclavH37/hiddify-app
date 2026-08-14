@@ -7,6 +7,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:grpc/grpc.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/model/directories.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
@@ -111,12 +112,17 @@ class RaynCoreService with InfraLogger {
     return TaskEither(() async {
       try {
         final directories = ref.read(appDirectoriesProvider).requireValue;
-        // `kDebugMode &&` is load-bearing, not belt-and-braces: the Debug mode tile
-        // is compiled out of release builds, but the preference behind it is
-        // persisted — so an install that enabled it before upgrading would keep
-        // sending `true` here forever, with no UI left to turn it off. This feeds
-        // SetupRequest.Debug -> static.debug in the core.
-        final debug = kDebugMode && ref.read(debugModeNotifierProvider);
+        // Feeds SetupRequest.Debug -> static.debug in the core.
+        //
+        // The kDebugMode branch is load-bearing, not belt-and-braces: the Debug
+        // mode tile is compiled out of release builds, but the preference behind
+        // it is persisted — so an install that enabled it before upgrading would
+        // otherwise keep sending `true` forever with no UI left to turn it off.
+        //
+        // A release build therefore ignores the preference entirely and asks
+        // instead whether this is a diagnostics build, which is a compile-time
+        // decision nothing on the device can flip.
+        final debug = kDebugMode ? ref.read(debugModeNotifierProvider) : Constants.diagnosticsBuild;
         // Mode 1 = GRPC_NORMAL: TLS with a certificate this client pins, plus the
         // per-install secret on every call. Was 3, GRPC_NORMAL_INSECURE — a plain
         // channel on a loopback port that is not isolated between apps, which is

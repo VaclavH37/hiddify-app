@@ -201,9 +201,28 @@ void main() {
         reason: 'Release builds must pin logLevel to warn.',
       );
       expect(
-        source.contains('logFile: kReleaseMode ? "" : "data/box.log"'),
+        source.contains('logFile: Constants.diagnosticsBuild ? "data/box.log" : ""'),
         isTrue,
         reason: 'Release builds must write no log file.',
+      );
+
+      // The line above only means anything while diagnosticsBuild is false by
+      // default, so pin that too rather than trusting the name. It was
+      // `kReleaseMode ? "" : "data/box.log"`; the gate widened to admit an
+      // explicitly-requested diagnostics build, because on iOS every artifact
+      // that can reach a device is a release — TestFlight and ad-hoc both reject
+      // debug builds — so a kDebugMode-only gate meant a build that could export
+      // logs while writing none. Widening it is only safe while the flag has to
+      // be asked for.
+      final constants = File('lib/core/model/constants.dart').readAsStringSync();
+      expect(
+        constants.contains(
+          'static const diagnosticsBuild = kDebugMode || bool.fromEnvironment("RAYN_DIAGNOSTICS");',
+        ),
+        isTrue,
+        reason: 'diagnosticsBuild must stay opt-in: kDebugMode, or an explicit dart-define. '
+            'Anything that can be true in an ordinary release build re-enables the log '
+            'file, the core debug flag and box.log on every shipped install.',
       );
     });
   });

@@ -1,7 +1,30 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 abstract class Constants {
+  /// Whether this build is allowed to produce diagnostics.
+  ///
+  /// A debug build always is. A release build only when explicitly asked:
+  ///
+  ///   make ios-adhoc CHANNEL=prod \
+  ///     FF_DART_DEFINES=--build-dart-define=RAYN_DIAGNOSTICS=true
+  ///
+  /// The dart-define exists because a `kDebugMode`-only gate is unreachable on
+  /// the topology that needs it: TestFlight and ad-hoc both reject debug builds
+  /// (`get-task-allow`), and with the build host in the cloud there is no USB
+  /// path to the device, so every artifact that reaches an iPhone is a release.
+  ///
+  /// **Never distribute a build with this set.** It re-enables the log file on
+  /// mobile, the core's debug flag and `data/box.log` — all of which a shipped
+  /// build deliberately does without.
+  ///
+  /// This is one constant on purpose. The export button, the log file and the
+  /// core flag were separate gates, and a build that could export logs while
+  /// writing none looked like a working diagnostic and produced seven lines of
+  /// bootstrap.
+  static const diagnosticsBuild = kDebugMode || bool.fromEnvironment("RAYN_DIAGNOSTICS");
+
   static const appName = "Rayn VPN";
   static const telegramChannelUrl = "https://t.me/raynlabs";
   static const privacyPolicyUrl = "https://www.raynlabs.io/legal/privacy";

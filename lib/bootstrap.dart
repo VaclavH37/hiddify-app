@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
@@ -81,7 +82,7 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
   //
   // Now a debug build is always on and a shipped build always off, including for
   // installs that already have `true` persisted from an older version.
-  const debug = kDebugMode;
+  const debug = Constants.diagnosticsBuild;
 
   if (PlatformUtils.isDesktop) {
     await _init("window controller", () => container.read(windowNotifierProvider.future));

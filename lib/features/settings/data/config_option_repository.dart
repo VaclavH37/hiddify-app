@@ -4,6 +4,7 @@ import 'package:dartx/dartx.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/optional_range.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/features/log/model/log_level.dart';
@@ -190,7 +191,7 @@ abstract class ConfigOptions {
       // Release builds write NO log file (empty = memory/console only); debug
       // and profile builds keep data/box.log for UAT. See LogFile in
       // hiddify_option.go, whose default is likewise empty.
-      logFile: kReleaseMode ? "" : "data/box.log",
+      logFile: Constants.diagnosticsBuild ? "data/box.log" : "",
       // `resolve-destination` is no longer sent: the core dropped the option
       // entirely, since builder.go never read it and the behaviour its name promised
       // (resolving tunnel-bound domains client-side) is unconditional anyway.
