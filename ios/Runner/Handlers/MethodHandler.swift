@@ -66,6 +66,15 @@ public class MethodHandler: NSObject, FlutterPlugin {
                                     message: "keychain unavailable",
                                     details: nil))
             }
+        // READ, never mint. The packet-tunnel extension outlives the Flutter
+        // engine, so a recreated Dart side must be able to adopt the secret the
+        // running core was started with — minting here would hand the app a value
+        // that core has never seen and fail every background call.
+        //
+        // nil is valid: the keychain is unreadable before the first unlock, and
+        // the core does not enforce when it was set up without a secret.
+        case "get_grpc_bg_secret":
+            result(GrpcSecret.peekBackground())
         // Minted fresh on every connect and returned so Dart can attach it to the
         // background channel it is about to use. Dart calls this BEFORE `start`:
         // the extension reads the stored value once when it sets its core up, so

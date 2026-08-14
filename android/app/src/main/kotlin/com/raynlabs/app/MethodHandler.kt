@@ -36,6 +36,7 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
             GetGrpcServerPublicKey("get_grpc_server_public_key"),
             GetGrpcSecret("get_grpc_secret"),
             RotateGrpcBgSecret("rotate_grpc_bg_secret"),
+            GetGrpcBgSecret("get_grpc_bg_secret"),
 
         }
     }
@@ -93,6 +94,16 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
             // holds a value that is dead by the next connect.
             Trigger.RotateGrpcBgSecret.method -> {
                 result.success(Settings.rotateGrpcBgSecret())
+            }
+
+            // READ, never mint. The VPN service outlives the Flutter engine, so a
+            // Dart side that was recreated -- the first-install VPN consent dialog
+            // recreates the activity, and process death does the same -- has to be
+            // able to adopt the secret the running core was started with. Minting
+            // here instead would hand the app a value the core has never seen and
+            // wedge every background call.
+            Trigger.GetGrpcBgSecret.method -> {
+                result.success(Settings.grpcBgSecret)
             }
 
             Trigger.Setup.method -> {

@@ -187,6 +187,17 @@ class RaynCoreService with InfraLogger {
         if (e.code == StatusCode.unavailable) {
           // Expected before the first connect.
           loggy.debug("background core is not started yet! $e");
+        } else if (e.code == StatusCode.unauthenticated) {
+          // NOT fatal, and it must not become fatal again.
+          //
+          // This is best-effort propagation to a core that may not be in a usable
+          // state yet; the authoritative apply is the FOREGROUND call above.
+          // Rethrowing here turned a recoverable credential mismatch into a dead
+          // end: the throw happens BEFORE start(), so setupBackground never ran,
+          // the background secret was never rotated, and no restart could reach
+          // the code that would have fixed it. The only escape was clearing app
+          // storage. connect() rotates and re-applies moments later.
+          loggy.warning("background core rejected the settings apply, continuing: ${e.message}");
         } else {
           rethrow;
         }

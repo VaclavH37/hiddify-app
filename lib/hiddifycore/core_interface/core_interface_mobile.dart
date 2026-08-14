@@ -110,6 +110,33 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
       "debug": debug,
     });
 
+    // Adopt the background secret already in the platform store, if any.
+    //
+    // WITHOUT THIS the app can mint a background secret but never read one, and
+    // the VPN service outlives the Dart isolate — so anything that recreates the
+    // Dart side while the service keeps running leaves this field null and the
+    // core still holding the value it was started with. Every background call
+    // then fails `UNAUTHENTICATED: missing credentials`, and it does not recover
+    // on restart: `stop()` is itself a background RPC, so the tunnel cannot be
+    // torn down either, and only clearing app storage escapes it.
+    //
+    // The first-install VPN consent dialog is the common way in — granting it
+    // recreates the activity — but a plain process death does the same thing.
+    //
+    // Reading is safe because rotation PERSISTS before the service starts, and
+    // only ever runs in setupBackground, which stops the service first: the
+    // stored value is therefore always the one a running core was set up with.
+    try {
+      _bgSecret = await methodChannel.invokeMethod<String>("get_grpc_bg_secret");
+    } on PlatformException catch (e) {
+      // Degrade rather than fail bootstrap: an empty secret still works against a
+      // core that was set up without one, and a core that HAS one rejects us
+      // clearly at connect time instead of during startup.
+      loggy.warning("could not read the background secret: ${e.code}");
+    } on MissingPluginException {
+      loggy.warning("native side predates get_grpc_bg_secret");
+    }
+
     ChannelCredentials channelOption = const ChannelCredentials.insecure();
     if (secureMode) {
       // Both over the method channel, in this order: the certificate does not
