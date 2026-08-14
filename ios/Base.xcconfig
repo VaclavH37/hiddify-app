@@ -5,6 +5,24 @@
 //  Created by GFWFighter on 7/24/1402 AP.
 //
 
+// Pulls in FLUTTER_BUILD_NAME / FLUTTER_BUILD_NUMBER, which Flutter regenerates
+// from pubspec.yaml on every build.
+//
+// This is the ONLY xcconfig the RaynTunnel extension's build configurations
+// reference. The Runner target reaches Generated.xcconfig through
+// Flutter/Debug.xcconfig and Flutter/Release.xcconfig, but the extension does
+// not, so without this line its MARKETING_VERSION / CURRENT_PROJECT_VERSION
+// cannot track pubspec and have to be hardcoded — which is exactly how they
+// came to sit at upstream Hiddify's 4.1.2 (40102) while the app shipped 1.3.x.
+// An extension whose version disagrees with its containing app is rejected by
+// App Store Connect (ITMS-90473/90474).
+//
+// Required rather than optional (`#include?`): if Generated.xcconfig is absent
+// the failure names the missing file, whereas an optional include would leave
+// the version empty and fail much later with something unrecognisable.
+// Including it twice on the Runner path is harmless — same file, same values.
+#include "Flutter/Generated.xcconfig"
+
 BASE_BUNDLE_IDENTIFIER=com.raynlabs.app
 SERVICE_IDENTIFIER=com.raynlabs.app
 DEVELOPMENT_TEAM=RPD5KQ8YA7

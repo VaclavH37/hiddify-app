@@ -134,6 +134,76 @@ void main() {
     }
   });
 
+  group('one version, not four', () {
+    // The version lives in pubspec.yaml, in ios/Runner.xcodeproj (twice per
+    // build configuration) and in the MSIX config. Only `make release` ever
+    // rewrote all of them together, and nobody runs it — it tags, pushes and
+    // checks hiddify's own GitHub releases. So the copies rotted: the iOS
+    // extension and the MSIX still carried upstream's 4.1.2 (40102) long after
+    // the app shipped 1.3.x.
+    //
+    // That is not cosmetic on iOS. An app extension whose CFBundleVersion or
+    // CFBundleShortVersionString disagrees with its containing app is rejected
+    // by App Store Connect (ITMS-90473/90474), and nothing on the build host
+    // says so until the upload.
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    final version = RegExp(r'^version:\s*(\d+\.\d+\.\d+)\+(\d+)$', multiLine: true).firstMatch(pubspec);
+
+    test('pubspec declares a name+build version', () {
+      expect(version, isNotNull, reason: 'pubspec.yaml has no `version: x.y.z+n` line');
+    });
+
+    test('the iOS extension tracks pubspec rather than a literal', () {
+      // Accepts either arrangement: derived from Generated.xcconfig (preferred,
+      // and what Base.xcconfig now makes possible for the extension target), or
+      // a literal that happens to equal pubspec today. The second is allowed
+      // because deriving depends on the extension seeing Generated.xcconfig,
+      // which only a macOS build can prove — but a STALE literal still fails.
+      final pbxproj = File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync();
+      final name = version!.group(1)!;
+      final build = version.group(2)!;
+
+      // RunnerTests is deliberately excluded: it is never shipped, and its
+      // configurations reference the Pods-RunnerTests xcconfigs, which do NOT
+      // include Generated.xcconfig — deriving there would yield an empty
+      // version. Excluded per build-configuration block rather than by cutting
+      // the file at the first mention of RunnerTests, because its version
+      // settings sort ahead of its PRODUCT_BUNDLE_IDENTIFIER.
+      final shipped = _buildConfigurations(pbxproj).where((b) => !b.contains('RunnerTests'));
+
+      for (final (setting, derived, literal) in [
+        ('CURRENT_PROJECT_VERSION', r'$(FLUTTER_BUILD_NUMBER)', build),
+        ('MARKETING_VERSION', r'$(FLUTTER_BUILD_NAME)', name),
+      ]) {
+        final values = shipped
+            .expand((b) => RegExp('$setting = ([^;]+);').allMatches(b))
+            .map((m) => m.group(1)!.replaceAll('"', ''))
+            .toSet();
+        final stale = values.where((v) => v != derived && v != literal).toList();
+        expect(
+          stale,
+          isEmpty,
+          reason: '$setting is $stale in a shipped iOS target, but pubspec says '
+              '$name+$build. Set it to `$derived`, or to the literal if that '
+              'build breaks. A mismatched extension version fails App Store '
+              'Connect validation.',
+        );
+      }
+    });
+
+    test('the MSIX version matches pubspec', () {
+      final msix = File('windows/packaging/msix/make_config.yaml').readAsStringSync();
+      final declared = RegExp(r'^msix_version:\s*(\S+)$', multiLine: true).firstMatch(msix)?.group(1);
+      expect(
+        declared,
+        '${version!.group(1)}.0',
+        reason: "msix_version must be pubspec's version with a trailing .0. "
+            'Note MSIX versions must increase monotonically per identity_name, '
+            'so lowering this after a public release blocks upgrades.',
+      );
+    });
+  });
+
   group('the shipped core options match the Go golden fixture', () {
     // hiddify-core/v2/config/golden_config_test.go pins the generated sing-box
     // config for the configuration this client actually sends. To do that it
@@ -226,6 +296,28 @@ void main() {
       );
     });
   });
+}
+
+/// Every `XCBuildConfiguration` body in a pbxproj, one string per block.
+///
+/// Blocks open with `<24-hex-id> /* Debug|Release|Profile */ = {` at two tabs
+/// and close at the matching `};`. Build configuration *lists* carry a
+/// different comment, so they are skipped by the same pattern.
+List<String> _buildConfigurations(String pbxproj) {
+  final blocks = <String>[];
+  final lines = pbxproj.split('\n');
+  final opens = RegExp(r'^\t\t[0-9A-F]{24} /\* (Debug|Release|Profile) \*/ = \{$');
+
+  for (var i = 0; i < lines.length; i++) {
+    if (!opens.hasMatch(lines[i])) continue;
+    final buffer = StringBuffer();
+    for (var j = i; j < lines.length; j++) {
+      buffer.writeln(lines[j]);
+      if (lines[j].trimRight() == '\t\t};') break;
+    }
+    blocks.add(buffer.toString());
+  }
+  return blocks;
 }
 
 List<File> _dartFilesUnder(String dir) => Directory(dir)
