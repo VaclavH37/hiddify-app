@@ -213,21 +213,40 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
 
             val coreClient = GrpcClientProvider.grpcClient.create(CoreClient::class)
 
+            // A FAILED POLL RETRIES; it does not end the loop.
+            //
+            // This used to wrap the whole loop in one try, so the first failure --
+            // including the very first call, before any delta existed -- killed
+            // polling for the life of the service and cancelled the notification.
+            // The user then saw only the foreground service's static "Service
+            // started" line, with no indication anything had gone wrong. That is
+            // how an UNAUTHENTICATED response, once the background core began
+            // requiring a secret, presented as "the speed display was removed".
+            //
+            // Only cancellation ends the loop now. Anything else is treated as
+            // transient: log it and try again on the next tick.
+            var previous: SystemInfo? = null
             try {
-                var previous = coreClient.GetSystemInfo().executeBlocking(Empty())
-
                 while (isActive) {
+                    try {
+                        val current = coreClient.GetSystemInfo().executeBlocking(Empty())
+                        previous?.let { updateStatus(it, current) }
+                        previous = current
+                    } catch (e: CancellationException) {
+                        // Must be rethrown explicitly: a bare `catch (Exception)`
+                        // swallows coroutine cancellation and the job never stops.
+                        throw e
+                    } catch (e: Exception) {
+                        // Drop the baseline so the next success does not report a
+                        // delta accumulated across the gap as one second of traffic.
+                        previous = null
+                        Log.w("notification", "SystemInfo poll failed, retrying: ${e.message}")
+                    }
                     delay(1_000) // ✅ coroutine-friendly
-                    val current = coreClient.GetSystemInfo().executeBlocking(Empty())
-                    updateStatus(previous,current)
-                    previous = current
                 }
             } catch (e: CancellationException) {
                 // coroutine cancelled normally
                 Log.d("notification", "SystemInfo polling cancelled")
-                notification.cancel(notificationId)
-            } catch (e: Exception) {
-                Log.e("notification", "SystemInfo polling failed", e)
                 notification.cancel(notificationId)
             }
         }

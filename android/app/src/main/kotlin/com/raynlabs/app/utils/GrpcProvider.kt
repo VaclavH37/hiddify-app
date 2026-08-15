@@ -43,6 +43,29 @@ import java.util.concurrent.TimeUnit
 object GrpcClientProvider {
     private val okHttpClient = OkHttpClient.Builder()
         .protocols(listOf(Protocol.H2_PRIOR_KNOWLEDGE))
+        // The background core requires this on every RPC. Dart is not the only
+        // client of that core: ServiceNotification polls GetSystemInfo through
+        // this provider to draw the up/down speed in the notification, and
+        // without the header every poll returns UNAUTHENTICATED and the
+        // notification silently stops updating past "Service started".
+        //
+        // baseUrl below is grpcServiceModePort, the BACKGROUND port, so this is
+        // the background secret — never the foreground one, which guards the
+        // pinned channel and must not travel over a plaintext socket.
+        //
+        // Read INSIDE the interceptor, not captured in a field: the app rotates
+        // this on every connect, and an OkHttpClient built once at object init
+        // would otherwise pin the value that happened to be stored at first use
+        // and fail after the first reconnect.
+        .addInterceptor { chain ->
+            val secret = Settings.grpcBgSecret
+            val request = if (secret.isEmpty()) {
+                chain.request()
+            } else {
+                chain.request().newBuilder().header("x-rayn-secret", secret).build()
+            }
+            chain.proceed(request)
+        }
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)
