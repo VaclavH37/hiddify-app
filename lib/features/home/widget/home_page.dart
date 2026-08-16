@@ -10,6 +10,7 @@ import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
 import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
 import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
+import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
@@ -31,7 +32,13 @@ class HomePage extends HookConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = context.rayn;
 
-    final asset = isDark ? 'assets/images/constellation_dark.png' : 'assets/images/constellation_light.png';
+    // Vector background. `cover` still crops to the viewport, but because the
+    // art is vector that crop no longer costs resolution — the 2148x1208
+    // raster this replaces was being upscaled 2.4x on a portrait phone to fill
+    // the same box. Each theme ships its own file: the light one is graded for
+    // a light canvas rather than being the dark art behind an opacity
+    // multiplier, so there is no runtime opacity here any more.
+    final background = isDark ? Assets.images.worldmapBgDark : Assets.images.worldmapBgLight;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
@@ -40,18 +47,18 @@ class HomePage extends HookConsumerWidget {
         child: Scaffold(
           extendBodyBehindAppBar: true,
           appBar: isMobile ? const HomeMobileAppBar() : null,
-          body: Container(
-            decoration: BoxDecoration(
-              color: palette.bgPrimary,
-              image: DecorationImage(
-                image: AssetImage(asset),
-                fit: BoxFit.cover,
-                // Soften the warm constellation/glow wash in light mode so it
-                // reads as a subtle accent rather than a haze behind the content.
-                opacity: isDark ? 1 : 0.6,
-              ),
+          body: ColoredBox(
+            color: palette.bgPrimary,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // The map is ~4,000 draw ops and never changes, so it gets its
+                // own layer; without the boundary it would be replayed every
+                // frame the connection button animates.
+                RepaintBoundary(child: background.svg(fit: BoxFit.cover)),
+                if (isMobile) const _HomeMobileBody() else const _HomeDesktopBody(),
+              ],
             ),
-            child: isMobile ? const _HomeMobileBody() : const _HomeDesktopBody(),
           ),
         ),
       ),

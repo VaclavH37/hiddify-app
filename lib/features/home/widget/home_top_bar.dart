@@ -4,7 +4,7 @@ import 'package:hiddify/core/widget/rayn_notification_bell.dart';
 import 'package:hiddify/core/widget/rayn_wordmark.dart';
 
 /// Desktop overlay: a single glass-wrapped bell pinned to the top-right of
-/// the home canvas. The constellation background shows through the blur.
+/// the home canvas. The map background shows through the blur.
 ///
 /// The Auto-connect toggle from the original design was dropped; existing
 /// auto-start lives in Settings (§1 of the implementation plan).
@@ -23,7 +23,7 @@ class HomeTopBarBell extends StatelessWidget {
 }
 
 /// Mobile AppBar: hamburger + brand wordmark + bell. Designed to overlay the
-/// constellation background, so the host Scaffold should set
+/// map background, so the host Scaffold should set
 /// `extendBodyBehindAppBar: true`.
 class HomeMobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const HomeMobileAppBar({super.key});

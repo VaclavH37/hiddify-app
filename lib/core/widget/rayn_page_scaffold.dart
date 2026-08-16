@@ -6,7 +6,7 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 /// (Settings, Logs, About). Provides:
 ///
 /// - A flat background drawn from `palette.pageBackground`, which is one
-///   step lighter than the sidebar in both themes (no constellation, no
+///   step lighter than the sidebar in both themes (no map background, no
 ///   AppBar).
 /// - The active palette's [textPrimary] as the inherited body-text color, so
 ///   nested widgets don't have to thread color manually.

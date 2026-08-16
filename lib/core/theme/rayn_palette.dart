@@ -30,7 +30,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     required this.navSelectedBorder,
   });
 
-  /// Home page scaffold / canvas behind the constellation.
+  /// Home page scaffold / canvas behind the map background.
   final Color bgPrimary;
 
   /// Sidebar (NavigationRail) and mobile NavigationBar surface.
