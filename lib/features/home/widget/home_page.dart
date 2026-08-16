@@ -32,13 +32,21 @@ class HomePage extends HookConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = context.rayn;
 
-    // Vector background. `cover` still crops to the viewport, but because the
-    // art is vector that crop no longer costs resolution — the 2148x1208
-    // raster this replaces was being upscaled 2.4x on a portrait phone to fill
-    // the same box. Each theme ships its own file: the light one is graded for
-    // a light canvas rather than being the dark art behind an opacity
-    // multiplier, so there is no runtime opacity here any more.
-    final background = isDark ? Assets.images.worldmapBgDark : Assets.images.worldmapBgLight;
+    // Orientation, not the mobile breakpoint: a phone held sideways wants the
+    // landscape treatment, and a narrow desktop window wants the portrait one.
+    final isPortrait = MediaQuery.sizeOf(context).aspectRatio < 1;
+
+    // Four vector backgrounds: one composition per orientation, each graded per
+    // theme. `cover` crops to the viewport, and a single landscape master was
+    // showing about a fifth of its width on a portrait phone — a slice of one
+    // region rather than a world map — so portrait gets art laid out for a 1:2
+    // frame (3:2 for desktop, which is what the canvas measures once the
+    // navigation rail takes its 280). The light files are graded for a light
+    // canvas rather than being the dark art behind an opacity multiplier, so
+    // there is no runtime opacity here.
+    final background = isPortrait
+        ? (isDark ? Assets.images.worldmapBgPortraitDark : Assets.images.worldmapBgPortraitLight)
+        : (isDark ? Assets.images.worldmapBgDesktopDark : Assets.images.worldmapBgDesktopLight);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
@@ -52,7 +60,7 @@ class HomePage extends HookConsumerWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // The map is ~4,000 draw ops and never changes, so it gets its
+                // The map is ~4,500 draw ops and never changes, so it gets its
                 // own layer; without the boundary it would be replayed every
                 // frame the connection button animates.
                 RepaintBoundary(child: background.svg(fit: BoxFit.cover)),

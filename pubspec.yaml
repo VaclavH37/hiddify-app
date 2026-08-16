@@ -165,8 +165,10 @@ flutter:
     - assets/images/tray_icon_connected.png
     - assets/images/tray_icon_disconnected.ico
     - assets/images/tray_icon_disconnected.png
-    - assets/images/worldmap_bg_dark.svg
-    - assets/images/worldmap_bg_light.svg
+    - assets/images/worldmap_bg_desktop_dark.svg
+    - assets/images/worldmap_bg_desktop_light.svg
+    - assets/images/worldmap_bg_portrait_dark.svg
+    - assets/images/worldmap_bg_portrait_light.svg
     - assets/images/source/ic_launcher_border.png
     - assets/rulesets/
 
