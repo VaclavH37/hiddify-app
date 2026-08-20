@@ -25,6 +25,10 @@ import RaynCore
         FileMethodHandler.register(with: self.registrar(forPlugin: FileMethodHandler.name)!)
         StatusEventHandler.register(with: self.registrar(forPlugin: StatusEventHandler.name)!)
         AlertsEventHandler.register(with: self.registrar(forPlugin: AlertsEventHandler.name)!)
+        // Registered at launch, before any Flutter UI: StoreKit can deliver a
+        // renewal or an Ask-to-Buy approval the moment the process starts, and
+        // the handler has to be observing Transaction.updates to catch it.
+        RaynBillingHandler.register(with: self.registrar(forPlugin: RaynBillingHandler.name)!)
 //        LogsEventHandler.register(with: self.registrar(forPlugin: LogsEventHandler.name)!)
 //        GroupsEventHandler.register(with: self.registrar(forPlugin: GroupsEventHandler.name)!)
 //        ActiveGroupsEventHandler.register(with: self.registrar(forPlugin: ActiveGroupsEventHandler.name)!)

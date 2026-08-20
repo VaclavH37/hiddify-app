@@ -19,6 +19,7 @@ import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
 import 'package:hiddify/utils/date_time_formatter.dart';
+import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Web → Google Play plan-transition screen. Reached post-auth from
@@ -176,7 +177,9 @@ class PlanTransitionPage extends HookConsumerWidget {
           // be transparent that switching ends the current plan and resets the
           // data allowance (no carry-over) before Play takes over auto-renewal.
           if (remainingDays != null && remainingDays > 0) ...[
-            _ExplainerCard(message: t.auth.planTransition.explainer),
+            _ExplainerCard(
+              message: PlatformUtils.isIOS ? t.auth.planTransition.explainerApple : t.auth.planTransition.explainer,
+            ),
             const Gap(16),
           ],
           if (state.status == PurchaseStatus.processing) ...[
@@ -231,6 +234,8 @@ class PlanTransitionPage extends HookConsumerWidget {
         return t.auth.payment.errorTokenInUse;
       case IapPurchaseOutcome.ineligible:
         return t.auth.payment.errorIneligible;
+      case IapPurchaseOutcome.familyShared:
+        return t.auth.payment.errorFamilyShared;
       case IapPurchaseOutcome.needsLogin:
         return t.auth.payment.errorNeedsLogin;
       case IapPurchaseOutcome.reauthRequired:

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BB0000012E01000100000013 /* RaynBilling.g.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000012E01000100000011 /* RaynBilling.g.swift */; };
+		BB0000012E01000100000014 /* RaynBillingHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000012E01000100000012 /* RaynBillingHandler.swift */; };
 		032158B82ADDF8BF008D943B /* VPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032158B72ADDF8BF008D943B /* VPNManager.swift */; };
 		032158BA2ADDFCC9008D943B /* TrafficReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032158B92ADDFCC9008D943B /* TrafficReader.swift */; };
 		032158BC2ADDFD09008D943B /* SingBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032158BB2ADDFD09008D943B /* SingBox.swift */; };
@@ -85,6 +87,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BB0000012E01000100000011 /* RaynBilling.g.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaynBilling.g.swift; sourceTree = "<group>"; };
+		BB0000012E01000100000012 /* RaynBillingHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaynBillingHandler.swift; sourceTree = "<group>"; };
 		032158B72ADDF8BF008D943B /* VPNManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VPNManager.swift; sourceTree = "<group>"; };
 		032158B92ADDFCC9008D943B /* TrafficReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrafficReader.swift; sourceTree = "<group>"; };
 		032158BB2ADDFD09008D943B /* SingBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingBox.swift; sourceTree = "<group>"; };
@@ -213,6 +217,15 @@
 				03B516702AE74CCD00EA47E2 /* VPNConfig.swift */,
 			);
 			path = VPN;
+			sourceTree = "<group>";
+		};
+		BB0000012E01000100000010 /* Billing */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000012E01000100000012 /* RaynBillingHandler.swift */,
+				BB0000012E01000100000011 /* RaynBilling.g.swift */,
+			);
+			path = Billing;
 			sourceTree = "<group>";
 		};
 		03B5166E2AE7325D00EA47E2 /* Handlers */ = {
@@ -359,6 +372,7 @@
 			children = (
 				073695892B3AC954007249BE /* Extensions */,
 				03B5166E2AE7325D00EA47E2 /* Handlers */,
+				BB0000012E01000100000010 /* Billing */,
 				032158B62ADDF8AF008D943B /* VPN */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				03E392C72ADDA26A000ADF15 /* Runner.entitlements */,
@@ -681,6 +695,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				03B516742AE74D2200EA47E2 /* Stored.swift in Sources */,
+				BB0000012E01000100000014 /* RaynBillingHandler.swift in Sources */,
+				BB0000012E01000100000013 /* RaynBilling.g.swift in Sources */,
 				03B5167B2AE79DB400EA47E2 /* FileMethodHandler.swift in Sources */,
 				03B516772AE7634400EA47E2 /* Logger.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,

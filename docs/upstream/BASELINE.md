@@ -8,8 +8,8 @@ right. It was 292.
 Re-measure and update whenever the baseline legitimately moves (a slice that adds
 tests, a deliberate lint fix). Never edit it to make a slice pass.
 
-**Measured:** 2026-08-02, re-measured after S0.7
-**Commit:** end of Phase 0 slice S0.7
+**Measured:** 2026-08-20, re-measured while adding the Apple StoreKit path
+**Commit:** Apple IAP client, phases 1–2
 
 ---
 
@@ -17,19 +17,31 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 
 | Check | Command | Baseline |
 |---|---|---|
-| Analyzer | `flutter analyze` | **0 errors · 28 warnings · 257 infos** (285 issues) |
-| Tests | `flutter test` | **326 passing**, 0 failing |
+| Analyzer | `flutter analyze` | **0 errors · 26 warnings · 261 infos** (287 issues) |
+| Tests | `flutter test` | **356 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
 fatal by default. Compare the counts, not the exit code.
 
-Of the 257 infos, **16** are `depend_on_referenced_packages` for `flutter_test`
-in `test/**` — noise from `flutter_test` being a dev dependency. They are part of
+A block of the infos are `depend_on_referenced_packages` for `flutter_test` in
+`test/**` — noise from `flutter_test` being a dev dependency. They are part of
 the baseline; do not "fix" them during a catch-up slice.
 
-Moved from 292/256 to 326/257 in slice S0.7, which added
-`test/design/design_invariants_test.dart` (34 cases). The single extra info is
-that file's own unavoidable `flutter_test` import.
+### History
+
+- 292/256 → 326/257 in slice S0.7, which added
+  `test/design/design_invariants_test.dart` (34 cases). The single extra info was
+  that file's own unavoidable `flutter_test` import.
+- 326 → 356 tests at the Apple IAP client work: 16 new cases (12 for the
+  per-store verify request shape and the finish-after-200 rule, 4 for
+  `app_store` in the notification evaluator). That change is deliberately
+  **analyzer-neutral** — verified file by file, it contributes 0 warnings and
+  0 infos.
+- The analyzer row above therefore also corrects a **pre-existing drift**. The
+  tree measured 26 warnings / 261 infos *before* the Apple work, against a row
+  still claiming 28/257: the 2026-08-02 measurement had gone stale (the suite
+  had already grown 326 → 340 with no re-measure). This is a catch-up, not a
+  regression introduced by that change.
 
 ## Go core — green
 

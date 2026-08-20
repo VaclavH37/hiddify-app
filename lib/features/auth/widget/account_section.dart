@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -6,7 +8,9 @@ import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
+import 'package:hiddify/features/auth/model/payment_provider.dart';
 import 'package:hiddify/features/auth/notifier/logout_notifier.dart';
+import 'package:hiddify/features/auth/payment/data/iap_service.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
@@ -40,11 +44,12 @@ class AccountSection extends ConsumerWidget {
     final provider = _header(remote, 'subscription-payment-provider');
     final billingPeriod = _header(remote, 'subscription-billing-period');
     final manageUrl = _header(remote, 'subscription-manage-url');
-    final isGooglePlay = provider == 'google_play';
-    // Google Play IAP is a mobile-only surface (the transition purchase and the
-    // Play-managed subscription center). On desktop there's no Play Billing and
-    // the manage deep-link goes nowhere, so both rows are hidden there.
-    final showPlayRows = !PlatformUtils.isDesktop;
+    final isStoreManaged = isStoreManagedProvider(provider);
+    // Store IAP is a mobile-only surface (the transition purchase, the
+    // store-managed subscription centre, Restore). On desktop there is no
+    // billing host and the manage deep-link goes nowhere, so these rows are
+    // hidden there.
+    final showStoreRows = !PlatformUtils.isDesktop;
 
     final subInfoLine = remote?.subInfo != null
         ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod)
@@ -66,13 +71,16 @@ class AccountSection extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: RaynSpacing.sm),
-          // Offer converting an active web-paid (NOWPayments/Guardarian) plan to
-          // an auto-renewing Google Play subscription. Hidden once the provider
-          // is already google_play (nothing to transition).
-          if (showPlayRows && remote?.subInfo != null && !isGooglePlay) ...[
+          // Offer converting a plan that does not renew itself — a legacy
+          // web-paid one, or a backend trial — to an auto-renewing store
+          // subscription. Hidden once the provider is already store-managed:
+          // offering a second one there would charge the user twice for the
+          // same account, in either direction (Play sub, iOS build, or vice
+          // versa), and neither store refunds that on our behalf.
+          if (showStoreRows && remote?.subInfo != null && !isStoreManaged) ...[
             RaynSettingsTile(
               leading: Icons.shop_outlined,
-              title: t.auth.planTransition.settingsRow,
+              title: PlatformUtils.isIOS ? t.auth.planTransition.settingsRowApple : t.auth.planTransition.settingsRow,
               subtitle: t.auth.planTransition.settingsRowHint,
               enabled: !logoutLoading,
               onTap: () => context.pushNamed('planTransition'),
@@ -93,16 +101,33 @@ class AccountSection extends ConsumerWidget {
                   },
           ),
           const SizedBox(height: RaynSpacing.sm),
-          // Manage subscription — Google Play subscribers only. It deep-links to
-          // the Play subscription center; for any other provider we must NOT link
-          // out to the account page (it exposes external payment options, which
-          // violates Play policy), so the row is hidden entirely.
-          if (showPlayRows && isGooglePlay && manageUrl != null) ...[
+          // Manage subscription — store subscribers only. It deep-links to that
+          // store's subscription centre (the URL comes from the middleware, so
+          // Apple's and Google's both flow through unchanged); for any other
+          // provider we must NOT link out to the account page, because it
+          // exposes external payment options, which both stores forbid.
+          if (showStoreRows && isStoreManaged && manageUrl != null) ...[
             RaynSettingsTile(
               leading: Icons.card_membership_outlined,
               title: t.auth.manageSubscription,
               enabled: !logoutLoading,
               onTap: () => UriUtils.tryLaunch(Uri.parse(manageUrl)),
+            ),
+            const SizedBox(height: RaynSpacing.sm),
+          ],
+          // Restore purchases — iOS only. App Review tests this explicitly, and
+          // the paywall copy of it is unreachable once a profile exists (the
+          // router sends /auth/* to /home), so it needs a home in Settings.
+          // Silent by design: outcomes go to IapService.outcomes, which has no
+          // listener here; a successful restore imports the profile and the
+          // account rows refresh themselves.
+          if (PlatformUtils.isIOS) ...[
+            RaynSettingsTile(
+              leading: Icons.restore,
+              title: t.auth.restorePurchases,
+              subtitle: t.auth.restorePurchasesHint,
+              enabled: !logoutLoading,
+              onTap: () => unawaited(ref.read(iapServiceProvider).restore()),
             ),
             const SizedBox(height: RaynSpacing.sm),
           ],
@@ -155,7 +180,7 @@ String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? prov
   final sub = profile.subInfo!;
   final consumed = sub.consumption.sizeGB();
   final total = sub.total.sizeGB();
-  final isGooglePlay = provider == 'google_play';
+  final isStoreManaged = isStoreManagedProvider(provider);
 
   // Line 1: used / total quota, plus days-until-reset when the backend
   // supplied `subscription-refill-date` (hidden otherwise).
@@ -171,7 +196,7 @@ String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? prov
   final expiryValue = sub.remaining.inDays > 365
       ? t.components.subscriptionInfo.planExpiryNever
       : sub.expire.formatDate();
-  final line2 = isGooglePlay
+  final line2 = isStoreManaged
       ? t.components.subscriptionInfo.renewDate(date: expiryValue)
       : t.components.subscriptionInfo.planExpiry(date: expiryValue);
 
@@ -180,7 +205,7 @@ String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? prov
   // Line 3 (when the backend sent a billing period): e.g. "Annual · Auto-renew"
   // — auto-renew for Google Play, manual for any other provider.
   if (billingPeriod != null) {
-    final renewType = isGooglePlay
+    final renewType = isStoreManaged
         ? t.components.subscriptionInfo.autoRenew
         : t.components.subscriptionInfo.manualRenew;
     lines.add('${_billingPeriodLabel(billingPeriod, t)} · $renewType');

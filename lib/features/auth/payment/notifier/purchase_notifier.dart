@@ -144,6 +144,7 @@ class PurchaseNotifier extends _$PurchaseNotifier with InfraLogger {
       case IapPurchaseOutcome.accountMismatch:
       case IapPurchaseOutcome.tokenInUse:
       case IapPurchaseOutcome.ineligible:
+      case IapPurchaseOutcome.familyShared:
       case IapPurchaseOutcome.needsLogin:
       case IapPurchaseOutcome.reauthRequired:
       case IapPurchaseOutcome.rateLimited:

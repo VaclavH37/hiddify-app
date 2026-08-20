@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
@@ -21,7 +22,9 @@ class _FakeStore extends SessionTokenStore {
   Future<String?> read() async => _token;
 }
 
-/// AuthApiClient stub — `post` (verify) either throws a typed error or returns a body.
+/// AuthApiClient stub — `post` (verify) either throws a typed error or returns a
+/// body, and records what it was asked to send so the per-store request shape
+/// can be asserted.
 class _FakeClient extends AuthApiClient {
   _FakeClient({this.error, this.response = const {}})
       : super(baseUrl: 'https://test.invalid', userAgent: 'test');
@@ -29,11 +32,50 @@ class _FakeClient extends AuthApiClient {
   final AuthApiException? error;
   final Map<String, dynamic> response;
 
+  String? lastPath;
+  Map<String, dynamic>? lastBody;
+
   @override
   Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body, {String? bearer}) async {
+    lastPath = path;
+    lastBody = body;
     if (error != null) throw error!;
     return response;
   }
+}
+
+/// Native billing-host stub. Only [finishPurchase] is exercised — it is the one
+/// call whose *timing* is a correctness invariant (never before a verify 200).
+class _FakeBilling implements RaynBilling {
+  final List<String> finished = [];
+
+  // Both fields must keep Pigeon's generated names to satisfy the interface.
+  @override
+  // ignore: non_constant_identifier_names
+  final BinaryMessenger? pigeonVar_binaryMessenger = null;
+
+  @override
+  // ignore: non_constant_identifier_names
+  final String pigeonVar_messageChannelSuffix = '';
+
+  @override
+  Future<void> finishPurchase(String purchaseToken) async => finished.add(purchaseToken);
+
+  @override
+  Future<BillingConnState> connect() async => BillingConnState.connected;
+
+  @override
+  Future<List<RaynOffer>> queryOffers(String productId) async => const [];
+
+  @override
+  Future<LaunchResult> launchPurchase(String offerToken, String obfuscatedAccountId) async =>
+      LaunchResult(responseCode: 0);
+
+  @override
+  Future<List<RaynPurchase>> queryActivePurchases() async => const [];
+
+  @override
+  Future<void> endConnection() async {}
 }
 
 RaynPurchase _purchase({RaynPurchaseState state = RaynPurchaseState.purchased}) => RaynPurchase(
@@ -51,6 +93,7 @@ Future<IapPurchaseOutcome?> _outcome({
   AuthApiException? verifyError,
   Map<String, dynamic> verifyResponse = const {},
   String? token = 'tok-123',
+  IapStore store = IapStore.googlePlay,
 }) async {
   final all = await _outcomes(
     count: 1,
@@ -59,8 +102,44 @@ Future<IapPurchaseOutcome?> _outcome({
     verifyError: verifyError,
     verifyResponse: verifyResponse,
     token: token,
+    store: store,
   );
   return all.isEmpty ? null : all.first;
+}
+
+/// What one verify attempt sent and settled: the recorded request plus every
+/// purchase id the store was told to finish.
+typedef _VerifyTrace = ({String? path, Map<String, dynamic>? body, List<String> finished});
+
+/// Run a single PURCHASED update to completion and report what crossed both
+/// boundaries — the HTTP request, and the finish call to the native host.
+Future<_VerifyTrace> _trace({
+  required IapStore store,
+  AuthApiException? verifyError,
+  Map<String, dynamic> verifyResponse = const {'status': 'ok', 'subscription_url': 'rayn://import/AAAA'},
+}) async {
+  final client = _FakeClient(error: verifyError, response: verifyResponse);
+  final billing = _FakeBilling();
+  final container = ProviderContainer(
+    overrides: [
+      sessionTokenStoreProvider.overrideWithValue(_FakeStore('tok-123')),
+      authApiClientProvider.overrideWithValue(client),
+      // `supported: true` is what lets a Windows/Linux test host exercise the
+      // native path at all; production derives it from the platform.
+      iapServiceProvider.overrideWith((ref) => IapService(ref, store: store, billing: billing, supported: true)),
+    ],
+  );
+  addTearDown(container.dispose);
+
+  final service = container.read(iapServiceProvider);
+  final settled = service.outcomes.first;
+  service.onPurchasesUpdated([_purchase()], 0);
+  try {
+    await settled.timeout(const Duration(seconds: 3));
+  } on TimeoutException {
+    // fall through — the assertions below report what actually happened
+  }
+  return (path: client.lastPath, body: client.lastBody, finished: billing.finished);
 }
 
 /// As [_outcome], but collects the first [count] outcomes. A successful verify
@@ -73,11 +152,13 @@ Future<List<IapPurchaseOutcome>> _outcomes({
   AuthApiException? verifyError,
   Map<String, dynamic> verifyResponse = const {},
   String? token = 'tok-123',
+  IapStore store = IapStore.googlePlay,
 }) async {
   final container = ProviderContainer(
     overrides: [
       sessionTokenStoreProvider.overrideWithValue(_FakeStore(token)),
       authApiClientProvider.overrideWithValue(_FakeClient(error: verifyError, response: verifyResponse)),
+      iapServiceProvider.overrideWith((ref) => IapService(ref, store: store)),
     ],
   );
   addTearDown(container.dispose);
@@ -93,6 +174,10 @@ Future<List<IapPurchaseOutcome>> _outcomes({
 }
 
 void main() {
+  // The Apple traces construct an IapService with `supported: true`, which
+  // registers the RaynBillingEvents handler on the default binary messenger.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   const billingOk = 0;
   const billingUserCanceled = 1;
 
@@ -198,5 +283,66 @@ void main() {
       final outcome = await _outcome(responseCode: billingOk, token: null);
       expect(outcome, IapPurchaseOutcome.needsLogin);
     });
+
+    test('403 FAMILY_SHARED → familyShared (its own end state, not generic)', () async {
+      final outcome = await _outcome(
+        responseCode: billingOk,
+        store: IapStore.appStore,
+        verifyError: const AuthApiException(status: 403, code: 'FAMILY_SHARED', message: ''),
+      );
+      expect(outcome, IapPurchaseOutcome.familyShared);
+    });
+
+    test('404 TRANSACTION_NOT_FOUND → failed (a config bug, not a user error)', () async {
+      final outcome = await _outcome(
+        responseCode: billingOk,
+        store: IapStore.appStore,
+        verifyError: const AuthApiException(status: 404, code: 'TRANSACTION_NOT_FOUND', message: ''),
+      );
+      expect(outcome, IapPurchaseOutcome.failed);
+    });
+  });
+
+  group('verify request shape', () {
+    test('Play posts purchaseToken to /iap/google/verify', () async {
+      final t = await _trace(store: IapStore.googlePlay);
+      expect(t.path, '/iap/google/verify');
+      expect(t.body, {'purchaseToken': 'pt-123', 'productId': 'rayn_premium'});
+    });
+
+    test('Apple posts transactionId to /iap/apple/verify, as a string', () async {
+      final t = await _trace(store: IapStore.appStore);
+      expect(t.path, '/iap/apple/verify');
+      expect(t.body, {'transactionId': 'pt-123', 'productId': 'rayn_premium'});
+      // Apple's Transaction.id is a UInt64; sending it as a JSON number is a 400.
+      expect(t.body!['transactionId'], isA<String>());
+    });
+  });
+
+  // Finishing a transaction tells StoreKit to stop redelivering it. Doing that
+  // before the backend has recorded the purchase destroys it: the user is
+  // charged, the entitlement is never granted, and nothing ever replays. These
+  // are the tests that keep that from happening.
+  group('finishPurchase timing', () {
+    test('called exactly once, with the transaction id, after a verify 200', () async {
+      final t = await _trace(store: IapStore.appStore);
+      expect(t.finished, ['pt-123']);
+    });
+
+    for (final (label, error) in const <(String, AuthApiException)>[
+      ('401', AuthApiException(status: 401, message: '')),
+      ('403 ACCOUNT_MISMATCH', AuthApiException(status: 403, code: 'ACCOUNT_MISMATCH', message: '')),
+      ('403 FAMILY_SHARED', AuthApiException(status: 403, code: 'FAMILY_SHARED', message: '')),
+      ('404 TRANSACTION_NOT_FOUND', AuthApiException(status: 404, code: 'TRANSACTION_NOT_FOUND', message: '')),
+      ('409 TOKEN_IN_USE', AuthApiException(status: 409, code: 'TOKEN_IN_USE', message: '')),
+      ('429', AuthApiException(status: 429, message: '')),
+      ('500', AuthApiException(status: 500, message: '')),
+      ('transport failure', AuthApiException(status: 0, message: 'no route')),
+    ]) {
+      test('never called on $label — the purchase must stay redeliverable', () async {
+        final t = await _trace(store: IapStore.appStore, verifyError: error);
+        expect(t.finished, isEmpty);
+      });
+    }
   });
 }

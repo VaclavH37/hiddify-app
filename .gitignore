@@ -118,6 +118,7 @@ external/
 # `git add <path>` refuse without `-f`.
 #
 # Only the FILENAMES appear here, never the contents.
+/APPLE-IAP-CLIENT-INTEGRATION.md
 /CORE_BUILD.md
 /IOS_BUILD.md
 /IOS_DEPLOYMENT.md

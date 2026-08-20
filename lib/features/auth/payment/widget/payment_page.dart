@@ -10,16 +10,18 @@ import 'package:hiddify/features/auth/payment/data/iap_service.dart';
 import 'package:hiddify/features/auth/payment/model/purchase_state.dart';
 import 'package:hiddify/features/auth/payment/notifier/purchase_notifier.dart';
 import 'package:hiddify/features/auth/payment/widget/plan_card.dart';
+import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Subscription purchase screen, reached after a `pending_payment` (or `expired`)
-/// login. It renders the live Google Play offers for the `rayn_premium` product
+/// login. It renders the live store offers for the `rayn_premium` subscription
 /// and runs the buy → verify → import flow ([PurchaseNotifier]). On success the
 /// `rayn://` link is imported and the router redirect (driven by
 /// `hasAnyProfileProvider`) swaps this screen for `/home`. The login already
 /// persisted the `session_token` + `user_id` so the purchase binds to the account
-/// (`obfuscatedAccountId`); leaving via the close button tears that session down.
+/// (Play `obfuscatedAccountId`, Apple `appAccountToken`); leaving via the close
+/// button tears that session down.
 class PaymentPage extends ConsumerWidget {
   const PaymentPage({super.key, this.expired = false});
 
@@ -153,14 +155,18 @@ class PaymentPage extends ConsumerWidget {
             const Gap(12),
           ],
           const Gap(8),
-          // Auto-renewal disclosure shown next to the purchase action (Play
-          // subscription policy). Price + period are on each card above.
+          // Auto-renewal disclosure shown next to the purchase action; both stores
+          // require it, and Apple's guideline 2.3.10 means the wording must not
+          // name the other platform. Price + period are on each card above.
           Text(
-            t.auth.payment.autoRenew,
+            PlatformUtils.isIOS ? t.auth.payment.autoRenewApple : t.auth.payment.autoRenew,
             style: theme.textTheme.bodySmall?.copyWith(color: palette.textMuted),
             textAlign: TextAlign.center,
           ),
-          const Gap(4),
+          // Functional Terms and Privacy links, in view before the user buys.
+          // App Store guideline 3.1.2 requires both on the purchase surface,
+          // not only in the store listing.
+          _LegalLinks(t: t),
           TextButton(
             onPressed: state.isBusy ? null : notifier.restore,
             child: Text(t.auth.payment.restore),
@@ -177,6 +183,8 @@ class PaymentPage extends ConsumerWidget {
         return t.auth.payment.errorTokenInUse;
       case IapPurchaseOutcome.ineligible:
         return t.auth.payment.errorIneligible;
+      case IapPurchaseOutcome.familyShared:
+        return t.auth.payment.errorFamilyShared;
       case IapPurchaseOutcome.needsLogin:
         return t.auth.payment.errorNeedsLogin;
       case IapPurchaseOutcome.reauthRequired:
@@ -195,7 +203,12 @@ class PaymentPage extends ConsumerWidget {
   }
 }
 
-/// Shown when Play billing isn't available — points the user to the website.
+/// Shown when the store's billing host can't sell to this device.
+///
+/// On Android it points at the account page. On iOS it must NOT: that page
+/// offers an external way to pay, and linking to one from inside the app is an
+/// App Store guideline 3.1.1 rejection. iOS gets copy that resolves the problem
+/// on-device, or a support address.
 class _UnavailableNotice extends StatelessWidget {
   const _UnavailableNotice({required this.t});
 
@@ -211,15 +224,47 @@ class _UnavailableNotice extends StatelessWidget {
         Text(t.auth.payment.unavailableTitle, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
         const Gap(8),
         Text(
-          t.auth.payment.unavailableBody,
+          PlatformUtils.isIOS ? t.auth.payment.unavailableBodyApple : t.auth.payment.unavailableBody,
           style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           textAlign: TextAlign.center,
         ),
-        const Gap(16),
-        TextButton.icon(
-          onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
-          icon: const Icon(Icons.open_in_new, size: 18),
-          label: Text(t.auth.payment.openAccount),
+        if (!PlatformUtils.isIOS) ...[
+          const Gap(16),
+          TextButton.icon(
+            onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: Text(t.auth.payment.openAccount),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Terms of Use and Privacy Policy, under the auto-renew disclosure and in view
+/// before the user commits. App Store guideline 3.1.2 requires both on the
+/// purchase surface itself, not only in the store listing. Labels are reused
+/// from the onboarding disclosure so each link is worded once.
+class _LegalLinks extends StatelessWidget {
+  const _LegalLinks({required this.t});
+
+  final Translations t;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        TextButton(
+          onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.termsAndConditionsUrl)),
+          child: Text(t.disclosure.terms, style: style),
+        ),
+        Text('·', style: style),
+        TextButton(
+          onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.privacyPolicyUrl)),
+          child: Text(t.disclosure.privacyPolicy, style: style),
         ),
       ],
     );

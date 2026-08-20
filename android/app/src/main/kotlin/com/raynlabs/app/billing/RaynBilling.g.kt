@@ -84,9 +84,15 @@ class FlutterError (
 enum class BillingConnState(val raw: Int) {
   /** Connected and ready to query/purchase. */
   CONNECTED(0),
-  /** Play Billing is unavailable on this device (no Play Store / unsupported). */
+  /**
+   * Play Billing is unavailable on this device (no Play Store / unsupported).
+   * Not reachable on iOS — StoreKit is always present.
+   */
   UNAVAILABLE(1),
-  /** Billing is disabled (e.g. feature not supported / region). */
+  /**
+   * Purchasing is disabled: Play reports the feature unsupported, or Apple's
+   * `AppStore.canMakePayments` is false (e.g. parental restrictions).
+   */
   DISABLED(2);
 
   companion object {
@@ -115,13 +121,17 @@ enum class RaynPurchaseState(val raw: Int) {
  * Generated class from Pigeon that represents data sent in messages.
  */
 data class RaynOffer (
-  /** "monthly" | "quarter" | "annual" (Play Console base-plan IDs). */
+  /**
+   * "monthly" | "quarter" | "annual" — Play Console base-plan IDs, and on
+   * Apple the suffix of the per-tier product id (`rayn_premium_monthly`).
+   */
   val basePlanId: String,
   /** Offer id (e.g. "trial"); null for the plain base plan with no offer. */
   val offerId: String? = null,
   /**
    * Opaque token passed verbatim to `launchPurchase` — selects this exact
-   * base-plan/offer in the billing flow.
+   * base-plan/offer in the billing flow. Play: the `offerToken`. Apple: the
+   * product id, which is what resolves back to a `Product`.
    */
   val offerToken: String,
   /** Localized, currency-correct price for display, e.g. "$19.99" / "₹1,699.00". */
@@ -179,14 +189,25 @@ data class RaynOffer (
  * Generated class from Pigeon that represents data sent in messages.
  */
 data class RaynPurchase (
-  /** `Purchase.getPurchaseToken()` — sent to `POST /iap/google/verify`. */
+  /**
+   * The store's opaque identifier for this purchase, sent to the backend's
+   * verify endpoint. Play: `Purchase.getPurchaseToken()`, posted as
+   * `purchaseToken`. Apple: `String(Transaction.id)`, posted as
+   * `transactionId` — a JSON STRING; encoding Apple's `UInt64` as a number
+   * is a 400.
+   */
   val purchaseToken: String,
-  /** The subscription product id, e.g. "rayn_premium". */
+  /**
+   * The subscription product id: `rayn_premium` on Play (one product carrying
+   * every base plan), or the per-tier id on Apple (`rayn_premium_monthly`).
+   */
   val productId: String,
   val state: RaynPurchaseState,
   /**
-   * Already settled server-side (backend acknowledged it). Lets the re-verify
-   * loop skip purchases that are already bound.
+   * Already settled server-side. Play: the backend acknowledged it. Apple: we
+   * already called [RaynBilling.finishPurchase], which only ever happens after
+   * a backend 200 — so the meaning carries. Lets the re-verify loop skip
+   * purchases that are already bound.
    */
   val isAcknowledged: Boolean
 )
@@ -227,7 +248,11 @@ data class RaynPurchase (
  * Generated class from Pigeon that represents data sent in messages.
  */
 data class LaunchResult (
-  /** Play `BillingResponseCode` (0 = OK, 1 = USER_CANCELED, …). */
+  /**
+   * Play `BillingResponseCode` (0 = OK, 1 = USER_CANCELED, 7 = ITEM_ALREADY
+   * _OWNED, …). The Apple host deliberately emits these same integers, so the
+   * Dart layer needs no per-store branching.
+   */
   val responseCode: Long,
   val debugMessage: String? = null
 )
@@ -323,20 +348,43 @@ private open class RaynBillingPigeonCodec : StandardMessageCodec() {
 interface RaynBilling {
   /** Build + connect the BillingClient (idempotent; reconnects if dropped). */
   fun connect(callback: (Result<BillingConnState>) -> Unit)
-  /** Query the subscription product's offers (base plans + the trial offer). */
+  /**
+   * Query the purchasable offers for [productId].
+   *
+   * Play: one product (`rayn_premium`) carrying the base plans plus the trial
+   * offer. Apple: [productId] names the subscription GROUP, which the host
+   * expands into one product per base plan (`<productId>_<basePlanId>`) and
+   * returns a single offer for each.
+   */
   fun queryOffers(productId: String, callback: (Result<List<RaynOffer>>) -> Unit)
   /**
    * Launch the purchase UI for [offerToken], binding the purchase to the
-   * account via `setObfuscatedAccountId(obfuscatedAccountId)`. Not @async —
-   * it returns immediately; the purchase comes back through [RaynBillingEvents].
+   * account: Play `setObfuscatedAccountId`, Apple `.appAccountToken`. Both
+   * take the raw lowercase RouteKey `user_id`; Apple additionally requires it
+   * to parse as a UUID, and the host omits the option rather than send a
+   * fabricated value. Not @async — it returns immediately; the purchase
+   * comes back through [RaynBillingEvents].
    */
   fun launchPurchase(offerToken: String, obfuscatedAccountId: String): LaunchResult
   /**
-   * Active SUBS purchases (`queryPurchasesAsync`) — drives re-verify-on-launch
-   * and restore-on-reinstall.
+   * Active subscription purchases — drives re-verify-on-launch and
+   * restore-on-reinstall. Play: `queryPurchasesAsync`. Apple: the union of
+   * `Transaction.currentEntitlements` and `Transaction.unfinished`, so an
+   * interrupted verify is replayed as well as a reinstall.
    */
   fun queryActivePurchases(callback: (Result<List<RaynPurchase>>) -> Unit)
-  /** Tear down the BillingClient (e.g. on logout / app dispose). */
+  /**
+   * Tell the store this purchase has been delivered.
+   *
+   * Apple-only in effect. StoreKit redelivers an unfinished transaction
+   * forever, so it has to be finished once the BACKEND has confirmed it —
+   * this is delivery confirmation, NOT acknowledgement, and entitlement still
+   * follows the backend. Dart calls it from exactly one place: immediately
+   * after `verify` returns 200. Play never acknowledges locally, so its
+   * implementation is a deliberate no-op.
+   */
+  fun finishPurchase(purchaseToken: String)
+  /** Tear down the store connection (e.g. on logout / app dispose). */
   fun endConnection()
 
   companion object {
@@ -423,6 +471,24 @@ interface RaynBilling {
         }
       }
       run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.hiddify.RaynBilling.finishPurchase$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val purchaseTokenArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.finishPurchase(purchaseTokenArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              RaynBillingPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.hiddify.RaynBilling.endConnection$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
@@ -474,7 +540,10 @@ class RaynBillingEvents(private val binaryMessenger: BinaryMessenger, private va
       } 
     }
   }
-  /** From `onBillingServiceDisconnected` — Dart may trigger a reconnect. */
+  /**
+   * From `onBillingServiceDisconnected` — Dart may trigger a reconnect. Never
+   * fired on iOS; StoreKit has no connection to lose.
+   */
   fun onBillingDisconnected(callback: (Result<Unit>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""

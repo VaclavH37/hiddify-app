@@ -41,11 +41,15 @@ int periodMonths(String iso) {
   return total == 0 ? 1 : total;
 }
 
-/// Projected first Google Play renewal date for a web→Play transition: [from]
-/// plus the plan's billing period. The trial/current plan ends immediately on
-/// switch (no remaining-time carry-over), so renewal follows the standard Play
-/// cycle from today. A display estimate only — the authoritative anchor is set
-/// by Google/the backend. Pure; unit-tested.
+/// Projected first store renewal date for a transition onto an auto-renewing
+/// plan: [from] plus the plan's billing period.
+///
+/// The trial or current plan ends immediately on switch, with no remaining-time
+/// carry-over, so renewal follows the standard cycle from today. That holds on
+/// both stores — it is what the backend does to a trial, and Apple cannot
+/// transfer remaining web-paid time at all (APPLE-IAP-CLIENT-INTEGRATION.md
+/// §6). A display estimate only: the authoritative anchor is set by the store
+/// and the backend. Pure; unit-tested.
 DateTime projectedRenewal(DateTime from, String billingPeriodIso) {
   return DateTime(from.year, from.month + periodMonths(billingPeriodIso), from.day);
 }

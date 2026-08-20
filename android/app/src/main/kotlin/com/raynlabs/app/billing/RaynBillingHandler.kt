@@ -210,6 +210,18 @@ class RaynBillingHandler : FlutterPlugin, RaynBilling {
         }
     }
 
+    /**
+     * Deliberate no-op on Play.
+     *
+     * The method exists for Apple, where StoreKit redelivers an unfinished
+     * transaction forever and finishing it is how the client confirms
+     * delivery. Play has no equivalent: the only thing that would settle a
+     * purchase here is `acknowledgePurchase`, and the BACKEND does that during
+     * verify. Acknowledging from the client would double-acknowledge, so this
+     * stays empty on purpose — see the invariant in pigeons/rayn_billing.dart.
+     */
+    override fun finishPurchase(purchaseToken: String) = Unit
+
     override fun endConnection() {
         billingClient?.endConnection()
         billingClient = null

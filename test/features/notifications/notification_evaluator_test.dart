@@ -234,7 +234,7 @@ void main() {
     });
   });
 
-  group('google play renewal reminder', () {
+  group('store renewal reminder', () {
     test('fires the day before renewal (1 day out)', () {
       final expire = now.add(const Duration(days: 1));
       final r = evaluateNotifications(
@@ -283,12 +283,47 @@ void main() {
       expect(kinds(r), {NotificationKind.renewalReminder});
     });
 
-    test('a non-Play provider at 1 day out still gets the expiry reminder', () {
+    test('a non-store provider at 1 day out still gets the expiry reminder', () {
       final r = evaluateNotifications(
         subInfo: sub(expire: now.add(const Duration(days: 1))),
         state: const NotificationDedupState(),
         now: now,
         paymentProvider: 'nowpayments',
+      );
+      expect(kinds(r), {NotificationKind.expiryReminder});
+    });
+
+    test('app_store renews, so it gets the reminder and not the countdown', () {
+      // The App Store manages renewal exactly as Play does, so `expire` is a
+      // renewal date. Reading it as an expiry would tell a paying subscriber
+      // their plan is about to lapse every single billing cycle.
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 1))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'app_store',
+      );
+      expect(kinds(r), {NotificationKind.renewalReminder});
+    });
+
+    test('app_store suppresses the 7-day countdown', () {
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 5))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'app_store',
+      );
+      expect(kinds(r), isEmpty);
+    });
+
+    test('an unknown provider degrades to the expiry countdown', () {
+      // The middleware owns this vocabulary. A value this build has never seen
+      // must not be treated as auto-renewing, or a lapsing plan goes unwarned.
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 5))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'some_future_provider',
       );
       expect(kinds(r), {NotificationKind.expiryReminder});
     });

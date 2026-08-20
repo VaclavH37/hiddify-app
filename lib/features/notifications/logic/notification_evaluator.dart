@@ -1,3 +1,4 @@
+import 'package:hiddify/features/auth/model/payment_provider.dart';
 import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/notifications/model/notification_dedup_state.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
@@ -66,17 +67,15 @@ EvaluationResult evaluateNotifications({
     next = next.copyWith(lastConsumption: consumption);
   }
 
-  // ---- Subscription expiry / Google Play renewal ----
+  // ---- Subscription expiry / store renewal ----
   final daysRemaining = subInfo.expire.difference(now).inDays;
   // `> 365` also covers the parser's "infinite" expiry sentinel.
   final nonExpiring = daysRemaining > 365;
   if (!nonExpiring) {
     final anchorKey = subInfo.expire.toIso8601String();
-    final isGooglePlay = paymentProvider == 'google_play';
-
-    if (isGooglePlay) {
+    if (isStoreManagedProvider(paymentProvider)) {
       // Auto-renewing plans don't "expire" — suppress the countdown and instead
-      // give one heads-up the day before the renewal date (for Play plans the
+      // give one heads-up the day before the renewal date (on a store plan the
       // `expire` field IS the renewal date). Deduped once per anchor: when the
       // sub renews, `expire` advances, the anchor differs, and it's eligible
       // again next cycle.

@@ -29,11 +29,12 @@ enum IapPurchaseOutcome {
   /// importable. A terminal outcome ([imported] / [stillProvisioning]) follows.
   activating,
 
-  /// Play returned PENDING (SCA / slow card) — show "payment processing"; the
-  /// real result arrives in a later [RaynBillingEvents.onPurchasesUpdated].
+  /// The store returned PENDING (Apple Ask-to-Buy / SCA, Play slow card) —
+  /// show "payment processing"; the real result arrives in a later
+  /// [RaynBillingEvents.onPurchasesUpdated].
   pendingPayment,
 
-  /// User dismissed the Play sheet.
+  /// User dismissed the purchase sheet.
   canceled,
 
   /// `403 ACCOUNT_MISMATCH` — the purchase belongs to a different account.
@@ -44,6 +45,12 @@ enum IapPurchaseOutcome {
 
   /// `403 INELIGIBLE` — account can't be granted yet (e.g. email unverified).
   ineligible,
+
+  /// `403 FAMILY_SHARED` — an Apple Family Sharing entitlement. The purchase
+  /// belongs to the family organiser, not this user, so `appAccountToken` can
+  /// never match. Unrecoverable on this device: retrying never helps, so this
+  /// gets its own explained end state rather than a generic failure.
+  familyShared,
 
   /// `401` or no stored session — the user must sign in again before verifying.
   needsLogin,
@@ -72,7 +79,15 @@ enum IapPurchaseOutcome {
   stillProvisioning,
 }
 
-/// Play `BillingResponseCode` values the purchase listener branches on.
+/// Which store's backend contract this build talks to.
+///
+/// The purchase machinery is otherwise identical, so this selects only the
+/// verify endpoint and the field name the purchase id travels under.
+enum IapStore { googlePlay, appStore }
+
+/// Play `BillingResponseCode` values the purchase listener branches on. The
+/// Apple host deliberately emits the same integers, so nothing here is
+/// Play-specific at runtime.
 abstract class _BillingResponse {
   static const ok = 0;
   static const userCanceled = 1;
@@ -86,28 +101,44 @@ IapService iapService(Ref ref) {
   return service;
 }
 
-/// Dart side of the Play Billing bridge. Owns the verify→import chain and turns
-/// Play's async purchase events into [IapPurchaseOutcome]s the notifier consumes.
+/// Dart side of the in-app purchase bridge. Owns the verify→import chain and
+/// turns the store's async purchase events into [IapPurchaseOutcome]s the
+/// notifier consumes.
 ///
-/// It does the Billing dance through the native [RaynBilling] host API and
+/// It does the store dance through the native [RaynBilling] host API and
 /// listens for purchases by implementing [RaynBillingEvents]. The backend
 /// acknowledges during verify, so this layer never acknowledges or grants access
 /// off the local receipt — entitlement always follows the backend account state.
+/// Apple adds one step, [RaynBilling.finishPurchase]: it tells StoreKit to stop
+/// redelivering a transaction the backend has already accepted. That is delivery
+/// confirmation, not entitlement, and it happens only after a verify 200.
 ///
-/// Android-only: [RaynBilling]/[RaynBillingEvents] have no desktop implementation,
+/// Mobile-only: [RaynBilling]/[RaynBillingEvents] have no desktop implementation,
 /// so every native call is guarded by [_supported] and is inert elsewhere.
 class IapService with InfraLogger implements RaynBillingEvents {
-  IapService(this._ref) {
+  /// [store], [billing] and [supported] exist so tests can exercise the Apple
+  /// request shape and the finish-after-200 rule on a host where neither
+  /// platform check is true. Production always takes the defaults.
+  IapService(
+    this._ref, {
+    IapStore? store,
+    RaynBilling? billing,
+    bool? supported,
+  })  : _store = store ?? (Platform.isIOS ? IapStore.appStore : IapStore.googlePlay),
+        _billing = billing ?? RaynBilling(),
+        _supported = supported ?? (Platform.isAndroid || Platform.isIOS) {
     if (_supported) {
       RaynBillingEvents.setUp(this);
     }
   }
 
   final Ref _ref;
-  final RaynBilling _billing = RaynBilling();
+  final IapStore _store;
+  final RaynBilling _billing;
   final StreamController<IapPurchaseOutcome> _outcomes = StreamController<IapPurchaseOutcome>.broadcast();
 
-  bool get _supported => Platform.isAndroid;
+  /// Whether a native billing host exists on this platform.
+  final bool _supported;
 
   AuthApiClient get _client => _ref.read(authApiClientProvider);
   SessionTokenStore get _sessionStore => _ref.read(sessionTokenStoreProvider);
@@ -116,25 +147,25 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// (and the re-verify-on-launch path) can both listen.
   Stream<IapPurchaseOutcome> get outcomes => _outcomes.stream;
 
-  /// Connect the BillingClient. Returns [BillingConnState.unavailable] off-Android.
+  /// Connect to the store. Returns [BillingConnState.unavailable] off-mobile.
   Future<BillingConnState> connect() =>
       _supported ? _billing.connect() : Future<BillingConnState>.value(BillingConnState.unavailable);
 
-  /// The subscription's offers (base plans + the trial). Empty off-Android.
+  /// The subscription's offers (base plans + the trial). Empty off-mobile.
   Future<List<RaynOffer>> loadOffers() =>
       _supported ? _billing.queryOffers(Constants.iapProductId) : Future<List<RaynOffer>>.value(const []);
 
-  /// Launch the Play purchase sheet for [offer], binding it to this account via
-  /// the stored `user_id` (`obfuscatedAccountId`). The returned [LaunchResult]
-  /// only says whether the sheet opened; the purchase itself arrives via the
-  /// event stream. Null off-Android.
+  /// Launch the store's purchase sheet for [offer], binding it to this account
+  /// via the stored `user_id` (Play `obfuscatedAccountId`, Apple
+  /// `appAccountToken`). The returned [LaunchResult] only says whether the sheet
+  /// opened; the purchase itself arrives via the event stream. Null off-mobile.
   Future<LaunchResult?> buy(RaynOffer offer) async {
     if (!_supported) return null;
     final userId = await _sessionStore.readUserId();
     return _billing.launchPurchase(offer.offerToken, userId ?? '');
   }
 
-  /// Re-discover active Play purchases and re-verify each (idempotent
+  /// Re-discover active store purchases and re-verify each (idempotent
   /// server-side). Covers acknowledgement-on-interrupted-verify, restore on
   /// reinstall, and login on a new device. Returns whether any active purchase
   /// was found (each pushes its result on [outcomes]).
@@ -197,7 +228,8 @@ class IapService with InfraLogger implements RaynBillingEvents {
   static const _activationPollInterval = Duration(seconds: 30);
   static const _maxActivationAttempts = 3; // t = 0s, 30s, 60s.
 
-  /// `POST /iap/google/verify`, then wait for provisioning and import the link.
+  /// `POST /iap/{google,apple}/verify`, then wait for provisioning and import
+  /// the link.
   ///
   /// `verify` grants + acknowledges and returns the `rayn://` cryptolink, but the
   /// remnawave user + cryptolink are created asynchronously by a ~30s outbox
@@ -209,17 +241,34 @@ class IapService with InfraLogger implements RaynBillingEvents {
     final token = await _sessionStore.read();
     if (token == null || token.isEmpty) return IapPurchaseOutcome.needsLogin;
 
+    // One contract, two stores: only the path and the field the purchase id
+    // travels under differ. Apple's `transactionId` MUST be a JSON string —
+    // `Transaction.id` is a UInt64 and encoding it as a number is a 400.
+    final (String path, Map<String, dynamic> body) = switch (_store) {
+      IapStore.googlePlay => (
+          '/iap/google/verify',
+          {'purchaseToken': purchase.purchaseToken, 'productId': purchase.productId},
+        ),
+      IapStore.appStore => (
+          '/iap/apple/verify',
+          {'transactionId': purchase.purchaseToken, 'productId': purchase.productId},
+        ),
+    };
+
     final String? cryptolink;
     try {
-      final resp = await _client.post(
-        '/iap/google/verify',
-        {'purchaseToken': purchase.purchaseToken, 'productId': purchase.productId},
-        bearer: token,
-      );
+      final resp = await _client.post(path, body, bearer: token);
       cryptolink = resp['subscription_url'] as String?;
     } on AuthApiException catch (e) {
       return _mapVerifyError(e);
     }
+
+    // 200 means the backend applied the entitlement, and this is the ONLY place
+    // the store may be told the purchase was delivered. Finishing any earlier
+    // discards a purchase the backend never recorded; while a transaction is
+    // unfinished StoreKit keeps redelivering it, which is exactly the retry we
+    // want. A deliberate no-op on Play, where the backend acknowledges.
+    await _finish(purchase);
 
     // Entitlement applied — show the activating screen while provisioning finishes.
     _outcomes.add(IapPurchaseOutcome.activating);
@@ -229,8 +278,26 @@ class IapService with InfraLogger implements RaynBillingEvents {
     return _pollImport(link);
   }
 
+  /// Settle [purchase] with the store after the backend has accepted it.
+  ///
+  /// Failure is not fatal and must not change the outcome: the entitlement is
+  /// already applied, and an unfinished transaction is simply redelivered, so
+  /// the launch re-verify picks it up. Logs the failure kind only — the
+  /// purchase id is a credential.
+  Future<void> _finish(RaynPurchase purchase) async {
+    if (!_supported) return;
+    try {
+      await _billing.finishPurchase(purchase.purchaseToken);
+    } catch (e) {
+      loggy.warning("finishPurchase failed: ${e.runtimeType}");
+    }
+  }
+
   IapPurchaseOutcome _mapVerifyError(AuthApiException e) {
     if (e.isUnreachable) return IapPurchaseOutcome.unreachable;
+    // Status + code only. The verify response carries `Cache-Control: no-store`
+    // because it may contain the cryptolink — never log the body.
+    loggy.warning("verify rejected: ${e.status} ${e.code}");
     switch (e.code) {
       case 'ACCOUNT_MISMATCH':
         return IapPurchaseOutcome.accountMismatch;
@@ -238,9 +305,15 @@ class IapService with InfraLogger implements RaynBillingEvents {
         return IapPurchaseOutcome.tokenInUse;
       case 'INELIGIBLE':
         return IapPurchaseOutcome.ineligible;
+      case 'FAMILY_SHARED':
+        return IapPurchaseOutcome.familyShared;
     }
     if (e.status == 401) return IapPurchaseOutcome.needsLogin;
     if (e.status == 429) return IapPurchaseOutcome.rateLimited;
+    // SANDBOX_NOT_ALLOWED, BUNDLE_MISMATCH and 404 TRANSACTION_NOT_FOUND are
+    // configuration bugs — the wrong backend for this build, or a local
+    // .storekit file Apple has never heard of — not user errors. Generic copy,
+    // but the log line above makes them diagnosable from a TestFlight report.
     return IapPurchaseOutcome.failed;
   }
 
