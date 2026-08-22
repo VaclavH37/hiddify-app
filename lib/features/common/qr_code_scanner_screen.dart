@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -399,12 +400,22 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 //   }
 // }
 
-class QrCodeScannerDialog extends ConsumerWidget {
+class QrCodeScannerDialog extends HookConsumerWidget {
   const QrCodeScannerDialog({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.read(translationsProvider).requireValue;
+
+    // MobileScanner calls onDetect once per FRAME while a code is in view, and
+    // the callbacks keep arriving after the first pop has closed this route —
+    // so every scan raised "GoError: There is nothing to pop" from the second
+    // frame onward. Caught by PlatformDispatcher rather than crashing, which is
+    // why it survived: an unhandled error on the primary auth path, every time.
+    //
+    // useRef rather than a local: a local resets on rebuild, and this has to
+    // latch for the life of the route.
+    final handled = useRef(false);
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -422,8 +433,11 @@ class QrCodeScannerDialog extends ConsumerWidget {
               ),
               errorBuilder: (context, error) => Center(child: Text(t.common.msg.permission.denied)),
               onDetect: (barcodes) {
+                if (handled.value || barcodes.barcodes.isEmpty) return;
                 final rawData = barcodes.barcodes.first.rawValue;
-                if (rawData != null) context.pop(rawData);
+                if (rawData == null) return;
+                handled.value = true;
+                context.pop(rawData);
                 // loggy.debug('captured raw: [$rawData]');
                 // if (rawData != null) {
                 //   context.pop(rawData);
