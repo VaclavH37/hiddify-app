@@ -48,11 +48,26 @@
 	</dict>
 	<!-- The app implements standard encryption in addition to the OS: AES-256-GCM
 	     via pointycastle (rayn:// tokens) and sing-box's TLS/cipher stack via Go
-	     in RaynCore. CryptoKit alone would be exempt; those two are not. This
-	     mirrors the App Store Connect export questionnaire, where we declared
-	     "standard algorithms in addition to Apple's OS" — the two must agree. -->
+	     in RaynCore. That is what was declared to Apple — "standard algorithms in
+	     addition to Apple's OS" — in the App Store Connect encryption
+	     questionnaire, and on those answers ASC concluded the app is EXEMPT: no
+	     documentation was required and no compliance code was issued.
+
+	     `false` is the value that matches that record, and the two MUST agree.
+	     This was briefly `true`, which fails upload validation:
+
+	       90592 Invalid Export Compliance Code. The export compliance key value
+	       [] in the app's Info.plist doesn't match the key value of the app's
+	       export compliance documentation.
+
+	     The empty brackets are a missing ITSEncryptionExportComplianceCode, which
+	     ASC only issues once it has ACCEPTED documentation. `true` is therefore
+	     unusable without that code — do not flip it back to silence a warning.
+	     If the classification ever changes, change it in App Store Connect first
+	     and copy the resulting code here. Note that Apple's exemption is separate
+	     from any BIS obligation, which is a compliance question, not a code one. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
-	<true/>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
