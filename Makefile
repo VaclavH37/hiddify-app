@@ -755,10 +755,23 @@ build-linux-libs:
 build-macos-libs:
 	make -C hiddify-core -f Makefile macos EXTRA_TAGS="$(EXTRA_TAGS)"
 
+# gomobile will not overwrite the Objective-C headers it generates: an
+# interrupted bind leaves hiddify-core/build/ios-arm64/Libbox/Libbox.objc.h on
+# disk, and every later run dies with
+#
+#   gomobile: open .../build/ios-arm64/Libbox/Libbox.objc.h: file exists
+#
+# which reads like a permissions or toolchain fault and is neither. hiddify-core's
+# own `ios` target never clears that scratch, so clear it here rather than in the
+# submodule. Scoped to build/ios* so an Android or desktop bind's staging is left
+# alone. The intermediate xcframework goes too: if a bind fails *after* writing
+# it, the mv below would otherwise ship a stale core.
 build-ios-libs:
 	rm -rf $(IOS_OUT)/RaynCore.xcframework
+	rm -rf hiddify-core$(SEP)build$(SEP)ios* $(BINDIR)/RaynCore.xcframework
 	make -C hiddify-core -f Makefile ios EXTRA_TAGS="$(EXTRA_TAGS)"
 	mv $(BINDIR)/RaynCore.xcframework $(IOS_OUT)/RaynCore.xcframework
+
 
 release: # Create a new tag for release.
 	@CORE_VERSION=$(core.version) bash -c ".github/change_version.sh "
