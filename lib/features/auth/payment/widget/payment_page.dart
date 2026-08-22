@@ -10,6 +10,7 @@ import 'package:hiddify/features/auth/payment/data/iap_service.dart';
 import 'package:hiddify/features/auth/payment/model/purchase_state.dart';
 import 'package:hiddify/features/auth/payment/notifier/purchase_notifier.dart';
 import 'package:hiddify/features/auth/payment/widget/plan_card.dart';
+import 'package:hiddify/features/auth/payment/widget/purchase_unavailable_notice.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -109,7 +110,7 @@ class PaymentPage extends ConsumerWidget {
       case PurchaseStatus.loading:
         return [_Centered(child: Text(t.auth.payment.loading, style: TextStyle(color: palette.textMuted)))];
       case PurchaseStatus.unavailable:
-        return [_UnavailableNotice(t: t)];
+        return [PurchaseUnavailableNotice(t: t, showAccountLink: true)];
       case PurchaseStatus.success:
         return [_Centered(child: Text(t.auth.payment.activating, style: TextStyle(color: palette.textMuted)))];
       case PurchaseStatus.activating:
@@ -200,44 +201,6 @@ class PaymentPage extends ConsumerWidget {
       default:
         return t.auth.payment.errorGeneric;
     }
-  }
-}
-
-/// Shown when the store's billing host can't sell to this device.
-///
-/// On Android it points at the account page. On iOS it must NOT: that page
-/// offers an external way to pay, and linking to one from inside the app is an
-/// App Store guideline 3.1.1 rejection. iOS gets copy that resolves the problem
-/// on-device, or a support address.
-class _UnavailableNotice extends StatelessWidget {
-  const _UnavailableNotice({required this.t});
-
-  final Translations t;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Icon(Icons.storefront_outlined, size: 40, color: theme.colorScheme.onSurfaceVariant),
-        const Gap(12),
-        Text(t.auth.payment.unavailableTitle, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
-        const Gap(8),
-        Text(
-          PlatformUtils.isIOS ? t.auth.payment.unavailableBodyApple : t.auth.payment.unavailableBody,
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          textAlign: TextAlign.center,
-        ),
-        if (!PlatformUtils.isIOS) ...[
-          const Gap(16),
-          TextButton.icon(
-            onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
-            icon: const Icon(Icons.open_in_new, size: 18),
-            label: Text(t.auth.payment.openAccount),
-          ),
-        ],
-      ],
-    );
   }
 }
 

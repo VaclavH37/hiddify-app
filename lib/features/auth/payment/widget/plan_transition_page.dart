@@ -14,6 +14,7 @@ import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
 import 'package:hiddify/features/auth/payment/model/purchase_state.dart';
 import 'package:hiddify/features/auth/payment/notifier/purchase_notifier.dart';
 import 'package:hiddify/features/auth/payment/widget/plan_card.dart';
+import 'package:hiddify/features/auth/payment/widget/purchase_unavailable_notice.dart';
 import 'package:hiddify/features/auth/widget/auth_unreachable_help.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -154,7 +155,7 @@ class PlanTransitionPage extends HookConsumerWidget {
       case PurchaseStatus.loading:
         return [_CenteredSpinner(label: t.auth.payment.loading)];
       case PurchaseStatus.unavailable:
-        return [_UnavailableNotice(t: t)];
+        return [PurchaseUnavailableNotice(t: t)];
       case PurchaseStatus.success:
         return [_CenteredSpinner(label: t.auth.payment.activating)];
       case PurchaseStatus.activating:
@@ -454,30 +455,6 @@ class _Banner extends StatelessWidget {
 }
 
 /// Shown when Play billing isn't available — points the user to the website.
-class _UnavailableNotice extends StatelessWidget {
-  const _UnavailableNotice({required this.t});
-
-  final Translations t;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Icon(Icons.storefront_outlined, size: 40, color: theme.colorScheme.onSurfaceVariant),
-        const Gap(12),
-        Text(t.auth.payment.unavailableTitle, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
-        const Gap(8),
-        Text(
-          t.auth.payment.unavailableBody,
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-}
-
 /// Centered spinner with an optional label (loading / activating states).
 class _CenteredSpinner extends StatelessWidget {
   const _CenteredSpinner({this.label});
