@@ -537,7 +537,7 @@ class RaynCoreService with InfraLogger {
       () => cc
           .coreInfoListener(Empty(), options: grpcOptions)
           .doOnCancel(() {
-            loggy.error("status", "Canceld");
+            loggy.debug("status listener cancelled");
             if (currentState == const CoreStatus.started()) currentState = const CoreStatus.stopped();
           })
           .doOnData((event) {
@@ -545,7 +545,7 @@ class RaynCoreService with InfraLogger {
             if (currentState == const CoreStatus.started()) currentState = const CoreStatus.stopped();
           })
           .doOnDone(() {
-            loggy.error("status", "done");
+            loggy.debug("status listener completed");
             if (currentState == const CoreStatus.started()) currentState = const CoreStatus.stopped();
           })
           .endWith(CoreInfoResponse(coreState: CoreStates.STOPPED))
@@ -556,7 +556,8 @@ class RaynCoreService with InfraLogger {
           }),
       // .endWith(const CoreStatus.stopped())
       onError: (error) {
-        loggy.error("Stream error in ${key}StatusListener: $error");
+        // Reported by listenSingle; logging again here is what produced two
+        // lines per stream failure.
 
         // currentState = const CoreStatus.stopped();
         // statusController.add(currentState);
@@ -623,6 +624,30 @@ class RaynCoreService with InfraLogger {
     }
   }
 
+  /// Report a stream failure at the severity it actually warrants.
+  ///
+  /// `UNAVAILABLE` means nothing is listening on the port. For the BACKGROUND
+  /// core that is its normal resting state — it lives in the platform VPN
+  /// service and does not exist until the tunnel starts — and the unary path
+  /// has always treated it that way (see the `changeHiddifySettings` split).
+  /// The stream path did not, so every launch emitted a burst of ERROR lines
+  /// for a condition that is routine.
+  ///
+  /// That is not cosmetic. A foreground core that failed to start produces the
+  /// SAME lines, so the one failure worth acting on was indistinguishable from
+  /// the one that is expected, and an iOS import bug hid behind it. Hence the
+  /// key check rather than a blanket demotion: `UNAVAILABLE` from the
+  /// foreground core stays an error, because there it is one.
+  void _logStreamError(String key, Object? error) {
+    final backgroundNotStarted =
+        key.startsWith("bg") && error is GrpcError && error.code == StatusCode.unavailable;
+    if (backgroundNotStarted) {
+      loggy.debug("$key: background core is not started yet");
+      return;
+    }
+    loggy.error("Stream error in $key: $error");
+  }
+
   Future<StreamSubscription<T>?> listenSingle<T>(
     String key,
     Stream<T> Function() stream, {
@@ -639,7 +664,7 @@ class RaynCoreService with InfraLogger {
       },
       cancelOnError: true,
       onError: (error) {
-        loggy.log(loggyl.LogLevel.error, 'Stream error: $error');
+        _logStreamError(key, error);
         onError?.call(error);
         subscriptions[key]?.cancel();
         subscriptions.remove(key);
