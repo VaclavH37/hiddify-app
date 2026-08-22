@@ -29,14 +29,36 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:toastification/toastification.dart';
 
 bool _debugAccessibility = false;
+
+/// Whether [App.onPause] has actually torn the foreground core down.
+///
+/// Read by [App.onResume] so a resume only rebuilds what a pause closed. The
+/// flag has existed since this lifecycle handling was written but was never
+/// read, so every resume re-ran full core setup regardless of whether anything
+/// had been released.
 bool isOnPauseCalled = false;
 
 class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
   const App({super.key});
 
-  void onInactive(WidgetRef ref) {
-    onPause(ref);
-  }
+  /// Deliberately does nothing.
+  ///
+  /// iOS reports `inactive` for anything that overlays the app WITHOUT
+  /// backgrounding it — Control Centre, a notification banner, the app
+  /// switcher, and every system sheet, including the camera permission prompt
+  /// and the QR scanner. The app is still on screen throughout.
+  ///
+  /// This used to delegate to [onPause], so all of those released the
+  /// foreground core. Each release restarts the core's gRPC server with a
+  /// freshly minted TLS certificate, which forcibly terminates any stream
+  /// attached to the old one:
+  ///
+  ///   Stream error in fgLogListener: HTTP/2 error: Connection is being
+  ///   forcefully terminated (errorCode: 10)
+  ///
+  /// A single QR import produced four certificates in 33 seconds that way.
+  /// Only `paused` means backgrounded, and only that needs to let the core go.
+  void onInactive(WidgetRef ref) {}
 
   void onPause(WidgetRef ref) {
     if (PlatformUtils.isDesktop) return;
@@ -45,12 +67,16 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
   }
 
   void onResume(WidgetRef ref) {
-    // if (PlatformUtils.isDesktop) return;
+    // Rebuild only what [onPause] closed. Without this guard a resume set up the
+    // core again even when it had never been released — which, before
+    // [onInactive] stopped pausing, was most resumes.
+    //
+    // Desktop never sets the flag (onPause returns early there and closes
+    // nothing), so desktop no longer re-initialises on window focus either.
+    // That is intended: there is nothing to restore.
+    if (!isOnPauseCalled) return;
+    isOnPauseCalled = false;
     ref.read(raynCoreServiceProvider).init();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      isOnPauseCalled = false;
-    });
   }
 
   @override
