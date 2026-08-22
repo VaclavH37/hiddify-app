@@ -4,11 +4,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
+import 'package:hiddify/features/log/widget/export_diagnostics.dart';
 import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -125,6 +127,32 @@ class AuthPage extends HookConsumerWidget {
                         if (isLoading) ...[
                           const Gap(24),
                           const Center(child: CircularProgressIndicator()),
+                        ],
+                        // Diagnostics builds only, and it has to live HERE.
+                        //
+                        // A core that fails to initialise is swallowed by
+                        // `_safeInit("rayn-core")` (bootstrap.dart) and surfaces
+                        // as an import failure on this screen — but Settings is
+                        // unreachable until a profile exists, so the export in
+                        // Settings cannot be reached to find out why. Relaunching
+                        // does not help either: `LogRepository.init()` truncates
+                        // app.log and core.log on every launch, so the run that
+                        // failed is gone by the time Settings is reachable.
+                        //
+                        // An earlier copy of this was removed in 4cf52f7c as
+                        // "temporary" once that bug looked closed. It was not.
+                        // Gated on `Constants.diagnosticsBuild` so a shipping
+                        // release cannot show it — the same single gate that
+                        // decides whether any logs get written at all.
+                        if (Constants.diagnosticsBuild && PlatformUtils.isMobile) ...[
+                          const Gap(24),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: () => exportDiagnostics(context, ref, t),
+                              icon: const Icon(Icons.share_rounded, size: 18),
+                              label: Text(t.pages.settings.exportDiagnostics),
+                            ),
+                          ),
                         ],
                       ],
                     ),
