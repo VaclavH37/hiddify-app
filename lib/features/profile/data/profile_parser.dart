@@ -94,6 +94,12 @@ class ProfileParser {
     'subscription-billing-period',
     'subscription-payment-provider',
     'subscription-manage-url',
+    // Which hub the emitted outbounds dial. The middleware decides it from the
+    // rolling traffic allowance and emits ONLY that tier's outbounds, so this
+    // header is descriptive — the client never picks. Absent means primary; see
+    // HubTier.
+    'subscription-hub-tier',
+    'subscription-hub-tier-until',
   ];
 
   final Ref _ref;

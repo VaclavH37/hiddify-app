@@ -11,6 +11,7 @@ import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auth/model/payment_provider.dart';
 import 'package:hiddify/features/auth/notifier/logout_notifier.dart';
 import 'package:hiddify/features/auth/payment/data/iap_service.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
@@ -41,9 +42,10 @@ class AccountSection extends ConsumerWidget {
 
     // Subscription-management metadata from the MW subscription headers,
     // persisted in populatedHeaders (ProfileParser.allowedProfileHeaders).
-    final provider = _header(remote, 'subscription-payment-provider');
-    final billingPeriod = _header(remote, 'subscription-billing-period');
-    final manageUrl = _header(remote, 'subscription-manage-url');
+    final provider = subscriptionHeader(remote, 'subscription-payment-provider');
+    final billingPeriod = subscriptionHeader(remote, 'subscription-billing-period');
+    final manageUrl = subscriptionHeader(remote, 'subscription-manage-url');
+    final hubTier = hubTierOf(subscriptionHeader(remote, 'subscription-hub-tier'));
     final isStoreManaged = isStoreManagedProvider(provider);
     // Store IAP is a mobile-only surface (the transition purchase, the
     // store-managed subscription centre, Restore). On desktop there is no
@@ -52,7 +54,7 @@ class AccountSection extends ConsumerWidget {
     final showStoreRows = !PlatformUtils.isDesktop;
 
     final subInfoLine = remote?.subInfo != null
-        ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod)
+        ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod, hubTier: hubTier)
         : null;
 
     return Padding(
@@ -170,13 +172,13 @@ class AccountSection extends ConsumerWidget {
   }
 }
 
-/// Reads a persisted subscription header value, or null if absent/blank.
-String? _header(RemoteProfileEntity? profile, String key) {
-  final value = profile?.populatedHeaders?[key]?.toString().trim();
-  return (value == null || value.isEmpty) ? null : value;
-}
-
-String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? provider, String? billingPeriod}) {
+String _formatSubInfo(
+  RemoteProfileEntity profile,
+  Translations t, {
+  String? provider,
+  String? billingPeriod,
+  HubTier hubTier = HubTier.primary,
+}) {
   final sub = profile.subInfo!;
   final consumed = sub.consumption.sizeGB();
   final total = sub.total.sizeGB();
@@ -200,7 +202,7 @@ String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? prov
       ? t.components.subscriptionInfo.renewDate(date: expiryValue)
       : t.components.subscriptionInfo.planExpiry(date: expiryValue);
 
-  final lines = [line1, line2];
+  final lines = [line1, if (hubTier == HubTier.standby) t.components.subscriptionInfo.standbyTitle, line2];
 
   // Line 3 (when the backend sent a billing period): e.g. "Annual · Auto-renew"
   // — auto-renew for Google Play, manual for any other provider.

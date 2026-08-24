@@ -240,4 +240,36 @@ void main() {
       }
     });
   });
+
+  group("hub tier headers", () {
+    // The middleware decides the tier and emits only that tier's outbounds; the
+    // client's whole job is to carry these two headers through to the UI and the
+    // reconnect. They ride populatedHeaders rather than a Drift column, so they
+    // have to be on the allowlist or they are silently dropped here.
+    test("Should keep subscription-hub-tier and subscription-hub-tier-until", () {
+      final headers = ProfileParser.populateHeaders(
+        content: '',
+        remoteHeaders: {
+          'subscription-hub-tier': 'standby',
+          'subscription-hub-tier-until': '1790000000',
+        },
+      );
+      expect(headers.isRight(), true);
+      headers.match((l) {}, (r) {
+        expect(r['subscription-hub-tier'], equals('standby'));
+        expect(r['subscription-hub-tier-until'], equals('1790000000'));
+      });
+    });
+
+    test("Should still drop headers that are not on the allowlist", () {
+      final headers = ProfileParser.populateHeaders(
+        content: '',
+        remoteHeaders: {'subscription-hub-tier': 'standby', 'x-rayn-internal': 'leak'},
+      );
+      headers.match((l) {}, (r) {
+        expect(r.containsKey('subscription-hub-tier'), true);
+        expect(r.containsKey('x-rayn-internal'), false);
+      });
+    });
+  });
 }

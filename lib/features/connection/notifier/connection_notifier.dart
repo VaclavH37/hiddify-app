@@ -2,12 +2,15 @@ import 'dart:io';
 
 import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
+import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/features/connection/data/connection_data_providers.dart';
 import 'package:hiddify/features/connection/data/connection_repository.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/hiddifycore/init_signal.dart';
@@ -55,10 +58,15 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
 
     ref.listen(activeProfileProvider.select((value) => value.asData?.value), (previous, next) async {
       if (previous == null) return;
-      final shouldReconnect = next == null || previous.id != next.id;
-      if (shouldReconnect) {
+      if (next == null || previous.id != next.id) {
         await reconnect(next);
+        return;
       }
+      // Same profile, refreshed content. A subscription refresh rewrites
+      // `configs/<id>.enc` but does not restart the core, so without this a
+      // user who stays connected for days never moves off the tier they
+      // started on — exactly the heaviest users the allowance exists to shape.
+      await _applyHubTierChange(next);
     });
     ref.watch(coreRestartSignalProvider);
 
@@ -111,6 +119,7 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
       }
       loggy.info("active profile changed, reconnecting");
       await ref.read(Preferences.startedByUser.notifier).update(true);
+      await _recordAppliedTier(profile);
       await _connectionRepo.reconnect(profile, ref.read(Preferences.disableMemoryLimit)).mapLeft((err) async {
         loggy.warning("error reconnecting", err);
         state = AsyncError(err, StackTrace.current);
@@ -119,6 +128,63 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
             .showCustomAlertFromErr(err.present(ref.read(translationsProvider).requireValue));
       }).run();
     }
+  }
+
+  /// The tier the running core was handed, and when we last moved it.
+  static const _hubTierAppliedKey = "hub_tier_applied";
+  static const _hubTierSwitchKey = "hub_tier_last_switch";
+
+  /// Records the tier the core is about to be started with.
+  ///
+  /// Persisted rather than held in memory because on Android the background
+  /// core outlives the UI: after a relaunch this is the only record of what it
+  /// is actually running, and without it a tier change that landed while the
+  /// app was dead would never be applied — leaving exactly the always-on heavy
+  /// users the allowance exists to shape on the primary link indefinitely.
+  ///
+  /// Written before the attempt, not after. A failed connect leaves a value
+  /// describing a core that is not running, which nothing reads:
+  /// [_applyHubTierChange] acts only while connected.
+  Future<void> _recordAppliedTier(ProfileEntity? profile) async {
+    if (profile == null) return;
+    final tier = hubTierOf(subscriptionHeader(profile, 'subscription-hub-tier'));
+    await ref.read(sharedPreferencesProvider).requireValue.setString(_hubTierAppliedKey, tier.name);
+  }
+
+  /// Applies a middleware-decided hub-tier change to the running core.
+  ///
+  /// Does nothing while disconnected: the next connect reads the stored config
+  /// and records the tier itself, so there is nothing to restart and nothing to
+  /// tell the user about yet.
+  Future<void> _applyHubTierChange(ProfileEntity profile) async {
+    if (state.valueOrNull is! Connected) return;
+    final tier = hubTierOf(subscriptionHeader(profile, 'subscription-hub-tier'));
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    // Compared against what the CORE holds, not against the previous
+    // observation: a switch the dwell floor deferred leaves the core where it
+    // was, and comparing observations would then treat the flip back as a fresh
+    // change and reconnect to the tier already in use.
+    final applied = hubTierOf(prefs.getString(_hubTierAppliedKey));
+    final now = DateTime.now();
+    if (!shouldReconnectForTier(applied, tier, DateTime.tryParse(prefs.getString(_hubTierSwitchKey) ?? ""), now)) {
+      if (applied != tier) {
+        loggy.info("hub tier is now [${tier.name}], within the dwell floor; deferring to the next connect");
+      }
+      return;
+    }
+    loggy.info("hub tier changed [${applied.name}] -> [${tier.name}], reconnecting");
+    await prefs.setString(_hubTierSwitchKey, now.toIso8601String());
+    // Explain the change before the tunnel blips, not after.
+    final t = ref.read(translationsProvider).requireValue;
+    ref
+        .read(inAppNotificationControllerProvider)
+        .showInfoToast(
+          tier == HubTier.standby
+              ? t.components.subscriptionInfo.standbyToast
+              : t.components.subscriptionInfo.primaryToast,
+          duration: const Duration(seconds: 6),
+        );
+    await reconnect(profile);
   }
 
   Future<void> abortConnection() async {
@@ -151,6 +217,7 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
       loggy.info("no active profile, not connecting");
       return;
     }
+    await _recordAppliedTier(activeProfile);
     await _connectionRepo.connect(activeProfile, ref.read(Preferences.disableMemoryLimit)).mapLeft((
       ConnectionFailure err,
     ) async {

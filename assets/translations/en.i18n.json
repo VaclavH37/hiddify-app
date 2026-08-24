@@ -452,7 +452,12 @@
       "renewDate": "Renew date: ${date}",
       "autoRenew": "Auto-renew",
       "manualRenew": "Manual renew",
-      "planExpiryNever": "Never"
+      "planExpiryNever": "Never",
+      "standbyTitle": "Daily allowance used",
+      "standbyFullSpeedInHours": "full speed in ${hours}h",
+      "standbyFullSpeedInDays": "full speed in ${days}d",
+      "standbyToast": "You've used today's full-speed allowance. You're on the standby connection until it rebuilds.",
+      "primaryToast": "Full speed restored."
     }
   },
   "notifications": {

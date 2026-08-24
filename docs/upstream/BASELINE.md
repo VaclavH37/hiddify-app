@@ -17,8 +17,8 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 
 | Check | Command | Baseline |
 |---|---|---|
-| Analyzer | `flutter analyze` | **0 errors · 26 warnings · 261 infos** (287 issues) |
-| Tests | `flutter test` | **356 passing**, 0 failing |
+| Analyzer | `flutter analyze` | **0 errors · 26 warnings · 262 infos** (288 issues) |
+| Tests | `flutter test` | **377 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
 fatal by default. Compare the counts, not the exit code.
@@ -42,6 +42,13 @@ the baseline; do not "fix" them during a catch-up slice.
   still claiming 28/257: the 2026-08-02 measurement had gone stale (the suite
   had already grown 326 → 340 with no re-measure). This is a catch-up, not a
   regression introduced by that change.
+- 356 → 377 tests at the hub-tier work (`subscription-hub-tier`): 19 cases for
+  the tier/countdown/dwell helpers plus 2 for the header allowlist. The single
+  extra info is `test/features/profile/hub_tier_test.dart`'s own `flutter_test`
+  import — the same unavoidable one every test file here contributes. The lib
+  changes are analyzer-neutral, and deleting the unreferenced
+  `features/stats/widget/traffic_quota_card.dart` cost nothing either, since it
+  contributed no issues.
 
 ## Go core — green
 

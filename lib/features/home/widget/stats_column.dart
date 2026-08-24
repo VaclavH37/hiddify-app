@@ -9,6 +9,7 @@ import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/glass_surface.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/stats/notifier/stats_notifier.dart';
@@ -199,6 +200,14 @@ class _QuotaCard extends ConsumerWidget {
     // when the backend didn't send one — we hide the figure rather than show
     // a stale value.
     final resetDays = subInfo.untilRefill?.inDays;
+    // Which hub the profile currently dials. The used/total figures above stay
+    // as they are on standby: they are the primary quota, and they are still
+    // true — what changed is which link carries the traffic, not the counter.
+    final hubTier = hubTierOf(subscriptionHeader(profile, 'subscription-hub-tier'));
+    final countdown = hubTierCountdown(
+      hubTierUntil(subscriptionHeader(profile, 'subscription-hub-tier-until')),
+      DateTime.now(),
+    );
 
     return GlassSurface(
       child: Column(
@@ -250,8 +259,35 @@ class _QuotaCard extends ConsumerWidget {
                 ),
             ],
           ),
+          if (hubTier == HubTier.standby) ...[
+            const SizedBox(height: RaynSpacing.sm),
+            Row(
+              children: [
+                Icon(FluentIcons.timer_16_regular, size: 14, color: palette.textSecondary),
+                const SizedBox(width: RaynSpacing.sm),
+                Expanded(
+                  child: Text(
+                    _standbyLabel(t, countdown),
+                    style: RaynTypography.caption.copyWith(color: palette.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+/// "Daily allowance used", plus when full speed returns if the middleware sent
+/// an estimate. Composed with the same " · " separator the account section uses
+/// for its quota line.
+String _standbyLabel(Translations t, ({int value, bool isDays})? countdown) {
+  final title = t.components.subscriptionInfo.standbyTitle;
+  if (countdown == null) return title;
+  final resumes = countdown.isDays
+      ? t.components.subscriptionInfo.standbyFullSpeedInDays(days: countdown.value)
+      : t.components.subscriptionInfo.standbyFullSpeedInHours(hours: countdown.value);
+  return '$title · $resumes';
 }
