@@ -76,7 +76,7 @@ void main() {
       write('configs/current-config.json', '{"outbounds":[]}');
       write('rulesets/direct-private.srs', 'ruleset');
       write('rulesets/MANIFEST', 'manifest');
-      write('data/clash.db', 'leveldb');
+      write('data/rayn_cache.db', 'leveldb');
       write('data/debug-built-config.json', '{"inbounds":[]}');
       write('data/stderr4.log', 'background core');
       // Same suffix as a real log, adjacent to one, and still not ours.
