@@ -18,7 +18,7 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 | Check | Command | Baseline |
 |---|---|---|
 | Analyzer | `flutter analyze` | **0 errors · 26 warnings · 262 infos** (288 issues) |
-| Tests | `flutter test` | **377 passing**, 0 failing |
+| Tests | `flutter test` | **378 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
 fatal by default. Compare the counts, not the exit code.
@@ -49,6 +49,10 @@ the baseline; do not "fix" them during a catch-up slice.
   changes are analyzer-neutral, and deleting the unreferenced
   `features/stats/widget/traffic_quota_card.dart` cost nothing either, since it
   contributed no issues.
+- 377 → 378 when the hub-tier dwell floor became asymmetric: two tests that
+  encoded the symmetric behaviour were replaced by three. Analyzer unchanged at
+  288 — the change is a single condition plus comments, in files that already
+  existed.
 
 ## Go core — green
 

@@ -95,25 +95,41 @@ void main() {
       expect(shouldReconnectForTier(HubTier.primary, HubTier.standby, null, now), isTrue);
     });
 
-    test('holds a change inside the dwell floor', () {
-      expect(shouldReconnectForTier(HubTier.primary, HubTier.standby, now.subtract(hubTierDwell ~/ 2), now), isFalse);
+    // The asymmetry is the point. Holding someone on the unmetered standby hub
+    // costs nothing; holding them on the metered CN2-GIA hub spends the budget
+    // the feature exists to protect. The middleware splits the directions the
+    // same way, and a symmetric floor here would undo that for the heaviest
+    // subscribers — whose primary leg (~4.4 h at 2.6× accrual) is SHORTER than
+    // this floor, so it would bind on every single cycle.
+    test('never delays the move TO standby, whatever the dwell says', () {
+      for (final since in [now, now.subtract(hubTierDwell ~/ 2), now.subtract(const Duration(seconds: 1))]) {
+        expect(
+          shouldReconnectForTier(HubTier.primary, HubTier.standby, since, now),
+          isTrue,
+          reason: 'last switch $since — a delayed move to standby is metered traffic we pay for',
+        );
+      }
     });
 
-    test('applies a change once the dwell floor has elapsed', () {
-      expect(shouldReconnectForTier(HubTier.primary, HubTier.standby, now.subtract(hubTierDwell), now), isTrue);
+    test('holds the RETURN to primary inside the dwell floor', () {
+      expect(shouldReconnectForTier(HubTier.standby, HubTier.primary, now.subtract(hubTierDwell ~/ 2), now), isFalse);
+    });
+
+    test('applies the return once the dwell floor has elapsed', () {
+      expect(shouldReconnectForTier(HubTier.standby, HubTier.primary, now.subtract(hubTierDwell), now), isTrue);
       expect(shouldReconnectForTier(HubTier.standby, HubTier.primary, now.subtract(hubTierDwell * 2), now), isTrue);
     });
 
     // The deferred-then-flipped-back case. `applied` is the tier the CORE holds,
-    // not the last one observed, so a change the dwell floor suppressed cannot
+    // not the last one observed, so a return the dwell floor suppressed cannot
     // come back as a reconnect to the tier already in use.
     test('does not reconnect to the tier the core is already running', () {
-      const applied = HubTier.primary;
-      expect(shouldReconnectForTier(applied, HubTier.standby, now, now), isFalse, reason: 'deferred');
+      const applied = HubTier.standby;
+      expect(shouldReconnectForTier(applied, HubTier.primary, now, now), isFalse, reason: 'deferred');
       expect(
-        shouldReconnectForTier(applied, HubTier.primary, now, now.add(const Duration(days: 1))),
+        shouldReconnectForTier(applied, HubTier.standby, now, now.add(const Duration(days: 1))),
         isFalse,
-        reason: 'flipped back — the core never left primary, so there is nothing to apply',
+        reason: 'flipped back — the core never left standby, so there is nothing to apply',
       );
     });
   });

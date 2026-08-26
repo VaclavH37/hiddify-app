@@ -74,17 +74,20 @@ String? subscriptionHeader(ProfileEntity? profile, String key) {
   return (value: (remaining.inHours / 24).ceil(), isDays: true);
 }
 
-/// Minimum time between two hub-tier reconnects.
+/// Minimum time before returning to the PRIMARY hub after a tier reconnect.
 ///
-/// A tier change restarts the core, and `select` is built with
-/// `interrupt_exist_connections: true`, so every live connection drops. That is
-/// the right behaviour for what is effectively a manual switch, but only if it
-/// cannot repeat: a user sitting on the allowance boundary would otherwise be
-/// reconnected on every subscription refresh.
+/// Asymmetric, and that is the whole point — see [shouldReconnectForTier]. A
+/// tier change restarts the core, and `select` is built with
+/// `interrupt_exist_connections: true`, so every live connection drops; this
+/// bounds how often that can happen in the direction where delay is free.
 ///
-/// The middleware applies its own deadband and is the real fix. This is the
-/// client-side floor underneath it, so a backend policy bug reaches users as a
-/// stale tier rather than as a reconnect loop.
+/// The middleware owns the real hysteresis: a 1% band plus a 24 h minimum
+/// standby dwell, both applied to the return direction only. Since its floor is
+/// four times this one, this never binds in normal operation. It earns its keep
+/// in one case: on failover to the backup middleware, which runs in a separate
+/// Cloudflare account and therefore has no memory of anyone's tier, a subscriber
+/// mid-hold is returned to primary early. This suppresses that for the first six
+/// hours of a standby leg.
 const hubTierDwell = Duration(hours: 6);
 
 /// Whether an observed hub-tier change should be applied to the running core
@@ -96,9 +99,24 @@ const hubTierDwell = Duration(hours: 6);
 /// the subsequent flip back as a fresh change and reconnect to the tier already
 /// in use.
 ///
+/// **Moving TO standby is never delayed.** The floor applies only to the return.
+/// The two directions are not symmetric in cost: holding someone on the
+/// unmetered standby hub costs nothing, while holding them on the metered
+/// CN2-GIA hub spends the budget this whole feature exists to protect. The
+/// middleware makes the same split deliberately — its 24 h dwell is return-only
+/// — and a symmetric floor here would undo it precisely for the heaviest
+/// subscribers, who are the ones it is meant to move.
+///
+/// The numbers, from the middleware's own measurements: a subscriber burning at
+/// 2.6× the accrual rate has a 4.4 h primary leg. That is SHORTER than this
+/// floor, so a symmetric version would bind on every cycle, stretching the leg
+/// to 6–7 h once the hourly poll is included and lifting their share of time on
+/// the metered link from ~15% to ~21%. Higher burn rates make it worse.
+///
 /// A null [lastSwitchAt] means we have never switched, so nothing is owed.
 bool shouldReconnectForTier(HubTier applied, HubTier incoming, DateTime? lastSwitchAt, DateTime now) {
   if (applied == incoming) return false;
+  if (incoming == HubTier.standby) return true;
   if (lastSwitchAt == null) return true;
   return now.difference(lastSwitchAt) >= hubTierDwell;
 }
