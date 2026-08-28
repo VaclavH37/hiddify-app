@@ -17,8 +17,8 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 
 | Check | Command | Baseline |
 |---|---|---|
-| Analyzer | `flutter analyze` | **0 errors · 26 warnings · 262 infos** (288 issues) |
-| Tests | `flutter test` | **378 passing**, 0 failing |
+| Analyzer | `flutter analyze` | **0 errors · 26 warnings · 264 infos** (290 issues) |
+| Tests | `flutter test` | **428 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
 fatal by default. Compare the counts, not the exit code.
@@ -53,6 +53,17 @@ the baseline; do not "fix" them during a catch-up slice.
   encoded the symmetric behaviour were replaced by three. Analyzer unchanged at
   288 — the change is a single condition plus comments, in files that already
   existed.
+- 378 → 393 at the first Phase 2 reachability work, then 393 → 424 when that
+  design was replaced by the precached-standby one
+  (`PHASE2-STANDBY-PRECACHE-DESIGN.md`). The second move is a net figure: the
+  two-leg probe's 12 cases were deleted along with the API they covered, and 43
+  replaced them — the config-slot storage contract and freshness policy, the
+  failover guards, lease, retry floor, flap-cap pruning and hub fingerprint, and
+  the standby fetch's wire contract including its rejection of a primary-tier
+  answer. 424 → 428 adds the post-revert failover backoff.
+- The two extra infos are `config_slot_test.dart` and
+  `hub_reachability_test.dart` each importing `flutter_test`, which every test
+  file in the repo does. The lib changes are analyzer-neutral.
 
 ## Go core — green
 

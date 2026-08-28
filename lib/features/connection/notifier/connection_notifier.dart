@@ -10,6 +10,8 @@ import 'package:hiddify/features/connection/data/connection_data_providers.dart'
 import 'package:hiddify/features/connection/data/connection_repository.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
+import 'package:hiddify/features/profile/model/config_slot.dart';
+import 'package:hiddify/features/profile/model/hub_reachability.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -99,6 +101,7 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
         case Disconnected():
           await haptic.lightImpact();
           await ref.read(Preferences.startedByUser.notifier).update(true);
+          await _retryPrimaryHubIfDue();
           await _connect();
         case Connected():
           // default:
@@ -130,6 +133,55 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
     }
   }
 
+  /// Retry the primary hub on a user-initiated connect.
+  ///
+  /// A failover moved this client onto the standby hub because the primary was
+  /// not carrying traffic. That block may since have cleared, and while on
+  /// standby nothing is dialling the primary to find out. A user tapping
+  /// Connect is the closest thing to them saying "try again", so take it as one.
+  ///
+  /// Entirely local, and that is the improvement: both configs are already on
+  /// disk, so this clears a preference and returns. No network call sits in
+  /// front of a user who has just tapped Connect, and nothing can time out. If
+  /// the primary is still blocked the ladder detects it again within one refresh
+  /// cycle and fails back over.
+  ///
+  /// Floored at [hubRetryPrimaryFloor]: without it, a user toggling the VPN
+  /// because it is not working would get a broken primary attempt every time.
+  Future<void> _retryPrimaryHubIfDue() async {
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    if (configSlotOf(prefs.getString(activeConfigSlotKey)) != ConfigSlot.standby) return;
+    if (!retryPrimaryDue(DateTime.tryParse(prefs.getString(hubStandbySinceKey) ?? ""), DateTime.now())) return;
+
+    loggy.info("user-initiated connect while on the standby hub; retrying the primary");
+    await prefs.remove(activeConfigSlotKey);
+    await prefs.remove(hubStandbySinceKey);
+  }
+
+  /// Restarts the core onto a different config slot.
+  ///
+  /// A full stop/start rather than [reconnect], and the difference is
+  /// load-bearing. `restart` sends only the config CONTENT, so the platform
+  /// shell keeps whatever `activeConfigPath` the last `connect` gave it — and a
+  /// start the system initiates on its own (quick-settings tile, always-on
+  /// VPN, iOS on-demand) reads that path and decrypts the OLD slot. After a
+  /// failover that means silently dialling back into the hub we just fled.
+  /// `connect` republishes the path, so the platform and the client agree.
+  ///
+  /// Returns whether the core came back up. A caller that has already committed
+  /// slot state needs to know, because a failed start leaves the client
+  /// disconnected with a preference claiming otherwise.
+  Future<bool> restartForSlot(ProfileEntity profile) async {
+    if (state.valueOrNull is! Connected) return false;
+    await _disconnect();
+    await _recordAppliedTier(profile);
+    final result = await _connectionRepo.connect(profile, ref.read(Preferences.disableMemoryLimit)).run();
+    return result.fold((err) {
+      loggy.error("failed to restart the core onto the new config slot", err);
+      return false;
+    }, (_) => true);
+  }
+
   /// The tier the running core was handed, and when we last moved it.
   static const _hubTierAppliedKey = "hub_tier_applied";
   static const _hubTierSwitchKey = "hub_tier_last_switch";
@@ -148,7 +200,8 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
   Future<void> _recordAppliedTier(ProfileEntity? profile) async {
     if (profile == null) return;
     final tier = hubTierOf(subscriptionHeader(profile, 'subscription-hub-tier'));
-    await ref.read(sharedPreferencesProvider).requireValue.setString(_hubTierAppliedKey, tier.name);
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    await prefs.setString(_hubTierAppliedKey, tier.name);
   }
 
   /// Applies a middleware-decided hub-tier change to the running core.

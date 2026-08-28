@@ -155,23 +155,45 @@ class DioHttpClient with InfraLogger {
     String? userAgent,
     ({String username, String password})? credentials,
     bool proxyOnly = false,
+    bool directOnly = false,
+    Map<String, String>? extraHeaders,
   }) async {
+    assert(!(proxyOnly && directOnly), "pick one leg, or neither");
     final mode = proxyOnly
         ? "proxy"
+        : directOnly
+        ? "direct"
         : await isPortOpen("127.0.0.1", port)
         ? "both"
         : "direct";
-    return _dio[mode]!.get<String>(
+    return _fetchText(
+      mode,
       url,
       cancelToken: cancelToken,
-      options: _options(
-        url,
-        userAgent: userAgent,
-        credentials: credentials,
-        responseType: ResponseType.plain,
-      ),
+      userAgent: userAgent,
+      credentials: credentials,
+      extraHeaders: extraHeaders,
     );
   }
+
+  Future<Response<String>> _fetchText(
+    String mode,
+    String url, {
+    CancelToken? cancelToken,
+    String? userAgent,
+    ({String username, String password})? credentials,
+    Map<String, String>? extraHeaders,
+  }) => _dio[mode]!.get<String>(
+    url,
+    cancelToken: cancelToken,
+    options: _options(
+      url,
+      userAgent: userAgent,
+      credentials: credentials,
+      responseType: ResponseType.plain,
+      extraHeaders: extraHeaders,
+    ),
+  );
 
   // There is deliberately no `download(url, path)` here any more. Its only
   // callers were the subscription fetch paths, and streaming a response body
@@ -184,6 +206,7 @@ class DioHttpClient with InfraLogger {
     String? userAgent,
     ({String username, String password})? credentials,
     ResponseType? responseType,
+    Map<String, String>? extraHeaders,
   }) {
     final uri = Uri.parse(url);
 
@@ -207,6 +230,7 @@ class DioHttpClient with InfraLogger {
       headers: {
         if (userAgent != null) "User-Agent": userAgent,
         if (basicAuth != null) "authorization": basicAuth,
+        ...?extraHeaders,
         // "Accept": "application/json",
         // "Content-Type": "application/json",
       },

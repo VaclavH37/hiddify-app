@@ -7,6 +7,8 @@ import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/db/db.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/features/profile/data/profile_data_mapper.dart';
+import 'package:hiddify/features/profile/model/hub_reachability.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/singbox/model/singbox_proxy_type.dart';
@@ -182,7 +184,8 @@ class ProfileParser {
   TaskEither<ProfileFailure, ParsedProfile> updateRemote({
     required RemoteProfileEntity rp,
     CancelToken? cancelToken,
-  }) => _downloadWithFailover(rp, cancelToken).flatMap((resolved) {
+    HubSignal? signal,
+  }) => _downloadWithFailover(rp, cancelToken, signal: signal).flatMap((resolved) {
     var rotated = rp;
     // `_resolveDownload` already followed any `new-url`; persist the resulting
     // token when it changed.
@@ -222,10 +225,18 @@ class ProfileParser {
       .flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected))
       .map((entry) => (entry: entry, content: content));
 
+  /// [signal], when present, rides along as the `x-rayn-hub-signal` request
+  /// header and forces the DIRECT leg.
+  ///
+  /// Direct is not an optimisation here, it is the point: the only reason to
+  /// send `unreachable` is that the tunnel does not carry traffic, so routing
+  /// the escalation through it would burn the full timeout before falling back.
   TaskEither<ProfileFailure, ({Map<String, dynamic> headers, String content})> _downloadProfile(
     String url,
-    CancelToken? cancelToken,
-  ) => TaskEither.tryCatch(() async {
+    CancelToken? cancelToken, {
+    HubSignal? signal,
+    HubTier? requestTier,
+  }) => TaskEither.tryCatch(() async {
     // if (url.startsWith("http://"))
     //   throw const ProfileFailure.invalidUrl('HTTP is not supported. Please use HTTPS for secure connection.');
 
@@ -235,6 +246,7 @@ class ProfileParser {
           url.trim(),
           cancelToken: cancelToken,
           userAgent: _ref.read(appInfoProvider).requireValue.subscriptionUserAgent,
+          extraHeaders: _requestHeaders(signal: signal, requestTier: requestTier),
         )
         .catchError((err) {
           if (CancelToken.isCancel(err as DioException)) {
@@ -256,6 +268,51 @@ class ProfileParser {
     return (headers: headers, content: content);
   }, (err, st) => err is ProfileFailure ? err : ProfileFailure.unexpected(err, st));
 
+  /// Builds the optional request headers a subscription fetch may carry.
+  ///
+  /// Null rather than an empty map when there is nothing to send, so an
+  /// ordinary refresh is byte-for-byte the request it has always been — every
+  /// header the client adds is one more thing that distinguishes this app's
+  /// traffic from anything else's.
+  static Map<String, String>? _requestHeaders({HubSignal? signal, HubTier? requestTier}) {
+    final headers = <String, String>{
+      if (signal != null) hubSignalHeader: signal.wireValue,
+      if (requestTier != null) hubTierRequestHeader: requestTier.name,
+    };
+    return headers.isEmpty ? null : headers;
+  }
+
+  /// Fetches the STANDBY-hub config body, and nothing else.
+  ///
+  /// Deliberately NOT an `updateRemote` variant. It returns only the body: the
+  /// response's headers describe the standby projection, and letting them reach
+  /// `populatedHeaders` would overwrite the live tier and quota metadata that
+  /// the account UI reads. The primary refresh path stays the only writer of
+  /// stored profile state.
+  ///
+  /// A `new-url` this fetch follows is likewise discarded. That is safe because
+  /// rotation is idempotent — the old token stays valid and every later
+  /// response re-offers the renewal — so the next primary refresh records it.
+  ///
+  /// The tier guard is the important part. A middleware that does not implement
+  /// the request header answers with the PRIMARY config, and sealing that into
+  /// the standby slot would be worse than having no cache at all: failover
+  /// would swap primary for primary, restart the core, and change nothing,
+  /// while looking like it had worked.
+  TaskEither<ProfileFailure, String> fetchStandbyConfig({
+    required RemoteProfileEntity rp,
+    CancelToken? cancelToken,
+  }) => _downloadWithFailover(rp, cancelToken, requestTier: HubTier.standby).flatMap((resolved) {
+    final served = hubTierOf(resolved.headers['subscription-hub-tier']?.toString());
+    if (served != HubTier.standby) {
+      _log.warning('standby fetch answered with the [${served.name}] tier; discarding it');
+      return TaskEither<ProfileFailure, String>.left(
+        const ProfileFailure.invalidConfig('the middleware did not serve the standby hub'),
+      );
+    }
+    return TaskEither<ProfileFailure, String>.right(resolved.content);
+  });
+
   /// One subscription request that follows `new-url` token rotation to the
   /// terminal response (see [Confirmed decisions] in the plan). Returns the
   /// terminal `headers` plus the `url`/`sourceToken` that produced it (the
@@ -267,7 +324,9 @@ class ProfileParser {
     String? sourceToken,
     CancelToken? cancelToken, {
     int depth = 0,
-  }) => _downloadProfile(url, cancelToken).flatMap((downloaded) {
+    HubSignal? signal,
+    HubTier? requestTier,
+  }) => _downloadProfile(url, cancelToken, signal: signal, requestTier: requestTier).flatMap((downloaded) {
     final rotation = extractRotation(downloaded.headers);
     // Compare the DECRYPTED url, not the cryptolink: the envelope is randomised,
     // so the same URL re-encrypts to a different string on every response and a
@@ -276,7 +335,14 @@ class ProfileParser {
       _log.info(
         'following `new-url` to renewed token (hop ${depth + 1}, host: ${Uri.tryParse(rotation.url)?.host ?? "?"})',
       );
-      return _resolveDownload(rotation.url, rotation.sourceToken, cancelToken, depth: depth + 1);
+      return _resolveDownload(
+        rotation.url,
+        rotation.sourceToken,
+        cancelToken,
+        depth: depth + 1,
+        signal: signal,
+        requestTier: requestTier,
+      );
     }
     if (isExpiredEnvelope(downloaded.content)) {
       _log.warning('subscription token expired with no renewal available');
@@ -299,9 +365,17 @@ class ProfileParser {
   /// would return the same `4010`, so we surface the lapse instead).
   TaskEither<ProfileFailure, _ResolvedSubscription> _downloadWithFailover(
     RemoteProfileEntity rp,
-    CancelToken? cancelToken,
-  ) => TaskEither(() async {
-    final primary = await _resolveDownload(rp.url, rp.sourceToken, cancelToken).run();
+    CancelToken? cancelToken, {
+    HubSignal? signal,
+    HubTier? requestTier,
+  }) => TaskEither(() async {
+    final primary = await _resolveDownload(
+      rp.url,
+      rp.sourceToken,
+      cancelToken,
+      signal: signal,
+      requestTier: requestTier,
+    ).run();
     final primaryFailure = primary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (primaryFailure == null) return primary;
     if (primaryFailure is ProfileCancelByUserFailure) return primary;
@@ -312,7 +386,13 @@ class ProfileParser {
       'primary subscription URL failed (${Uri.tryParse(rp.url)?.host ?? "?"}); '
       'attempting fallback (${Uri.tryParse(fallback)?.host ?? "?"})',
     );
-    final secondary = await _resolveDownload(fallback, rp.fallbackSourceToken, cancelToken).run();
+    final secondary = await _resolveDownload(
+      fallback,
+      rp.fallbackSourceToken,
+      cancelToken,
+      signal: signal,
+      requestTier: requestTier,
+    ).run();
     final secondaryFailure = secondary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (secondaryFailure == null) {
       _log.info('fallback subscription URL succeeded');

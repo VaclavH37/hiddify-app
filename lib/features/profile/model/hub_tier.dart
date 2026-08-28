@@ -19,6 +19,15 @@ enum HubTier {
   standby,
 }
 
+/// Request header asking the middleware for a specific tier's outbounds.
+///
+/// The mirror of the `subscription-hub-tier` RESPONSE header, and deliberately
+/// a different name: the response header is the middleware stating what it
+/// decided, this one is the client asking to read a different projection. It
+/// never influences the tier decision — a subscriber asking for `standby` is
+/// precaching a failover config, not opting out of their allowance.
+const hubTierRequestHeader = 'x-rayn-hub-tier';
+
 /// Reads [HubTier] from the raw `subscription-hub-tier` header.
 ///
 /// Anything that is not exactly `standby` — absent, blank, a value from a

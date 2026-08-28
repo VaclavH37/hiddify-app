@@ -7,6 +7,8 @@ import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/core/model/app_info_entity.dart';
 import 'package:hiddify/core/model/environment.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
+import 'package:hiddify/features/profile/model/hub_reachability.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -113,6 +115,161 @@ void main() {
     test('rejects an envelope version this build cannot open', () {
       final link = mintRaynLink('https://api.example.com/sub', version: 0x03);
       expect(ProfileParser.extractFallback({'fallback-url': link}), isNull);
+    });
+  });
+
+  group('reachability signal', () {
+    late ProviderContainer container;
+    late Ref ref;
+
+    setUp(() async {
+      container = ProviderContainer(overrides: [appInfoProvider.overrideWith(_FakeAppInfo.new)]);
+      ref = container.read(_dummyRefProvider);
+      // `_downloadProfile` reads `appInfoProvider.requireValue` synchronously
+      // for the User-Agent header; resolve it first so the read succeeds.
+      await container.read(appInfoProvider.future);
+    });
+
+    tearDown(() => container.dispose());
+
+    RemoteProfileEntity entity() => RemoteProfileEntity(
+      id: 'test-id',
+      active: true,
+      name: 'test',
+      url: 'https://primary.example.com/sub',
+      lastUpdate: DateTime(2020),
+    );
+
+    test('unreachable rides the request, THROUGH the tunnel', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser.updateRemote(rp: entity(), signal: HubSignal.unreachable).run();
+
+      expect(fake.sentHeaders.single?[hubSignalHeader], 'unreachable');
+      // Not the direct leg. By the time this is sent the client has ALREADY
+      // switched to the standby hub, so the tunnel is the path that works —
+      // an earlier design forced this direct, which is now exactly wrong.
+      expect(fake.sentDirectOnly.single, isFalse);
+    });
+
+    test('recovered rides the request the same way', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser.updateRemote(rp: entity(), signal: HubSignal.recovered).run();
+
+      expect(fake.sentHeaders.single?[hubSignalHeader], 'recovered');
+      expect(fake.sentDirectOnly.single, isFalse);
+    });
+
+    test('an ordinary refresh sends no signal header at all', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser.updateRemote(rp: entity()).run();
+
+      expect(fake.sentHeaders.single, isNull);
+      expect(fake.sentDirectOnly.single, isFalse);
+    });
+  });
+
+  group('fetchStandbyConfig', () {
+    late ProviderContainer container;
+    late Ref ref;
+
+    setUp(() async {
+      container = ProviderContainer(overrides: [appInfoProvider.overrideWith(_FakeAppInfo.new)]);
+      ref = container.read(_dummyRefProvider);
+      await container.read(appInfoProvider.future);
+    });
+
+    tearDown(() => container.dispose());
+
+    RemoteProfileEntity entity() => RemoteProfileEntity(
+      id: 'test-id',
+      active: true,
+      name: 'test',
+      url: 'https://primary.example.com/sub',
+      lastUpdate: DateTime(2020),
+    );
+
+    test('asks for the standby tier and returns the body', () async {
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'subscription-hub-tier': 'standby'}, body: 'standby-config'),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.fetchStandbyConfig(rp: entity()).run();
+
+      expect(fake.sentHeaders.single?[hubTierRequestHeader], 'standby');
+      expect(result.getOrElse((_) => 'FAILED'), 'standby-config');
+    });
+
+    test('goes through the tunnel like any other refresh', () async {
+      // The opposite of the `unreachable` signal: this is routine cache
+      // maintenance on a healthy link, not an escape from a dead one.
+      final fake = _FakeHttpClient(
+        steps: [_FakeStep.ok(headers: {'subscription-hub-tier': 'standby'})],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser.fetchStandbyConfig(rp: entity()).run();
+
+      expect(fake.sentDirectOnly.single, isFalse);
+      expect(fake.sentHeaders.single?[hubSignalHeader], isNull);
+    });
+
+    test('REJECTS a response the middleware answered with the primary tier', () async {
+      // Sealing a primary config into the standby slot is worse than having no
+      // cache: failover would swap primary for primary, restart the core, and
+      // change nothing while appearing to work.
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'subscription-hub-tier': 'primary'}, body: 'primary-config'),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.fetchStandbyConfig(rp: entity()).run();
+
+      expect(result.isLeft(), isTrue);
+    });
+
+    test('REJECTS a response with no tier header — an older middleware', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {}, body: 'primary-config')]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.fetchStandbyConfig(rp: entity()).run();
+
+      expect(result.isLeft(), isTrue);
+    });
+
+    test('fails over to the fallback middleware host, still asking for standby', () async {
+      // A standby fetch that cannot fail over is a single point of failure in
+      // exactly the scenario the standby config exists for.
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.networkError(),
+          _FakeStep.ok(headers: {'subscription-hub-tier': 'standby'}, body: 'standby-config'),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser
+          .fetchStandbyConfig(
+            rp: entity().copyWith(
+              fallbackUrl: 'https://fallback.example.com/sub',
+              fallbackSourceToken: _raynLink('https://fallback.example.com/sub'),
+            ),
+          )
+          .run();
+
+      expect(fake.calledUrls, ['https://primary.example.com/sub', 'https://fallback.example.com/sub']);
+      expect(fake.sentHeaders.every((h) => h?[hubTierRequestHeader] == 'standby'), isTrue);
+      expect(result.getOrElse((_) => 'FAILED'), 'standby-config');
     });
   });
 
@@ -555,6 +712,11 @@ class _FakeHttpClient extends DioHttpClient {
   int callCount = 0;
   final List<String> calledUrls = [];
 
+  /// Per-call record of the two arguments the reachability signal rides on, so a
+  /// test can assert the wire contract rather than just the constant.
+  final List<Map<String, String>?> sentHeaders = [];
+  final List<bool> sentDirectOnly = [];
+
   @override
   Future<Response<String>> getText(
     String url, {
@@ -562,10 +724,14 @@ class _FakeHttpClient extends DioHttpClient {
     String? userAgent,
     ({String username, String password})? credentials,
     bool proxyOnly = false,
+    bool directOnly = false,
+    Map<String, String>? extraHeaders,
   }) async {
     final idx = callCount;
     callCount++;
     calledUrls.add(url);
+    sentHeaders.add(extraHeaders);
+    sentDirectOnly.add(directOnly);
     if (idx >= steps.length) {
       throw StateError('unexpected extra subscription request: $url');
     }

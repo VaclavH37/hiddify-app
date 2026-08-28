@@ -10,6 +10,8 @@ import 'package:hiddify/features/profile/data/profile_config_cipher.dart';
 import 'package:hiddify/features/profile/data/profile_data_source.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/data/profile_path_resolver.dart';
+import 'package:hiddify/features/profile/model/config_slot.dart';
+import 'package:hiddify/features/profile/model/hub_reachability.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/model/profile_sort_enum.dart';
@@ -29,20 +31,32 @@ abstract interface class ProfileRepository {
     ProfilesSort sort = ProfilesSort.lastUpdate,
     SortMode sortMode = SortMode.ascending,
   });
+  /// [signal] rides along as a reachability report to the middleware. It only
+  /// affects which hub the response carries; the refresh is otherwise identical.
   TaskEither<ProfileFailure, Unit> upsertRemote(
     String url, {
     UserOverride? userOverride,
     String? sourceToken,
     CancelToken? cancelToken,
+    HubSignal? signal,
   });
   TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride});
   TaskEither<ProfileFailure, Unit> offlineUpdate(ProfileEntity nProfile, String nContent);
   TaskEither<ProfileFailure, String> generateConfig(String id);
   TaskEither<ProfileFailure, String> getRawConfig(String id);
 
-  /// Opens `configs/<id>.enc` for the connection layer. Returns the normalised
-  /// sing-box JSON, which is handed to the core in memory — never via a path.
-  TaskEither<ProfileFailure, String> readConfig(String id);
+  /// Fetches the standby-hub config and seals it to the standby slot.
+  ///
+  /// Writes no Drift row and captures no headers: this is a cache the client
+  /// keeps for itself, not an update to the subscription.
+  TaskEither<ProfileFailure, Unit> refreshStandbyConfig(RemoteProfileEntity profile, {CancelToken? cancelToken});
+
+  /// Opens the sealed config for [slot] and returns the normalised sing-box
+  /// JSON, which is handed to the core in memory — never via a path.
+  ///
+  /// Defaults to [ConfigSlot.primary]: every caller that has no opinion about
+  /// failover wants the config the middleware last served.
+  TaskEither<ProfileFailure, String> readConfig(String id, {ConfigSlot slot = ConfigSlot.primary});
 }
 
 class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements ProfileRepository {
@@ -169,6 +183,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     UserOverride? userOverride,
     String? sourceToken,
     CancelToken? cancelToken,
+    HubSignal? signal,
   }) =>
       TaskEither.tryCatch(
         () async => await _profileDataSource.getByUrl(url).then((profEntry) => profEntry?.toEntity()),
@@ -182,7 +197,11 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
             profEntity = profEntity.copyWith(userOverride: userOverride);
           }
           return _profileParser
-              .updateRemote(rp: profEntity, cancelToken: cancelToken)
+              .updateRemote(
+                rp: profEntity,
+                cancelToken: cancelToken,
+                signal: signal,
+              )
               .flatMap((parsed) => _sealAndPersist(id: id, parsed: parsed, isUpdate: true));
         }
         // Add
@@ -267,11 +286,16 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
   /// Removes every on-disk trace of a profile's config: the sealed file and any
   /// plaintext an older install left behind.
   Future<void> _deleteConfigFiles(String id) async {
-    try {
-      final sealed = _profilePathResolver.encFile(id);
-      if (await sealed.exists()) await sealed.delete();
-    } catch (e) {
-      loggy.warning('failed to delete sealed config for [$id]: ${e.runtimeType}');
+    // EVERY slot, not just the primary. A standby blob left behind would keep
+    // the standby hub's address on disk after a logout, which is the one
+    // disclosure outcome the precache design cannot afford.
+    for (final slot in ConfigSlot.values) {
+      try {
+        final sealed = _profilePathResolver.encFileForSlot(id, slot);
+        if (await sealed.exists()) await sealed.delete();
+      } catch (e) {
+        loggy.warning('failed to delete sealed [${slot.name}] config for [$id]: ${e.runtimeType}');
+      }
     }
     await _deleteLegacyPlaintext(id);
   }
@@ -287,13 +311,40 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
   }
 
   @override
-  TaskEither<ProfileFailure, String> readConfig(String id) => TaskEither(() async {
-    final file = _profilePathResolver.encFile(id);
+  TaskEither<ProfileFailure, Unit> refreshStandbyConfig(RemoteProfileEntity profile, {CancelToken? cancelToken}) =>
+      _profileParser
+          .fetchStandbyConfig(rp: profile, cancelToken: cancelToken)
+          .flatMap((content) => _validate(content, profile.profileOverride))
+          .flatMap(
+            (normalised) => TaskEither.tryCatch(() async {
+              // Sealed under the SLOT's storage id, not the profile id — that
+              // string is both this file's name and its AAD, and the native
+              // readers reproduce it from the name (see configSlotStorageId).
+              final sealed = await _configCipher.encrypt(
+                profileId: configSlotStorageId(profile.id, ConfigSlot.standby),
+                json: normalised,
+              );
+              final target = _profilePathResolver.encFileForSlot(profile.id, ConfigSlot.standby);
+              if (!await target.parent.exists()) await target.parent.create(recursive: true);
+              await target.writeAsBytes(sealed, flush: true);
+              loggy.debug('standby config sealed for [${profile.id}]');
+              return unit;
+            }, _mapCipherFailure),
+          );
+
+  @override
+  TaskEither<ProfileFailure, String> readConfig(String id, {ConfigSlot slot = ConfigSlot.primary}) =>
+      TaskEither(() async {
+    // The file name and the AAD are the same string BY CONSTRUCTION. Deriving
+    // them separately is what would let a standby blob be sealed under an id
+    // the Kotlin and Swift readers cannot reproduce from the file name.
+    final storageId = configSlotStorageId(id, slot);
+    final file = _profilePathResolver.encFile(storageId);
     if (!await file.exists()) {
-      loggy.warning('no stored config for [$id]');
+      loggy.warning('no stored config for [$storageId]');
       return left(const ProfileFailure.configUnreadable());
     }
-    final result = await _configCipher.decrypt(profileId: id, blob: await file.readAsBytes());
+    final result = await _configCipher.decrypt(profileId: storageId, blob: await file.readAsBytes());
     switch (result) {
       case ConfigDecryptOk(:final json):
         return right(json);
@@ -311,7 +362,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
         // disk rather than going memory-only.
         final blobIsBad = reason != ConfigCipherRejection.keyUnavailable;
         loggy.error(
-          'stored config for [$id] could not be opened (${reason.name})'
+          'stored config for [$storageId] could not be opened (${reason.name})'
           '${blobIsBad ? "; discarding" : "; keeping it, the key was unreadable"}',
         );
         if (blobIsBad) {
