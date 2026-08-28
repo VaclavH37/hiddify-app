@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/features/profile/model/config_slot.dart';
 import 'package:hiddify/features/profile/model/hub_reachability.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 
 String _config(List<String> servers) => jsonEncode({
   'outbounds': [
@@ -143,20 +144,40 @@ void main() {
   });
 
   group('primaryHubMoved', () {
-    test('detects a changed fingerprint', () {
-      expect(primaryHubMoved('aaaa', 'bbbb'), isTrue);
+    bool moved(String? stored, String? current, {HubTier from = HubTier.primary, HubTier to = HubTier.primary}) =>
+        primaryHubMoved(storedDigest: stored, currentDigest: current, storedTier: from, currentTier: to);
+
+    test('detects a changed fingerprint at a stable tier', () {
+      expect(moved('aaaa', 'bbbb'), isTrue);
     });
 
     test('an unchanged fingerprint is not a move', () {
-      expect(primaryHubMoved('aaaa', 'aaaa'), isFalse);
+      expect(moved('aaaa', 'aaaa'), isFalse);
     });
 
     test('a missing fingerprint on either side is no opinion, never a move', () {
       // A parse failure is not evidence that the hub moved, and acting on one
       // would bounce the client back to a hub that is still blocked.
-      expect(primaryHubMoved(null, 'bbbb'), isFalse);
-      expect(primaryHubMoved('aaaa', null), isFalse);
-      expect(primaryHubMoved(null, null), isFalse);
+      expect(moved(null, 'bbbb'), isFalse);
+      expect(moved('aaaa', null), isFalse);
+      expect(moved(null, null), isFalse);
+    });
+
+    test('a QUOTA-TIER FLIP is never read as a hub rotation', () {
+      // The case the middleware team caught. Crossing the rolling allowance
+      // moves the ordinary response onto the standby hub, changing the same
+      // address for a reason that has nothing to do with reachability. Reading
+      // it as a rotation returns the client to a still-blocked primary, spends
+      // one of hubFlapCap, and emits a false `recovered` — corrupting the only
+      // signal the middleware has for a lifted block.
+      expect(moved('aaaa', 'bbbb', to: HubTier.standby), isFalse);
+      expect(moved('aaaa', 'bbbb', from: HubTier.standby), isFalse);
+    });
+
+    test('a rotation is still detected once the tier is stable again', () {
+      // The guard defers the question rather than answering it wrongly; a later
+      // observation at a matching tier resolves it.
+      expect(moved('aaaa', 'bbbb', from: HubTier.standby, to: HubTier.standby), isTrue);
     });
   });
 }

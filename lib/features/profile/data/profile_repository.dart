@@ -315,6 +315,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
       _profileParser
           .fetchStandbyConfig(rp: profile, cancelToken: cancelToken)
           .flatMap((content) => _validate(content, profile.profileOverride))
+          .flatMap((normalised) => _rejectIfSameHubAsPrimary(profile.id, normalised))
           .flatMap(
             (normalised) => TaskEither.tryCatch(() async {
               // Sealed under the SLOT's storage id, not the profile id — that
@@ -331,6 +332,35 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
               return unit;
             }, _mapCipherFailure),
           );
+
+  /// Refuses a standby body that dials the SAME hub as the stored primary.
+  ///
+  /// The tier header says a response *is* the standby projection; this checks
+  /// that it actually dials somewhere else. Those are different claims, and the
+  /// gap between them is the worst failure this design has — a primary config
+  /// sealed into the standby slot makes a later failover swap primary for
+  /// primary, restart the core and change nothing, while every log line says it
+  /// worked.
+  ///
+  /// The middleware guards its own side (one hub address per body, and it fails
+  /// closed rather than choosing between two of a tier), so this is defence in
+  /// depth against a middleware bug or a misconfiguration, not a substitute for
+  /// either. It costs one decrypt of a file we already hold and a hash of a body
+  /// already in memory.
+  ///
+  /// A digest that cannot be computed on either side is NO OPINION, never a
+  /// match: an unreadable stored primary must not stop us caching a perfectly
+  /// good standby config.
+  TaskEither<ProfileFailure, String> _rejectIfSameHubAsPrimary(String profileId, String standbyJson) =>
+      TaskEither(() async {
+    final standby = hubDigest(standbyJson);
+    if (standby == null) return right(standbyJson);
+    final primaryJson = (await readConfig(profileId).run()).toNullable();
+    if (primaryJson == null) return right(standbyJson);
+    if (standby != hubDigest(primaryJson)) return right(standbyJson);
+    loggy.error('standby fetch returned the same hub as the primary config; refusing to cache it');
+    return left(const ProfileFailure.invalidConfig('the standby projection dials the primary hub'));
+  });
 
   @override
   TaskEither<ProfileFailure, String> readConfig(String id, {ConfigSlot slot = ConfigSlot.primary}) =>

@@ -18,7 +18,7 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 | Check | Command | Baseline |
 |---|---|---|
 | Analyzer | `flutter analyze` | **0 errors · 26 warnings · 264 infos** (290 issues) |
-| Tests | `flutter test` | **428 passing**, 0 failing |
+| Tests | `flutter test` | **430 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
 fatal by default. Compare the counts, not the exit code.
@@ -60,7 +60,9 @@ the baseline; do not "fix" them during a catch-up slice.
   replaced them — the config-slot storage contract and freshness policy, the
   failover guards, lease, retry floor, flap-cap pruning and hub fingerprint, and
   the standby fetch's wire contract including its rejection of a primary-tier
-  answer. 424 → 428 adds the post-revert failover backoff.
+  answer. 424 → 428 adds the post-revert failover backoff, and
+  428 → 430 the tier-aware rotation test that stops a quota-tier flip reading
+  as a hub rotation.
 - The two extra infos are `config_slot_test.dart` and
   `hub_reachability_test.dart` each importing `flutter_test`, which every test
   file in the repo does. The lib changes are analyzer-neutral.

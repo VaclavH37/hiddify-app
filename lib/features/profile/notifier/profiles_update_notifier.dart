@@ -12,6 +12,7 @@ import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/model/config_slot.dart';
 import 'package:hiddify/features/profile/model/hub_reachability.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -283,10 +284,12 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     ]);
     if (digest != null) {
       await prefs.setString(hubPrimaryDigestKey, digest);
+      await prefs.setString(hubPrimaryTierKey, (await _currentTier(profile.id)).name);
     } else {
       // No fingerprint means the early-return path has nothing to compare, so
       // this leg will run to its full lease. Worth a line when someone asks why.
       await prefs.remove(hubPrimaryDigestKey);
+      await prefs.remove(hubPrimaryTierKey);
       loggy.info("could not fingerprint the primary config; this standby leg will run to its lease");
     }
 
@@ -324,7 +327,12 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         .toNullable();
     final current = currentConfig == null ? null : hubDigest(currentConfig);
 
-    if (primaryHubMoved(stored, current)) {
+    if (primaryHubMoved(
+      storedDigest: stored,
+      currentDigest: current,
+      storedTier: hubTierOf(prefs.getString(hubPrimaryTierKey)),
+      currentTier: await _currentTier(profile.id),
+    )) {
       loggy.info("the primary hub's address changed while we were on standby; returning to it");
       await _returnToPrimary(profile);
       return;
@@ -345,6 +353,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     await prefs.remove(activeConfigSlotKey);
     await prefs.remove(hubStandbySinceKey);
     await prefs.remove(hubPrimaryDigestKey);
+    await prefs.remove(hubPrimaryTierKey);
     if (!restart) return;
     if (!await ref.read(connectionNotifierProvider.notifier).restartForSlot(profile)) return;
     // Only worth telling the middleware once we know the primary works again.
@@ -364,6 +373,21 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         .upsertRemote(profile.url, signal: signal)
         .run();
     if (result.isLeft()) loggy.info("could not deliver the [${signal.wireValue}] report; it will be re-sent");
+  }
+
+  /// The quota tier as of RIGHT NOW, read from the row rather than from the
+  /// profile this cycle started with.
+  ///
+  /// That distinction is load-bearing. The `profile` threaded through this
+  /// notifier is the snapshot taken before `upsertRemote` ran, so its headers
+  /// are one refresh behind — while the config file the fingerprint is taken
+  /// from has just been rewritten. Comparing a stale tier against a fresh
+  /// digest would report "tier unchanged" on precisely the cycle a quota move
+  /// changed the address, which is the one cycle the guard in
+  /// [primaryHubMoved] exists to catch.
+  Future<HubTier> _currentTier(String profileId) async {
+    final fresh = (await ref.read(profileRepositoryProvider).requireValue.getById(profileId).run()).toNullable();
+    return hubTierOf(subscriptionHeader(fresh, 'subscription-hub-tier'));
   }
 
   /// One tunnelled fetch: does the hub carry traffic?

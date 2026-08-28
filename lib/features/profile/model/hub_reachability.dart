@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:hiddify/features/profile/model/config_slot.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 
 /// How long to wait before the confirming probe.
 ///
@@ -77,6 +78,12 @@ const hubStandbySinceKey = 'hub_standby_since';
 /// Fingerprint of the primary config in force when we failed away from it, so
 /// a later refresh can notice the hub moved. See [hubDigest].
 const hubPrimaryDigestKey = 'hub_primary_digest';
+
+/// The quota tier in force when [hubPrimaryDigestKey] was taken.
+///
+/// Without it the fingerprint cannot tell a hub rotation from a quota move —
+/// see [primaryHubMoved].
+const hubPrimaryTierKey = 'hub_primary_tier';
 
 /// ISO-8601 instants of recent slot flips, for the flap cap.
 const hubFlipsKey = 'hub_slot_flips';
@@ -200,10 +207,30 @@ String? hubDigest(String configJson) {
 /// Whether the primary hub has moved since we failed away from it.
 ///
 /// The operator rotates a hub's address when it is blocked, so a changed
-/// address is the block being answered — and the fastest signal the client
-/// gets that the primary is worth retrying. Requires BOTH digests: absent
-/// either way means no opinion, never "changed".
-bool primaryHubMoved(String? storedDigest, String? currentDigest) {
+/// address is the block being answered — and the fastest signal the client gets
+/// that the primary is worth retrying.
+///
+/// **The tier check is what makes the address change mean anything.** Quota
+/// tiering moves a subscriber's ORDINARY response onto the standby hub when
+/// their allowance runs out, which changes the same address for a reason that
+/// has nothing to do with reachability. Without this guard, a subscriber who is
+/// on a reachability failover and then exhausts their allowance would be read
+/// as "the block was answered", returned to a primary hub that is still
+/// blocked, and — because the return path probes and reports — would emit a
+/// false `recovered`, corrupting the only signal the middleware has for a
+/// lifted block. Each such flip also spends one of [hubFlapCap].
+///
+/// Requires both digests: absent either way is no opinion, never "changed". A
+/// tier that changed is likewise no opinion — the address moved for our own
+/// reasons, and the next observation at a stable tier will answer the question
+/// properly.
+bool primaryHubMoved({
+  required String? storedDigest,
+  required String? currentDigest,
+  required HubTier storedTier,
+  required HubTier currentTier,
+}) {
   if (storedDigest == null || currentDigest == null) return false;
+  if (storedTier != currentTier) return false;
   return storedDigest != currentDigest;
 }
