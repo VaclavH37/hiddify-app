@@ -31,14 +31,18 @@ abstract interface class ProfileRepository {
     ProfilesSort sort = ProfilesSort.lastUpdate,
     SortMode sortMode = SortMode.ascending,
   });
-  /// [signal] rides along as a reachability report to the middleware. It only
-  /// affects which hub the response carries; the refresh is otherwise identical.
+  /// [signal] and [counters] ride along as reachability telemetry. Neither
+  /// changes what the middleware serves; the refresh is otherwise identical.
+  ///
+  /// The caller owns the counter window — it must clear what it sent only after
+  /// this succeeds, so a failed delivery is re-sent rather than lost.
   TaskEither<ProfileFailure, Unit> upsertRemote(
     String url, {
     UserOverride? userOverride,
     String? sourceToken,
     CancelToken? cancelToken,
     HubSignal? signal,
+    HubCounters? counters,
   });
   TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride});
   TaskEither<ProfileFailure, Unit> offlineUpdate(ProfileEntity nProfile, String nContent);
@@ -184,6 +188,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     String? sourceToken,
     CancelToken? cancelToken,
     HubSignal? signal,
+    HubCounters? counters,
   }) =>
       TaskEither.tryCatch(
         () async => await _profileDataSource.getByUrl(url).then((profEntry) => profEntry?.toEntity()),
@@ -201,6 +206,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
                 rp: profEntity,
                 cancelToken: cancelToken,
                 signal: signal,
+                counters: counters,
               )
               .flatMap((parsed) => _sealAndPersist(id: id, parsed: parsed, isUpdate: true));
         }

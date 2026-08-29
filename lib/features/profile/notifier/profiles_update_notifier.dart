@@ -1,4 +1,5 @@
 import 'package:dartx/dartx.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/db/db.dart';
 import 'package:hiddify/core/http_client/http_client_provider.dart';
@@ -102,7 +103,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         final updateInterval = profile.options?.updateInterval;
         if (force || updateInterval != null && updateInterval <= DateTime.now().difference(profile.lastUpdate)) {
           final t = ref.read(translationsProvider).requireValue;
-          final result = await ref.read(profileRepositoryProvider).requireValue.upsertRemote(profile.url).run();
+          final result = await _refreshCarryingCounters(profile.url);
           await result.fold(
             (l) async {
               if (l is ProfileSubscriptionExpiredFailure) {
@@ -219,6 +220,20 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       return;
     }
 
+    // Nothing to observe, and nowhere to go. When a subscriber crosses their
+    // rolling allowance the middleware serves the standby hub in the ORDINARY
+    // response, so the config in the primary slot already dials it. Probing
+    // here would measure the standby hub while counting the result as a primary
+    // observation, and a failover would swap that hub for the identical one in
+    // the standby slot.
+    //
+    // Read fresh from the row: the profile this cycle started with predates the
+    // refresh that may have just changed the tier.
+    if (await _currentTier(profile.id) != HubTier.primary) {
+      loggy.debug("middleware is serving the standby tier; no primary hub to observe this cycle");
+      return;
+    }
+
     // Checked BEFORE probing, not just before switching: an offline device
     // would otherwise still burn the two probes and the confirmation delay on
     // every cycle to reach the same conclusion.
@@ -228,6 +243,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     }
 
     if (await _tunnelCarriesTraffic(profile.url)) {
+      await _recordCheck(failed: false);
       // Whatever was wrong has cleared; a later failure should get a fresh
       // attempt rather than inherit an old backoff.
       await prefs.remove(hubOfflineBackoffKey);
@@ -239,10 +255,16 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     loggy.info("tunnelled probe failed; confirming in ${hubConfirmDelay.inSeconds}s");
     await Future<void>.delayed(hubConfirmDelay);
     if (await _tunnelCarriesTraffic(profile.url)) {
+      // ONE check, not two. The pair of probes reached a single verdict, and it
+      // was "carrying" — counting the failed first probe would make a flaky
+      // request look like a hub problem, which is what the confirmation exists
+      // to distinguish.
+      await _recordCheck(failed: false);
       loggy.info("confirming probe succeeded; not failing over");
       return;
     }
 
+    await _recordCheck(failed: true);
     await _failOverToStandby(profile);
   }
 
@@ -255,17 +277,25 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     final flips = recentFlips(prefs.getStringList(hubFlipsKey), now);
 
     final hasCache = (await repository.readConfig(profile.id, slot: ConfigSlot.standby).run()).isRight();
-    // Re-read the slot rather than assuming primary: the confirmation delay
-    // above is 30s of wall clock during which anything may have moved it.
+    // Re-read both rather than assuming: the confirmation delay above is 30s of
+    // wall clock, during which a user connect may have moved the slot and a
+    // refresh may have moved the tier.
     final slot = configSlotOf(prefs.getString(activeConfigSlotKey));
-    if (!failoverAllowed(slot: slot, hasStandbyCache: hasCache, recentFlipCount: flips.length)) {
+    final servedTier = await _currentTier(profile.id);
+    if (!failoverAllowed(
+      slot: slot,
+      servedTier: servedTier,
+      hasStandbyCache: hasCache,
+      recentFlipCount: flips.length,
+    )) {
       // Staying put is the right answer here. A client with no usable standby
       // config is better off on a dead primary it can still refresh from than
       // restarted onto nothing, and one that has already flapped its way
       // through the cap is telling us the switching is the problem.
       loggy.warning(
         "primary hub is not carrying traffic but failover is not available "
-        "(slot: ${slot.name}, standby cached: $hasCache, flips in window: ${flips.length})",
+        "(slot: ${slot.name}, served tier: ${servedTier.name}, standby cached: $hasCache, "
+        "flips in window: ${flips.length})",
       );
       return;
     }
@@ -356,8 +386,13 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     await prefs.remove(hubPrimaryTierKey);
     if (!restart) return;
     if (!await ref.read(connectionNotifierProvider.notifier).restartForSlot(profile)) return;
+    // A verdict about the primary hub like any other, and one of the few this
+    // client gets while a block persists: every other check is suppressed on a
+    // standby leg.
+    final carrying = await _tunnelCarriesTraffic(profile.url);
+    await _recordCheck(failed: !carrying);
     // Only worth telling the middleware once we know the primary works again.
-    if (await _tunnelCarriesTraffic(profile.url)) await _report(profile, HubSignal.recovered);
+    if (carrying) await _report(profile, HubSignal.recovered);
   }
 
   /// Tells the middleware what we observed, over the tunnel that works.
@@ -367,11 +402,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   /// single client failing to deliver one costs nothing and must never be
   /// allowed to affect what this client does next.
   Future<void> _report(RemoteProfileEntity profile, HubSignal signal) async {
-    final result = await ref
-        .read(profileRepositoryProvider)
-        .requireValue
-        .upsertRemote(profile.url, signal: signal)
-        .run();
+    final result = await _refreshCarryingCounters(profile.url, signal: signal);
     if (result.isLeft()) loggy.info("could not deliver the [${signal.wireValue}] report; it will be re-sent");
   }
 
@@ -388,6 +419,51 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   Future<HubTier> _currentTier(String profileId) async {
     final fresh = (await ref.read(profileRepositoryProvider).requireValue.getById(profileId).run()).toNullable();
     return hubTierOf(subscriptionHeader(fresh, 'subscription-hub-tier'));
+  }
+
+  /// Records one verdict about the primary hub.
+  ///
+  /// Counts VERDICTS, not HTTP probes. A confirmed detection makes two probes
+  /// and reaches one conclusion; counting probes would halve the failure rate
+  /// of a fully blocked client and make the number impossible to reason about
+  /// without knowing the ladder's internals.
+  ///
+  /// Deliberately not called for the probe taken immediately after switching to
+  /// standby: that one tests the OTHER hub, and belongs in neither the
+  /// numerator nor the denominator.
+  Future<void> _recordCheck({required bool failed}) async {
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    await prefs.setInt(hubChecksKey, bumpCounter(prefs.getInt(hubChecksKey) ?? 0));
+    if (failed) {
+      await prefs.setInt(hubFailuresKey, bumpCounter(prefs.getInt(hubFailuresKey) ?? 0));
+    }
+  }
+
+  /// A subscription refresh that also delivers the observation window.
+  ///
+  /// Snapshot, send, and subtract only what was sent — and only on success.
+  ///
+  /// Both halves of that matter. Subtracting rather than zeroing preserves a
+  /// check that landed while the request was in flight. Clearing only on
+  /// success is the entire reason these are counters: on iOS and desktop a
+  /// blocked hub fails the refresh itself, so the window stays open across
+  /// however many cycles it takes for a failover to restore a working tunnel,
+  /// and the backlog then goes out in one report.
+  Future<Either<ProfileFailure, Unit>> _refreshCarryingCounters(String url, {HubSignal? signal}) async {
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    final sent = (checks: prefs.getInt(hubChecksKey) ?? 0, failures: prefs.getInt(hubFailuresKey) ?? 0);
+
+    final result = await ref
+        .read(profileRepositoryProvider)
+        .requireValue
+        .upsertRemote(url, signal: signal, counters: sent)
+        .run();
+
+    if (result.isRight() && sent.checks > 0) {
+      await prefs.setInt(hubChecksKey, settleCounter(prefs.getInt(hubChecksKey) ?? 0, sent.checks));
+      await prefs.setInt(hubFailuresKey, settleCounter(prefs.getInt(hubFailuresKey) ?? 0, sent.failures));
+    }
+    return result;
   }
 
   /// One tunnelled fetch: does the hub carry traffic?

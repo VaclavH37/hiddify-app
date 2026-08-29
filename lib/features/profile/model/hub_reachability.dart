@@ -94,6 +94,58 @@ const hubFlipsKey = 'hub_slot_flips';
 /// middleware's allow-list matching is case-sensitive.
 const hubSignalHeader = 'x-rayn-hub-signal';
 
+/// Request headers carrying the reachability failure RATE.
+///
+/// The edge markers below say a block started or ended; these say how much of
+/// what the client observed was bad, which is what makes one cohort's trouble
+/// comparable with another's.
+const hubChecksHeader = 'x-rayn-hub-checks';
+const hubFailuresHeader = 'x-rayn-hub-failures';
+
+/// The undelivered observation window.
+///
+/// Counters rather than a verdict per request, and that is the whole point: on
+/// iOS and desktop a blocked hub fails the refresh itself, so observations
+/// accumulate with no way to report them until a failover restores a working
+/// tunnel. A per-request verdict would simply be lost. These survive and go out
+/// as a backlog.
+const hubChecksKey = 'hub_checks';
+const hubFailuresKey = 'hub_failures';
+
+/// Ceiling on either counter.
+///
+/// Deliberately lossy at the top: a saturated window under-reports rather than
+/// overflowing into nonsense. At roughly one check per refresh interval this is
+/// about ten days of undelivered observation, so it binds only for a device
+/// that has been unable to reach the middleware for that long — by which point
+/// the exact figure has stopped mattering.
+const hubCounterCap = 255;
+
+/// One observation window, as sent.
+typedef HubCounters = ({int checks, int failures});
+
+/// Saturating increment.
+///
+/// A negative stored value means a corrupt preference, not a real count, so it
+/// restarts from zero rather than being trusted or propagated.
+int bumpCounter(int current, {int by = 1}) {
+  final base = current < 0 ? 0 : current;
+  final next = base + by;
+  return next > hubCounterCap ? hubCounterCap : next;
+}
+
+/// What remains of a counter after a delivery of [sent].
+///
+/// Subtracts rather than zeroing, because a check can land between the request
+/// being built and the response arriving — zeroing would discard an observation
+/// that was never reported. Floors at zero, so a `sent` larger than the current
+/// value (a counter saturated and since settled, or a corrupt preference)
+/// cannot drive it negative.
+int settleCounter(int current, int sent) {
+  final remaining = (current < 0 ? 0 : current) - (sent < 0 ? 0 : sent);
+  return remaining < 0 ? 0 : remaining;
+}
+
 /// What the client is telling the middleware about the primary hub.
 ///
 /// Purely informational since failover became local. The client has already
@@ -118,12 +170,27 @@ enum HubSignal {
 /// Whether a confirmed detection may actually move this client to standby.
 ///
 /// Detection and permission are separate on purpose. The probe result says the
-/// hub is dead; this says whether failing over would help. Both must hold, and
+/// hub is dead; this says whether failing over would help. All must hold, and
 /// when this refuses the right outcome is to stay put and log — a client with
 /// no usable standby config is better off on a dead primary it can still
 /// refresh from than restarted onto nothing.
-bool failoverAllowed({required ConfigSlot slot, required bool hasStandbyCache, required int recentFlipCount}) {
+///
+/// [servedTier] is the tier the MIDDLEWARE last served, which is not the same
+/// question as [slot]. `slot` says whether *we* have forced the standby config;
+/// `servedTier` says whether the config the middleware put in the primary slot
+/// already dials the standby hub because this subscriber is over their quota
+/// allowance. In that state the active config and the precached one dial the
+/// SAME hub, so a failover would restart the core onto an identical
+/// destination — two restarts and a flap-cap entry for a swap that changes
+/// nothing.
+bool failoverAllowed({
+  required ConfigSlot slot,
+  required HubTier servedTier,
+  required bool hasStandbyCache,
+  required int recentFlipCount,
+}) {
   if (slot != ConfigSlot.primary) return false;
+  if (servedTier != HubTier.primary) return false;
   if (!hasStandbyCache) return false;
   return recentFlipCount < hubFlapCap;
 }

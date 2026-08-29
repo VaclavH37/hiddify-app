@@ -15,23 +15,43 @@ void main() {
   final now = DateTime(2026, 8, 28, 12);
 
   group('failoverAllowed', () {
-    test('allows a failover from the primary slot with a cache and no flapping', () {
-      expect(failoverAllowed(slot: ConfigSlot.primary, hasStandbyCache: true, recentFlipCount: 0), isTrue);
+    bool allowed({
+      ConfigSlot slot = ConfigSlot.primary,
+      HubTier servedTier = HubTier.primary,
+      bool hasStandbyCache = true,
+      int recentFlipCount = 0,
+    }) => failoverAllowed(
+      slot: slot,
+      servedTier: servedTier,
+      hasStandbyCache: hasStandbyCache,
+      recentFlipCount: recentFlipCount,
+    );
+
+    test('allows a failover from the primary slot on the primary tier with a cache', () {
+      expect(allowed(), isTrue);
     });
 
     test('refuses when there is no standby cache', () {
       // Better a dead primary the client can still refresh from than a restart
       // onto nothing.
-      expect(failoverAllowed(slot: ConfigSlot.primary, hasStandbyCache: false, recentFlipCount: 0), isFalse);
+      expect(allowed(hasStandbyCache: false), isFalse);
     });
 
-    test('refuses when already on standby', () {
-      expect(failoverAllowed(slot: ConfigSlot.standby, hasStandbyCache: true, recentFlipCount: 0), isFalse);
+    test('refuses when already on a forced standby leg', () {
+      expect(allowed(slot: ConfigSlot.standby), isFalse);
+    });
+
+    test('refuses when the MIDDLEWARE is already serving the standby hub', () {
+      // The quota axis, not ours. A subscriber over their allowance has the
+      // standby hub in their primary slot, so the active config and the
+      // precached one dial the same place — a failover would restart the core
+      // onto an identical destination and spend a flap-cap entry for nothing.
+      expect(allowed(servedTier: HubTier.standby), isFalse);
     });
 
     test('refuses at the flap cap, and allows just below it', () {
-      expect(failoverAllowed(slot: ConfigSlot.primary, hasStandbyCache: true, recentFlipCount: hubFlapCap - 1), isTrue);
-      expect(failoverAllowed(slot: ConfigSlot.primary, hasStandbyCache: true, recentFlipCount: hubFlapCap), isFalse);
+      expect(allowed(recentFlipCount: hubFlapCap - 1), isTrue);
+      expect(allowed(recentFlipCount: hubFlapCap), isFalse);
     });
   });
 
@@ -110,6 +130,41 @@ void main() {
 
     test('handles an absent list', () {
       expect(recentFlips(null, now), isEmpty);
+    });
+  });
+
+  group('bumpCounter', () {
+    test('increments from zero and from a running value', () {
+      expect(bumpCounter(0), 1);
+      expect(bumpCounter(7), 8);
+    });
+
+    test('saturates at the cap rather than overflowing', () {
+      // A saturated window under-reports; it must never wrap or grow unbounded.
+      expect(bumpCounter(hubCounterCap), hubCounterCap);
+      expect(bumpCounter(hubCounterCap - 1), hubCounterCap);
+    });
+
+    test('treats a negative stored value as corruption and restarts from zero', () {
+      expect(bumpCounter(-4), 1);
+    });
+  });
+
+  group('settleCounter', () {
+    test('subtracts what was delivered', () {
+      expect(settleCounter(3, 3), 0);
+    });
+
+    test('PRESERVES checks that landed while the request was in flight', () {
+      // The reason this subtracts instead of zeroing: two checks arrived after
+      // the request was built, and they have not been reported yet.
+      expect(settleCounter(5, 3), 2);
+    });
+
+    test('floors at zero rather than going negative', () {
+      expect(settleCounter(2, 9), 0);
+      expect(settleCounter(-1, 0), 0);
+      expect(settleCounter(3, -1), 3);
     });
   });
 

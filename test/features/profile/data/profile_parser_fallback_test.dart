@@ -174,6 +174,99 @@ void main() {
     });
   });
 
+  group('failure-rate counters', () {
+    late ProviderContainer container;
+    late Ref ref;
+
+    setUp(() async {
+      container = ProviderContainer(overrides: [appInfoProvider.overrideWith(_FakeAppInfo.new)]);
+      ref = container.read(_dummyRefProvider);
+      await container.read(appInfoProvider.future);
+    });
+
+    tearDown(() => container.dispose());
+
+    RemoteProfileEntity entity() => RemoteProfileEntity(
+      id: 'test-id',
+      active: true,
+      name: 'test',
+      url: 'https://primary.example.com/sub',
+      lastUpdate: DateTime(2020),
+    );
+
+    test('sends both counters when there is a window to report', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser.updateRemote(rp: entity(), counters: (checks: 7, failures: 3)).run();
+
+      expect(fake.sentHeaders.single?[hubChecksHeader], '7');
+      expect(fake.sentHeaders.single?[hubFailuresHeader], '3');
+    });
+
+    test('sends NEITHER counter when no checks were made', () async {
+      // A window of zero observations is not a measurement; sending it would
+      // put a meaningless denominator into the middleware's aggregation.
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser.updateRemote(rp: entity(), counters: (checks: 0, failures: 0)).run();
+
+      expect(fake.sentHeaders.single?[hubChecksHeader], isNull);
+      expect(fake.sentHeaders.single?[hubFailuresHeader], isNull);
+    });
+
+    test('reports a window with no failures, which is the healthy case', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser.updateRemote(rp: entity(), counters: (checks: 4, failures: 0)).run();
+
+      expect(fake.sentHeaders.single?[hubChecksHeader], '4');
+      expect(fake.sentHeaders.single?[hubFailuresHeader], '0');
+    });
+
+    test('rides alongside a signal without displacing it', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser
+          .updateRemote(rp: entity(), signal: HubSignal.unreachable, counters: (checks: 2, failures: 2))
+          .run();
+
+      expect(fake.sentHeaders.single?[hubSignalHeader], 'unreachable');
+      expect(fake.sentHeaders.single?[hubChecksHeader], '2');
+    });
+
+    test('an ordinary refresh with no counters sends no counter headers', () async {
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser.updateRemote(rp: entity()).run();
+
+      expect(fake.sentHeaders.single, isNull);
+    });
+
+    test('the window survives a fallback-host failover and is sent on both attempts', () async {
+      // The delivery is only settled on success, so the backlog must still be
+      // attached when the primary middleware host fails and we try the backup.
+      final fake = _FakeHttpClient(steps: [_FakeStep.networkError(), _FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      await parser
+          .updateRemote(
+            rp: entity().copyWith(
+              fallbackUrl: 'https://fallback.example.com/sub',
+              fallbackSourceToken: _raynLink('https://fallback.example.com/sub'),
+            ),
+            counters: (checks: 9, failures: 5),
+          )
+          .run();
+
+      expect(fake.sentHeaders.every((h) => h?[hubChecksHeader] == '9'), isTrue);
+    });
+  });
+
   group('fetchStandbyConfig', () {
     late ProviderContainer container;
     late Ref ref;

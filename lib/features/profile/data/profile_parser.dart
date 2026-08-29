@@ -185,7 +185,8 @@ class ProfileParser {
     required RemoteProfileEntity rp,
     CancelToken? cancelToken,
     HubSignal? signal,
-  }) => _downloadWithFailover(rp, cancelToken, signal: signal).flatMap((resolved) {
+    HubCounters? counters,
+  }) => _downloadWithFailover(rp, cancelToken, signal: signal, counters: counters).flatMap((resolved) {
     var rotated = rp;
     // `_resolveDownload` already followed any `new-url`; persist the resulting
     // token when it changed.
@@ -236,6 +237,7 @@ class ProfileParser {
     CancelToken? cancelToken, {
     HubSignal? signal,
     HubTier? requestTier,
+    HubCounters? counters,
   }) => TaskEither.tryCatch(() async {
     // if (url.startsWith("http://"))
     //   throw const ProfileFailure.invalidUrl('HTTP is not supported. Please use HTTPS for secure connection.');
@@ -246,7 +248,7 @@ class ProfileParser {
           url.trim(),
           cancelToken: cancelToken,
           userAgent: _ref.read(appInfoProvider).requireValue.subscriptionUserAgent,
-          extraHeaders: _requestHeaders(signal: signal, requestTier: requestTier),
+          extraHeaders: _requestHeaders(signal: signal, requestTier: requestTier, counters: counters),
         )
         .catchError((err) {
           if (CancelToken.isCancel(err as DioException)) {
@@ -274,10 +276,21 @@ class ProfileParser {
   /// ordinary refresh is byte-for-byte the request it has always been — every
   /// header the client adds is one more thing that distinguishes this app's
   /// traffic from anything else's.
-  static Map<String, String>? _requestHeaders({HubSignal? signal, HubTier? requestTier}) {
+  static Map<String, String>? _requestHeaders({
+    HubSignal? signal,
+    HubTier? requestTier,
+    HubCounters? counters,
+  }) {
     final headers = <String, String>{
       if (signal != null) hubSignalHeader: signal.wireValue,
       if (requestTier != null) hubTierRequestHeader: requestTier.name,
+      // Both or neither, and only with something to say. A window of zero
+      // observations is not a measurement, and sending it would put a
+      // meaningless denominator into the middleware's aggregation.
+      if (counters != null && counters.checks > 0) ...{
+        hubChecksHeader: '${counters.checks}',
+        hubFailuresHeader: '${counters.failures}',
+      },
     };
     return headers.isEmpty ? null : headers;
   }
@@ -326,7 +339,14 @@ class ProfileParser {
     int depth = 0,
     HubSignal? signal,
     HubTier? requestTier,
-  }) => _downloadProfile(url, cancelToken, signal: signal, requestTier: requestTier).flatMap((downloaded) {
+    HubCounters? counters,
+  }) => _downloadProfile(
+        url,
+        cancelToken,
+        signal: signal,
+        requestTier: requestTier,
+        counters: counters,
+      ).flatMap((downloaded) {
     final rotation = extractRotation(downloaded.headers);
     // Compare the DECRYPTED url, not the cryptolink: the envelope is randomised,
     // so the same URL re-encrypts to a different string on every response and a
@@ -342,6 +362,7 @@ class ProfileParser {
         depth: depth + 1,
         signal: signal,
         requestTier: requestTier,
+        counters: counters,
       );
     }
     if (isExpiredEnvelope(downloaded.content)) {
@@ -368,6 +389,7 @@ class ProfileParser {
     CancelToken? cancelToken, {
     HubSignal? signal,
     HubTier? requestTier,
+    HubCounters? counters,
   }) => TaskEither(() async {
     final primary = await _resolveDownload(
       rp.url,
@@ -375,6 +397,7 @@ class ProfileParser {
       cancelToken,
       signal: signal,
       requestTier: requestTier,
+      counters: counters,
     ).run();
     final primaryFailure = primary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (primaryFailure == null) return primary;
@@ -392,6 +415,7 @@ class ProfileParser {
       cancelToken,
       signal: signal,
       requestTier: requestTier,
+      counters: counters,
     ).run();
     final secondaryFailure = secondary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (secondaryFailure == null) {
