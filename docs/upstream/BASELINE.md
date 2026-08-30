@@ -17,7 +17,7 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 
 | Check | Command | Baseline |
 |---|---|---|
-| Analyzer | `flutter analyze` | **0 errors · 26 warnings · 264 infos** (290 issues) |
+| Analyzer | `flutter analyze` | **0 errors · 25 warnings · 264 infos** (289 issues) |
 | Tests | `flutter test` | **443 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
@@ -65,6 +65,11 @@ the baseline; do not "fix" them during a catch-up slice.
   as a hub rotation, and 430 → 442 the reachability failure-rate counters — six
   for the saturating/settling arithmetic, six for the header contract, and one
   for refusing a failover while the middleware is already serving standby.
+- 26 → 25 warnings when `logger_controller.dart` dropped a `debugMode && false`
+  that pinned every build to `LogLevel.info`. It was the `dead_code` warning at
+  that line, and it was also suppressing every `loggy.debug` call in the app —
+  so a diagnostics build could export logs that omitted the reasoning it was
+  built to capture. Test count unchanged; no test asserted the level.
 - The two extra infos are `config_slot_test.dart` and
   `hub_reachability_test.dart` each importing `flutter_test`, which every test
   file in the repo does. The lib changes are analyzer-neutral.

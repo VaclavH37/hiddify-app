@@ -26,8 +26,22 @@ class LoggerController extends LoggyPrinter with InfraLogger {
     Loggy.initLoggy(logPrinter: _instance);
   }
 
+  /// [debugMode] is `Constants.diagnosticsBuild` — one gate covering the log
+  /// level, the log file and the export button, so a build can never offer to
+  /// share logs it was not writing.
+  ///
+  /// A diagnostics build logs everything. It used to read `debugMode && false`,
+  /// which pinned every build to `info` and silently discarded every
+  /// `loggy.debug` call in the app — including the ones that explain what the
+  /// hub-reachability ladder decided and why, which are exactly what a
+  /// diagnostics build exists to capture.
+  ///
+  /// Safe because nothing sensitive is logged at debug level: preference writes
+  /// carry only toggles and counters, subscription failures are reported by
+  /// reason rather than by value, and hosts are logged without their paths or
+  /// tokens. Keep it that way — this level now reaches a share sheet.
   static Future<void> postInit(bool debugMode) async {
-    final logLevel = debugMode && false ? LogLevel.all : LogLevel.info;
+    final logLevel = debugMode ? LogLevel.all : LogLevel.info;
     final logToFile = debugMode || (!Platform.isAndroid && !Platform.isIOS);
 
     if (!logToFile || kIsWeb) _instance.removePrinter("app");
