@@ -1,6 +1,21 @@
 targets:
   $default:
     builders:
+      # Scoped to the three files that actually use dart_mappable. Left
+      # unscoped it analyses every library in the package — 2923 inputs to
+      # produce three mappers — and crashes on `analyzer` 7.6.0 evaluating
+      # constant asserts in Flutter framework code compiled for Dart 3.11
+      # ("Class 'ClassElementImpl2' has no instance getter 'isStatic'").
+      #
+      # The crash is in the ANALYSIS of unrelated files, not in generating a
+      # mapper, so narrowing the scope removes the whole class of failure and
+      # takes most of the codegen time with it. Add a path here if a new file
+      # gains an @MappableClass or @MappableEnum — nothing else will remind you.
+      dart_mappable_builder:
+        generate_for:
+          - lib/core/model/optional_range.dart
+          - lib/features/log/model/log_level.dart
+          - lib/features/proxy/model/ip_info_entity.dart
       json_serializable:
         options:
           explicit_to_json: true
