@@ -53,7 +53,15 @@ class DioHttpClient with InfraLogger {
       // cosmetic — see the class comment. Without it a retried subscription
       // fetch decodes as JSON and the import fails with a type-cast error.
       _dio[mode]!.interceptors.add(_ResponseTypeGuard());
-      // ONE retry, on every mode.
+      // ONE retry, on every mode. `retries` is the knob, NOT `retryDelays`.
+      //
+      // An earlier attempt at this passed only `retryDelays: [1s]` and left
+      // `retries` at its default of 3. RetryInterceptor gates on
+      // `attempt <= retries` and reuses the LAST delay when retries outnumber
+      // delays (retry_interceptor.dart:62-63, 151-153), so that changed four
+      // attempts spaced 1/2/3s into four attempts spaced 1/1/1s. Field logs
+      // measured the result precisely: 66.0s per host became 63.0s. Three
+      // seconds, all of it delay.
       //
       // `both` and `direct` used to get three, which costs 4 attempts x 15s
       // plus 1+2+3s of delay = 66s per host before a failure is reported. That
@@ -69,11 +77,14 @@ class DioHttpClient with InfraLogger {
       // lands the completed refresh on a restarting core and destroys it. One
       // retry still absorbs a single transient blip and halves the wait.
       //
+      // It shortens the ladder's own probes too: those run in `proxy` mode and
+      // were paying the same four attempts, ~43s each in the iOS capture.
+      //
       // NOT paired with skipping the fallback host: trying it is the only way
       // to tell a dead tunnel from a dead primary middleware host, and skipping
       // it would disable `fallback-url` in exactly the case it exists for.
       _dio[mode]!.interceptors.add(
-        RetryInterceptor(dio: _dio[mode]!, retryDelays: const [Duration(seconds: 1)]),
+        RetryInterceptor(dio: _dio[mode]!, retries: 1, retryDelays: const [Duration(seconds: 1)]),
       );
 
       _dio[mode]!.httpClientAdapter = IOHttpClientAdapter(
