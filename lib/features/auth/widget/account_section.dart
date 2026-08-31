@@ -45,7 +45,6 @@ class AccountSection extends ConsumerWidget {
     final provider = subscriptionHeader(remote, 'subscription-payment-provider');
     final billingPeriod = subscriptionHeader(remote, 'subscription-billing-period');
     final manageUrl = subscriptionHeader(remote, 'subscription-manage-url');
-    final hubTier = hubTierOf(subscriptionHeader(remote, 'subscription-hub-tier'));
     final isStoreManaged = isStoreManagedProvider(provider);
     // Store IAP is a mobile-only surface (the transition purchase, the
     // store-managed subscription centre, Restore). On desktop there is no
@@ -54,7 +53,7 @@ class AccountSection extends ConsumerWidget {
     final showStoreRows = !PlatformUtils.isDesktop;
 
     final subInfoLine = remote?.subInfo != null
-        ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod, hubTier: hubTier)
+        ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod)
         : null;
 
     return Padding(
@@ -172,39 +171,35 @@ class AccountSection extends ConsumerWidget {
   }
 }
 
+/// The account subtitle: when the plan ends, and how it renews.
+///
+/// Deliberately says nothing about usage. It used to lead with `used / total
+/// GB · Nd to reset` and, once the middleware moved the subscriber, a "Daily
+/// allowance used" line. Both were removed with the quota card: throttling is
+/// meant to be invisible to the subscriber, and a usage figure is how they
+/// would work out that it had happened.
 String _formatSubInfo(
   RemoteProfileEntity profile,
   Translations t, {
   String? provider,
   String? billingPeriod,
-  HubTier hubTier = HubTier.primary,
 }) {
   final sub = profile.subInfo!;
-  final consumed = sub.consumption.sizeGB();
-  final total = sub.total.sizeGB();
   final isStoreManaged = isStoreManagedProvider(provider);
 
-  // Line 1: used / total quota, plus days-until-reset when the backend
-  // supplied `subscription-refill-date` (hidden otherwise).
-  var line1 = '$consumed / $total GB';
-  final resetDays = sub.untilRefill?.inDays;
-  if (resetDays != null && resetDays >= 0) {
-    line1 = '$line1 · ${t.components.subscriptionInfo.quotaResetIn(days: resetDays)}';
-  }
-
-  // Line 2: absolute date, or "Never" for the infinite sentinel (mirrors the
+  // Line 1: absolute date, or "Never" for the infinite sentinel (mirrors the
   // > 365-day infinity convention). For an auto-renewing Google Play plan this
   // is the *renewal* date, so relabel accordingly.
   final expiryValue = sub.remaining.inDays > 365
       ? t.components.subscriptionInfo.planExpiryNever
       : sub.expire.formatDate();
-  final line2 = isStoreManaged
+  final line1 = isStoreManaged
       ? t.components.subscriptionInfo.renewDate(date: expiryValue)
       : t.components.subscriptionInfo.planExpiry(date: expiryValue);
 
-  final lines = [line1, if (hubTier == HubTier.standby) t.components.subscriptionInfo.standbyTitle, line2];
+  final lines = [line1];
 
-  // Line 3 (when the backend sent a billing period): e.g. "Annual · Auto-renew"
+  // Line 2 (when the backend sent a billing period): e.g. "Annual · Auto-renew"
   // — auto-renew for Google Play, manual for any other provider.
   if (billingPeriod != null) {
     final renewType = isStoreManaged
@@ -229,8 +224,4 @@ String _billingPeriodLabel(String raw, Translations t) {
     default:
       return raw;
   }
-}
-
-extension _SizeFmt on int {
-  String sizeGB() => (this / (1024 * 1024 * 1024)).toStringAsFixed(2);
 }

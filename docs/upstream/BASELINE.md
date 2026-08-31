@@ -17,8 +17,8 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 
 | Check | Command | Baseline |
 |---|---|---|
-| Analyzer | `flutter analyze` | **0 errors · 25 warnings · 264 infos** (289 issues) |
-| Tests | `flutter test` | **443 passing**, 0 failing |
+| Analyzer | `flutter analyze` | **0 errors · 25 warnings · 260 infos** (285 issues) |
+| Tests | `flutter test` | **437 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
 fatal by default. Compare the counts, not the exit code.
@@ -65,6 +65,13 @@ the baseline; do not "fix" them during a catch-up slice.
   as a hub rotation, and 430 → 442 the reachability failure-rate counters — six
   for the saturating/settling arithmetic, six for the header contract, and one
   for refusing a failover while the middleware is already serving standby.
+- 443 → 437 tests and 289 → 285 issues when the monthly-quota and throttling
+  UI was removed. A net figure: the quota-threshold and period-reset groups in
+  `notification_evaluator_test.dart` went with the notifications, the
+  `hubTierUntil` / `hubTierCountdown` groups went with the card that displayed
+  them, and one test was ADDED for the v11 migration that deletes orphaned
+  quota rows. The infos fall because whole widgets and helpers went, not
+  because any lint was suppressed.
 - 26 → 25 warnings when `logger_controller.dart` dropped a `debugMode && false`
   that pinned every build to `LogLevel.info`. It was the `dead_code` warning at
   that line, and it was also suppressing every `loggy.debug` call in the app —

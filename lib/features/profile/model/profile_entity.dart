@@ -70,14 +70,13 @@ class SubscriptionInfo with _$SubscriptionInfo {
   int get consumption => upload + download;
   int get remainingBW => total - consumption;
   double get remainingBWratio => (remainingBW / total).clamp(0, 1);
-  double get ratio => (consumption / total).clamp(0, 1);
 
   Duration get remaining => expire.difference(DateTime.now());
   double get remainingRatio => min(remaining.inDays, 30) / 30;
 
-  /// Time until the traffic quota next resets (`subscription-refill-date`),
-  /// or null when the backend didn't supply a refill date.
-  Duration? get untilRefill => refillDate?.difference(DateTime.now());
+  // `ratio` and `untilRefill` lived here to drive the quota card and the
+  // account subtitle. Both are gone; `refillDate` is still parsed and stored
+  // but nothing reads it.
 }
 
 const int latestUserOverrideVersion = 1;

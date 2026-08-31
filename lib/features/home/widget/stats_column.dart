@@ -1,44 +1,36 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/theme/rayn_colors.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
-import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/glass_surface.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
-import 'package:hiddify/features/profile/model/hub_tier.dart';
-import 'package:hiddify/features/profile/model/profile_entity.dart';
-import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/stats/notifier/stats_notifier.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/number_formatters.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-/// Vertical stack of three glass cards (Protected, Traffic, Quota) replacing
-/// the old desktop sidebar overview. The widget itself just stacks; the
-/// caller decides where it sits (left column on desktop, stacked block on
-/// mobile per §1 of the implementation plan).
+/// Vertical stack of glass cards replacing the old desktop sidebar overview.
+/// The widget itself just stacks; the caller decides where it sits.
+///
+/// There was a third card here showing the monthly quota and, when the
+/// middleware had moved the subscriber, a "Daily allowance used" row. Both are
+/// gone deliberately: throttling is meant to be invisible, and a countdown to
+/// full speed is the opposite of that.
 class StatsColumn extends ConsumerWidget {
-  const StatsColumn({super.key, this.showQuota = true});
-
-  /// When false, the Monthly quota card is omitted. Mobile hides it because
-  /// the same value is already reachable from Settings; desktop keeps it
-  /// since the sidebar has the room.
-  final bool showQuota;
+  const StatsColumn({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
+    return const Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _ProtectedCard(),
-        const SizedBox(height: RaynSpacing.md),
-        const _TrafficCard(),
-        if (showQuota) ...[const SizedBox(height: RaynSpacing.md), const _QuotaCard()],
+        _ProtectedCard(),
+        SizedBox(height: RaynSpacing.md),
+        _TrafficCard(),
       ],
     );
   }
@@ -176,118 +168,4 @@ class _TrafficRow extends StatelessWidget {
       ],
     );
   }
-}
-
-class _QuotaCard extends ConsumerWidget {
-  const _QuotaCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = ref.watch(translationsProvider).requireValue;
-    final profile = ref.watch(activeProfileProvider).valueOrNull;
-    final subInfo = switch (profile) {
-      RemoteProfileEntity(:final subInfo) => subInfo,
-      _ => null,
-    };
-    if (subInfo == null) return const SizedBox.shrink();
-
-    final palette = context.rayn;
-    final isInfinite = subInfo.total > 10 * 1099511627776;
-    final consumedText = subInfo.consumption.sizeGB();
-    final totalLabel = isInfinite ? '/ ∞ GiB' : '/ ${subInfo.total.sizeGB()}';
-    final percentUsed = (subInfo.ratio * 100).toStringAsFixed(1);
-    // Days until the traffic quota resets (`subscription-refill-date`); null
-    // when the backend didn't send one — we hide the figure rather than show
-    // a stale value.
-    final resetDays = subInfo.untilRefill?.inDays;
-    // Which hub the profile currently dials. The used/total figures above stay
-    // as they are on standby: they are the primary quota, and they are still
-    // true — what changed is which link carries the traffic, not the counter.
-    final hubTier = hubTierOf(subscriptionHeader(profile, 'subscription-hub-tier'));
-    final countdown = hubTierCountdown(
-      hubTierUntil(subscriptionHeader(profile, 'subscription-hub-tier-until')),
-      DateTime.now(),
-    );
-
-    return GlassSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            t.components.subscriptionInfo.monthlyQuota,
-            style: RaynTypography.label.copyWith(color: palette.textSecondary),
-          ),
-          const SizedBox(height: RaynSpacing.sm),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(consumedText, style: RaynTypography.display),
-              const SizedBox(width: RaynSpacing.xs),
-              Flexible(
-                child: Text(
-                  totalLabel,
-                  style: RaynTypography.label.copyWith(color: palette.textSecondary),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: RaynSpacing.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(RaynRadius.pill),
-            child: LinearProgressIndicator(
-              value: subInfo.ratio,
-              minHeight: 4,
-              color: RaynColors.goldPrimary,
-              backgroundColor: palette.glassBorder,
-            ),
-          ),
-          const SizedBox(height: RaynSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                t.components.subscriptionInfo.percentUsed(percent: percentUsed),
-                style: RaynTypography.caption.copyWith(color: palette.textMuted),
-              ),
-              if (resetDays != null && resetDays >= 0)
-                Text(
-                  t.components.subscriptionInfo.quotaResetIn(days: resetDays),
-                  style: RaynTypography.caption.copyWith(color: RaynColors.goldPrimary),
-                ),
-            ],
-          ),
-          if (hubTier == HubTier.standby) ...[
-            const SizedBox(height: RaynSpacing.sm),
-            Row(
-              children: [
-                Icon(FluentIcons.timer_16_regular, size: 14, color: palette.textSecondary),
-                const SizedBox(width: RaynSpacing.sm),
-                Expanded(
-                  child: Text(
-                    _standbyLabel(t, countdown),
-                    style: RaynTypography.caption.copyWith(color: palette.textSecondary),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// "Daily allowance used", plus when full speed returns if the middleware sent
-/// an estimate. Composed with the same " · " separator the account section uses
-/// for its quota line.
-String _standbyLabel(Translations t, ({int value, bool isDays})? countdown) {
-  final title = t.components.subscriptionInfo.standbyTitle;
-  if (countdown == null) return title;
-  final resumes = countdown.isDays
-      ? t.components.subscriptionInfo.standbyFullSpeedInDays(days: countdown.value)
-      : t.components.subscriptionInfo.standbyFullSpeedInHours(hours: countdown.value);
-  return '$title · $resumes';
 }

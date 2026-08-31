@@ -444,20 +444,12 @@
       "remainingUsage": "Remaining",
       "profileSite": "Provider",
       "profileSupport": "Support",
-      "monthlyQuota": "Monthly quota",
-      "percentUsed": "${percent}% used",
       "daysLeft": "${days} days left",
-      "quotaResetIn": "${days}d to reset",
       "planExpiry": "Plan expiry: ${date}",
       "renewDate": "Renew date: ${date}",
       "autoRenew": "Auto-renew",
       "manualRenew": "Manual renew",
-      "planExpiryNever": "Never",
-      "standbyTitle": "Daily allowance used",
-      "standbyFullSpeedInHours": "full speed in ${hours}h",
-      "standbyFullSpeedInDays": "full speed in ${days}d",
-      "standbyToast": "You've used today's full-speed allowance. You're on the standby connection until it rebuilds.",
-      "primaryToast": "Full speed restored."
+      "planExpiryNever": "Never"
     }
   },
   "notifications": {
@@ -465,10 +457,6 @@
     "empty": "You're all caught up",
     "clearAll": "Clear all",
     "dismiss": "Dismiss",
-    "quota": {
-      "title": "Data usage",
-      "body": "You've used ${percent}% of your monthly data."
-    },
     "expiry": {
       "title": "Subscription expiring",
       "body": "Your subscription expires in ${days} day(s). Renew to stay connected."

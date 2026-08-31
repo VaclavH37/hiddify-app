@@ -9,14 +9,6 @@ typedef NotificationCopy = ({String title, String body, IconData icon});
 
 NotificationCopy notificationCopy(AppNotification n, Translations t) {
   switch (n.kind) {
-    case NotificationKind.quota80:
-    case NotificationKind.quota90:
-    case NotificationKind.quota100:
-      return (
-        title: t.notifications.quota.title,
-        body: t.notifications.quota.body(percent: n.thresholdValue ?? 0),
-        icon: FluentIcons.data_usage_24_regular,
-      );
     case NotificationKind.expiryReminder:
       return (
         title: t.notifications.expiry.title,

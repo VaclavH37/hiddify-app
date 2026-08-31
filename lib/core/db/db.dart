@@ -14,7 +14,7 @@ class Db extends _$Db with InfraLogger {
   Db([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   static QueryExecutor _openConnection() {
     return LazyDatabase(
@@ -119,6 +119,19 @@ class Db extends _$Db with InfraLogger {
         from9To10: (m, schema) async {
           // In-app notifications inbox (quota + expiry alerts). New table.
           await m.createTable(schema.appNotifications);
+        },
+        from10To11: (m, schema) async {
+          // The quota notification kinds are gone. `kind` is a textEnum, which
+          // drift resolves with `values.byName` — that THROWS on a name the
+          // enum no longer declares, so a single leftover row would break the
+          // whole inbox rather than degrade. Delete them here.
+          //
+          // Raw SQL on purpose: the generated schema for v11 no longer has
+          // these enum values to name, and the rows are transient inbox
+          // entries, so there is nothing to preserve or translate.
+          await customStatement(
+            "DELETE FROM app_notifications WHERE kind IN ('quota80', 'quota90', 'quota100')",
+          );
         },
       ),
     );

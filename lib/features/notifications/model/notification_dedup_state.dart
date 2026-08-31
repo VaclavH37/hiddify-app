@@ -9,22 +9,17 @@ part 'notification_dedup_state.g.dart';
 ///
 /// Scoped to one profile via [profileId]; the monitor resets to a fresh state
 /// when the active profile changes.
+///
+/// The quota markers (`quotaPeriodKey`, `quota80Fired` and friends) were
+/// removed with the quota notifications. Blobs written by an older build still
+/// carry them; `fromJson` ignores unknown keys and the store falls back to a
+/// fresh state on any parse failure, so no migration is needed here.
 @freezed
 class NotificationDedupState with _$NotificationDedupState {
   const factory NotificationDedupState({
     // The profile these markers belong to. When the active profile changes the
     // monitor discards this state and starts fresh.
     String? profileId,
-    // ISO8601 `refillDate` identifying the current quota period; null when the
-    // backend omits the header (then resets are detected via a consumption drop).
-    String? quotaPeriodKey,
-    @Default(false) bool quota80Fired,
-    @Default(false) bool quota90Fired,
-    @Default(false) bool quota100Fired,
-    // Last observed `consumption` (upload+download). Used to detect a quota
-    // reset when no `refillDate` is available: usage is monotonic within a
-    // period, so a decrease means the period rolled over.
-    @Default(0) int lastConsumption,
     // ISO8601 `expire` the current expiry cycle is anchored to. When it changes
     // (subscription extended) the per-day marker is cleared.
     String? expiryAnchorKey,

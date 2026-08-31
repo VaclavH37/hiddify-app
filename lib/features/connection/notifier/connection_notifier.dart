@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
@@ -227,16 +226,11 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
     }
     loggy.info("hub tier changed [${applied.name}] -> [${tier.name}], reconnecting");
     await prefs.setString(_hubTierSwitchKey, now.toIso8601String());
-    // Explain the change before the tunnel blips, not after.
-    final t = ref.read(translationsProvider).requireValue;
-    ref
-        .read(inAppNotificationControllerProvider)
-        .showInfoToast(
-          tier == HubTier.standby
-              ? t.components.subscriptionInfo.standbyToast
-              : t.components.subscriptionInfo.primaryToast,
-          duration: const Duration(seconds: 6),
-        );
+    // SILENT, deliberately. This used to raise a toast explaining that the
+    // full-speed allowance was spent and full speed would return later. The
+    // subscriber is not meant to know a tier change happened at all — they get
+    // a brief reconnect and a slower link, and no account of why. The log line
+    // above is the only record, which is where it belongs.
     await reconnect(profile);
   }
 

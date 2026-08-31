@@ -13,6 +13,7 @@ import 'generated/schema_v7.dart' as v7;
 import 'generated/schema_v8.dart' as v8;
 import 'generated/schema_v9.dart' as v9;
 import 'generated/schema_v10.dart' as v10;
+import 'generated/schema_v11.dart' as v11;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -277,6 +278,42 @@ void main() {
         await newDb.close();
       },
     );
+
+    test('migration from v10 to v11 deletes quota notifications and keeps the rest', () async {
+      // The one step whose whole job is data, so the structural loop above
+      // cannot see it. `kind` is a textEnum resolved by name, so a surviving
+      // `quota80` row would throw when the inbox is read — not degrade.
+      final schema = await verifier.schemaAt(10);
+      addTearDown(() => schema.rawDatabase.dispose());
+
+      final oldDb = v10.DatabaseAtV10(schema.newConnection());
+      for (final (id, kind) in [
+        ('a', 'quota80'),
+        ('b', 'quota90'),
+        ('c', 'quota100'),
+        ('d', 'expiryReminder'),
+        ('e', 'subscriptionExpired'),
+      ]) {
+        await oldDb.customStatement(
+          'INSERT INTO app_notifications (id, kind, created_at, seen, dismissed) '
+          "VALUES ('$id', '$kind', 0, 0, 0)",
+        );
+      }
+      await oldDb.close();
+
+      final migratedDb = Db(schema.newConnection());
+      await verifier.migrateAndValidate(migratedDb, 11);
+      await migratedDb.close();
+
+      final newDb = v11.DatabaseAtV11(schema.newConnection());
+      final rows = await newDb.customSelect('SELECT kind FROM app_notifications ORDER BY id').get();
+      expect(
+        rows.map((r) => r.data['kind']),
+        ['expiryReminder', 'subscriptionExpired'],
+        reason: 'the three quota kinds must be gone and nothing else touched',
+      );
+      await newDb.close();
+    });
 
     test('migration from v9 to v10 creates the app_notifications table', () async {
       final schema = await verifier.schemaAt(9);

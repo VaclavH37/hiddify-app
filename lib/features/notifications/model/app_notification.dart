@@ -6,16 +6,12 @@ part 'app_notification.freezed.dart';
 /// `app_notifications` Drift table — the inbox/banner render localized copy
 /// from `kind` + `thresholdValue` at display time, so the table never holds
 /// rendered (locale-baked) strings.
+/// The `quota80` / `quota90` / `quota100` kinds were removed: usage is no
+/// longer surfaced anywhere, and a "you have used 90% of your data" notice is
+/// the clearest possible signal that throttling is about to happen. Rows
+/// carrying them are deleted by the v11 migration, because `textEnum` resolves
+/// by NAME and would throw on one it no longer knows.
 enum NotificationKind {
-  /// Traffic quota reached 80% of the monthly allowance.
-  quota80,
-
-  /// Traffic quota reached 90%.
-  quota90,
-
-  /// Traffic quota fully consumed (100%).
-  quota100,
-
   /// Subscription is within a week of expiring (fires once per day). Only for
   /// non-auto-renewing plans; Google Play subscribers get [renewalReminder]
   /// instead.
@@ -35,8 +31,8 @@ class AppNotification with _$AppNotification {
   const factory AppNotification({
     required String id,
     required NotificationKind kind,
-    // quota: 80 / 90 / 100; expiry: days remaining at fire time. Nullable for
-    // forward-compatibility with kinds that carry no figure.
+    // Expiry: days remaining at fire time. Nullable for kinds that carry no
+    // figure, which is now most of them.
     int? thresholdValue,
     required DateTime createdAt,
     // "read" — flipped true when the inbox is opened; drives the bell badge.

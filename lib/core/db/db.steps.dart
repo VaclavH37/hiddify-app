@@ -936,6 +936,66 @@ i1.GeneratedColumn<bool> _column_31(String aliasedName) =>
       ),
       defaultValue: const CustomExpression('0'),
     );
+
+final class Schema11 extends i0.VersionedSchema {
+  Schema11({required super.database}) : super(version: 11);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    profileEntries,
+    appNotifications,
+  ];
+  late final Shape7 profileEntries = Shape7(
+    source: i0.VersionedTable(
+      entityName: 'profile_entries',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_4,
+        _column_5,
+        _column_6,
+        _column_7,
+        _column_8,
+        _column_9,
+        _column_10,
+        _column_26,
+        _column_11,
+        _column_12,
+        _column_17,
+        _column_18,
+        _column_19,
+        _column_23,
+        _column_24,
+        _column_25,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape8 appNotifications = Shape8(
+    source: i0.VersionedTable(
+      entityName: 'app_notifications',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_27,
+        _column_28,
+        _column_29,
+        _column_30,
+        _column_31,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+}
+
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
   required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
@@ -946,6 +1006,7 @@ i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema8 schema) from7To8,
   required Future<void> Function(i1.Migrator m, Schema9 schema) from8To9,
   required Future<void> Function(i1.Migrator m, Schema10 schema) from9To10,
+  required Future<void> Function(i1.Migrator m, Schema11 schema) from10To11,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -994,6 +1055,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from9To10(migrator, schema);
         return 10;
+      case 10:
+        final schema = Schema11(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from10To11(migrator, schema);
+        return 11;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -1010,6 +1076,7 @@ i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema8 schema) from7To8,
   required Future<void> Function(i1.Migrator m, Schema9 schema) from8To9,
   required Future<void> Function(i1.Migrator m, Schema10 schema) from9To10,
+  required Future<void> Function(i1.Migrator m, Schema11 schema) from10To11,
 }) => i0.VersionedSchema.stepByStepHelper(
   step: migrationSteps(
     from1To2: from1To2,
@@ -1021,5 +1088,6 @@ i1.OnUpgrade stepByStep({
     from7To8: from7To8,
     from8To9: from8To9,
     from9To10: from9To10,
+    from10To11: from10To11,
   ),
 );

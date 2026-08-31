@@ -37,19 +37,12 @@ const hubTierRequestHeader = 'x-rayn-hub-tier';
 /// one that costs them speed.
 HubTier hubTierOf(String? raw) => raw?.trim().toLowerCase() == 'standby' ? HubTier.standby : HubTier.primary;
 
-/// Reads `subscription-hub-tier-until` — unix seconds at which the accrued
-/// allowance is projected to overtake consumption, i.e. when the primary link
-/// comes back.
+/// `subscription-hub-tier-until` had a reader here — `hubTierUntil`, plus a
+/// `hubTierCountdown` that turned it into "full speed in 4h" for the quota
+/// card. Both went with that card: telling a subscriber when full speed
+/// returns tells them it was taken away. The header is still captured into
+/// `populatedHeaders` for support, and nothing reads it.
 ///
-/// Treats 0 / absent / unparseable as *unknown* and returns null, so the UI
-/// hides the figure rather than showing a stale or epoch-zero one. Same
-/// convention as `subscription-refill-date` in ProfileParser.parse.
-DateTime? hubTierUntil(String? raw) {
-  final seconds = int.tryParse(raw?.trim() ?? '');
-  if (seconds == null || seconds <= 0) return null;
-  return DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
-}
-
 /// Reads one persisted subscription response header, or null when it is absent
 /// or blank.
 ///
@@ -62,26 +55,6 @@ String? subscriptionHeader(ProfileEntity? profile, String key) {
   return (value == null || value.isEmpty) ? null : value;
 }
 
-/// How long until the primary link returns, expressed in whole hours or whole
-/// days, or null when there is nothing worth showing.
-///
-/// Null covers three cases deliberately: the middleware sent no estimate; the
-/// estimate has already passed (a header that went stale between refreshes —
-/// showing "full speed in 0h" to someone still on standby is worse than showing
-/// nothing); and anything unparseable, via [hubTierUntil].
-///
-/// Rounds UP, and floors at one hour, so the figure never under-promises. Days
-/// take over at 48h, below which "2d" would lose too much precision.
-({int value, bool isDays})? hubTierCountdown(DateTime? until, DateTime now) {
-  if (until == null) return null;
-  final remaining = until.difference(now);
-  if (remaining <= Duration.zero) return null;
-  if (remaining < const Duration(hours: 48)) {
-    final hours = (remaining.inMinutes / 60).ceil();
-    return (value: hours < 1 ? 1 : hours, isDays: false);
-  }
-  return (value: (remaining.inHours / 24).ceil(), isDays: true);
-}
 
 /// Minimum time before returning to the PRIMARY hub after a tier reconnect.
 ///

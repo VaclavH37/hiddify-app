@@ -34,51 +34,9 @@ void main() {
     });
   });
 
-  group('hubTierUntil', () {
-    test('parses unix seconds', () {
-      expect(hubTierUntil('1790000000'), DateTime.fromMillisecondsSinceEpoch(1790000000 * 1000));
-    });
-
-    test('treats absent, zero, negative and unparseable as unknown', () {
-      expect(hubTierUntil(null), isNull);
-      expect(hubTierUntil(''), isNull);
-      expect(hubTierUntil('0'), isNull);
-      expect(hubTierUntil('-1'), isNull);
-      expect(hubTierUntil('soon'), isNull);
-      expect(hubTierUntil('17900.5'), isNull);
-    });
-  });
-
-  group('hubTierCountdown', () {
-    final now = DateTime(2026, 8, 23, 12);
-
-    test('is null when the middleware sent no estimate', () {
-      expect(hubTierCountdown(null, now), isNull);
-    });
-
-    // A header that went stale between refreshes. "Full speed in 0h" to someone
-    // still on standby is worse than saying nothing.
-    test('is null once the estimate has passed', () {
-      expect(hubTierCountdown(now, now), isNull);
-      expect(hubTierCountdown(now.subtract(const Duration(hours: 3)), now), isNull);
-    });
-
-    test('rounds hours up so it never under-promises', () {
-      expect(hubTierCountdown(now.add(const Duration(hours: 4)), now), (value: 4, isDays: false));
-      expect(hubTierCountdown(now.add(const Duration(hours: 4, minutes: 1)), now), (value: 5, isDays: false));
-    });
-
-    test('floors at one hour rather than showing zero', () {
-      expect(hubTierCountdown(now.add(const Duration(minutes: 1)), now), (value: 1, isDays: false));
-      expect(hubTierCountdown(now.add(const Duration(seconds: 30)), now), (value: 1, isDays: false));
-    });
-
-    test('switches to days at 48 hours', () {
-      expect(hubTierCountdown(now.add(const Duration(hours: 47)), now), (value: 47, isDays: false));
-      expect(hubTierCountdown(now.add(const Duration(hours: 48)), now), (value: 2, isDays: true));
-      expect(hubTierCountdown(now.add(const Duration(hours: 49)), now), (value: 3, isDays: true));
-    });
-  });
+  // `hubTierUntil` and `hubTierCountdown` had groups here. Both were deleted
+  // with the quota card that displayed them — the countdown told a subscriber
+  // when full speed returned, which is a statement that it had been withdrawn.
 
   group('shouldReconnectForTier', () {
     final now = DateTime(2026, 8, 23, 12);

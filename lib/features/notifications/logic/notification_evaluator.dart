@@ -1,7 +1,6 @@
 import 'package:hiddify/features/auth/model/payment_provider.dart';
 import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/notifications/model/notification_dedup_state.dart';
-import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 
 /// A notification the evaluator wants created; the data layer supplies the
@@ -28,44 +27,11 @@ EvaluationResult evaluateNotifications({
   final toCreate = <PendingNotification>[];
   var next = state;
 
-  // ---- Traffic quota: 80% / 90% / 100%, once per period ----
-  final unlimitedTraffic = subInfo.total > ProfileParser.infiniteTrafficThreshold;
-  if (!unlimitedTraffic && subInfo.total > 0) {
-    final periodKey = subInfo.refillDate?.toIso8601String();
-    final consumption = subInfo.consumption;
-
-    // New quota period → clear the fired flags. Detected either by a changed
-    // `refillDate`, or (when the header is absent) by a consumption drop, since
-    // usage only ever grows within a single period.
-    final periodChangedByRefill = periodKey != null && periodKey != next.quotaPeriodKey;
-    final periodChangedByDrop = periodKey == null && consumption < next.lastConsumption;
-    if (periodChangedByRefill || periodChangedByDrop) {
-      next = next.copyWith(
-        quotaPeriodKey: periodKey,
-        quota80Fired: false,
-        quota90Fired: false,
-        quota100Fired: false,
-      );
-    }
-
-    final ratio = consumption / subInfo.total;
-    // Fire each newly-crossed threshold (a jump past several at once fires all
-    // of them, each exactly once).
-    if (ratio >= 0.80 && !next.quota80Fired) {
-      toCreate.add((kind: NotificationKind.quota80, thresholdValue: 80));
-      next = next.copyWith(quota80Fired: true);
-    }
-    if (ratio >= 0.90 && !next.quota90Fired) {
-      toCreate.add((kind: NotificationKind.quota90, thresholdValue: 90));
-      next = next.copyWith(quota90Fired: true);
-    }
-    if (ratio >= 1.0 && !next.quota100Fired) {
-      toCreate.add((kind: NotificationKind.quota100, thresholdValue: 100));
-      next = next.copyWith(quota100Fired: true);
-    }
-
-    next = next.copyWith(lastConsumption: consumption);
-  }
+  // There was a traffic-quota block here firing at 80 / 90 / 100% of the
+  // monthly allowance, deduped per period. It was removed with the rest of the
+  // usage UI: those notices told a subscriber exactly when they were about to
+  // be moved to the slower hub, which is the one thing this design does not
+  // want them to know. Consumption is still parsed and stored; nothing reads it.
 
   // ---- Subscription expiry / store renewal ----
   final daysRemaining = subInfo.expire.difference(now).inDays;
