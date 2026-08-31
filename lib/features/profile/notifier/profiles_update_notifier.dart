@@ -254,6 +254,17 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // hub's request out. Confirm before restarting anyone's tunnel.
     loggy.info("tunnelled probe failed; confirming in ${hubConfirmDelay.inSeconds}s");
     await Future<void>.delayed(hubConfirmDelay);
+
+    // The connection is re-checked ACROSS the delay, not just at entry. Thirty
+    // seconds is long enough for a user to give up on a tunnel that is visibly
+    // doing nothing and toggle it — and with the core stopped the confirming
+    // probe fails instantly with connection-refused, which reads exactly like a
+    // dead hub. That is a false detection built out of the user's own remedy.
+    if (ref.read(connectionNotifierProvider).valueOrNull is! Connected) {
+      loggy.info("connection changed during the confirmation delay; abandoning this detection");
+      return;
+    }
+
     if (await _tunnelCarriesTraffic(profile.url)) {
       // ONE check, not two. The pair of probes reached a single verdict, and it
       // was "carrying" — counting the failed first probe would make a flaky
@@ -308,10 +319,6 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     loggy.warning("primary hub is not carrying traffic; switching to the standby hub");
     await prefs.setString(activeConfigSlotKey, ConfigSlot.standby.name);
     await prefs.setString(hubStandbySinceKey, now.toIso8601String());
-    await prefs.setStringList(hubFlipsKey, [
-      ...flips.map((at) => at.toIso8601String()),
-      now.toIso8601String(),
-    ]);
     if (digest != null) {
       await prefs.setString(hubPrimaryDigestKey, digest);
       await prefs.setString(hubPrimaryTierKey, (await _currentTier(profile.id)).name);
@@ -328,6 +335,18 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       await _returnToPrimary(profile, restart: false);
       return;
     }
+
+    // Recorded HERE, not before the restart. The flap cap exists to bound how
+    // often the core is torn down and every live connection dropped, so it must
+    // count switches that happened — not intentions. `restartForSlot` refuses
+    // while disconnected, which is exactly the case a user toggling mid-
+    // detection produces, and charging them for it would let four such toggles
+    // suppress genuine failover for a day while the log claimed four flips the
+    // client never made.
+    await prefs.setStringList(hubFlipsKey, [
+      ...flips.map((at) => at.toIso8601String()),
+      now.toIso8601String(),
+    ]);
 
     if (await _tunnelCarriesTraffic(profile.url)) {
       loggy.warning("the standby hub carries traffic; the primary hub was the problem");
