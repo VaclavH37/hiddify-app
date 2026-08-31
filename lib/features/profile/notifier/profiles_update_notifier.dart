@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartx/dartx.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
@@ -17,6 +19,9 @@ import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
+import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
+import 'package:hiddify/features/proxy/model/proxy_failure.dart';
+import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:meta/meta.dart';
 import 'package:neat_periodic_task/neat_periodic_task.dart';
@@ -48,7 +53,26 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     ref.onDispose(() async {
       await _scheduler?.stop();
       _scheduler = null;
+      await _urlTestSub?.cancel();
+      _urlTestSub = null;
     });
+
+    // The fast path. The core URL-tests every exit with a 5 s timeout and
+    // pushes the result over a stream the app is already consuming, so a
+    // blocked hub is visible within seconds — the same signal that turns the
+    // latency pill red. The refresh-cycle ladder below stays as the backstop:
+    // it survives the app being backgrounded, where this stream is cancelled,
+    // and it tests the middleware rather than one connection-test host.
+    _urlTestSub = ref
+        .read(proxyRepositoryProvider)
+        .watchActiveProxies()
+        .listen(
+          (event) => event.fold(
+            (_) => _allTimedOutSince = null,
+            _onOutboundDelays,
+          ),
+          onError: (_) => _allTimedOutSince = null,
+        );
 
     // Only run the auto-update scheduler when the user has authenticated
     // (i.e. a profile exists). Pre-auth there's nothing to refresh.
@@ -63,6 +87,79 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
 
   NeatPeriodicTaskScheduler? _scheduler;
   bool _forceNextRun = false;
+
+  StreamSubscription<Either<ProxyFailure, List<OutboundGroup>>>? _urlTestSub;
+
+  /// When every exit first reported a timed-out URL test, or null if any of
+  /// them is currently healthy or still untested. In memory only: it describes
+  /// a live core session and means nothing across a restart.
+  DateTime? _allTimedOutSince;
+
+  /// Guards `_failOverToStandby` against two callers at once. The refresh-cycle
+  /// ladder and the URL-test watcher can now both reach it, and a failover is a
+  /// core restart plus a slot write — running two concurrently would interleave
+  /// the preference writes with the restart they describe.
+  bool _failoverInFlight = false;
+
+  /// Reacts to the core's per-exit URL-test results.
+  ///
+  /// Every exit dials the same hub, so all of them timing out says the hub is
+  /// not carrying traffic. It does NOT say the hub is to blame — an offline
+  /// device looks identical — which is why this ends in the same
+  /// `_failOverToStandby` whose post-switch probe reverts when the standby hub
+  /// is equally dead.
+  void _onOutboundDelays(List<OutboundGroup> groups) {
+    final delays = groups
+        .expand((group) => group.items)
+        .where((item) => !item.tag.contains('§hide§'))
+        .map((item) => item.urlTestDelay);
+
+    if (!allExitsTimedOut(delays)) {
+      _allTimedOutSince = null;
+      return;
+    }
+
+    final now = DateTime.now();
+    final since = _allTimedOutSince;
+    // Re-stamp on a first sighting, and on a clock that moved backwards — see
+    // urlTestFailureConfirmed.
+    if (since == null || now.isBefore(since)) {
+      _allTimedOutSince = now;
+      return;
+    }
+    if (!urlTestFailureConfirmed(since, now)) return;
+
+    _allTimedOutSince = null;
+    unawaited(_failOverOnUrlTestFailure());
+  }
+
+  /// The fast path's preconditions, which are the ladder's own.
+  ///
+  /// Deliberately does NOT record a check. `checks` is documented to the
+  /// middleware as one verdict per refresh interval, and its magnitude is used
+  /// there as a proxy for how long the client was observing; feeding a second,
+  /// far faster measurement source into the same counter would quietly break
+  /// that. The `unreachable` edge marker still goes out, from inside
+  /// `_failOverToStandby`.
+  Future<void> _failOverOnUrlTestFailure() async {
+    if (_failoverInFlight) return;
+    if (ref.read(connectionNotifierProvider).valueOrNull is! Connected) return;
+
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    if (configSlotOf(prefs.getString(activeConfigSlotKey)) != ConfigSlot.primary) return;
+    if (!failoverAttemptDue(DateTime.tryParse(prefs.getString(hubOfflineBackoffKey) ?? ""), DateTime.now())) {
+      return;
+    }
+
+    final profile = await ref.read(activeProfileProvider.future);
+    if (profile is! RemoteProfileEntity) return;
+    if (await _currentTier(profile.id) != HubTier.primary) return;
+
+    loggy.warning(
+      "every exit timed out its URL test for ${hubUrlTestWindow.inSeconds}s; treating the primary hub as blocked",
+    );
+    await _failOverToStandby(profile);
+  }
 
   Future<void> trigger() async {
     loggy.debug("triggering update");
@@ -282,6 +379,16 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   /// Moves this client onto the precached standby config and checks whether
   /// that fixed anything.
   Future<void> _failOverToStandby(RemoteProfileEntity profile) async {
+    if (_failoverInFlight) return;
+    _failoverInFlight = true;
+    try {
+      await _failOverToStandbyLocked(profile);
+    } finally {
+      _failoverInFlight = false;
+    }
+  }
+
+  Future<void> _failOverToStandbyLocked(RemoteProfileEntity profile) async {
     final prefs = ref.read(sharedPreferencesProvider).requireValue;
     final repository = ref.read(profileRepositoryProvider).requireValue;
     final now = DateTime.now();

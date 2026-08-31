@@ -14,6 +14,54 @@ String _config(List<String> servers) => jsonEncode({
 void main() {
   final now = DateTime(2026, 8, 28, 12);
 
+  group('allExitsTimedOut', () {
+    const timedOut = 65535;
+
+    test('every exit timed out is a verdict', () {
+      expect(allExitsTimedOut([timedOut, timedOut, timedOut]), isTrue);
+    });
+
+    test('one healthy exit is not', () {
+      expect(allExitsTimedOut([timedOut, 180, timedOut]), isFalse);
+    });
+
+    test('an UNTESTED exit is not a verdict either', () {
+      // The core reports 0 for an exit it has not swept yet. Reading a
+      // half-swept group as "all dead" would fail over on a partial result.
+      expect(allExitsTimedOut([timedOut, 0, timedOut]), isFalse);
+    });
+
+    test('an empty group is never a verdict', () {
+      expect(allExitsTimedOut(const <int>[]), isFalse);
+    });
+
+    test('accepts anything at or above the threshold, not just 65535', () {
+      expect(allExitsTimedOut([hubUrlTestTimeout]), isTrue);
+      expect(allExitsTimedOut([hubUrlTestTimeout - 1]), isFalse);
+    });
+  });
+
+  group('urlTestFailureConfirmed', () {
+    test('nothing seen yet is never confirmed', () {
+      expect(urlTestFailureConfirmed(null, now), isFalse);
+    });
+
+    test('not confirmed inside the window', () {
+      expect(urlTestFailureConfirmed(now.subtract(const Duration(seconds: 4)), now), isFalse);
+    });
+
+    test('confirmed at the window', () {
+      expect(urlTestFailureConfirmed(now.subtract(hubUrlTestWindow), now), isTrue);
+    });
+
+    test('a stamp in the future is not a confirmation', () {
+      // The clock moved backwards between stamping and checking. That is not a
+      // measurement, and acting on it would fail over instantly; the caller
+      // re-stamps instead.
+      expect(urlTestFailureConfirmed(now.add(const Duration(minutes: 5)), now), isFalse);
+    });
+  });
+
   group('failoverAllowed', () {
     bool allowed({
       ConfigSlot slot = ConfigSlot.primary,

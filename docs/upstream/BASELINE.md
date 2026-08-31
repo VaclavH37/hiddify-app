@@ -18,7 +18,7 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 | Check | Command | Baseline |
 |---|---|---|
 | Analyzer | `flutter analyze` | **0 errors · 25 warnings · 260 infos** (285 issues) |
-| Tests | `flutter test` | **437 passing**, 0 failing |
+| Tests | `flutter test` | **446 passing**, 0 failing |
 
 `flutter analyze` **exits 1** here, because it treats warnings and infos as
 fatal by default. Compare the counts, not the exit code.
@@ -65,6 +65,10 @@ the baseline; do not "fix" them during a catch-up slice.
   as a hub rotation, and 430 → 442 the reachability failure-rate counters — six
   for the saturating/settling arithmetic, six for the header contract, and one
   for refusing a failover while the middleware is already serving standby.
+- 437 → 446 tests for the URL-test fast failover path: five cases for
+  `allExitsTimedOut` (including that a half-swept group is NOT a verdict) and
+  four for the sustained-window predicate. Analyzer unchanged — the watcher is
+  new code in files that already existed.
 - 443 → 437 tests and 289 → 285 issues when the monthly-quota and throttling
   UI was removed. A net figure: the quota-threshold and period-reset groups in
   `notification_evaluator_test.dart` went with the notifications, the

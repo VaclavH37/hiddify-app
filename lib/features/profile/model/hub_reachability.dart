@@ -4,6 +4,50 @@ import 'package:crypto/crypto.dart';
 import 'package:hiddify/features/profile/model/config_slot.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
 
+/// What the core reports for an exit whose URL test failed.
+///
+/// sing-box stores a failed test as `TimeoutDelay = 65535`
+/// (`common/monitoring/outbound_monitoring.go`), which reaches us as
+/// `OutboundInfo.urlTestDelay`. The threshold is the same loose one the latency
+/// pill uses, so the client and the UI agree on what "Timeout" means.
+const hubUrlTestTimeout = 65000;
+
+/// How long every exit must stay timed out before it counts as a verdict.
+///
+/// The core's own test has a 5 s timeout, so a blocked hub turns the whole
+/// group red within about five seconds of connecting. Waiting one further
+/// window costs ten seconds and buys the difference between "one sweep failed"
+/// and "the hub is not carrying traffic" — against a detection path that
+/// otherwise takes minutes, that is cheap.
+const hubUrlTestWindow = Duration(seconds: 10);
+
+/// Whether every exit in the group has timed out.
+///
+/// Takes raw delays rather than the proxy model so this stays a pure function
+/// over ints, testable without protobufs.
+///
+/// An untested exit reports 0, which is below the threshold — so a group the
+/// core has only partly swept is deliberately NOT a verdict. Every exit dials
+/// the same hub address, differing only in the route code inside its UUID, so
+/// all of them failing is a statement about the hub rather than about any exit.
+bool allExitsTimedOut(Iterable<int> delays) {
+  if (delays.isEmpty) return false;
+  return delays.every((delay) => delay >= hubUrlTestTimeout);
+}
+
+/// Whether a sustained all-timeout has lasted long enough to act on.
+///
+/// A negative elapsed means the device clock moved backwards between the stamp
+/// and now. That is not a measurement, so it is not a confirmation — the caller
+/// re-stamps rather than either acting on it or wedging until real time catches
+/// up.
+bool urlTestFailureConfirmed(DateTime? firstSeenAt, DateTime now) {
+  if (firstSeenAt == null) return false;
+  final elapsed = now.difference(firstSeenAt);
+  if (elapsed.isNegative) return false;
+  return elapsed >= hubUrlTestWindow;
+}
+
 /// How long to wait before the confirming probe.
 ///
 /// Long enough that a transient stall has passed, short enough that the user is
