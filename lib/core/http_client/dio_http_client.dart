@@ -53,14 +53,27 @@ class DioHttpClient with InfraLogger {
       // cosmetic — see the class comment. Without it a retried subscription
       // fetch decodes as JSON and the import fails with a type-cast error.
       _dio[mode]!.interceptors.add(_ResponseTypeGuard());
+      // ONE retry, on every mode.
+      //
+      // `both` and `direct` used to get three, which costs 4 attempts x 15s
+      // plus 1+2+3s of delay = 66s per host before a failure is reported. That
+      // is the budget, and a blocked hub spends all of it: on iOS and desktop
+      // the app's own traffic is captured by the tun, so BOTH legs of `both`
+      // die at the hub — and then `_downloadWithFailover` pays the same 66s
+      // again against the fallback middleware host, which is behind the same
+      // dead tunnel. Field logs measured exactly 66.0s per host, 132s total,
+      // before the reachability ladder even began.
+      //
+      // Two minutes of silence is long enough that a user reasonably concludes
+      // the app has hung and toggles the VPN — which, as the iOS capture shows,
+      // lands the completed refresh on a restarting core and destroys it. One
+      // retry still absorbs a single transient blip and halves the wait.
+      //
+      // NOT paired with skipping the fallback host: trying it is the only way
+      // to tell a dead tunnel from a dead primary middleware host, and skipping
+      // it would disable `fallback-url` in exactly the case it exists for.
       _dio[mode]!.interceptors.add(
-        RetryInterceptor(
-          dio: _dio[mode]!,
-          retryDelays: [
-            const Duration(seconds: 1),
-            if (mode != "proxy") ...[const Duration(seconds: 2), const Duration(seconds: 3)],
-          ],
-        ),
+        RetryInterceptor(dio: _dio[mode]!, retryDelays: const [Duration(seconds: 1)]),
       );
 
       _dio[mode]!.httpClientAdapter = IOHttpClientAdapter(
