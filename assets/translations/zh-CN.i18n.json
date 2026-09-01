@@ -84,11 +84,6 @@
       }
     }
   },
-  "intro": {
-    "banner": "畅享无限制网络的所需一切",
-    "termsAndPolicyCaution(rich)": "继续即表示您同意 ${tap(@:pages.about.termsAndConditions)}",
-    "info(rich)": "由 Rayn VPN 用 ❤️ 制作 - ${tap_source(开源)} (${tap_license(许可证)})"
-  },
   "pages": {
     "home": {
       "title": "主页",
@@ -284,14 +279,6 @@
       "title": "正在使用实验性功能",
       "msg": "您已启用了一些实验性功能，这可能会影响连接质量并导致意外错误。您可以随时在配置选项页面更改或重置这些选项。",
       "disable": "不再显示"
-    },
-    "noActiveProfile": {
-      "title": "选择一个配置文件",
-      "msg": "让我们从添加一个包含您 VPN 连接详细信息的配置文件开始。\n\n还没有 VPN 服务器？别担心，按照下面的教程，您可以快速免费地设置一个。",
-      "helpBtn": {
-        "label": "告诉我如何操作",
-        "url": "https://www.raynlabs.io/account"
-      }
     },
     "unknownDomainsWarning": {
       "title": "外部链接警告",

@@ -52,7 +52,7 @@ class RaynCoreService with InfraLogger {
           ref.read(inAppNotificationControllerProvider).showErrorToast(e);
         })
         .map((_) {
-          loggy.info("Hiddify-core setup done");
+          loggy.info("core setup done");
           ref.read(coreRestartSignalProvider.notifier).restart();
         })
         .run();

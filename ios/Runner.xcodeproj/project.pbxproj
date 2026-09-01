@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BB0000012E01000100000021 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 68DCEB772BD7DA3F0081FF65 /* PrivacyInfo.xcprivacy */; };
+		BB0000012E01000100000022 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 68DCEB762BD7D7590081FF65 /* PrivacyInfo.xcprivacy */; };
 		BB0000012E01000100000013 /* RaynBilling.g.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000012E01000100000011 /* RaynBilling.g.swift */; };
 		BB0000012E01000100000014 /* RaynBillingHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000012E01000100000012 /* RaynBillingHandler.swift */; };
 		032158B82ADDF8BF008D943B /* VPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032158B72ADDF8BF008D943B /* VPNManager.swift */; };
-		032158BA2ADDFCC9008D943B /* TrafficReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032158B92ADDFCC9008D943B /* TrafficReader.swift */; };
-		032158BC2ADDFD09008D943B /* SingBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032158BB2ADDFD09008D943B /* SingBox.swift */; };
 		03B516672AE6B93A00EA47E2 /* MethodHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B516662AE6B93A00EA47E2 /* MethodHandler.swift */; };
 		03B516692AE7306B00EA47E2 /* StatusEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B516682AE7306B00EA47E2 /* StatusEventHandler.swift */; };
 		03B5166B2AE7315E00EA47E2 /* AlertsEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B5166A2AE7315E00EA47E2 /* AlertsEventHandler.swift */; };
@@ -90,8 +90,6 @@
 		BB0000012E01000100000011 /* RaynBilling.g.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaynBilling.g.swift; sourceTree = "<group>"; };
 		BB0000012E01000100000012 /* RaynBillingHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaynBillingHandler.swift; sourceTree = "<group>"; };
 		032158B72ADDF8BF008D943B /* VPNManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VPNManager.swift; sourceTree = "<group>"; };
-		032158B92ADDFCC9008D943B /* TrafficReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrafficReader.swift; sourceTree = "<group>"; };
-		032158BB2ADDFD09008D943B /* SingBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingBox.swift; sourceTree = "<group>"; };
 		0337C822BEDF7A95576475B3 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		03B516662AE6B93A00EA47E2 /* MethodHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MethodHandler.swift; sourceTree = "<group>"; };
 		03B516682AE7306B00EA47E2 /* StatusEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusEventHandler.swift; sourceTree = "<group>"; };
@@ -117,35 +115,9 @@
 		03E392D12ADDF1F4000ADF15 /* ExtensionPlatformInterface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionPlatformInterface.swift; sourceTree = "<group>"; };
 		03E392D32ADDF262000ADF15 /* Extension+RunBlocking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Extension+RunBlocking.swift"; sourceTree = "<group>"; };
 		040FA3EB0673B72D60CC7145 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
-		0736954E2B1FEB3E007249BE /* mobile_scanner.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = mobile_scanner.xcframework; path = ../build/ios/framework/Release/mobile_scanner.xcframework; sourceTree = "<group>"; };
 		0736958A2B3AC96D007249BE /* Bundle+Properties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+Properties.swift"; sourceTree = "<group>"; };
 		0736958C2B3B79E0007249BE /* StatsEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsEventHandler.swift; sourceTree = "<group>"; };
 		0736958E2B3B8047007249BE /* PlatformMethodHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformMethodHandler.swift; sourceTree = "<group>"; };
-		07A63A832B1E728C00CAFA4D /* Release */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Release; path = ../build/ios/framework/release; sourceTree = "<group>"; };
-		07A63A842B1E72AE00CAFA4D /* App.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = App.xcframework; path = ../build/ios/framework/release/App.xcframework; sourceTree = "<group>"; };
-		07A63A872B1E72C800CAFA4D /* Flutter.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Flutter.xcframework; path = ../build/ios/framework/release/Flutter.xcframework; sourceTree = "<group>"; };
-		07A63A8C2B1E72FA00CAFA4D /* GTMSessionFetcher.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = GTMSessionFetcher.xcframework; path = ../build/ios/framework/release/GTMSessionFetcher.xcframework; sourceTree = "<group>"; };
-		07A63A8D2B1E72FB00CAFA4D /* package_info_plus.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = package_info_plus.xcframework; path = ../build/ios/framework/release/package_info_plus.xcframework; sourceTree = "<group>"; };
-		07A63A8E2B1E72FB00CAFA4D /* SentryPrivate.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = SentryPrivate.xcframework; path = ../build/ios/framework/release/SentryPrivate.xcframework; sourceTree = "<group>"; };
-		07A63A8F2B1E72FB00CAFA4D /* share_plus.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = share_plus.xcframework; path = ../build/ios/framework/release/share_plus.xcframework; sourceTree = "<group>"; };
-		07A63A902B1E72FB00CAFA4D /* url_launcher_ios.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = url_launcher_ios.xcframework; path = ../build/ios/framework/release/url_launcher_ios.xcframework; sourceTree = "<group>"; };
-		07A63A912B1E72FB00CAFA4D /* mobile_scanner.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = mobile_scanner.xcframework; path = ../build/ios/framework/release/mobile_scanner.xcframework; sourceTree = "<group>"; };
-		07A63A922B1E72FB00CAFA4D /* sqlite3_flutter_libs.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = sqlite3_flutter_libs.xcframework; path = ../build/ios/framework/release/sqlite3_flutter_libs.xcframework; sourceTree = "<group>"; };
-		07A63A932B1E72FB00CAFA4D /* cupertino_http.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = cupertino_http.xcframework; path = ../build/ios/framework/release/cupertino_http.xcframework; sourceTree = "<group>"; };
-		07A63A942B1E72FB00CAFA4D /* flutter_native_splash.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = flutter_native_splash.xcframework; path = ../build/ios/framework/release/flutter_native_splash.xcframework; sourceTree = "<group>"; };
-		07A63A952B1E72FB00CAFA4D /* FBLPromises.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = FBLPromises.xcframework; path = ../build/ios/framework/release/FBLPromises.xcframework; sourceTree = "<group>"; };
-		07A63A962B1E72FB00CAFA4D /* GoogleUtilities.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = GoogleUtilities.xcframework; path = ../build/ios/framework/release/GoogleUtilities.xcframework; sourceTree = "<group>"; };
-		07A63A972B1E72FB00CAFA4D /* device_info_plus.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = device_info_plus.xcframework; path = ../build/ios/framework/release/device_info_plus.xcframework; sourceTree = "<group>"; };
-		07A63A982B1E72FB00CAFA4D /* GoogleDataTransport.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = GoogleDataTransport.xcframework; path = ../build/ios/framework/release/GoogleDataTransport.xcframework; sourceTree = "<group>"; };
-		07A63A992B1E72FB00CAFA4D /* sentry_flutter.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = sentry_flutter.xcframework; path = ../build/ios/framework/release/sentry_flutter.xcframework; sourceTree = "<group>"; };
-		07A63A9A2B1E72FB00CAFA4D /* protocol_handler.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = protocol_handler.xcframework; path = ../build/ios/framework/release/protocol_handler.xcframework; sourceTree = "<group>"; };
-		07A63A9B2B1E72FC00CAFA4D /* sqlite3.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = sqlite3.xcframework; path = ../build/ios/framework/release/sqlite3.xcframework; sourceTree = "<group>"; };
-		07A63A9C2B1E72FC00CAFA4D /* GoogleToolboxForMac.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = GoogleToolboxForMac.xcframework; path = ../build/ios/framework/release/GoogleToolboxForMac.xcframework; sourceTree = "<group>"; };
-		07A63A9D2B1E72FC00CAFA4D /* GoogleUtilitiesComponents.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = GoogleUtilitiesComponents.xcframework; path = ../build/ios/framework/release/GoogleUtilitiesComponents.xcframework; sourceTree = "<group>"; };
-		07A63A9E2B1E72FC00CAFA4D /* nanopb.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = nanopb.xcframework; path = ../build/ios/framework/release/nanopb.xcframework; sourceTree = "<group>"; };
-		07A63A9F2B1E72FC00CAFA4D /* path_provider_foundation.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = path_provider_foundation.xcframework; path = ../build/ios/framework/release/path_provider_foundation.xcframework; sourceTree = "<group>"; };
-		07A63AA02B1E72FC00CAFA4D /* shared_preferences_foundation.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = shared_preferences_foundation.xcframework; path = ../build/ios/framework/release/shared_preferences_foundation.xcframework; sourceTree = "<group>"; };
-		07A63AA12B1E72FC00CAFA4D /* Sentry.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Sentry.xcframework; path = ../build/ios/framework/release/Sentry.xcframework; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		30560DB3EFDF5E86AAD00AB8 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -255,9 +227,8 @@
 		03E392B92ADDA00F000ADF15 /* RaynTunnel */ = {
 			isa = PBXGroup;
 			children = (
-				03E392CA2ADDE063000ADF15 /* SingBox */,
+				03E392CA2ADDE063000ADF15 /* Core */,
 				03E392BA2ADDA00F000ADF15 /* PacketTunnelProvider.swift */,
-				032158B92ADDFCC9008D943B /* TrafficReader.swift */,
 				03B516752AE762F700EA47E2 /* Logger.swift */,
 				03E392BC2ADDA00F000ADF15 /* Info.plist */,
 				03E392BD2ADDA00F000ADF15 /* RaynTunnel.entitlements */,
@@ -266,15 +237,14 @@
 			path = RaynTunnel;
 			sourceTree = "<group>";
 		};
-		03E392CA2ADDE063000ADF15 /* SingBox */ = {
+		03E392CA2ADDE063000ADF15 /* Core */ = {
 			isa = PBXGroup;
 			children = (
 				03E392CB2ADDE078000ADF15 /* ExtensionProvider.swift */,
 				03E392D12ADDF1F4000ADF15 /* ExtensionPlatformInterface.swift */,
 				03E392D32ADDF262000ADF15 /* Extension+RunBlocking.swift */,
-				032158BB2ADDFD09008D943B /* SingBox.swift */,
 			);
-			path = SingBox;
+			path = Core;
 			sourceTree = "<group>";
 		};
 		03E392CD2ADDE103000ADF15 /* Shared */ = {
@@ -392,32 +362,6 @@
 			isa = PBXGroup;
 			children = (
 				413270682C8A9BA2003A1E9B /* RaynCore.xcframework */,
-				0736954E2B1FEB3E007249BE /* mobile_scanner.xcframework */,
-				07A63A932B1E72FB00CAFA4D /* cupertino_http.xcframework */,
-				07A63A972B1E72FB00CAFA4D /* device_info_plus.xcframework */,
-				07A63A952B1E72FB00CAFA4D /* FBLPromises.xcframework */,
-				07A63A942B1E72FB00CAFA4D /* flutter_native_splash.xcframework */,
-				07A63A982B1E72FB00CAFA4D /* GoogleDataTransport.xcframework */,
-				07A63A9C2B1E72FC00CAFA4D /* GoogleToolboxForMac.xcframework */,
-				07A63A962B1E72FB00CAFA4D /* GoogleUtilities.xcframework */,
-				07A63A9D2B1E72FC00CAFA4D /* GoogleUtilitiesComponents.xcframework */,
-				07A63A8C2B1E72FA00CAFA4D /* GTMSessionFetcher.xcframework */,
-				07A63A912B1E72FB00CAFA4D /* mobile_scanner.xcframework */,
-				07A63A9E2B1E72FC00CAFA4D /* nanopb.xcframework */,
-				07A63A8D2B1E72FB00CAFA4D /* package_info_plus.xcframework */,
-				07A63A9F2B1E72FC00CAFA4D /* path_provider_foundation.xcframework */,
-				07A63A9A2B1E72FB00CAFA4D /* protocol_handler.xcframework */,
-				07A63A992B1E72FB00CAFA4D /* sentry_flutter.xcframework */,
-				07A63AA12B1E72FC00CAFA4D /* Sentry.xcframework */,
-				07A63A8E2B1E72FB00CAFA4D /* SentryPrivate.xcframework */,
-				07A63A8F2B1E72FB00CAFA4D /* share_plus.xcframework */,
-				07A63AA02B1E72FC00CAFA4D /* shared_preferences_foundation.xcframework */,
-				07A63A922B1E72FB00CAFA4D /* sqlite3_flutter_libs.xcframework */,
-				07A63A9B2B1E72FC00CAFA4D /* sqlite3.xcframework */,
-				07A63A902B1E72FB00CAFA4D /* url_launcher_ios.xcframework */,
-				07A63A872B1E72C800CAFA4D /* Flutter.xcframework */,
-				07A63A842B1E72AE00CAFA4D /* App.xcframework */,
-				07A63A832B1E728C00CAFA4D /* Release */,
 				60F1D4AAC33ACF5C8307310D /* Pods_Runner.framework */,
 				03E392B72ADDA00E000ADF15 /* NetworkExtension.framework */,
 				30560DB3EFDF5E86AAD00AB8 /* Pods_RunnerTests.framework */,
@@ -545,6 +489,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB0000012E01000100000022 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -563,6 +508,7 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				BB0000012E01000100000021 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -668,8 +614,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				032158BA2ADDFCC9008D943B /* TrafficReader.swift in Sources */,
-				032158BC2ADDFD09008D943B /* SingBox.swift in Sources */,
 				03E392D22ADDF1F4000ADF15 /* ExtensionPlatformInterface.swift in Sources */,
 				03E392CC2ADDE078000ADF15 /* ExtensionProvider.swift in Sources */,
 				03E392BB2ADDA00F000ADF15 /* PacketTunnelProvider.swift in Sources */,
@@ -785,8 +729,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
-					"@executable_path/../hiddify-core/",
-					"@executable_path/hiddify-core/",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
@@ -838,8 +780,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
-					"@executable_path/../hiddify-core/",
-					"@executable_path/hiddify-core/",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
@@ -888,8 +828,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
-					"@executable_path/../hiddify-core/",
-					"@executable_path/hiddify-core/",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
@@ -989,8 +927,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
-					"@executable_path/../hiddify-core/",
-					"@executable_path/hiddify-core/",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CPLUSPLUSFLAGS = (
@@ -1019,10 +955,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 40102;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RPD5KQ8YA7;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 4.1.2;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.raynlabs.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -1038,10 +974,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 40102;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RPD5KQ8YA7;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 4.1.2;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.raynlabs.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -1055,10 +991,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 40102;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RPD5KQ8YA7;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 4.1.2;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.raynlabs.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -1213,8 +1149,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
-					"@executable_path/../hiddify-core/",
-					"@executable_path/hiddify-core/",
 				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"-fcxx-modules",
@@ -1263,8 +1197,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
-					"@executable_path/../hiddify-core/",
-					"@executable_path/hiddify-core/",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CPLUSPLUSFLAGS = (

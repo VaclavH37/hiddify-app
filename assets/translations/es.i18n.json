@@ -84,11 +84,6 @@
       }
     }
   },
-  "intro": {
-    "banner": "Todo lo que necesitas para un internet sin restricciones",
-    "termsAndPolicyCaution(rich)": "Al continuar, aceptas los ${tap(@:pages.about.termsAndConditions)}",
-    "info(rich)": "Hecho con ❤️ por Rayn VPN - ${tap_source(Código Abierto)} (${tap_license(Licencia)})"
-  },
   "pages": {
     "home": {
       "title": "Inicio",
@@ -284,14 +279,6 @@
       "title": "Funciones experimentales en uso",
       "msg": "Has habilitado algunas funciones experimentales que podrían afectar la calidad de la conexión y causar errores inesperados. Siempre puedes cambiar o restablecer estas opciones desde la página de configuración.",
       "disable": "No volver a mostrar"
-    },
-    "noActiveProfile": {
-      "title": "Elige un perfil",
-      "msg": "Para empezar, añade un perfil de conexión que incluya los detalles de tu conexión VPN.\n\n¿Aún no tienes un servidor VPN? No te preocupes, sigue el tutorial a continuación para configurar uno rápidamente y de forma gratuita.",
-      "helpBtn": {
-        "label": "Muéstrame cómo",
-        "url": "https://www.raynlabs.io/account"
-      }
     },
     "unknownDomainsWarning": {
       "title": "Advertencia de enlace externo",

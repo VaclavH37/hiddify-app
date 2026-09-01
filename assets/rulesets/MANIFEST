@@ -2,9 +2,9 @@
   "version": "2026-08-20",
   "fetched_at": "2026-08-20T07:00:40Z",
   "upstream_commit": {
-    "sing-geosite": "a70ce9f1f078f129cd40500f0bc0aee6eb6d59cd",
-    "sing-geoip": "b9c5e675b4d5359d4b47f4434fa7ae77e9991306",
-    "hiddify-geo": "63e46dee95fd0657030421e11c8398672abc6c74"
+    "geosite": "a70ce9f1f078f129cd40500f0bc0aee6eb6d59cd",
+    "geoip": "b9c5e675b4d5359d4b47f4434fa7ae77e9991306",
+    "blocklists": "63e46dee95fd0657030421e11c8398672abc6c74"
   },
   "files": [
     {"name": "direct-private.srs", "sha256": "260491243e0266e5ba543f509ca7f13b07d6f4c2c26ade3f675ddea1661f3213", "size": 754},

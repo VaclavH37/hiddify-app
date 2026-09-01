@@ -11,6 +11,7 @@ import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auth/model/payment_provider.dart';
 import 'package:hiddify/features/auth/notifier/logout_notifier.dart';
 import 'package:hiddify/features/auth/payment/data/iap_service.dart';
+import 'package:hiddify/features/auth/payment/widget/iap_outcome_message.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -119,16 +120,13 @@ class AccountSection extends ConsumerWidget {
           // Restore purchases — iOS only. App Review tests this explicitly, and
           // the paywall copy of it is unreachable once a profile exists (the
           // router sends /auth/* to /home), so it needs a home in Settings.
-          // Silent by design: outcomes go to IapService.outcomes, which has no
-          // listener here; a successful restore imports the profile and the
-          // account rows refresh themselves.
           if (PlatformUtils.isIOS) ...[
             RaynSettingsTile(
               leading: Icons.restore,
               title: t.auth.restorePurchases,
               subtitle: t.auth.restorePurchasesHint,
               enabled: !logoutLoading,
-              onTap: () => unawaited(ref.read(iapServiceProvider).restore()),
+              onTap: () => unawaited(_restorePurchases(context, ref, t)),
             ),
             const SizedBox(height: RaynSpacing.sm),
           ],
@@ -147,6 +145,48 @@ class AccountSection extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Restore purchases, and say what happened.
+  ///
+  /// [IapService.restore] resolves to whether it found an active purchase and
+  /// pushes one [IapPurchaseOutcome] per purchase on the broadcast `outcomes`
+  /// stream. Collecting those for the duration of the call is what lets this
+  /// tile report a result: App Review tests Restore explicitly, and a control
+  /// that produces nothing visible reads as broken. Re-tapping is safe —
+  /// restore is idempotent server-side — so the tile needs no busy state.
+  Future<void> _restorePurchases(BuildContext context, WidgetRef ref, Translations t) async {
+    final service = ref.read(iapServiceProvider);
+    final notifications = ref.read(inAppNotificationControllerProvider);
+    final outcomes = <IapPurchaseOutcome>[];
+    final sub = service.outcomes.listen(outcomes.add);
+
+    var found = false;
+    try {
+      found = await service.restore();
+    } catch (_) {
+      // restore() talks to the store and to the verify endpoint. Unhandled, a
+      // transport failure here would reach the user as exactly the silence this
+      // tile is being fixed for.
+      notifications.showErrorToast(t.auth.payment.errorGeneric);
+      return;
+    } finally {
+      await sub.cancel();
+    }
+
+    if (!found) {
+      notifications.showInfoToast(t.auth.restoreNone);
+      return;
+    }
+    // A restore can settle more than one purchase; report the best result, and
+    // otherwise the first failure with its specific reason.
+    if (outcomes.contains(IapPurchaseOutcome.imported)) {
+      notifications.showSuccessToast(t.auth.restoreDone);
+    } else if (outcomes.contains(IapPurchaseOutcome.activating)) {
+      notifications.showInfoToast(t.auth.restoreActivating);
+    } else {
+      notifications.showErrorToast(iapOutcomeMessage(t, outcomes.isEmpty ? null : outcomes.first));
+    }
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref, Translations t) async {
@@ -188,8 +228,9 @@ String _formatSubInfo(
   final isStoreManaged = isStoreManagedProvider(provider);
 
   // Line 1: absolute date, or "Never" for the infinite sentinel (mirrors the
-  // > 365-day infinity convention). For an auto-renewing Google Play plan this
-  // is the *renewal* date, so relabel accordingly.
+  // > 365-day infinity convention). For an auto-renewing store plan — Google
+  // Play or App Store, see isStoreManagedProvider — this is the *renewal* date,
+  // so relabel accordingly.
   final expiryValue = sub.remaining.inDays > 365
       ? t.components.subscriptionInfo.planExpiryNever
       : sub.expire.formatDate();
@@ -200,7 +241,7 @@ String _formatSubInfo(
   final lines = [line1];
 
   // Line 2 (when the backend sent a billing period): e.g. "Annual · Auto-renew"
-  // — auto-renew for Google Play, manual for any other provider.
+  // — auto-renew for either store, manual for any other provider.
   if (billingPeriod != null) {
     final renewType = isStoreManaged
         ? t.components.subscriptionInfo.autoRenew

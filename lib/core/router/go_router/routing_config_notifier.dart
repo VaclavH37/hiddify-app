@@ -8,6 +8,7 @@ import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.
 import 'package:hiddify/core/router/go_router/helper/custom_transition.dart';
 import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
 import 'package:hiddify/features/about/widget/about_page.dart';
+import 'package:hiddify/features/auth/delete/widget/delete_account_page.dart';
 import 'package:hiddify/features/auth/login/widget/login_page.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
 import 'package:hiddify/features/auth/payment/widget/payment_page.dart';
@@ -222,6 +223,15 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
           name: 'planTransition',
           path: '/upgrade',
           builder: (_, _) => const PlanTransitionPage(),
+        ),
+        // Post-auth full-screen: permanent account deletion, required by App
+        // Store guideline 5.1.1(v). Outside `/auth` for the same reason as
+        // /upgrade — the redirect must leave it alone while a profile exists,
+        // because deleting the account is only reachable once you have one.
+        GoRoute(
+          name: 'deleteAccount',
+          path: '/account/delete',
+          builder: (_, _) => const DeleteAccountPage(),
         ),
       ],
     );

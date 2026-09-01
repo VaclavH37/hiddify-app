@@ -2,8 +2,6 @@
 //  VPNConfig.swift
 //  Runner
 //
-//  Created by GFWFighter on 10/24/23.
-//
 
 import Foundation
 import Combine

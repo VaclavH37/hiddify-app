@@ -1,8 +1,6 @@
 //
 //  Logger.swift
-//  SingBoxPacketTunnel
-//
-//  Created by GFWFighter on 10/24/23.
+//  RaynTunnel
 //
 
 import Foundation

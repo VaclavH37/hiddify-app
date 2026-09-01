@@ -1,8 +1,6 @@
 //
 //  Extension+RunBlocking.swift
-//  SingBoxPacketTunnel
-//
-//  Created by GFWFighter on 7/25/1402 AP.
+//  RaynTunnel
 //
 
 import Foundation

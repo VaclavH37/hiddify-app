@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
-import 'package:hiddify/features/auth/payment/data/iap_service.dart';
 import 'package:hiddify/features/auth/payment/model/purchase_state.dart';
 import 'package:hiddify/features/auth/payment/notifier/purchase_notifier.dart';
+import 'package:hiddify/features/auth/payment/widget/iap_outcome_message.dart';
+import 'package:hiddify/features/auth/payment/widget/legal_links.dart';
 import 'package:hiddify/features/auth/payment/widget/plan_card.dart';
 import 'package:hiddify/features/auth/payment/widget/purchase_unavailable_notice.dart';
 import 'package:hiddify/utils/platform_utils.dart';
-import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Subscription purchase screen, reached after a `pending_payment` (or `expired`)
@@ -142,7 +141,7 @@ class PaymentPage extends ConsumerWidget {
             const Gap(16),
           ],
           if (state.status == PurchaseStatus.error) ...[
-            Text(_errorMessage(t, state.outcome), style: TextStyle(color: theme.colorScheme.error)),
+            Text(iapOutcomeMessage(t, state.outcome), style: TextStyle(color: theme.colorScheme.error)),
             const Gap(16),
           ],
           for (final offer in state.offers) ...[
@@ -167,70 +166,13 @@ class PaymentPage extends ConsumerWidget {
           // Functional Terms and Privacy links, in view before the user buys.
           // App Store guideline 3.1.2 requires both on the purchase surface,
           // not only in the store listing.
-          _LegalLinks(t: t),
+          LegalLinks(t: t),
           TextButton(
             onPressed: state.isBusy ? null : notifier.restore,
             child: Text(t.auth.payment.restore),
           ),
         ];
     }
-  }
-
-  String _errorMessage(Translations t, IapPurchaseOutcome? outcome) {
-    switch (outcome) {
-      case IapPurchaseOutcome.accountMismatch:
-        return t.auth.payment.errorAccountMismatch;
-      case IapPurchaseOutcome.tokenInUse:
-        return t.auth.payment.errorTokenInUse;
-      case IapPurchaseOutcome.ineligible:
-        return t.auth.payment.errorIneligible;
-      case IapPurchaseOutcome.familyShared:
-        return t.auth.payment.errorFamilyShared;
-      case IapPurchaseOutcome.needsLogin:
-        return t.auth.payment.errorNeedsLogin;
-      case IapPurchaseOutcome.reauthRequired:
-        return t.auth.payment.errorReauth;
-      case IapPurchaseOutcome.stillProvisioning:
-        return t.auth.payment.errorProvisioning;
-      case IapPurchaseOutcome.rateLimited:
-        return t.auth.payment.errorRateLimited;
-      case IapPurchaseOutcome.unreachable:
-        return t.auth.payment.errorUnreachable;
-      case IapPurchaseOutcome.updateRequired:
-        return t.auth.payment.errorUpdateRequired;
-      default:
-        return t.auth.payment.errorGeneric;
-    }
-  }
-}
-
-/// Terms of Use and Privacy Policy, under the auto-renew disclosure and in view
-/// before the user commits. App Store guideline 3.1.2 requires both on the
-/// purchase surface itself, not only in the store listing. Labels are reused
-/// from the onboarding disclosure so each link is worded once.
-class _LegalLinks extends StatelessWidget {
-  const _LegalLinks({required this.t});
-
-  final Translations t;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final style = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        TextButton(
-          onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.termsAndConditionsUrl)),
-          child: Text(t.disclosure.terms, style: style),
-        ),
-        Text('·', style: style),
-        TextButton(
-          onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.privacyPolicyUrl)),
-          child: Text(t.disclosure.privacyPolicy, style: style),
-        ),
-      ],
-    );
   }
 }
 

@@ -397,7 +397,7 @@ interface RaynBilling {
     fun setUp(binaryMessenger: BinaryMessenger, api: RaynBilling?, messageChannelSuffix: String = "") {
       val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.hiddify.RaynBilling.connect$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.connect$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
             api.connect{ result: Result<BillingConnState> ->
@@ -415,7 +415,7 @@ interface RaynBilling {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.hiddify.RaynBilling.queryOffers$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.queryOffers$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
@@ -435,7 +435,7 @@ interface RaynBilling {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.hiddify.RaynBilling.launchPurchase$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.launchPurchase$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
@@ -453,7 +453,7 @@ interface RaynBilling {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.hiddify.RaynBilling.queryActivePurchases$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.queryActivePurchases$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
             api.queryActivePurchases{ result: Result<List<RaynPurchase>> ->
@@ -471,7 +471,7 @@ interface RaynBilling {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.hiddify.RaynBilling.finishPurchase$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.finishPurchase$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
@@ -489,7 +489,7 @@ interface RaynBilling {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.hiddify.RaynBilling.endConnection$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.endConnection$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
             val wrapped: List<Any?> = try {
@@ -526,7 +526,7 @@ class RaynBillingEvents(private val binaryMessenger: BinaryMessenger, private va
   fun onPurchasesUpdated(purchasesArg: List<RaynPurchase>, responseCodeArg: Long, callback: (Result<Unit>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
-    val channelName = "dev.flutter.pigeon.hiddify.RaynBillingEvents.onPurchasesUpdated$separatedMessageChannelSuffix"
+    val channelName = "dev.flutter.pigeon.rayn.RaynBillingEvents.onPurchasesUpdated$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
     channel.send(listOf(purchasesArg, responseCodeArg)) {
       if (it is List<*>) {
@@ -547,7 +547,7 @@ class RaynBillingEvents(private val binaryMessenger: BinaryMessenger, private va
   fun onBillingDisconnected(callback: (Result<Unit>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
-    val channelName = "dev.flutter.pigeon.hiddify.RaynBillingEvents.onBillingDisconnected$separatedMessageChannelSuffix"
+    val channelName = "dev.flutter.pigeon.rayn.RaynBillingEvents.onBillingDisconnected$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
     channel.send(null) {
       if (it is List<*>) {

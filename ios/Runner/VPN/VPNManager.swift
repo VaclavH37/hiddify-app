@@ -2,8 +2,6 @@
 //  VPNManager.swift
 //  Runner
 //
-//  Created by GFWFighter on 7/25/1402 AP.
-//
 
 import Foundation
 import Combine
@@ -43,14 +41,14 @@ class VPNManager: ObservableObject {
     private var _connectTime: Date?
     private var connectTime: Date? {
         set {
-            UserDefaults(suiteName: FilePath.groupName)?.set(newValue?.timeIntervalSince1970, forKey: "SingBoxConnectTime")
+            UserDefaults(suiteName: FilePath.groupName)?.set(newValue?.timeIntervalSince1970, forKey: "RaynConnectTime")
             _connectTime = newValue
         }
         get {
             if let _connectTime {
                 return _connectTime
             }
-            guard let interval = UserDefaults(suiteName: FilePath.groupName)?.value(forKey: "SingBoxConnectTime") as? TimeInterval else {
+            guard let interval = UserDefaults(suiteName: FilePath.groupName)?.value(forKey: "RaynConnectTime") as? TimeInterval else {
                 return nil
             }
             return Date(timeIntervalSince1970: interval)
@@ -86,7 +84,9 @@ class VPNManager: ObservableObject {
         do {
             try await loadVPNPreference()
         } catch {
+            #if DEBUG
             print(error.localizedDescription)
+            #endif
         }
     }
     
@@ -107,7 +107,9 @@ class VPNManager: ObservableObject {
             try await newManager.loadFromPreferences()
             self.manager = newManager
         } catch {
-            print(error.localizedDescription)	
+            #if DEBUG
+            print(error.localizedDescription)
+            #endif
         }
     }
     
@@ -128,7 +130,9 @@ class VPNManager: ObservableObject {
             try await manager.saveToPreferences()
             try await manager.loadFromPreferences()
         } catch {
+            #if DEBUG
             print(error.localizedDescription)
+            #endif
         }
     }
     
@@ -168,7 +172,9 @@ class VPNManager: ObservableObject {
                     }
                     try await self?.loadVPNPreference()
                 } catch {
+                    #if DEBUG
                     print(error.localizedDescription)
+                    #endif
                 }
             }
         }.store(in: &cancelBag)
@@ -200,7 +206,9 @@ class VPNManager: ObservableObject {
                 }
             }
         } catch {
+            #if DEBUG
             print(error.localizedDescription)
+            #endif
         }
     }
     
@@ -217,7 +225,9 @@ class VPNManager: ObservableObject {
             ])
             
         } catch {
+            #if DEBUG
             print(error.localizedDescription)
+            #endif
         }
         connectTime = .now
     }
@@ -229,7 +239,9 @@ class VPNManager: ObservableObject {
             
             manager.saveToPreferences { error in
                 if let error = error {
+                    #if DEBUG
                     print("save error:", error)
+                    #endif
                     return
                 }
             }

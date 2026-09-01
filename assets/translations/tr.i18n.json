@@ -84,11 +84,6 @@
       }
     }
   },
-  "intro": {
-    "banner": "Sınırsız bir internet için ihtiyacınız olan her şey",
-    "termsAndPolicyCaution(rich)": "Devam ederek ${tap(@:pages.about.termsAndConditions)} kabul etmiş olursunuz",
-    "info(rich)": "Rayn VPN tarafından ❤️ ile yapıldı - ${tap_source(Açık Kaynak)} (${tap_license(Lisans)})"
-  },
   "pages": {
     "home": {
       "title": "Ana Sayfa",
@@ -284,14 +279,6 @@
       "title": "Deneysel özellikler kullanılıyor",
       "msg": "Bağlantı kalitesini etkileyebilecek ve beklenmedik hatalara neden olabilecek bazı deneysel özellikleri etkinleştirdiniz. Bu seçenekleri istediğiniz zaman yapılandırma sayfasından değiştirebilir veya sıfırlayabilirsiniz.",
       "disable": "Tekrar gösterme"
-    },
-    "noActiveProfile": {
-      "title": "Bir profil seçin",
-      "msg": "VPN bağlantı ayrıntılarınızı içeren bir bağlantı profili ekleyerek başlayalım.\n\nHenüz bir VPN sunucunuz yok mu? Endişelenmeyin, hızlı ve ücretsiz bir şekilde kurmak için aşağıdaki eğitimi takip edin.",
-      "helpBtn": {
-        "label": "Nasıl yapıldığını göster",
-        "url": "https://www.raynlabs.io/account"
-      }
     },
     "unknownDomainsWarning": {
       "title": "Dış bağlantı uyarısı",

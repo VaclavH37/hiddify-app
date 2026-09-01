@@ -84,11 +84,6 @@
       }
     }
   },
-  "intro": {
-    "banner": "All you need for an unrestricted internet",
-    "termsAndPolicyCaution(rich)": "By continuing you agree to ${tap(@:pages.about.termsAndConditions)}",
-    "info(rich)": "Made with ❤️ by Rayn VPN - ${tap_source(Open Source)} (${tap_license(License)})"
-  },
   "disclosure": {
     "agree": "Agree & Continue",
     "decline": "Decline",
@@ -129,6 +124,33 @@
     "manageSubscription": "Manage subscription",
     "restorePurchases": "Restore purchases",
     "restorePurchasesHint": "Re-link a subscription bought on another device",
+    "restoreDone": "Subscription restored.",
+    "restoreActivating": "Subscription found — activating your account.",
+    "restoreNone": "No active subscription found for this Apple Account.",
+    "deleteSection": "Account deletion",
+    "deleteAccountRow": "Delete account",
+    "deleteAccountRowHint": "Permanently remove your account and all its data",
+    "deleteAccount": {
+      "title": "Delete account",
+      "subtitle": "This permanently deletes your Rayn account. Confirm with your password to continue.",
+      "consequencePermanent": "Your account, subscription record and authentication token are permanently deleted. This cannot be undone.",
+      "consequenceDevice": "This device is disconnected and signed out, and the connection profile is removed.",
+      "consequenceStore": "Deleting your account does not cancel a store subscription. Cancel it separately in Settings > Apple Account > Subscriptions, or you will continue to be billed.",
+      "needsSignIn": "You signed in with a token on this device, so we need your email and password to confirm it is really you.",
+      "passwordLabel": "Password",
+      "confirmAction": "Delete my account",
+      "confirmTitle": "Delete your account?",
+      "confirmBody": "This permanently deletes your Rayn account and cannot be undone. If you have a store subscription, remember to cancel it separately.",
+      "confirmProceed": "Delete permanently",
+      "cancel": "Keep my account",
+      "done": "Your account has been deleted.",
+      "supportHint": "Can't sign in? Contact us and we'll delete it for you.",
+      "errorPassword": "That password isn't correct.",
+      "errorNeedsLogin": "Please enter your email and password to confirm.",
+      "errorRateLimited": "Too many attempts. Please try again later.",
+      "errorUnreachable": "Couldn't reach the account service. Please try again.",
+      "errorGeneric": "Something went wrong. Your account was not deleted."
+    },
     "logout": "Log out",
     "logoutConfirmTitle": "Log out?",
     "logoutConfirmBody": "Logging out disconnects and removes your authentication token from this device.\nYour token will also be removed. If you don't have it saved, copy it first using the button above. Continue?",
@@ -136,6 +158,7 @@
     "logoutCancel": "Cancel",
     "unreachable": {
       "body": "We couldn't reach the server — your network may be blocking it. Please try again in a moment, or import the authentication token from your account page instead. If you can't access your account, contact us at support@raynlabs.io.",
+      "bodyApple": "We couldn't reach the server — your network may be blocking it. Please try again in a moment, or import your Rayn link if you have it saved. If you're still stuck, contact us at support@raynlabs.io.",
       "openAccount": "Open account page",
       "contactSupport": "Contact support"
     },
@@ -151,6 +174,7 @@
       "invalidCredentials": "Email or password is incorrect.",
       "emailNotVerified": "Please verify your email to continue, then sign in again.",
       "accountSuspended": "Your account isn't active. Visit your account page to renew.",
+      "accountSuspendedApple": "Your account isn't active. Contact us at support@raynlabs.io and we'll get it sorted.",
       "accountDeactivated": "This account has been disabled. Please contact support.",
       "pendingPayment": "Your account isn't active yet. Finish setting it up on your account page.",
       "pendingActivation": "Your account is activating. Please check back in a few minutes.",
@@ -188,6 +212,7 @@
       "body": "We've sent a verification link to ${email}. Open it to activate your account, then sign in.",
       "bodyGeneric": "We've sent you a verification link. Open it to activate your account, then sign in.",
       "note": "Verification and payment are completed in your browser.",
+      "noteApple": "Verification is completed in your browser. Come back here and sign in once it's done.",
       "resend": "Resend verification email",
       "resendSent": "If an account exists, we've sent another email.",
       "resendFailed": "Couldn't resend right now. Please try again later.",
@@ -501,14 +526,6 @@
       "title": "Experimental features in use",
       "msg": "You've enabled some experimental features which might affect connection quality and cause unexpected errors. You can always change or reset these options from config options page.",
       "disable": "Don't show again"
-    },
-    "noActiveProfile": {
-      "title": "Choose a profile",
-      "msg": "Let's get started by adding a connection profile that includes your VPN connection details.\n\nDon’t have a VPN server yet? No worries—just follow the tutorial below to set one up quickly and for free.",
-      "helpBtn": {
-        "label": "Show me how",
-        "url": "https://www.raynlabs.io/account"
-      }
     },
     "unknownDomainsWarning": {
       "title": "External link warning",

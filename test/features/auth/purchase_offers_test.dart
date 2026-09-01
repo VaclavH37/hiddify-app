@@ -14,15 +14,15 @@ RaynOffer _offer(String basePlanId, {String? offerId, bool isTrial = false, Stri
     );
 
 void main() {
-  group('reducePlayOffers', () {
+  group('reduceStoreOffers', () {
     test('orders the base plans monthly → quarter → annual regardless of input order', () {
-      final result = reducePlayOffers([_offer('annual'), _offer('monthly'), _offer('quarter')]);
+      final result = reduceStoreOffers([_offer('annual'), _offer('monthly'), _offer('quarter')]);
       expect(result.map((o) => o.basePlanId), ['monthly', 'quarter', 'annual']);
     });
 
     test('keeps one offer per base plan, preferring the trial offer', () {
       // Play returns both the plain monthly base plan and its trial offer.
-      final result = reducePlayOffers([
+      final result = reduceStoreOffers([
         _offer('monthly', token: 'monthly-base'),
         _offer('monthly', offerId: 'trial', isTrial: true, token: 'monthly-trial'),
         _offer('quarter', token: 'quarter-base'),
@@ -36,7 +36,7 @@ void main() {
     });
 
     test('prefers the trial even when it arrives before the base plan', () {
-      final result = reducePlayOffers([
+      final result = reduceStoreOffers([
         _offer('monthly', offerId: 'trial', isTrial: true, token: 'monthly-trial'),
         _offer('monthly', token: 'monthly-base'),
       ]);
@@ -45,18 +45,18 @@ void main() {
     });
 
     test('keeps the base plan when no trial offer exists', () {
-      final result = reducePlayOffers([_offer('quarter', token: 'quarter-base')]);
+      final result = reduceStoreOffers([_offer('quarter', token: 'quarter-base')]);
       expect(result.single.offerToken, 'quarter-base');
       expect(result.single.isTrial, isFalse);
     });
 
     test('places unknown base plans after the known ones', () {
-      final result = reducePlayOffers([_offer('weekly'), _offer('annual'), _offer('monthly')]);
+      final result = reduceStoreOffers([_offer('weekly'), _offer('annual'), _offer('monthly')]);
       expect(result.map((o) => o.basePlanId), ['monthly', 'annual', 'weekly']);
     });
 
     test('empty in → empty out', () {
-      expect(reducePlayOffers([]), isEmpty);
+      expect(reduceStoreOffers([]), isEmpty);
     });
   });
 }

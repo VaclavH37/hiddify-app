@@ -9,6 +9,7 @@ import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
 import 'package:hiddify/features/auth/login/notifier/login_notifier.dart';
 import 'package:hiddify/features/auth/widget/auth_unreachable_help.dart';
+import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -186,7 +187,10 @@ class LoginPage extends HookConsumerWidget {
         // Handled by a redirect to the verification screen, not an inline message.
         return null;
       case LoginOutcome.accountSuspended:
-        return t.auth.login.accountSuspended;
+        // The stock copy tells the user to visit their account page. On iOS
+        // that page is an external purchase surface, so point at support
+        // instead — guideline 3.1.1.
+        return PlatformUtils.isIOS ? t.auth.login.accountSuspendedApple : t.auth.login.accountSuspended;
       case LoginOutcome.accountDeactivated:
         return t.auth.login.accountDeactivated;
       case LoginOutcome.pendingPayment:
@@ -211,6 +215,10 @@ class LoginPage extends HookConsumerWidget {
   }
 
   bool _showWebsiteLink(LoginOutcome? outcome) {
+    // Never on iOS: the account page exposes an external way to pay, and
+    // linking to one from inside the app is a guideline 3.1.1 rejection. Same
+    // rule the purchase-unavailable notice already applies.
+    if (PlatformUtils.isIOS) return false;
     switch (outcome) {
       case LoginOutcome.accountSuspended:
       case LoginOutcome.accountDeactivated:

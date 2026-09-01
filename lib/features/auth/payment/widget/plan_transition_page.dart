@@ -13,6 +13,8 @@ import 'package:hiddify/features/auth/payment/data/iap_service.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
 import 'package:hiddify/features/auth/payment/model/purchase_state.dart';
 import 'package:hiddify/features/auth/payment/notifier/purchase_notifier.dart';
+import 'package:hiddify/features/auth/payment/widget/iap_outcome_message.dart';
+import 'package:hiddify/features/auth/payment/widget/legal_links.dart';
 import 'package:hiddify/features/auth/payment/widget/plan_card.dart';
 import 'package:hiddify/features/auth/payment/widget/purchase_unavailable_notice.dart';
 import 'package:hiddify/features/auth/widget/auth_unreachable_help.dart';
@@ -23,13 +25,15 @@ import 'package:hiddify/utils/date_time_formatter.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-/// Web → Google Play plan-transition screen. Reached post-auth from
-/// Settings → Account (for users whose payment provider isn't `google_play`), it
-/// converts an active NOWPayments/Guardarian plan to an auto-renewing Google Play
-/// subscription. The purchase → `POST /iap/google/verify` → import chain is
-/// byte-for-byte identical to the sign-up [PaymentPage]; switching ends the
-/// current plan immediately and starts a fresh subscription (no remaining-time
-/// carry-over) — the client only sees the difference in the response body.
+/// Web → store plan-transition screen. Reached post-auth from Settings →
+/// Account (for users whose payment provider isn't store-managed), it converts
+/// an active NOWPayments/Guardarian plan to an auto-renewing store subscription
+/// — Google Play on Android, the App Store on iOS. The purchase → verify
+/// (`/iap/google/verify` or `/iap/apple/verify`, chosen by IapService) →
+/// import chain is byte-for-byte identical to the sign-up [PaymentPage];
+/// switching ends the current plan immediately and starts a fresh subscription
+/// (no remaining-time carry-over) — the client only sees the difference in the
+/// response body.
 ///
 /// Verify needs a live account session (24h `session_token` + `user_id`). Most
 /// transition users arrive via a token import (no session) or a stale one, and
@@ -72,8 +76,9 @@ class PlanTransitionPage extends HookConsumerWidget {
 
     ref.listen(purchaseNotifierProvider(true), (prev, next) {
       if (prev?.status == next.status && prev?.outcome == next.outcome) return;
-      // Imported → refresh the profile (its provider header flips to google_play,
-      // hiding this screen's entry row), confirm, and return to Settings.
+      // Imported → refresh the profile (its provider header flips to
+      // google_play or app_store, hiding this screen's entry row), confirm, and
+      // return to Settings.
       if (next.status == PurchaseStatus.success) {
         ref.read(foregroundProfilesUpdateNotifierProvider.notifier).trigger();
         ref.read(inAppNotificationControllerProvider).showSuccessToast(t.auth.planTransition.success);
@@ -176,7 +181,8 @@ class PlanTransitionPage extends HookConsumerWidget {
         return [
           // Transition explainer: shown only when there's trial time to lose, to
           // be transparent that switching ends the current plan and resets the
-          // data allowance (no carry-over) before Play takes over auto-renewal.
+          // data allowance (no carry-over) before the store takes over
+          // auto-renewal.
           if (remainingDays != null && remainingDays > 0) ...[
             _ExplainerCard(
               message: PlatformUtils.isIOS ? t.auth.planTransition.explainerApple : t.auth.planTransition.explainer,
@@ -188,7 +194,7 @@ class PlanTransitionPage extends HookConsumerWidget {
             const Gap(16),
           ],
           if (state.status == PurchaseStatus.error) ...[
-            Text(_errorMessage(t, state.outcome), style: TextStyle(color: theme.colorScheme.error)),
+            Text(iapOutcomeMessage(t, state.outcome), style: TextStyle(color: theme.colorScheme.error)),
             const Gap(16),
           ],
           for (final offer in state.offers) ...[
@@ -203,12 +209,18 @@ class PlanTransitionPage extends HookConsumerWidget {
             const Gap(12),
           ],
           const Gap(8),
+          // Auto-renewal disclosure. This screen completes a real purchase, so
+          // guideline 2.3.10 applies exactly as it does on PaymentPage: the
+          // wording must not name the other platform. It reads "Google Play" to
+          // an iPhone user without this branch.
           Text(
-            t.auth.payment.autoRenew,
+            PlatformUtils.isIOS ? t.auth.payment.autoRenewApple : t.auth.payment.autoRenew,
             style: theme.textTheme.bodySmall?.copyWith(color: palette.textMuted),
             textAlign: TextAlign.center,
           ),
-          const Gap(4),
+          // Terms and Privacy, required by guideline 3.1.2 on the surface where
+          // the purchase happens — not only on the sign-up paywall.
+          LegalLinks(t: t),
           TextButton(
             onPressed: state.isBusy ? null : notifier.restore,
             child: Text(t.auth.payment.restore),
@@ -217,39 +229,15 @@ class PlanTransitionPage extends HookConsumerWidget {
     }
   }
 
-  /// Projected first Play renewal date shown under each plan: today + the plan's
-  /// billing period. The current plan ends immediately on switch (no remaining-
-  /// time carry-over), so renewal follows the standard Play cycle from today.
-  /// A display estimate — the authoritative anchor is set by Google/the backend.
+  /// Projected first store renewal date shown under each plan: today + the
+  /// plan's billing period. The current plan ends immediately on switch (no
+  /// remaining-time carry-over), so renewal follows the standard store cycle
+  /// from today. A display estimate — the authoritative anchor is set by the
+  /// store and the backend.
   String? _nextRenewalLabel(Translations t, RaynOffer offer, int? remainingDays) {
     if (remainingDays == null) return null;
     final next = projectedRenewal(DateTime.now(), offer.billingPeriodIso);
     return t.auth.planTransition.nextBilling(date: next.formatDate());
-  }
-
-  String _errorMessage(Translations t, IapPurchaseOutcome? outcome) {
-    switch (outcome) {
-      case IapPurchaseOutcome.accountMismatch:
-        return t.auth.payment.errorAccountMismatch;
-      case IapPurchaseOutcome.tokenInUse:
-        return t.auth.payment.errorTokenInUse;
-      case IapPurchaseOutcome.ineligible:
-        return t.auth.payment.errorIneligible;
-      case IapPurchaseOutcome.familyShared:
-        return t.auth.payment.errorFamilyShared;
-      case IapPurchaseOutcome.needsLogin:
-        return t.auth.payment.errorNeedsLogin;
-      case IapPurchaseOutcome.reauthRequired:
-        return t.auth.payment.errorReauth;
-      case IapPurchaseOutcome.stillProvisioning:
-        return t.auth.payment.errorProvisioning;
-      case IapPurchaseOutcome.rateLimited:
-        return t.auth.payment.errorRateLimited;
-      case IapPurchaseOutcome.unreachable:
-        return t.auth.payment.errorUnreachable;
-      default:
-        return t.auth.payment.errorGeneric;
-    }
   }
 }
 
@@ -454,7 +442,6 @@ class _Banner extends StatelessWidget {
   }
 }
 
-/// Shown when Play billing isn't available — points the user to the website.
 /// Centered spinner with an optional label (loading / activating states).
 class _CenteredSpinner extends StatelessWidget {
   const _CenteredSpinner({this.label});

@@ -5,7 +5,8 @@ enum PurchaseStatus {
   /// Connecting + querying offers.
   loading,
 
-  /// Billing not available (no Play / unsupported) or no offers returned.
+  /// Billing not available (no Play Store, or `AppStore.canMakePayments`
+  /// false, or unsupported) or no offers returned.
   unavailable,
 
   /// Offers loaded; idle and ready to buy.
@@ -18,7 +19,8 @@ enum PurchaseStatus {
   /// a full-screen "activating your account" loading view while we poll.
   activating,
 
-  /// Play returned PENDING — payment is processing out of band.
+  /// The store returned PENDING — payment is processing out of band (a slow
+  /// card on Play, Ask-to-Buy or SCA on Apple).
   processing,
 
   /// Verified + imported; the router redirect swaps to /home.

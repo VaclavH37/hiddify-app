@@ -6,6 +6,7 @@ import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/features/auth/register/notifier/resend_verification_notifier.dart';
+import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -69,7 +70,10 @@ class VerifyEmailPage extends ConsumerWidget {
                     ),
                     const Gap(8),
                     Text(
-                      t.auth.verifyEmail.note,
+                      // On iOS payment happens through StoreKit, not the
+                      // website, so the note must not send the user to a
+                      // browser to pay — guideline 3.1.1.
+                      PlatformUtils.isIOS ? t.auth.verifyEmail.noteApple : t.auth.verifyEmail.note,
                       style: theme.textTheme.bodySmall?.copyWith(color: palette.textMuted),
                       textAlign: TextAlign.center,
                     ),
@@ -105,11 +109,12 @@ class VerifyEmailPage extends ConsumerWidget {
                       ),
                     ),
                     const Gap(8),
-                    TextButton.icon(
-                      onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
-                      icon: const Icon(Icons.open_in_new, size: 18),
-                      label: Text(t.auth.verifyEmail.openWebsite),
-                    ),
+                    if (!PlatformUtils.isIOS)
+                      TextButton.icon(
+                        onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        label: Text(t.auth.verifyEmail.openWebsite),
+                      ),
                   ],
                 ),
               ),

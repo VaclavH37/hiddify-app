@@ -31,10 +31,6 @@ open class ExtensionProvider: NEPacketTunnelProvider {
             
             let config = options?["Config"] as? NSString as? String ?? ""
             
-            // guard let config = SingBox.setupConfig(config: config2) else {
-            //             writeFatalError("(packet-tunnel) error: config is invalid")
-            //             return
-            // }
 //            self.config = config
 
             do {

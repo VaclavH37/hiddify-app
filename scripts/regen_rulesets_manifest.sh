@@ -27,6 +27,14 @@ fetch_commit() {
   fi
 }
 
+# Provenance role -> upstream repo. The MANIFEST records these under neutral
+# role names for the same reason the local file names are region-agnostic
+# (see below): MANIFEST ships inside the app bundle as plain text, so a vendor
+# name there is readable by anyone who unzips the IPA/AAB. The mapping lives
+# here, in a file that is not shipped.
+#   geosite    -> SagerNet/sing-geosite
+#   geoip      -> SagerNet/sing-geoip
+#   blocklists -> hiddify/hiddify-geo
 GEOSITE_COMMIT="$(fetch_commit SagerNet/sing-geosite)"
 GEOIP_COMMIT="$(fetch_commit SagerNet/sing-geoip)"
 BLOCK_COMMIT="$(fetch_commit hiddify/hiddify-geo)"
@@ -85,9 +93,9 @@ cat > "${MANIFEST}" <<EOF
   "version": "${VERSION}",
   "fetched_at": "${FETCHED_AT}",
   "upstream_commit": {
-    "sing-geosite": "${GEOSITE_COMMIT}",
-    "sing-geoip": "${GEOIP_COMMIT}",
-    "hiddify-geo": "${BLOCK_COMMIT}"
+    "geosite": "${GEOSITE_COMMIT}",
+    "geoip": "${GEOIP_COMMIT}",
+    "blocklists": "${BLOCK_COMMIT}"
   },
   "files": [${files_json}
   ]

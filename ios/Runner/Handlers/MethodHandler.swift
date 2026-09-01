@@ -2,8 +2,6 @@
 //  MethodHandler.swift
 //  Runner
 //
-//  Created by GFWFighter on 10/23/23.
-//
 
 import Flutter
 import Combine

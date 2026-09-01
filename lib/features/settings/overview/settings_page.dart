@@ -205,6 +205,23 @@ class SettingsPage extends HookConsumerWidget {
             RaynSectionHeader(t.pages.about.title),
             _Tile(title: t.pages.about.title, icon: Icons.info_rounded, location: context.namedLocation('about')),
           ],
+          // Account deletion gets its own section, last on the page. App Store
+          // guideline 5.1.1(v) requires it to be reachable in-app; keeping it
+          // apart from the Account block means it is never a mis-tap away from
+          // Copy token or Restore purchases.
+          const _SectionDivider(),
+          RaynSectionHeader(t.auth.deleteSection),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+            child: RaynSettingsTile(
+              leading: Icons.person_remove_outlined,
+              title: t.auth.deleteAccountRow,
+              subtitle: t.auth.deleteAccountRowHint,
+              accentColor: context.rayn.danger,
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.pushNamed('deleteAccount'),
+            ),
+          ),
         ],
       ),
     );

@@ -26,7 +26,11 @@ import 'package:pigeon/pigeon.dart';
     kotlinOut: 'android/app/src/main/kotlin/com/raynlabs/app/billing/RaynBilling.g.kt',
     kotlinOptions: KotlinOptions(package: 'com.raynlabs.app.billing'),
     swiftOut: 'ios/Runner/Billing/RaynBilling.g.swift',
-    dartPackageName: 'hiddify',
+    // Prefixes every generated method-channel name. It is internal (all three
+    // sides are regenerated together), but it is a STRING LITERAL, so it
+    // survives Dart's --obfuscate and lands verbatim in the shipped Dart
+    // snapshot, the Swift binary and the Kotlin DEX.
+    dartPackageName: 'rayn',
   ),
 )
 // Result of connecting to the store.

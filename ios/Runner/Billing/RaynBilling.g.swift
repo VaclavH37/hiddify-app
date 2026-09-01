@@ -411,7 +411,7 @@ class RaynBillingSetup {
   static func setUp(binaryMessenger: FlutterBinaryMessenger, api: RaynBilling?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
     /// Build + connect the BillingClient (idempotent; reconnects if dropped).
-    let connectChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.hiddify.RaynBilling.connect\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    let connectChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.connect\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       connectChannel.setMessageHandler { _, reply in
         api.connect { result in
@@ -432,7 +432,7 @@ class RaynBillingSetup {
     /// offer. Apple: [productId] names the subscription GROUP, which the host
     /// expands into one product per base plan (`<productId>_<basePlanId>`) and
     /// returns a single offer for each.
-    let queryOffersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.hiddify.RaynBilling.queryOffers\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    let queryOffersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.queryOffers\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       queryOffersChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -455,7 +455,7 @@ class RaynBillingSetup {
     /// to parse as a UUID, and the host omits the option rather than send a
     /// fabricated value. Not @async — it returns immediately; the purchase
     /// comes back through [RaynBillingEvents].
-    let launchPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.hiddify.RaynBilling.launchPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    let launchPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.launchPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       launchPurchaseChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -475,7 +475,7 @@ class RaynBillingSetup {
     /// restore-on-reinstall. Play: `queryPurchasesAsync`. Apple: the union of
     /// `Transaction.currentEntitlements` and `Transaction.unfinished`, so an
     /// interrupted verify is replayed as well as a reinstall.
-    let queryActivePurchasesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.hiddify.RaynBilling.queryActivePurchases\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    let queryActivePurchasesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.queryActivePurchases\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       queryActivePurchasesChannel.setMessageHandler { _, reply in
         api.queryActivePurchases { result in
@@ -498,7 +498,7 @@ class RaynBillingSetup {
     /// follows the backend. Dart calls it from exactly one place: immediately
     /// after `verify` returns 200. Play never acknowledges locally, so its
     /// implementation is a deliberate no-op.
-    let finishPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.hiddify.RaynBilling.finishPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    let finishPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.finishPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       finishPurchaseChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -514,7 +514,7 @@ class RaynBillingSetup {
       finishPurchaseChannel.setMessageHandler(nil)
     }
     /// Tear down the store connection (e.g. on logout / app dispose).
-    let endConnectionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.hiddify.RaynBilling.endConnection\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    let endConnectionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.endConnection\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       endConnectionChannel.setMessageHandler { _, reply in
         do {
@@ -553,7 +553,7 @@ class RaynBillingEvents: RaynBillingEventsProtocol {
   /// From `PurchasesUpdatedListener`. Dart verifies PURCHASED items, shows
   /// "processing" for PENDING, and resets the UI on USER_CANCELED.
   func onPurchasesUpdated(purchases purchasesArg: [RaynPurchase], responseCode responseCodeArg: Int64, completion: @escaping (Result<Void, PigeonError>) -> Void) {
-    let channelName: String = "dev.flutter.pigeon.hiddify.RaynBillingEvents.onPurchasesUpdated\(messageChannelSuffix)"
+    let channelName: String = "dev.flutter.pigeon.rayn.RaynBillingEvents.onPurchasesUpdated\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
     channel.sendMessage([purchasesArg, responseCodeArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
@@ -573,7 +573,7 @@ class RaynBillingEvents: RaynBillingEventsProtocol {
   /// From `onBillingServiceDisconnected` — Dart may trigger a reconnect. Never
   /// fired on iOS; StoreKit has no connection to lose.
   func onBillingDisconnected(completion: @escaping (Result<Void, PigeonError>) -> Void) {
-    let channelName: String = "dev.flutter.pigeon.hiddify.RaynBillingEvents.onBillingDisconnected\(messageChannelSuffix)"
+    let channelName: String = "dev.flutter.pigeon.rayn.RaynBillingEvents.onBillingDisconnected\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
     channel.sendMessage(nil) { response in
       guard let listResponse = response as? [Any?] else {

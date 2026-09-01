@@ -42,6 +42,33 @@
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
+		<!-- Two account-level identifiers, both under this one type:
+
+		     * the RouteKey account UUID, persisted by SessionTokenStore and sent to
+		       Apple as StoreKit's `appAccountToken` so a purchase binds to the right
+		       account (IapService.buy);
+		     * the registration `display_name` (RegisterNotifier.register), which is
+		       a chosen username, NOT the user's real name.
+
+		     A username belongs here rather than under ...TypeName: Apple lists
+		     "screen name, handle, account ID" as User ID, and reserves Name for a
+		     real first/last name. Declaring Name instead would tell users on the
+		     App Privacy label that we collect their real identity, which we do not.
+
+		     Linked, because both are tied to the account. Never used to track
+		     across apps or sites. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeUserID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
@@ -53,6 +80,13 @@
 				<string>C617.1</string>
 			</array>
 		</dict>
+		<!-- DiskSpace and SystemBootTime have no first-party Swift caller, and it is
+		     tempting to delete them as over-declared. Do not. Apple requires a
+		     declaration for a required-reason API used by ANY code in the binary,
+		     and RaynCore.xcframework is a large Go static library whose runtime and
+		     dependencies are not auditable from this side. Over-declaring costs
+		     nothing; under-declaring is an ITMS-91053 rejection on upload. The
+		     asymmetry decides it. -->
 		<dict>
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
@@ -69,12 +103,25 @@
 				<string>35F9.1</string>
 			</array>
 		</dict>
+		<!-- Both UserDefaults scopes are used and both must be declared; one
+		     dict per API category, with every applicable reason inside it.
+
+		     1C8F.1 is the App Group scope: VPNManager.swift reads and writes
+		     UserDefaults(suiteName: FilePath.groupName) so the packet-tunnel
+		     extension can see the same values.
+
+		     CA92.1 is the app's own scope: Stored.swift backs every @Stored
+		     property in VPNConfig.swift with UserDefaults.standard, and the
+		     shared_preferences plugin is UserDefaults.standard too. Declaring
+		     only 1C8F.1 leaves that use undeclared, which is an ITMS-91053 on
+		     upload now that this manifest is actually copied into the bundle. -->
 		<dict>
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
 				<string>1C8F.1</string>
+				<string>CA92.1</string>
 			</array>
 		</dict>
 	</array>

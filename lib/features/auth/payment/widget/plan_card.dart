@@ -5,7 +5,8 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
 import 'package:intl/intl.dart';
 
-/// Localized plan name for a Play base-plan id.
+/// Localized plan name for a base-plan id (`monthly` / `quarter` / `annual`,
+/// the same ids on both stores).
 String planName(Translations t, String basePlanId) {
   switch (basePlanId) {
     case 'monthly':
@@ -19,7 +20,7 @@ String planName(Translations t, String basePlanId) {
   }
 }
 
-/// Localized "per …" label for a Play base-plan id.
+/// Localized "per …" label for a base-plan id.
 String periodLabel(Translations t, String basePlanId) {
   switch (basePlanId) {
     case 'quarter':
@@ -55,7 +56,8 @@ DateTime projectedRenewal(DateTime from, String billingPeriodIso) {
 }
 
 /// The currency-formatted per-month equivalent for multi-month plans (null for
-/// monthly), computed from Play's price so it's correct in any currency.
+/// monthly), computed from the store's own localized price so it's correct in
+/// any currency.
 String? perMonthEquivalent(RaynOffer offer) {
   final months = periodMonths(offer.billingPeriodIso);
   if (months <= 1) return null;
@@ -64,7 +66,7 @@ String? perMonthEquivalent(RaynOffer offer) {
 }
 
 /// A single live, tappable pricing tier. Shared by the sign-up payment screen and
-/// the web→Google Play plan-transition screen; the latter passes a [footnote]
+/// the web→store plan-transition screen; the latter passes a [footnote]
 /// (e.g. the projected next-renewal date).
 class PlanCard extends StatelessWidget {
   const PlanCard({

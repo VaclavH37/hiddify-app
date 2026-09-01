@@ -8,17 +8,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'purchase_notifier.g.dart';
 
-/// Play `BillingResponseCode`s the launch result is checked against.
+/// Billing response codes the launch result is checked against. The values are
+/// Play's `BillingResponseCode` integers; the StoreKit host deliberately mirrors
+/// them (see RaynBillingHandler.swift) so one branch serves both stores.
 const _kBillingOk = 0;
 const _kBillingUserCanceled = 1;
 
 /// Fixed display order of the base plans.
 const _planOrder = ['monthly', 'quarter', 'annual'];
 
-/// Reduce Play's raw offers to one per base plan — preferring the trial offer
-/// (so eligible users see the free trial) — then order monthly→quarter→annual.
-/// Pure; unit-tested.
-List<RaynOffer> reducePlayOffers(List<RaynOffer> all) {
+/// Reduce the store's raw offers to one per base plan — preferring the trial
+/// offer (so eligible users see the free trial) — then order
+/// monthly→quarter→annual. Pure; unit-tested.
+List<RaynOffer> reduceStoreOffers(List<RaynOffer> all) {
   final byPlan = <String, RaynOffer>{};
   for (final offer in all) {
     final existing = byPlan[offer.basePlanId];
@@ -34,11 +36,11 @@ List<RaynOffer> reducePlayOffers(List<RaynOffer> all) {
   return byPlan.values.toList()..sort((a, b) => orderOf(a.basePlanId).compareTo(orderOf(b.basePlanId)));
 }
 
-/// Like [reducePlayOffers] but prefers the plain base plan over the trial offer.
-/// The web→Google Play transition charges the user immediately (the backend
+/// Like [reduceStoreOffers] but prefers the plain base plan over the trial
+/// offer. The web→store transition charges the user immediately (the backend
 /// defers the *next* billing anchor by their remaining paid time), so surfacing
-/// a "free trial" offer would be misleading — fall back to a trial only if Play
-/// returns nothing else for a plan. Pure; unit-tested.
+/// a "free trial" offer would be misleading — fall back to a trial only if the
+/// store returns nothing else for a plan. Pure; unit-tested.
 List<RaynOffer> reduceUpgradeOffers(List<RaynOffer> all) {
   final byPlan = <String, RaynOffer>{};
   for (final offer in all) {
@@ -60,9 +62,9 @@ List<RaynOffer> reduceUpgradeOffers(List<RaynOffer> all) {
 /// Auto-disposed with the screen (cancels the outcome subscription); the
 /// underlying [IapService] is keepAlive.
 ///
-/// [transition] selects the web→Google Play plan-transition variant, which shows
+/// [transition] selects the web→store plan-transition variant, which shows
 /// base-plan offers (no trial) via [reduceUpgradeOffers]; the default sign-up
-/// screen ([transition] == false) prefers the trial via [reducePlayOffers]. The
+/// screen ([transition] == false) prefers the trial via [reduceStoreOffers]. The
 /// buy/verify/import chain is identical for both.
 @riverpod
 class PurchaseNotifier extends _$PurchaseNotifier with InfraLogger {
@@ -86,14 +88,14 @@ class PurchaseNotifier extends _$PurchaseNotifier with InfraLogger {
       return;
     }
     final raw = await _service.loadOffers();
-    final offers = _transition ? reduceUpgradeOffers(raw) : reducePlayOffers(raw);
+    final offers = _transition ? reduceUpgradeOffers(raw) : reduceStoreOffers(raw);
     state = offers.isEmpty
         ? PurchaseState.unavailable
         : PurchaseState(status: PurchaseStatus.ready, offers: offers);
   }
 
-  /// Launch the Play sheet for [offer]. The purchase result returns via the
-  /// outcome stream — only a failure to *open* the sheet is handled here.
+  /// Launch the store's purchase sheet for [offer]. The purchase result returns
+  /// via the outcome stream — only a failure to *open* the sheet is handled here.
   Future<void> buy(RaynOffer offer) async {
     if (state.isBusy) return;
     state = state.copyWith(status: PurchaseStatus.busy, pendingOfferToken: offer.offerToken, outcome: null);

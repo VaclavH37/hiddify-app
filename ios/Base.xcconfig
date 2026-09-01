@@ -2,8 +2,6 @@
 //  Base.xcconfig
 //  Runner
 //
-//  Created by GFWFighter on 7/24/1402 AP.
-//
 
 // Pulls in FLUTTER_BUILD_NAME / FLUTTER_BUILD_NUMBER, which Flutter regenerates
 // from pubspec.yaml on every build.

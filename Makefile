@@ -185,7 +185,13 @@ prepare:
 common-prepare:  get gen translate
 windows-prepare: common-prepare windows-libs
 	
-ios-prepare: common-prepare ios-libs 
+# Deliberately does NOT depend on ios-libs. That target downloads upstream
+# Hiddify's prebuilt core (see the target itself), and depending on it meant a
+# routine `make ios-prepare` would quietly stage someone else's binary into
+# ios/Frameworks/ for shipping. RaynCore.xcframework comes from
+# `make build-ios-libs`, which compiles our own fork — run that first if
+# ios/Frameworks/RaynCore.xcframework is absent.
+ios-prepare: common-prepare
 	cd ios; pod repo update; pod install;echo "done ios prepare"
 	
 macos-prepare: common-prepare macos-libs
@@ -622,10 +628,14 @@ macos-libs:
 	mkdir -p  $(DESKTOP_OUT) 
 	curl -L $(CORE_URL)/$(CORE_NAME)-macos.tar.gz | tar xz -C $(DESKTOP_OUT)
 
-ios-libs: #not tested
-	mkdir -p $(IOS_OUT)
-	rm -rf $(IOS_OUT)/RaynCore.xcframework
-	curl -L $(CORE_URL)/$(CORE_NAME)-ios.tar.gz | tar xz -C "$(IOS_OUT)"
+# Disabled on purpose. This used to curl $(CORE_NAME)-ios.tar.gz from
+# github.com/hiddify/hiddify-next-core — UPSTREAM HIDDIFY'S COMPILED CORE —
+# straight into ios/Frameworks/. IOS_BUILD.md already said never to run it;
+# leaving the recipe in place meant that rule was enforced only by memory.
+ios-libs:
+	@$(YELLOW)ios-libs is disabled: it downloads upstream Hiddify's prebuilt core, which must never ship in a Rayn build.$(DONE)
+	@$(YELLOW)Build the real framework on macOS with: make build-ios-libs$(DONE)
+	@exit 1
 
 get-geo-assets:
 	echo ""
