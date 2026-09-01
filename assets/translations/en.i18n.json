@@ -147,6 +147,8 @@
       "supportHint": "Can't sign in? Contact us and we'll delete it for you.",
       "errorPassword": "That password isn't correct.",
       "errorNeedsLogin": "Please enter your email and password to confirm.",
+      "errorAccountLocked": "This account is under review, so it can't be deleted right now. Please contact support@raynlabs.io.",
+      "errorPaymentInFlight": "A payment is still processing. Please try again in about an hour.",
       "errorRateLimited": "Too many attempts. Please try again later.",
       "errorUnreachable": "Couldn't reach the account service. Please try again.",
       "errorGeneric": "Something went wrong. Your account was not deleted."
@@ -378,9 +380,11 @@
       "title": "About",
       "subtitle": "App version, links, and legal information.",
       "links": "Links",
+      "support": "Support",
       "telegramChannel": "Telegram channel",
       "termsAndConditions": "Terms and conditions",
-      "privacyPolicy": "Privacy policy"
+      "privacyPolicy": "Privacy policy",
+      "copyright": "© ${year} ${company}"
     },
     "settings": {
       "title": "Settings",

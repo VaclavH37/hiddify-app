@@ -27,7 +27,7 @@ part 'delete_account_notifier.g.dart';
 ///
 /// Deleting the account does NOT cancel an App Store or Google Play
 /// subscription — only the store can do that. The screen says so before the
-/// user confirms; see `t.auth.deleteAccount.storeSubscriptionWarning`.
+/// user confirms; see `t.auth.deleteAccount.consequenceStore`.
 @riverpod
 class DeleteAccountNotifier extends _$DeleteAccountNotifier with AppLogger {
   @override
@@ -52,33 +52,19 @@ class DeleteAccountNotifier extends _$DeleteAccountNotifier with AppLogger {
       return;
     }
 
-    var reauthed = false;
-    while (true) {
-      try {
-        await client.gatedPost('/api/public/account/delete', {'password': password}, bearer: bearer);
-        break;
-      } on AuthApiException catch (e) {
-        // The session is valid but older than the freshness window the backend
-        // requires for destructive calls. Same recovery as the cryptolink
-        // fetch in LoginNotifier: re-auth once with the password we already
-        // have, then retry.
-        if (e.code == 'REAUTH_REQUIRED' && !reauthed) {
-          reauthed = true;
-          try {
-            await client.gatedPost('/api/public/reauth', {'password': password}, bearer: bearer);
-            continue;
-          } on AuthApiException {
-            state = DeleteAccountState.fail(DeleteAccountOutcome.invalidPassword);
-            return;
-          }
-        }
-        state = DeleteAccountState.fail(_mapError(e));
-        return;
-      } catch (e, st) {
-        loggy.warning("unexpected account-delete failure", e, st);
-        state = DeleteAccountState.fail(DeleteAccountOutcome.generic);
-        return;
-      }
+    // No REAUTH_REQUIRED handling: the route re-verifies the password on every
+    // call, so session-age gating would add nothing and the backend never
+    // returns it here. A bare 403 is a failed proof-of-work, which gatedPost
+    // has already retried once with a fresh challenge by the time we see it.
+    try {
+      await client.gatedPost('/api/public/account/delete', {'password': password}, bearer: bearer);
+    } on AuthApiException catch (e) {
+      state = DeleteAccountState.fail(_mapError(e));
+      return;
+    } catch (e, st) {
+      loggy.warning("unexpected account-delete failure", e, st);
+      state = DeleteAccountState.fail(DeleteAccountOutcome.generic);
+      return;
     }
 
     // The account is gone server-side. That is the terminal truth, so report it
@@ -93,12 +79,36 @@ class DeleteAccountNotifier extends _$DeleteAccountNotifier with AppLogger {
     loggy.info("account deleted and device wiped");
   }
 
+  /// Maps the account API's contract for this route.
+  ///
+  /// Every branch here is keyed on the `code` first and the status second,
+  /// because on this route the status alone is ambiguous in both directions:
+  /// 401 is either a wrong password or a dead session, and 403 is either a
+  /// failed proof-of-work or a locked account.
   DeleteAccountOutcome _mapError(AuthApiException e) {
     if (e.isUnreachable) return DeleteAccountOutcome.unreachable;
-    if (e.code == 'INVALID_PASSWORD') return DeleteAccountOutcome.invalidPassword;
-    if (e.status == 401) return DeleteAccountOutcome.needsLogin;
-    if (e.status == 403) return DeleteAccountOutcome.invalidPassword;
+
+    // The distinction that matters most. Without it a mistyped password reads
+    // as an expired session and throws the user back to the sign-in step.
+    if (e.status == 401) {
+      return e.code == 'INVALID_CREDENTIALS'
+          ? DeleteAccountOutcome.invalidPassword
+          : DeleteAccountOutcome.needsLogin;
+    }
+
+    // 403 ACCOUNT_LOCKED. Reporting this as a password failure would tell a
+    // user under investigation to retype a password that was already correct,
+    // forever.
+    if (e.code == 'ACCOUNT_LOCKED') return DeleteAccountOutcome.accountLocked;
+
+    if (e.code == 'PAYMENT_IN_FLIGHT') return DeleteAccountOutcome.paymentInFlight;
+
+    // 429 arrives as text/plain with a JSON-shaped body, so it decodes to an
+    // empty map and carries no code. The status is the only reliable signal,
+    // and there is no Retry-After header anywhere in this API.
     if (e.status == 429) return DeleteAccountOutcome.rateLimited;
+
+    // Includes a bare 403 whose PoW retry also failed, and every 5xx.
     return DeleteAccountOutcome.generic;
   }
 }

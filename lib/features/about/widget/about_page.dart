@@ -79,6 +79,20 @@ class AboutPage extends HookConsumerWidget {
             ),
           ),
           RaynSectionHeader(t.pages.about.links),
+          // Support first: it is what people open this page looking for, and the
+          // store listing promises "the support link in the app".
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+            child: RaynSettingsTile(
+              leading: FluentIcons.person_support_24_regular,
+              title: t.pages.about.support,
+              trailing: const Icon(FluentIcons.open_24_regular),
+              onTap: () async {
+                await UriUtils.tryLaunch(Uri.parse(Constants.supportUrl));
+              },
+            ),
+          ),
+          const SizedBox(height: RaynSpacing.sm),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
             child: RaynSettingsTile(
@@ -112,6 +126,21 @@ class AboutPage extends HookConsumerWidget {
               onTap: () async {
                 await UriUtils.tryLaunch(Uri.parse(Constants.privacyPolicyUrl));
               },
+            ),
+          ),
+          const SizedBox(height: RaynSpacing.xl),
+          // Names the publisher inside the app, not just in the store listing.
+          // The year tracks the clock rather than being frozen in a literal that
+          // silently goes stale.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
+            child: Text(
+              t.pages.about.copyright(
+                year: DateTime.now().year.toString(),
+                company: Constants.companyLegalName,
+              ),
+              textAlign: TextAlign.center,
+              style: RaynTypography.caption.copyWith(color: palette.textMuted),
             ),
           ),
         ],

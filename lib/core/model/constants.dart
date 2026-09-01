@@ -26,6 +26,11 @@ abstract class Constants {
   static const diagnosticsBuild = kDebugMode || bool.fromEnvironment("RAYN_DIAGNOSTICS");
 
   static const appName = "Rayn VPN";
+
+  /// The legal entity that publishes the app. Shown on the About screen so the
+  /// publisher is identifiable from inside the app and not only from the store
+  /// listing, and used wherever the company has to be named verbatim.
+  static const companyLegalName = "Rayn Labs L.L.C.";
   static const telegramChannelUrl = "https://t.me/raynlabs";
   static const privacyPolicyUrl = "https://www.raynlabs.io/legal/privacy";
   static const termsAndConditionsUrl = "https://www.raynlabs.io/legal/terms";
@@ -44,6 +49,14 @@ abstract class Constants {
   /// Support inbox surfaced when the account API can't be reached (e.g. the
   /// host is packet-filtered) and the user can't recover via their token.
   static const supportEmail = "support@raynlabs.io";
+
+  /// Support page, linked from About. The store listing tells users to reach us
+  /// "through the support link in the app", so one has to exist and resolve.
+  ///
+  /// This page must never expose pricing or a way to pay. If it ever does it
+  /// becomes an external purchase surface and would have to be hidden on iOS
+  /// like [accountUrl] is — which would break the promise the listing makes.
+  static const supportUrl = "https://www.raynlabs.io/support";
 
   /// Google Play subscription product id (a single product carrying the
   /// monthly / quarter / annual base plans + the `trial` offer). The client

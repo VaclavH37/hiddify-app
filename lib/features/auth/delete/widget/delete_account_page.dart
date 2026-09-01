@@ -240,6 +240,10 @@ class DeleteAccountPage extends HookConsumerWidget {
         return t.auth.deleteAccount.errorPassword;
       case DeleteAccountOutcome.needsLogin:
         return t.auth.deleteAccount.errorNeedsLogin;
+      case DeleteAccountOutcome.accountLocked:
+        return t.auth.deleteAccount.errorAccountLocked;
+      case DeleteAccountOutcome.paymentInFlight:
+        return t.auth.deleteAccount.errorPaymentInFlight;
       case DeleteAccountOutcome.rateLimited:
         return t.auth.deleteAccount.errorRateLimited;
       case DeleteAccountOutcome.unreachable:

@@ -93,31 +93,61 @@ void main() {
     expect(fake.paths, isEmpty, reason: 'must not call delete without a session');
   });
 
-  test('403 INVALID_PASSWORD → invalidPassword', () async {
+  // Both 401 shapes exist on this route and mean opposite things. Getting these
+  // two the wrong way round sends a user who mistyped their password back to
+  // the sign-in screen, which is what the first implementation did.
+  test('401 INVALID_CREDENTIALS → invalidPassword, and stays on this screen', () async {
     final c = containerWith(_FakeAuthApiClient(errors: {
-      '/api/public/account/delete': const AuthApiException(status: 403, code: 'INVALID_PASSWORD', message: 'bad password'),
+      '/api/public/account/delete':
+          const AuthApiException(status: 401, code: 'INVALID_CREDENTIALS', message: 'invalid credentials'),
     }));
     await c.read(deleteAccountNotifierProvider.notifier).deleteAccount('wrong');
     expect(c.read(deleteAccountNotifierProvider).outcome, DeleteAccountOutcome.invalidPassword);
   });
 
-  test('REAUTH_REQUIRED → re-auths once and retries the delete', () async {
-    final fake = _FakeAuthApiClient(errors: {
-      '/api/public/account/delete': const AuthApiException(status: 403, code: 'REAUTH_REQUIRED', message: 'stale session'),
-    });
-    final c = containerWith(fake);
+  test('bare 401 → needsLogin', () async {
+    final c = containerWith(_FakeAuthApiClient(errors: {
+      '/api/public/account/delete': const AuthApiException(status: 401, message: 'unauthorized'),
+    }));
     await c.read(deleteAccountNotifierProvider.notifier).deleteAccount('hunter2hunter2');
-    expect(c.read(deleteAccountNotifierProvider).phase, DeleteAccountPhase.success);
-    expect(fake.paths, [
-      '/api/public/account/delete',
-      '/api/public/reauth',
-      '/api/public/account/delete',
-    ]);
+    expect(c.read(deleteAccountNotifierProvider).outcome, DeleteAccountOutcome.needsLogin);
   });
 
-  test('429 → rateLimited', () async {
+  test('403 ACCOUNT_LOCKED → accountLocked, never a password error', () async {
     final c = containerWith(_FakeAuthApiClient(errors: {
-      '/api/public/account/delete': const AuthApiException(status: 429, message: 'slow down'),
+      '/api/public/account/delete':
+          const AuthApiException(status: 403, code: 'ACCOUNT_LOCKED', message: 'under investigation'),
+    }));
+    await c.read(deleteAccountNotifierProvider.notifier).deleteAccount('hunter2hunter2');
+    expect(c.read(deleteAccountNotifierProvider).outcome, DeleteAccountOutcome.accountLocked,
+        reason: 'a locked account retyping a correct password must not be told it is wrong');
+  });
+
+  test('409 PAYMENT_IN_FLIGHT → paymentInFlight', () async {
+    final c = containerWith(_FakeAuthApiClient(errors: {
+      '/api/public/account/delete':
+          const AuthApiException(status: 409, code: 'PAYMENT_IN_FLIGHT', message: 'payment settling'),
+    }));
+    await c.read(deleteAccountNotifierProvider.notifier).deleteAccount('hunter2hunter2');
+    expect(c.read(deleteAccountNotifierProvider).outcome, DeleteAccountOutcome.paymentInFlight);
+  });
+
+  // gatedPost retries a bare 403 once with a fresh challenge. If it still fails
+  // the proof-of-work is genuinely not being accepted, which is not something
+  // the user can fix by retyping anything.
+  test('bare 403 that survived the PoW retry → generic', () async {
+    final c = containerWith(_FakeAuthApiClient(errors: {
+      '/api/public/account/delete': const AuthApiException(status: 403, message: 'forbidden'),
+    }));
+    await c.read(deleteAccountNotifierProvider.notifier).deleteAccount('hunter2hunter2');
+    expect(c.read(deleteAccountNotifierProvider).outcome, DeleteAccountOutcome.generic);
+  });
+
+  // A 429 body is text/plain despite looking like JSON, so it decodes to an
+  // empty map and carries no code — the status is all there is to branch on.
+  test('429 with no code → rateLimited', () async {
+    final c = containerWith(_FakeAuthApiClient(errors: {
+      '/api/public/account/delete': const AuthApiException(status: 429, message: 'too many requests'),
     }));
     await c.read(deleteAccountNotifierProvider.notifier).deleteAccount('hunter2hunter2');
     expect(c.read(deleteAccountNotifierProvider).outcome, DeleteAccountOutcome.rateLimited);

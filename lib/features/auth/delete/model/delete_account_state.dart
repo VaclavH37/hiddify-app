@@ -1,16 +1,31 @@
 /// Outcome kinds the delete-account screen renders on a non-success result.
 /// Mirrors the shape of `RegisterOutcome` / `LoginOutcome`.
 enum DeleteAccountOutcome {
-  /// `403 INVALID_PASSWORD` — the confirmation password was wrong. The only
+  /// `401 INVALID_CREDENTIALS` — the confirmation password was wrong. The only
   /// outcome the user can fix by retrying on this screen.
+  ///
+  /// Note the status: a wrong password is a 401, the same status as a dead
+  /// session, and the two are told apart only by the code.
   invalidPassword,
 
   /// `401`, or no `session_token` on the device at all. The account API cannot
   /// identify the caller, so the screen falls back to its sign-in step.
   needsLogin,
 
-  /// `429` — deletion is rate limited server-side. Retrying immediately will
-  /// not help.
+  /// `403 ACCOUNT_LOCKED` — an admin has the account under investigation.
+  /// Unrecoverable from this screen no matter how correct the password is, so
+  /// it must never be reported as a password failure.
+  accountLocked,
+
+  /// `409 PAYMENT_IN_FLIGHT` — a crypto/fiat payment is still settling, and the
+  /// backend refuses deletion until it lands so a settlement cannot arrive for
+  /// an account that no longer exists. Self-clearing, retryable in about an
+  /// hour. Store subscriptions are excluded from this check by design, so it
+  /// can never block an App Store subscriber (guideline 5.1.1(v)).
+  paymentInFlight,
+
+  /// `429` — deletion is rate limited server-side (5 per IP per hour, shared
+  /// with `/forgot-password`). Retrying immediately will not help.
   rateLimited,
 
   /// Transport failure: the account host could not be reached.
