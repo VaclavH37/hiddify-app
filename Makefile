@@ -115,6 +115,15 @@ FF_OBFUSCATE=--flutter-build-args=obfuscate,split-debug-info=build/symbols
 #   make ios-release CHANNEL=prod \
 #     FF_DART_DEFINES=--build-dart-define=RAYN_DIAGNOSTICS=true
 #
+# Also carries MARKETING_SCREENSHOTS, which pins the latency the UI reports
+# so that a set of store screenshots reads as one session:
+#
+#   make android-apk-release \
+#     FF_DART_DEFINES=--build-dart-define=MARKETING_SCREENSHOTS=true
+#
+# Forwarded by the android, windows and ios targets. NOT by linux or macos:
+# add it there before reaching for it, rather than assuming it took effect.
+#
 # Never set this for a shipping build.
 FF_DART_DEFINES=
 
@@ -376,6 +385,7 @@ android-apk-release: check-rulesets-fresh rayn-link-key
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  $(FF_OBFUSCATE) \
+	  $(FF_DART_DEFINES) \
 	  --build-target-platform=android-arm,android-arm64,android-x64
 	ls -R build/app/outputs
 
@@ -387,6 +397,7 @@ android-aab-release: check-rulesets-fresh rayn-link-key
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  $(FF_OBFUSCATE) \
+	  $(FF_DART_DEFINES) \
 	  --build-dart-define=release=google-play
 
 windows-release: windows-zip-release windows-exe-release windows-msix-release
@@ -399,6 +410,7 @@ windows-zip-release: check-rulesets-fresh rayn-link-key
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  $(FF_OBFUSCATE) \
+	  $(FF_DART_DEFINES) \
 	  --build-dart-define=portable=true
 	@FULL_PATH=$$(ls dist/*/*.zip | head -n 1); \
 	ZIP_DIR=$$(dirname "$$FULL_PATH"); \
@@ -421,7 +433,8 @@ windows-exe-release: check-rulesets-fresh rayn-link-key
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
-	  $(FF_OBFUSCATE)
+	  $(FF_OBFUSCATE) \
+	  $(FF_DART_DEFINES)
 
 windows-msix-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
@@ -430,7 +443,8 @@ windows-msix-release: check-rulesets-fresh rayn-link-key
 	  --skip-clean \
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
-	  $(FF_OBFUSCATE)
+	  $(FF_OBFUSCATE) \
+	  $(FF_DART_DEFINES)
 
 linux-release: linux-deb-release linux-appimage-release
 

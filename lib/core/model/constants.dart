@@ -25,6 +25,23 @@ abstract class Constants {
   /// bootstrap.
   static const diagnosticsBuild = kDebugMode || bool.fromEnvironment("RAYN_DIAGNOSTICS");
 
+  /// Whether this build pins the numbers that would otherwise differ between
+  /// one screenshot and the next.
+  ///
+  ///   flutter build windows --dart-define=MARKETING_SCREENSHOTS=true
+  ///   make android-apk-release \
+  ///     FF_DART_DEFINES=--build-dart-define=MARKETING_SCREENSHOTS=true
+  ///
+  /// Store listings are a set of stills that have to read as one session. A
+  /// real capture run shows whatever the hub answered in at that instant — a
+  /// different latency in every shot, and every so often a timeout that also
+  /// drops the connection button back to its "connected, no usable delay"
+  /// state. See `pinDelayForMarketing`.
+  ///
+  /// **Never distribute a build with this set.** The latency it reports is
+  /// asserted, not measured.
+  static const marketingScreenshots = bool.fromEnvironment("MARKETING_SCREENSHOTS");
+
   static const appName = "Rayn VPN";
 
   /// The legal entity that publishes the app. Shown on the About screen so the

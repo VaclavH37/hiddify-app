@@ -5,6 +5,7 @@ import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/utils/throttler.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/proxy/active/marketing_delay.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
 import 'package:hiddify/features/proxy/model/ip_info_entity.dart' as oldipinfo;
 import 'package:hiddify/features/proxy/model/proxy_failure.dart';
@@ -90,7 +91,8 @@ class ActiveProxyNotifier extends _$ActiveProxyNotifier with AppLogger {
         .read(proxyRepositoryProvider)
         .watchActiveProxies()
         .map((event) => event.getOrElse((l) => List<OutboundGroup>.empty()))
-        .map((event) => event.firstOrNull?.items.first ?? OutboundInfo());
+        .map((event) => event.firstOrNull?.items.first ?? OutboundInfo())
+        .map(pinDelayForMarketing);
   }
 
   final _urlTestThrottler = Throttler(const Duration(seconds: 1));
