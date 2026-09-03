@@ -28,7 +28,10 @@ class HomeTopBarBell extends StatelessWidget {
 class HomeMobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const HomeMobileAppBar({super.key});
 
-  static const double _height = 56;
+  // Raised from the Material default 56 to clear the doubled wordmark: the
+  // 48px icon is the tallest element, and at 56 it would sit with 4px of air
+  // top and bottom and read as clipped. 72 keeps a deliberate 12px.
+  static const double _height = 72;
 
   @override
   Size get preferredSize => const Size.fromHeight(_height);
@@ -44,9 +47,11 @@ class HomeMobileAppBar extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: RaynSpacing.lg,
       // Hamburger removed on mobile — primary nav lives in the bottom
       // NavigationBar (Home + Settings).
-      // App-bar-scaled brand wordmark (WORDMARK.md proportions); shares the
-      // RaynWordmark widget with the auth screen.
-      title: const RaynWordmark(iconSize: 24, wordSize: 20, suffixSize: 12, gap: 6),
+      // Brand wordmark at DOUBLE the WORDMARK.md app-bar proportions, by
+      // explicit request — the mark is the only branding on the connection
+      // screen, so it carries more weight here than in a dense app bar. All
+      // four values are scaled together so the mark doesn't distort.
+      title: const RaynWordmark(iconSize: 48, wordSize: 40, suffixSize: 24, gap: 12),
       actions: const [
         Padding(
           padding: EdgeInsets.only(right: RaynSpacing.md),

@@ -25,6 +25,11 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     required this.success,
     required this.warning,
     required this.danger,
+    required this.stateDisconnected,
+    required this.stateConnecting,
+    required this.stateConnected,
+    required this.stateError,
+    required this.logoNeutral,
     required this.goldGlow,
     required this.navSelectedFill,
     required this.navSelectedBorder,
@@ -77,6 +82,25 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   final Color warning;
   final Color danger;
 
+  /// Connection-state brand colours. The connection button tints the logo
+  /// silhouette with one of these (BlendMode.srcIn), so they ARE the state
+  /// indicator — there is no separate coloured asset per state.
+  ///
+  /// Deliberately identical in both brightnesses: these are brand colours, not
+  /// surface colours, and the mark has to read as "the amber one" regardless of
+  /// theme. `stateError` has no ConnectionStatus member — it is reached from an
+  /// `AsyncError`.
+  final Color stateDisconnected;
+  final Color stateConnecting;
+  final Color stateConnected;
+  final Color stateError;
+
+  /// The logo tinted to sit on the current surface rather than to signal state
+  /// — white on dark, charcoal on light. Used by the sidebar, the wordmark and
+  /// About, which before the raster switch took their colour from the SVG's own
+  /// fill and so needed no token at all.
+  final Color logoNeutral;
+
   /// Pre-mixed gold glow (alpha already baked in) used by the ping-pill /
   /// orb shadow.
   final Color goldGlow;
@@ -100,6 +124,11 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     success: Color(0xFF3DD68C),
     warning: Color(0xFFE8C547),
     danger: Color(0xFFE5484D),
+    stateDisconnected: Color(0xFF1E3A8A),
+    stateConnecting: Color(0xFF3A84CA),
+    stateConnected: Color(0xFFF59E0B),
+    stateError: Color(0xFFF24444),
+    logoNeutral: Color(0xFFFFFFFF),
     // Alpha encodes the *max* halo intensity; animation breathes from
     // glowMax * 0.6 → glowMax.
     goldGlow: Color(0x80E8A317),
@@ -125,6 +154,13 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     success: Color(0xFF15803D),
     warning: Color(0xFFCA8A04),
     danger: Color(0xFFDC2626),
+    stateDisconnected: Color(0xFF1E3A8A),
+    stateConnecting: Color(0xFF3A84CA),
+    stateConnected: Color(0xFFF59E0B),
+    stateError: Color(0xFFF24444),
+    // Charcoal, matching this palette's own textPrimary rather than a new
+    // invented value.
+    logoNeutral: Color(0xFF2A241F),
     goldGlow: Color(0x33D6A34A),
     navSelectedFill: Color(0x1FD6A34A),
     navSelectedBorder: Color(0x3DD6A34A),
@@ -146,6 +182,11 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     Color? success,
     Color? warning,
     Color? danger,
+    Color? stateDisconnected,
+    Color? stateConnecting,
+    Color? stateConnected,
+    Color? stateError,
+    Color? logoNeutral,
     Color? goldGlow,
     Color? navSelectedFill,
     Color? navSelectedBorder,
@@ -165,6 +206,11 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       success: success ?? this.success,
       warning: warning ?? this.warning,
       danger: danger ?? this.danger,
+      stateDisconnected: stateDisconnected ?? this.stateDisconnected,
+      stateConnecting: stateConnecting ?? this.stateConnecting,
+      stateConnected: stateConnected ?? this.stateConnected,
+      stateError: stateError ?? this.stateError,
+      logoNeutral: logoNeutral ?? this.logoNeutral,
       goldGlow: goldGlow ?? this.goldGlow,
       navSelectedFill: navSelectedFill ?? this.navSelectedFill,
       navSelectedBorder: navSelectedBorder ?? this.navSelectedBorder,
@@ -189,6 +235,11 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       danger: Color.lerp(danger, other.danger, t)!,
+      stateDisconnected: Color.lerp(stateDisconnected, other.stateDisconnected, t)!,
+      stateConnecting: Color.lerp(stateConnecting, other.stateConnecting, t)!,
+      stateConnected: Color.lerp(stateConnected, other.stateConnected, t)!,
+      stateError: Color.lerp(stateError, other.stateError, t)!,
+      logoNeutral: Color.lerp(logoNeutral, other.logoNeutral, t)!,
       goldGlow: Color.lerp(goldGlow, other.goldGlow, t)!,
       navSelectedFill: Color.lerp(navSelectedFill, other.navSelectedFill, t)!,
       navSelectedBorder: Color.lerp(navSelectedBorder, other.navSelectedBorder, t)!,

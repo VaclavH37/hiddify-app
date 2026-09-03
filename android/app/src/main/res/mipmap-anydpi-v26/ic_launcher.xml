@@ -6,4 +6,12 @@
           android:drawable="@drawable/ic_launcher_foreground"
           android:inset="16%" />
   </foreground>
+  <!-- Android 13+ themed icons. Without this the launcher falls back to the
+       full-colour icon and ignores the user's wallpaper theming entirely.
+       Same 16% inset as the foreground so both layers register exactly. -->
+  <monochrome>
+      <inset
+          android:drawable="@drawable/ic_launcher_monochrome"
+          android:inset="16%" />
+  </monochrome>
 </adaptive-icon>

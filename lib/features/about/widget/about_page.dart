@@ -58,7 +58,12 @@ class AboutPage extends HookConsumerWidget {
             child: GlassSurface(
               child: Row(
                 children: [
-                  Assets.images.logo.svg(width: 56, height: 56),
+                  Assets.images.logo.image(
+                    width: 56,
+                    height: 56,
+                    color: palette.logoNeutral,
+                    colorBlendMode: BlendMode.srcIn,
+                  ),
                   const SizedBox(width: RaynSpacing.lg),
                   Expanded(
                     child: Column(

@@ -21,6 +21,7 @@ import 'package:hiddify/features/notifications/notifier/notification_monitor.dar
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
 import 'package:hiddify/features/shortcut/shortcut_wrapper.dart';
+import 'package:hiddify/features/splash/widget/splash_page.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
 import 'package:hiddify/features/window/widget/window_wrapper.dart';
 import 'package:hiddify/hiddifycore/rayn_core_service_provider.dart';
@@ -129,9 +130,17 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
                   title: Constants.appName,
                   builder: (context, child) {
                     final theme = Theme.of(context);
-                    child = child ?? const SizedBox();
+                    // Branded launch screen over the first route. Inside the
+                    // builder rather than around MaterialApp so it inherits the
+                    // theme and Directionality, and mobile-only (see SplashGate).
+                    //
+                    // Assigned to a local rather than back onto `child`: the
+                    // parameter reassignment this replaces tripped
+                    // parameter_assignments, and rebinding a parameter makes the
+                    // wrapping order harder to follow than it needs to be.
+                    final Widget content = SplashGate(child: child ?? const SizedBox());
                     if (kDebugMode && _debugAccessibility) {
-                      return AccessibilityTools(checkFontOverflows: true, child: child);
+                      return AccessibilityTools(checkFontOverflows: true, child: content);
                     }
                     return AnnotatedRegion<SystemUiOverlayStyle>(
                       value: SystemUiOverlayStyle(
@@ -141,7 +150,7 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
                             ? Brightness.light
                             : Brightness.dark,
                       ),
-                      child: child,
+                      child: content,
                     );
                   },
                 );

@@ -6,7 +6,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/router/dialog/widgets/custom_alert_dialog.dart';
-import 'package:hiddify/core/theme/theme_extensions.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/widget/animated_text.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
@@ -58,8 +58,8 @@ class ConnectionButton extends HookConsumerWidget {
     //   //   },
     //   // );
 
-    const buttonTheme = ConnectionButtonTheme.light;
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final palette = context.rayn;
 
     //   // return CircleDesignWidget(
     //   //   onTap: switch (connectionStatus) {
@@ -141,15 +141,28 @@ class ConnectionButton extends HookConsumerWidget {
         AsyncData(value: final status) => status.present(t),
         _ => "",
       },
+      // Tints the logo silhouette (BlendMode.srcIn, below), so this switch IS
+      // the state indicator. Values come from RaynPalette rather than inline
+      // hex so the desktop tray icons, which are pre-rendered at these same
+      // colours, cannot drift away from the in-app tint.
+      //
+      // The two `when` guards keep their ad-hoc colours: they are sub-states of
+      // Connected ("reconnect to apply" and "connected but no usable delay")
+      // and have no brand colour assigned yet. Amber would make them
+      // indistinguishable from a healthy connection.
       buttonColor: switch (connectionStatus) {
         AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
         AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color.fromARGB(255, 185, 176, 103),
-        AsyncData(value: Connected()) => const Color(0xFFF59E0B),
-        AsyncData(value: Connecting()) => const Color(0xFFF59E0B),
-        AsyncData(value: Disconnecting()) => const Color(0xFF52525B),
-        AsyncData(value: Disconnected()) => const Color(0xFF52525B),
-        AsyncData(value: _) => const Color(0xFF52525B),
-        _ => Colors.red,
+        AsyncData(value: Connected()) => palette.stateConnected,
+        // Both transitions share one colour, matching how the tray treats them.
+        AsyncData(value: Connecting()) => palette.stateConnecting,
+        AsyncData(value: Disconnecting()) => palette.stateConnecting,
+        AsyncData(value: Disconnected()) => palette.stateDisconnected,
+        AsyncError() => palette.stateError,
+        // AsyncLoading, and any ConnectionStatus added later. Previously this
+        // fell through to a bare `Colors.red`, so the orb flashed red during
+        // the initial load before the first status arrived.
+        _ => palette.stateDisconnected,
       },
       backgroundColor: switch (connectionStatus) {
         AsyncData(value: Disconnected()) => isLight ? Colors.white : const Color(0xFFF4F4F5),
@@ -157,13 +170,6 @@ class ConnectionButton extends HookConsumerWidget {
       },
       borderSide: isLight ? const BorderSide(color: Color(0xFFEFE6D9)) : BorderSide.none,
       glowAlpha: isLight ? 0.35 : 0.5,
-      newButtonColor: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
-        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color.fromARGB(255, 185, 176, 103),
-        AsyncData(value: Connected()) => buttonTheme.connectedColor!,
-        AsyncData(value: _) => buttonTheme.idleColor!,
-        _ => Colors.red,
-      },
       animated: switch (connectionStatus) {
         AsyncData(value: Connected()) when requiresReconnect == true => false,
         AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => false,
@@ -183,7 +189,6 @@ class _ConnectionButton extends StatelessWidget {
     required this.label,
     required this.buttonColor,
     required this.backgroundColor,
-    required this.newButtonColor,
     required this.animated,
     required this.secureLabel,
     this.borderSide = BorderSide.none,
@@ -196,8 +201,6 @@ class _ConnectionButton extends StatelessWidget {
   final Color buttonColor;
   final Color backgroundColor;
   final String secureLabel;
-
-  final Color newButtonColor;
 
   final bool animated;
 
@@ -243,7 +246,7 @@ class _ConnectionButton extends StatelessWidget {
                           tween: ColorTween(end: buttonColor),
                           duration: const Duration(milliseconds: 600),
                           builder: (context, value, child) =>
-                              Assets.images.logo.svg(colorFilter: ColorFilter.mode(value!, BlendMode.srcIn)),
+                              Assets.images.logo.image(color: value, colorBlendMode: BlendMode.srcIn),
                         ),
                       ),
                     ),

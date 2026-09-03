@@ -25,12 +25,28 @@ class RaynWordmark extends StatelessWidget {
     this.wordSize = 30,
     this.suffixSize = 18,
     this.gap = 8,
+    this.showIcon = true,
+    this.raynColor,
+    this.vpnColor,
   });
 
   final double iconSize;
   final double wordSize;
   final double suffixSize;
   final double gap;
+
+  /// Drop the icon and render the words alone. For surfaces that already show
+  /// the mark separately — the splash puts the icon at screen centre and the
+  /// words at the top, so a second inline icon would duplicate it.
+  final bool showIcon;
+
+  /// Override the palette-derived text colours. Only for a surface whose
+  /// background is fixed regardless of theme (again, the splash: it is always
+  /// black, so the light-theme `textPrimary` would be near-invisible on it).
+  /// Leave null everywhere else — that is what keeps the mark legible on both
+  /// themes.
+  final Color? raynColor;
+  final Color? vpnColor;
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +56,15 @@ class RaynWordmark extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Assets.images.logo.svg(width: iconSize, height: iconSize),
-        SizedBox(width: gap),
+        if (showIcon) ...[
+          Assets.images.logo.image(
+            width: iconSize,
+            height: iconSize,
+            color: palette.logoNeutral,
+            colorBlendMode: BlendMode.srcIn,
+          ),
+          SizedBox(width: gap),
+        ],
         Row(
           mainAxisSize: MainAxisSize.min,
           // "VPN" centers against the vertical middle of "RAYN" (not baseline).
@@ -49,7 +72,7 @@ class RaynWordmark extends StatelessWidget {
             Text(
               'RAYN',
               style: TextStyle(
-                color: palette.textPrimary,
+                color: raynColor ?? palette.textPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize: wordSize,
                 height: 1,
@@ -60,7 +83,7 @@ class RaynWordmark extends StatelessWidget {
             Text(
               'VPN',
               style: TextStyle(
-                color: palette.textMuted,
+                color: vpnColor ?? palette.textMuted,
                 fontWeight: FontWeight.w500,
                 fontSize: suffixSize,
                 height: 1,

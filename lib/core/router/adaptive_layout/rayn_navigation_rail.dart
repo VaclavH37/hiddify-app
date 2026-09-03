@@ -93,7 +93,14 @@ class _BrandBlock extends StatelessWidget {
     if (!extended) {
       // Collapsed rail: just the icon — the "RAYN VPN" wordmark won't fit in
       // the 72px column.
-      return Center(child: Assets.images.logo.svg(width: 32, height: 32));
+      return Center(
+        child: Assets.images.logo.image(
+          width: 32,
+          height: 32,
+          color: context.rayn.logoNeutral,
+          colorBlendMode: BlendMode.srcIn,
+        ),
+      );
     }
     // Extended rail: full brand wordmark per WORDMARK.md, compact variant so
     // the icon stays at the rail's established 32px.
