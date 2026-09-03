@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import math
 import os
 import struct
 import sys
@@ -38,6 +39,15 @@ TEMPLATE = "Logo/rayn_frog_centered_v2_white_transparent.png"
 # It carries two colours, so the alpha-only model above does not apply to it —
 # it needs a real premultiplied RGBA resample (see resample_rgba).
 WINDOWS_TEMPLATE = "Logo/rayn_vpn_icon_amber_black.png"
+
+# macOS is the exact inverse of iOS: the system rounds nothing, so the tile has
+# to be drawn into the artwork. Apple's icon grid puts an 824x824 rounded square
+# inside the 1024 canvas with a 185.4px corner radius, leaving the outer ~10%
+# as the gutter the Dock's shadow and magnification need. Expressed as
+# fractions so every size in the set is generated from the same geometry.
+MAC_TILE = 824 / 1024      # tile side, as a fraction of the canvas
+MAC_RADIUS = 185.4 / 824   # corner radius, as a fraction of the tile side
+MAC_MARK = 0.70            # mark width, of the canvas == 87% of the tile
 
 # Brand colours. The four states are the same values the connection button
 # tints with (RaynPalette.state*); keeping them here means a generated tray
@@ -236,6 +246,67 @@ def resample_rgba(w: int, h: int, px: bytes, n: int) -> bytes:
     return bytes(out)
 
 
+def rounded_square_mask(canvas: int, side: float, radius: float,
+                        ss: int = 8) -> array:
+    """Anti-aliased alpha mask of a centred rounded square.
+
+    `side` is a fraction of the canvas, `radius` a fraction of that side.
+
+    Coverage is supersampled only along the boundary. A rounded box has a cheap
+    exact signed distance, and a pixel further than half its diagonal from the
+    edge is wholly in or wholly out — so one distance test settles almost every
+    pixel and the ss^2 inner loop runs on ~4*side of them, not on the area.
+    """
+    out = array("B", bytes(canvas * canvas))
+    half = canvas * side / 2.0
+    r = min(half, 2 * half * radius)
+    c = canvas / 2.0
+    inner = half - r                      # half-extent of the straight section
+    step, diag = 1.0 / ss, math.sqrt(0.5)
+
+    def dist(px: float, py: float) -> float:
+        qx, qy = abs(px - c) - inner, abs(py - c) - inner
+        return (min(max(qx, qy), 0.0)
+                + math.hypot(max(qx, 0.0), max(qy, 0.0)) - r)
+
+    for y in range(canvas):
+        base = y * canvas
+        for x in range(canvas):
+            d = dist(x + 0.5, y + 0.5)
+            if d <= -diag:
+                out[base + x] = 255
+            elif d < diag:
+                hits = 0
+                for sy in range(ss):
+                    py = y + (sy + 0.5) * step
+                    for sx in range(ss):
+                        if dist(x + (sx + 0.5) * step, py) <= 0.0:
+                            hits += 1
+                out[base + x] = (hits * 255 + (ss * ss) // 2) // (ss * ss)
+    return out
+
+
+def tile_rgba(tile: array, mark: array, fg, bg) -> bytes:
+    """A flat `fg` mark on an opaque `bg` tile, clipped to the tile's alpha.
+
+    Multiplying the mark by the tile mask is what stops ink spilling past a
+    rounded corner, and RGB stays `bg` outside the mark so that even a naive
+    downscaler — one that averages straight RGB — cannot drag colour out into
+    the transparent gutter.
+    """
+    out = bytearray(len(tile) * 4)
+    luts = [bytes(((fg[c] * v + bg[c] * (255 - v)) + 127) // 255
+                  for v in range(256)) for c in range(3)]
+    for i, t in enumerate(tile):
+        m = (mark[i] * t + 127) // 255
+        o = i * 4
+        out[o] = luts[0][m]
+        out[o + 1] = luts[1][m]
+        out[o + 2] = luts[2][m]
+        out[o + 3] = t
+    return bytes(out)
+
+
 def place(a: array, sw: int, sh: int, canvas: int, frac: float,
           ii: array, w: int, h: int, box) -> array:
     """Scale the ink box to occupy `frac` of a square canvas, exactly centred."""
@@ -347,13 +418,21 @@ def main():
     _write("ios/Runner/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
            encode_png(1024, 1024, rgb_over_bg(al80, AMBER, BLACK), 2))
 
-    # ---- 4. macOS: pre-rounded convention, so ~80% framing, alpha allowed --
+    # ---- 4. macOS: ship the tile, because nothing masks it ---------------
+    # Shipping the bare mark here (right for iOS, and what Windows needed its
+    # own artwork for) renders in the Dock as a frog with no icon behind it. So
+    # draw Apple's grid instead: a black rounded square on a transparent
+    # gutter, amber mark inside, generated per size so the corner stays clean
+    # at 16px as well as at 1024. No baked drop shadow — macOS composites its
+    # own, and a baked one doubles up.
     for size, name in ((16, "16"), (32, "16@2x"), (32, "32"), (64, "32@2x"),
                        (128, "128"), (256, "128@2x"), (256, "256"),
                        (512, "256@2x"), (512, "512"), (1024, "512@2x")):
-        al = flat(size, AMBER, frac=0.80)
+        tile = rounded_square_mask(size, MAC_TILE, MAC_RADIUS)
         _write(f"macos/Runner/Assets.xcassets/AppIcon.appiconset/app-icon-{name}.png",
-               encode_png(size, size, rgba_from_alpha(al, AMBER), 6))
+               encode_png(size, size,
+                          tile_rgba(tile, flat(size, AMBER, frac=MAC_MARK),
+                                    AMBER, BLACK), 6))
 
     # ---- 5. Android ------------------------------------------------------
     # Adaptive foreground: 108dp canvas, full-bleed; the XML inset pads it.

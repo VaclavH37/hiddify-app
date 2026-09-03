@@ -213,17 +213,14 @@ flutter_native_splash:
 # deleting the block loses that provenance.
 flutter_launcher_icons:
   android: "ic_launcher"
-  # iOS is NOT generated from here, and `image_path` below is unsuitable for it:
-  # logo_black_1024.png carries an alpha channel with pre-rounded transparent
-  # corners. Apple rejects icons with alpha, and iOS applies its own corner mask,
-  # so a pre-rounded source comes out double-rounded. Because this said `false`
-  # and nothing replaced it, the rebrand never touched the iOS icon and upstream
-  # Hiddify artwork shipped all the way to App Store Connect before anyone saw it.
+  # iOS stays false, as it has since upstream — and for a long time that was the
+  # whole story, which is how upstream Hiddify artwork reached App Store Connect:
+  # nothing generated the iOS icon, so nobody noticed the rebrand had skipped it.
   #
-  # The iOS icon is maintained directly as the single 1024 entry in
-  # ios/Runner/Assets.xcassets/AppIcon.appiconset/ (Xcode generates every other
-  # size at build time). It must stay square, full-bleed and OPAQUE — flatten the
-  # artwork onto black rather than pointing this at a transparent PNG.
+  # tool/logo_pipeline.py now writes it, as the single 1024 entry in
+  # ios/Runner/Assets.xcassets/AppIcon.appiconset/ — square, full-bleed, and RGB
+  # with NO alpha channel, because Apple rejects an icon that carries one. Xcode
+  # derives every other size at build time.
   ios: false
   image_path: "assets/images/source/logo_black_1024.png"
   adaptive_icon_background: "#000000"
