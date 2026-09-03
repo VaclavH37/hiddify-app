@@ -30,6 +30,15 @@ from array import array
 
 TEMPLATE = "Logo/rayn_frog_centered_v2_white_transparent.png"
 
+# Windows is the one platform that neither masks the icon nor expects a bare
+# mark, so it gets purpose-made artwork: an opaque black rounded-square tile
+# (corner radius ~8% of width) with the amber mark inside, and TRANSPARENT
+# outside the rounding so the corners actually read as round.
+#
+# It carries two colours, so the alpha-only model above does not apply to it —
+# it needs a real premultiplied RGBA resample (see resample_rgba).
+WINDOWS_TEMPLATE = "Logo/rayn_vpn_icon_amber_black.png"
+
 # Brand colours. The four states are the same values the connection button
 # tints with (RaynPalette.state*); keeping them here means a generated tray
 # icon and an in-app tint can never drift apart.
@@ -188,6 +197,42 @@ def rgb_over_bg(a: array, fg, bg) -> bytes:
         f, k = fg[c], bg[c]
         lut = bytes(((f * v + k * (255 - v)) + 127) // 255 for v in range(256))
         out[c::3] = bytes(lut[v] for v in a)
+    return bytes(out)
+
+
+def resample_rgba(w: int, h: int, px: bytes, n: int) -> bytes:
+    """Area-average an RGBA image down to n*n, premultiplying alpha first.
+
+    Premultiplication is not optional: averaging straight RGB pulls the colour
+    of fully transparent pixels into the edge, which is how downscaled icons
+    pick up dark halos. Here the transparent region is black, so a naive
+    average would happen to look right — but only by luck, and this stays
+    correct if the artwork ever changes.
+    """
+    out = bytearray(n * n * 4)
+    for oy in range(n):
+        y0, y1 = (oy * h) // n, max((oy * h) // n + 1, ((oy + 1) * h) // n)
+        for ox in range(n):
+            x0, x1 = (ox * w) // n, max((ox * w) // n + 1, ((ox + 1) * w) // n)
+            sr = sg = sb = sa = 0
+            for y in range(y0, y1):
+                row = y * w * 4
+                for x in range(x0, x1):
+                    i = row + x * 4
+                    a = px[i + 3]
+                    sr += px[i] * a
+                    sg += px[i + 1] * a
+                    sb += px[i + 2] * a
+                    sa += a
+            cnt = (x1 - x0) * (y1 - y0)
+            o = (oy * n + ox) * 4
+            if sa == 0:
+                out[o:o + 4] = bytes(4)  # fully transparent
+            else:
+                out[o] = (sr + sa // 2) // sa          # un-premultiply
+                out[o + 1] = (sg + sa // 2) // sa
+                out[o + 2] = (sb + sa // 2) // sa
+                out[o + 3] = (sa + cnt // 2) // cnt
     return bytes(out)
 
 
@@ -363,9 +408,15 @@ def main():
                encode_png(1024, 1024, rgba_from_alpha(master, rgb), 6))
 
     # ---- 7. Windows / snap / web ----------------------------------------
-    win = [(s, encode_png(s, s, rgb_over_bg(flat(s, AMBER, frac=0.80), AMBER, BLACK), 2))
-           for s in ico_sizes]
-    write_ico("windows/runner/resources/app_icon.ico", win)
+    # Windows: from its own pre-rounded tile, keeping alpha so the rounded
+    # corners survive. Windows applies no mask of its own.
+    if os.path.exists(WINDOWS_TEMPLATE):
+        ww, wh, wpx = decode_rgba(WINDOWS_TEMPLATE)
+        win = [(s, encode_png(s, s, resample_rgba(ww, wh, wpx, s), 6))
+               for s in ico_sizes]
+        write_ico("windows/runner/resources/app_icon.ico", win)
+    else:
+        raise SystemExit(f"missing {WINDOWS_TEMPLATE}")
     # Linux deb/AppImage package icon — linux/packaging/*/make_config.yaml
     # point at this path, so it ships on Linux and must not be left behind.
     _write("assets/images/source/ic_launcher_border.png",
