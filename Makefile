@@ -127,6 +127,21 @@ FF_OBFUSCATE=--flutter-build-args=obfuscate,split-debug-info=build/symbols
 # Never set this for a shipping build.
 FF_DART_DEFINES=
 
+# Latency the screenshots build should report, in milliseconds. Setting it
+# turns MARKETING_SCREENSHOTS on by itself, so this is the whole command:
+#
+#   make android-apk-release MARKETING_DELAY=32
+#   make windows-zip-release MARKETING_DELAY=21
+#
+# Unset, the app uses its per-platform defaults (see marketing_delay.dart).
+# `override` is not decoration: a variable set on the command line normally
+# wins over every assignment in the makefile, so a plain `+=` here would be
+# discarded the moment someone also passed FF_DART_DEFINES=... themselves.
+MARKETING_DELAY=
+ifneq ($(strip $(MARKETING_DELAY)),)
+override FF_DART_DEFINES += --build-dart-define=MARKETING_DELAY_MS=$(MARKETING_DELAY)
+endif
+
 
 
 get:	

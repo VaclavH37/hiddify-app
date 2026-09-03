@@ -11,6 +11,7 @@ void main() {
       // would be a lie told in the UI, so this fails the moment the default
       // flips or someone leaves the dart-define in a release recipe.
       expect(Constants.marketingScreenshots, isFalse);
+      expect(Constants.marketingDelayMsOverride, 0);
     });
 
     test('leaves the core reported delay alone when off', () {
@@ -19,14 +20,14 @@ void main() {
       expect(info.urlTestDelay, 187);
     });
 
-    test('picks the desktop value on a desktop host', () {
+    test('falls back to the platform default when the build names no latency', () {
       // Tests run on the dev machine, so this pins the desktop branch. The
       // mobile branch is covered by the band assertions below, which hold for
       // both values.
       expect(marketingDelayMs, marketingDelayDesktopMs);
     });
 
-    test('both values read as a healthy connection, not a timeout', () {
+    test('both defaults read as a healthy connection, not a timeout', () {
       // Ties the pinned numbers to the thresholds the UI actually branches on.
       // Above 65000 the pill says "Timeout" and the connection button falls
       // back to its olive "connected, no usable delay" state; at or below zero

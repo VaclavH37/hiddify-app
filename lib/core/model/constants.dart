@@ -25,12 +25,28 @@ abstract class Constants {
   /// bootstrap.
   static const diagnosticsBuild = kDebugMode || bool.fromEnvironment("RAYN_DIAGNOSTICS");
 
+  /// Latency a screenshots build reports, in milliseconds, when the build
+  /// names one:
+  ///
+  ///   flutter build windows --dart-define=MARKETING_DELAY_MS=48
+  ///   make android-apk-release MARKETING_DELAY=48
+  ///
+  /// Zero means unset, which is `int.fromEnvironment`'s own default and is
+  /// not a value anyone wants anyway — the UI renders a delay of zero as a
+  /// loading shimmer. Unset falls back to the per-platform defaults in
+  /// `marketingDelayMs`.
+  static const marketingDelayMsOverride = int.fromEnvironment("MARKETING_DELAY_MS");
+
   /// Whether this build pins the numbers that would otherwise differ between
   /// one screenshot and the next.
   ///
   ///   flutter build windows --dart-define=MARKETING_SCREENSHOTS=true
   ///   make android-apk-release \
   ///     FF_DART_DEFINES=--build-dart-define=MARKETING_SCREENSHOTS=true
+  ///
+  /// Naming a latency turns it on by itself, so that asking for a specific
+  /// number can never be the silent no-op that forgetting the second flag
+  /// would otherwise be.
   ///
   /// Store listings are a set of stills that have to read as one session. A
   /// real capture run shows whatever the hub answered in at that instant — a
@@ -40,7 +56,8 @@ abstract class Constants {
   ///
   /// **Never distribute a build with this set.** The latency it reports is
   /// asserted, not measured.
-  static const marketingScreenshots = bool.fromEnvironment("MARKETING_SCREENSHOTS");
+  static const marketingScreenshots =
+      bool.fromEnvironment("MARKETING_SCREENSHOTS") || marketingDelayMsOverride > 0;
 
   static const appName = "Rayn VPN";
 

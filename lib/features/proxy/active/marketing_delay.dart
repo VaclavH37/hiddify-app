@@ -3,7 +3,8 @@ import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:protobuf/protobuf.dart';
 
-/// Latency reported by a `MARKETING_SCREENSHOTS` build, in milliseconds.
+/// Latency a screenshots build reports when it did not name one itself,
+/// in milliseconds. See [Constants.marketingDelayMsOverride].
 ///
 /// Two values, because the shots come off two very different machines: a
 /// desktop on ethernet claiming the same round trip as a phone on Wi-Fi is the
@@ -18,7 +19,15 @@ const marketingDelayDesktopMs = 21;
 /// Android versus everything.
 const marketingDelayMobileMs = 32;
 
-int get marketingDelayMs => PlatformUtils.isDesktop ? marketingDelayDesktopMs : marketingDelayMobileMs;
+/// What a screenshots build reports: the latency the build named, or the
+/// default for this platform if it named none.
+///
+/// No upper bound on the override on purpose — passing 65535 is the only way
+/// to capture the timeout state deliberately, which a support article may
+/// well want.
+int get marketingDelayMs => Constants.marketingDelayMsOverride > 0
+    ? Constants.marketingDelayMsOverride
+    : (PlatformUtils.isDesktop ? marketingDelayDesktopMs : marketingDelayMobileMs);
 
 /// Pins [OutboundInfo.urlTestDelay] when this is a screenshots build.
 ///
