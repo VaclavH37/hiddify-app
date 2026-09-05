@@ -2,17 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 
-/// The branded launch screen: the wordmark at the top, the mark at screen
-/// centre, both sized to 80% of the screen width.
+/// The branded launch screen: the mark alone, centred, at 80% of the screen
+/// width.
 ///
-/// Every colour here is fixed rather than palette-derived, because this surface
-/// is always black in both themes — the light palette's `textPrimary` would be
-/// near-invisible on it. That is also why the wordmark takes explicit colour
-/// overrides instead of reading the palette as it does everywhere else.
+/// No wordmark. The name is already on the icon the user tapped and on the
+/// screen this hands off to, and setting it a third time here made the launch
+/// read as a title card rather than a hand-off.
+///
+/// The colours are fixed rather than palette-derived, because this surface is
+/// always black in both themes.
 ///
 /// **Why this is a Flutter screen and not the native launch screen.** A native
 /// launch screen can only centre one image; it cannot position text, and it
@@ -30,51 +31,22 @@ class SplashPage extends StatelessWidget {
   const SplashPage({super.key});
 
   static const Color background = Color(0xFF000000);
-  static const Color _rayn = Color(0xFFFAFAFA);
-  static const Color _vpn = Color(0xFFA1A1AA);
 
   /// The mark, in brand amber — the same colour as the app icon, so the icon
   /// the user tapped and the screen that follows it agree.
   static const Color _mark = Color(0xFFF59E0B);
 
   static const double _widthFactor = 0.8;
-  static const double _topInset = 40;
 
   @override
   Widget build(BuildContext context) {
     final target = MediaQuery.sizeOf(context).width * _widthFactor;
+    // No SafeArea: the mark is centred, so it is never near a cutout, and the
+    // black has to reach the physical edges or the notch shows through.
     return ColoredBox(
       color: background,
-      child: SafeArea(
-        child: Stack(
-          children: [
-            // Words only: the mark is placed separately at centre, so the
-            // wordmark's own inline icon would duplicate it.
-            Align(
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: _topInset),
-                child: SizedBox(
-                  width: target,
-                  // FittedBox scales the fixed WORDMARK.md proportions up to
-                  // the target width, so the weights and the -0.025em tracking
-                  // stay correct at any screen size.
-                  child: const FittedBox(
-                    child: RaynWordmark(showIcon: false, raynColor: _rayn, vpnColor: _vpn),
-                  ),
-                ),
-              ),
-            ),
-            Center(
-              child: Assets.images.logo.image(
-                width: target,
-                height: target,
-                color: _mark,
-                colorBlendMode: BlendMode.srcIn,
-              ),
-            ),
-          ],
-        ),
+      child: Center(
+        child: Assets.images.logo.image(width: target, height: target, color: _mark, colorBlendMode: BlendMode.srcIn),
       ),
     );
   }

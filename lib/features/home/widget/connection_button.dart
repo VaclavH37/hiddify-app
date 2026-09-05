@@ -3,9 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/core/router/dialog/widgets/custom_alert_dialog.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/widget/animated_text.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
@@ -211,14 +209,26 @@ class _ConnectionButton extends StatelessWidget {
   /// Glow halo intensity. Softer on light to avoid blowing out cream.
   final double glowAlpha;
 
+  /// Diameter of the orb.
+  static const double _diameter = 148;
+
+  /// Inset between the orb's edge and the mark's box.
+  ///
+  /// The artwork carries ~6% transparent margin per side of its own, so the
+  /// visible ensō ring only ever comes out at ~88% of whatever box the image
+  /// is given. At the old inset of 12 that put the ring at ~109px inside a
+  /// 148px orb and it read as floating in the middle; at 3 it is ~125px, which
+  /// sits just inside the edge. That is a ~15% larger mark.
+  static const double _markInset = 3;
+
   @override
   Widget build(BuildContext context) {
-    // Layout box is the 148×148 circle so callers can center on the circle
+    // Layout box is the orb itself so callers can center on the circle
     // itself; the status label below is rendered as an overflow overlay.
     return RepaintBoundary(
       child: SizedBox(
-        width: 148,
-        height: 148,
+        width: _diameter,
+        height: _diameter,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -241,7 +251,7 @@ class _ConnectionButton extends StatelessWidget {
                       focusColor: Colors.grey,
                       onTap: onTap,
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(_markInset),
                         child: TweenAnimationBuilder(
                           tween: ColorTween(end: buttonColor),
                           duration: const Duration(milliseconds: 600),
@@ -255,7 +265,7 @@ class _ConnectionButton extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: 148 + 16,
+              top: _diameter + 16,
               left: -100,
               right: -100,
               child: Center(

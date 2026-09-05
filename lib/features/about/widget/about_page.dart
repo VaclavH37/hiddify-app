@@ -61,7 +61,7 @@ class AboutPage extends HookConsumerWidget {
                   Assets.images.logo.image(
                     width: 56,
                     height: 56,
-                    color: palette.logoNeutral,
+                    color: palette.logoMark,
                     colorBlendMode: BlendMode.srcIn,
                   ),
                   const SizedBox(width: RaynSpacing.lg),

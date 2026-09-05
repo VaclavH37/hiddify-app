@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import math
 import os
 import struct
 import sys
@@ -31,29 +30,20 @@ from array import array
 
 TEMPLATE = "Logo/rayn_frog_centered_v2_white_transparent.png"
 
-# Windows is the one platform that neither masks the icon nor expects a bare
-# mark, so it gets purpose-made artwork: an opaque black rounded-square tile
-# (corner radius ~8% of width) with the amber mark inside, and TRANSPARENT
-# outside the rounding so the corners actually read as round.
+# Windows and macOS are the two platforms that mask nothing, so what ships is
+# exactly what the user sees. Both get the bare amber mark on transparency,
+# cropped to its own ink and scaled to fill the canvas: no tile, no background,
+# and no wasted margin around the ring.
 #
-# It carries two colours, so the alpha-only model above does not apply to it —
-# it needs a real premultiplied RGBA resample (see resample_rgba).
-WINDOWS_TEMPLATE = "Logo/rayn_vpn_icon_amber_black.png"
-
-# macOS is the exact inverse of iOS: the system rounds nothing, so the tile has
-# to be drawn into the artwork. Apple's icon grid puts an 824x824 rounded square
-# inside the 1024 canvas with a 185.4px corner radius, leaving the outer ~10%
-# as the gutter the Dock's shadow and magnification need. Expressed as
-# fractions so every size in the set is generated from the same geometry.
-MAC_TILE = 824 / 1024      # tile side, as a fraction of the canvas
-MAC_RADIUS = 185.4 / 824   # corner radius, as a fraction of the tile side
-MAC_MARK = 0.70            # mark width, of the canvas == 87% of the tile
+# This is the opposite of the iOS/Android framing below, and deliberately so —
+# those two DO mask, so they need margin for the mask to bite into.
+DESKTOP_FRAC = 1.0
 
 # Brand colours. The four states are the same values the connection button
 # tints with (RaynPalette.state*); keeping them here means a generated tray
 # icon and an in-app tint can never drift apart.
 AMBER = (0xF5, 0x9E, 0x0B)   # connected  / brand default
-BLUE_LIGHT = (0x3A, 0x84, 0xCA)  # connecting
+VIOLET = (0x7C, 0x3A, 0xED)  # connecting (see RaynPalette.stateConnecting)
 BLUE_DARK = (0x1E, 0x3A, 0x8A)   # disconnected
 RED = (0xF2, 0x44, 0x44)     # error
 WHITE = (0xFF, 0xFF, 0xFF)
@@ -210,103 +200,6 @@ def rgb_over_bg(a: array, fg, bg) -> bytes:
     return bytes(out)
 
 
-def resample_rgba(w: int, h: int, px: bytes, n: int) -> bytes:
-    """Area-average an RGBA image down to n*n, premultiplying alpha first.
-
-    Premultiplication is not optional: averaging straight RGB pulls the colour
-    of fully transparent pixels into the edge, which is how downscaled icons
-    pick up dark halos. Here the transparent region is black, so a naive
-    average would happen to look right — but only by luck, and this stays
-    correct if the artwork ever changes.
-    """
-    out = bytearray(n * n * 4)
-    for oy in range(n):
-        y0, y1 = (oy * h) // n, max((oy * h) // n + 1, ((oy + 1) * h) // n)
-        for ox in range(n):
-            x0, x1 = (ox * w) // n, max((ox * w) // n + 1, ((ox + 1) * w) // n)
-            sr = sg = sb = sa = 0
-            for y in range(y0, y1):
-                row = y * w * 4
-                for x in range(x0, x1):
-                    i = row + x * 4
-                    a = px[i + 3]
-                    sr += px[i] * a
-                    sg += px[i + 1] * a
-                    sb += px[i + 2] * a
-                    sa += a
-            cnt = (x1 - x0) * (y1 - y0)
-            o = (oy * n + ox) * 4
-            if sa == 0:
-                out[o:o + 4] = bytes(4)  # fully transparent
-            else:
-                out[o] = (sr + sa // 2) // sa          # un-premultiply
-                out[o + 1] = (sg + sa // 2) // sa
-                out[o + 2] = (sb + sa // 2) // sa
-                out[o + 3] = (sa + cnt // 2) // cnt
-    return bytes(out)
-
-
-def rounded_square_mask(canvas: int, side: float, radius: float,
-                        ss: int = 8) -> array:
-    """Anti-aliased alpha mask of a centred rounded square.
-
-    `side` is a fraction of the canvas, `radius` a fraction of that side.
-
-    Coverage is supersampled only along the boundary. A rounded box has a cheap
-    exact signed distance, and a pixel further than half its diagonal from the
-    edge is wholly in or wholly out — so one distance test settles almost every
-    pixel and the ss^2 inner loop runs on ~4*side of them, not on the area.
-    """
-    out = array("B", bytes(canvas * canvas))
-    half = canvas * side / 2.0
-    r = min(half, 2 * half * radius)
-    c = canvas / 2.0
-    inner = half - r                      # half-extent of the straight section
-    step, diag = 1.0 / ss, math.sqrt(0.5)
-
-    def dist(px: float, py: float) -> float:
-        qx, qy = abs(px - c) - inner, abs(py - c) - inner
-        return (min(max(qx, qy), 0.0)
-                + math.hypot(max(qx, 0.0), max(qy, 0.0)) - r)
-
-    for y in range(canvas):
-        base = y * canvas
-        for x in range(canvas):
-            d = dist(x + 0.5, y + 0.5)
-            if d <= -diag:
-                out[base + x] = 255
-            elif d < diag:
-                hits = 0
-                for sy in range(ss):
-                    py = y + (sy + 0.5) * step
-                    for sx in range(ss):
-                        if dist(x + (sx + 0.5) * step, py) <= 0.0:
-                            hits += 1
-                out[base + x] = (hits * 255 + (ss * ss) // 2) // (ss * ss)
-    return out
-
-
-def tile_rgba(tile: array, mark: array, fg, bg) -> bytes:
-    """A flat `fg` mark on an opaque `bg` tile, clipped to the tile's alpha.
-
-    Multiplying the mark by the tile mask is what stops ink spilling past a
-    rounded corner, and RGB stays `bg` outside the mark so that even a naive
-    downscaler — one that averages straight RGB — cannot drag colour out into
-    the transparent gutter.
-    """
-    out = bytearray(len(tile) * 4)
-    luts = [bytes(((fg[c] * v + bg[c] * (255 - v)) + 127) // 255
-                  for v in range(256)) for c in range(3)]
-    for i, t in enumerate(tile):
-        m = (mark[i] * t + 127) // 255
-        o = i * 4
-        out[o] = luts[0][m]
-        out[o + 1] = luts[1][m]
-        out[o + 2] = luts[2][m]
-        out[o + 3] = t
-    return bytes(out)
-
-
 def place(a: array, sw: int, sh: int, canvas: int, frac: float,
           ii: array, w: int, h: int, box) -> array:
     """Scale the ink box to occupy `frac` of a square canvas, exactly centred."""
@@ -418,21 +311,16 @@ def main():
     _write("ios/Runner/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
            encode_png(1024, 1024, rgb_over_bg(al80, AMBER, BLACK), 2))
 
-    # ---- 4. macOS: ship the tile, because nothing masks it ---------------
-    # Shipping the bare mark here (right for iOS, and what Windows needed its
-    # own artwork for) renders in the Dock as a frog with no icon behind it. So
-    # draw Apple's grid instead: a black rounded square on a transparent
-    # gutter, amber mark inside, generated per size so the corner stays clean
-    # at 16px as well as at 1024. No baked drop shadow — macOS composites its
-    # own, and a baked one doubles up.
+    # ---- 4. macOS: the bare mark, filling the canvas --------------------
+    # macOS masks nothing, so this ships as drawn. No tile and no Apple-grid
+    # gutter: the mark is cropped to its own ink and scaled to fill, which is
+    # the largest the ring can be without leaving dead space around it.
     for size, name in ((16, "16"), (32, "16@2x"), (32, "32"), (64, "32@2x"),
                        (128, "128"), (256, "128@2x"), (256, "256"),
                        (512, "256@2x"), (512, "512"), (1024, "512@2x")):
-        tile = rounded_square_mask(size, MAC_TILE, MAC_RADIUS)
+        al = flat(size, AMBER, frac=DESKTOP_FRAC)
         _write(f"macos/Runner/Assets.xcassets/AppIcon.appiconset/app-icon-{name}.png",
-               encode_png(size, size,
-                          tile_rgba(tile, flat(size, AMBER, frac=MAC_MARK),
-                                    AMBER, BLACK), 6))
+               encode_png(size, size, rgba_from_alpha(al, AMBER), 6))
 
     # ---- 5. Android ------------------------------------------------------
     # Adaptive foreground: 108dp canvas, full-bleed; the XML inset pads it.
@@ -469,7 +357,7 @@ def main():
     # Connecting/Disconnecting, and `tray_icon_dark` means "dark ink, for a
     # LIGHT taskbar".
     tray = {"tray_icon_connected": AMBER,      # Connected
-            "tray_icon_disconnected": BLUE_LIGHT,  # Connecting / Disconnecting
+            "tray_icon_disconnected": VIOLET,  # Connecting / Disconnecting
             "tray_icon": WHITE,                # Disconnected, dark taskbar
             "tray_icon_dark": CHARCOAL}        # Disconnected, light taskbar
     ico_sizes = (16, 20, 24, 32, 40, 48, 64, 128, 256)
@@ -487,15 +375,13 @@ def main():
                encode_png(1024, 1024, rgba_from_alpha(master, rgb), 6))
 
     # ---- 7. Windows / snap / web ----------------------------------------
-    # Windows: from its own pre-rounded tile, keeping alpha so the rounded
-    # corners survive. Windows applies no mask of its own.
-    if os.path.exists(WINDOWS_TEMPLATE):
-        ww, wh, wpx = decode_rgba(WINDOWS_TEMPLATE)
-        win = [(s, encode_png(s, s, resample_rgba(ww, wh, wpx, s), 6))
-               for s in ico_sizes]
-        write_ico("windows/runner/resources/app_icon.ico", win)
-    else:
-        raise SystemExit(f"missing {WINDOWS_TEMPLATE}")
+    # Windows: same framing as macOS, and for the same reason — the taskbar,
+    # the desktop shortcut and Alt-Tab all draw the .ico untouched.
+    win = []
+    for size in ico_sizes:
+        al = flat(size, AMBER, frac=DESKTOP_FRAC)
+        win.append((size, encode_png(size, size, rgba_from_alpha(al, AMBER), 6)))
+    write_ico("windows/runner/resources/app_icon.ico", win)
     # Linux deb/AppImage package icon — linux/packaging/*/make_config.yaml
     # point at this path, so it ships on Linux and must not be left behind.
     _write("assets/images/source/ic_launcher_border.png",

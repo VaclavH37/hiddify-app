@@ -97,7 +97,7 @@ class _BrandBlock extends StatelessWidget {
         child: Assets.images.logo.image(
           width: 32,
           height: 32,
-          color: context.rayn.logoNeutral,
+          color: context.rayn.logoMark,
           colorBlendMode: BlendMode.srcIn,
         ),
       );
