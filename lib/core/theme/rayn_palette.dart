@@ -92,19 +92,22 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   /// `AsyncError`.
   final Color stateDisconnected;
 
-  /// Violet, not a lighter blue.
+  /// The same amber as [stateConnected], restoring the pre-rollout behaviour.
   ///
-  /// The orb is white in BOTH themes and the state colour tints the mark on
-  /// it, so every state has to separate from every other state on one white
-  /// ground. The previous #3A84CA sat only dE 33 from [stateDisconnected] and
-  /// read as the same blue mid-transition; violet is dE 57 from it, keeps a
-  /// 5.7:1 contrast on white (the best of any candidate), and its L* 43 lands
-  /// between navy 27 and amber 72, so the ramp reads as progress.
+  /// This looks like a mistake and is not. Connecting is not a colour the user
+  /// sees on its own: `Connecting()` is brief, and the core reports
+  /// `Connected()` with no URL-test delay yet for most of the wait — a state
+  /// the button paints in its own pale yellow-green and still LABELS
+  /// "connecting" (see connection_button.dart). So the sequence is
+  /// amber → yellow-green → amber, and with the button's 600ms ColorTween
+  /// between them that is what reads as a pulse while connecting.
   ///
-  /// It also fixes a defect the eye could not have caught: under simulated
-  /// tritanopia the old blue landed dE 2 from the teal used for the
-  /// reconnect-required sub-state — indistinguishable. Violet's worst case
-  /// across the three dichromacies is dE 21.
+  /// Giving this its own hue splits that pulse into two unrelated colours.
+  /// Two have been tried and reverted: #3A84CA, and #7C3AED.
+  ///
+  /// The cost is real: connecting and connected are now indistinguishable by
+  /// colour alone, on the orb and in the system tray. The label and the tray
+  /// tooltip carry the difference instead.
   final Color stateConnecting;
   final Color stateConnected;
   final Color stateError;
@@ -143,7 +146,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     warning: Color(0xFFE8C547),
     danger: Color(0xFFE5484D),
     stateDisconnected: Color(0xFF1E3A8A),
-    stateConnecting: Color(0xFF7C3AED),
+    stateConnecting: Color(0xFFF59E0B),
     stateConnected: Color(0xFFF59E0B),
     stateError: Color(0xFFF24444),
     logoMark: Color(0xFFF59E0B),
@@ -173,7 +176,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     warning: Color(0xFFCA8A04),
     danger: Color(0xFFDC2626),
     stateDisconnected: Color(0xFF1E3A8A),
-    stateConnecting: Color(0xFF7C3AED),
+    stateConnecting: Color(0xFFF59E0B),
     stateConnected: Color(0xFFF59E0B),
     stateError: Color(0xFFF24444),
     logoMark: Color(0xFFF59E0B),

@@ -43,7 +43,6 @@ DESKTOP_FRAC = 1.0
 # tints with (RaynPalette.state*); keeping them here means a generated tray
 # icon and an in-app tint can never drift apart.
 AMBER = (0xF5, 0x9E, 0x0B)   # connected  / brand default
-VIOLET = (0x7C, 0x3A, 0xED)  # connecting (see RaynPalette.stateConnecting)
 BLUE_DARK = (0x1E, 0x3A, 0x8A)   # disconnected
 RED = (0xF2, 0x44, 0x44)     # error
 WHITE = (0xFF, 0xFF, 0xFF)
@@ -357,7 +356,10 @@ def main():
     # Connecting/Disconnecting, and `tray_icon_dark` means "dark ink, for a
     # LIGHT taskbar".
     tray = {"tray_icon_connected": AMBER,      # Connected
-            "tray_icon_disconnected": VIOLET,  # Connecting / Disconnecting
+            # Connecting / Disconnecting. Same amber as connected, matching
+            # RaynPalette.stateConnecting — so this file and
+            # tray_icon_connected come out byte-identical by design.
+            "tray_icon_disconnected": AMBER,
             "tray_icon": WHITE,                # Disconnected, dark taskbar
             "tray_icon_dark": CHARCOAL}        # Disconnected, light taskbar
     ico_sizes = (16, 20, 24, 32, 40, 48, 64, 128, 256)
