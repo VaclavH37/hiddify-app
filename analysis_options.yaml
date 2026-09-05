@@ -7,6 +7,12 @@ analyzer:
     - "hiddify-core/**"
     - "**.g.dart"
     - "lib/gen/**"
+    # protoc output, owned by `make protos`. All 50 files here are
+    # *.pb*.dart and they contributed 190 of the 285 analyzer findings —
+    # two thirds of the total, none of it fixable, because CLAUDE.md
+    # forbids hand-editing generated code. Excluding suppresses analysis
+    # only; a genuine error in this tree still fails the build.
+    - "lib/hiddifycore/generated/**"
   errors:
     invalid_annotation_target: ignore
 

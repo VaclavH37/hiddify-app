@@ -15,7 +15,6 @@ import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/utils/riverpod_utils.dart';
 import 'package:hiddify/utils/utils.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_notifier.g.dart';
@@ -74,7 +73,7 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
     state = await AsyncValue.guard(() async {
       final RaynLinkOk parsed;
       switch (LinkParser.parse(rawInput)) {
-        case RaynLinkOk ok:
+        case final RaynLinkOk ok:
           parsed = ok;
         case RaynLinkUnsupportedVersion(:final version):
           // The link is fine; this build is too old to open it. Distinct from

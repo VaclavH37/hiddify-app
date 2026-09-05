@@ -8,8 +8,8 @@ right. It was 292.
 Re-measure and update whenever the baseline legitimately moves (a slice that adds
 tests, a deliberate lint fix). Never edit it to make a slice pass.
 
-**Measured:** 2026-08-20, re-measured while adding the Apple StoreKit path
-**Commit:** Apple IAP client, phases 1–2
+**Measured:** 2026-09-05, re-measured after the analyzer clean-up
+**Commit:** analyzer clean-up (285 → 8)
 
 ---
 
@@ -17,17 +17,39 @@ tests, a deliberate lint fix). Never edit it to make a slice pass.
 
 | Check | Command | Baseline |
 |---|---|---|
-| Analyzer | `flutter analyze` | **0 errors · 25 warnings · 260 infos** (285 issues) |
-| Tests | `flutter test` | **446 passing**, 0 failing |
+| Analyzer | `flutter analyze` | **0 errors · 0 warnings · 8 infos** (8 issues) |
+| Tests | `flutter test` | **462 passing**, 0 failing |
 
-`flutter analyze` **exits 1** here, because it treats warnings and infos as
-fatal by default. Compare the counts, not the exit code.
+`flutter analyze` still **exits 1**, because it treats infos as fatal too. With
+warnings now at zero, `flutter analyze --no-fatal-infos` exits 0 — use that if
+you want to chain `&& flutter test`, which a plain `flutter analyze &&` has
+never actually reached.
 
-A block of the infos are `depend_on_referenced_packages` for `flutter_test` in
-`test/**` — noise from `flutter_test` being a dev dependency. They are part of
-the baseline; do not "fix" them during a catch-up slice.
+**All 8 remaining infos are deliberate.** Three are Riverpod 3.0 deprecations
+(`parent`, `listenSelf`, `AutoDisposeRef`) that belong to a Riverpod migration
+rather than a lint sweep; two are the empty catches in
+`rayn_core_service.closeFront()`, which want logging rather than silencing (see
+the note in that file's vicinity and `app.dart`'s cert-churn comment); three
+are trivia. Anything above 8 is new.
 
 ### History
+
+- **285 → 8 issues** in the analyzer clean-up. Two thirds of the old number was
+  a single directory: 190 findings sat in `lib/hiddifycore/generated/**`, which
+  is protoc output that CLAUDE.md forbids hand-editing, so
+  `analysis_options.yaml` now excludes it as it already excluded `**.g.dart`
+  and `lib/gen/**`. A further 30 were `depend_on_referenced_packages` and went
+  away by declaring `flutter_test` in `dev_dependencies` — see below. The rest
+  was `dart fix --apply` (33 fixes), three dead declarations, six
+  `parameter_assignments`, and the deprecated `RadioListTile` API. Tests
+  460 → 462: the two new cases guard the `flutter_test` declaration.
+- The `flutter_test` note that used to live in this section said those infos
+  were "part of the baseline; do not fix them". That was wrong in a way worth
+  recording: `flutter_test` was never declared, and the whole `test/` tree
+  compiled only because `accessibility_tools` and `dynamic_color` pull it in
+  transitively. `accessibility_tools` has one call site behind a `kDebugMode`
+  flag, and this fork prunes dependencies (`aeb4dc15` dropped nine at once) —
+  so the suite was one cleanup away from not compiling.
 
 - 292/256 → 326/257 in slice S0.7, which added
   `test/design/design_invariants_test.dart` (34 cases). The single extra info was

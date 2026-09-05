@@ -59,6 +59,46 @@ void main() {
     });
   });
 
+  group('the test suite owns its own dependencies', () {
+    // flutter_test arrived from upstream commented out, and for a long time
+    // nothing noticed: every file under test/ compiled anyway, because
+    // accessibility_tools and dynamic_color happen to depend on it. That made
+    // the whole suite a hostage of two UI packages — and this fork prunes
+    // dependencies (aeb4dc15 dropped nine at once), with accessibility_tools
+    // used at exactly one site behind a kDebugMode flag.
+    //
+    // Losing it would not have failed loudly here; it would have failed as
+    // 'Target of URI doesn't exist' across sixty files at once.
+
+    test('flutter_test is a declared dev dependency, not a transitive one', () {
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      expect(
+        RegExp(r'^\s{2}flutter_test:\s*$', multiLine: true).hasMatch(pubspec),
+        isTrue,
+        reason: 'pubspec.yaml does not declare flutter_test under '
+            'dev_dependencies. Every file in test/ then imports a package '
+            'this project does not depend on, which is both 30 analyzer infos '
+            'and a suite that stops compiling the moment an unrelated UI '
+            'package is dropped.',
+      );
+    });
+
+    test('the lockfile resolves it as a direct dev dependency', () {
+      final lock = File('pubspec.lock').readAsStringSync();
+      // \s+ rather than \n: this file is CRLF on a Windows checkout.
+      final entry = RegExp(r'^  flutter_test:\s+dependency: (.+?)\s*$', multiLine: true)
+          .firstMatch(lock);
+      expect(entry, isNotNull, reason: 'pubspec.lock has no flutter_test entry');
+      expect(
+        entry!.group(1),
+        '"direct dev"',
+        reason: 'flutter_test resolves as ${entry.group(1)}. If that is '
+            '`transitive`, the pubspec declaration was removed and the suite '
+            'is once again compiling only by accident.',
+      );
+    });
+  });
+
   group('Play compliance', () {
     // QUERY_ALL_PACKAGES was dropped together with the per-app-proxy feature.
     // It is a sensitive permission that requires a declaration and blocks

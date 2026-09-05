@@ -12,9 +12,20 @@ class ActionsAtClosingDialog extends HookConsumerWidget {
     final t = ref.watch(translationsProvider).requireValue;
     return SimpleDialog(
       title: Text(t.pages.settings.general.actionAtClosing),
-      children: ActionsAtClosing.values
-          .map((e) => RadioListTile(title: Text(e.present(t)), value: e, groupValue: selected, onChanged: context.pop))
-          .toList(),
+      // RadioGroup takes one child where SimpleDialog takes a list, so the
+      // tiles move into a ListBody — which is what SimpleDialog wraps its
+      // own children in anyway, so the layout is unchanged.
+      children: [
+        RadioGroup<ActionsAtClosing>(
+          groupValue: selected,
+          onChanged: context.pop,
+          child: ListBody(
+            children: ActionsAtClosing.values
+                .map((e) => RadioListTile<ActionsAtClosing>(title: Text(e.present(t)), value: e))
+                .toList(),
+          ),
+        ),
+      ],
     );
   }
 }

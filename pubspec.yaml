@@ -126,8 +126,14 @@ dependencies:
   humanizer: ^3.0.1
 
 dev_dependencies:
-  # flutter_test:
-  #   sdk: flutter
+  # Declared explicitly, though it also arrives transitively. Without this
+  # line every test file raises depend_on_referenced_packages (30 infos,
+  # one more per new test), and — the real problem — the whole test/ tree
+  # compiles only because accessibility_tools and dynamic_color happen to
+  # depend on it. accessibility_tools has one call site behind a kDebugMode
+  # flag, so pruning it would have taken the test suite with it.
+  flutter_test:
+    sdk: flutter
   lint: ^2.3.0
   build_web_compilers: ^4.0.11
   build_runner: ^2.4.13

@@ -1,10 +1,12 @@
 // dart format width=80
 import 'package:drift/drift.dart';
 import 'package:drift_dev/api/migrations_native.dart';
-import 'package:hiddify/core/db/db.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'generated/schema.dart';
+import 'package:hiddify/core/db/db.dart';
 
+import 'generated/schema.dart';
+import 'generated/schema_v10.dart' as v10;
+import 'generated/schema_v11.dart' as v11;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
@@ -12,8 +14,6 @@ import 'generated/schema_v6.dart' as v6;
 import 'generated/schema_v7.dart' as v7;
 import 'generated/schema_v8.dart' as v8;
 import 'generated/schema_v9.dart' as v9;
-import 'generated/schema_v10.dart' as v10;
-import 'generated/schema_v11.dart' as v11;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;

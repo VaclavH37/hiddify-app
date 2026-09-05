@@ -35,6 +35,11 @@ class Db extends _$Db with InfraLogger {
       onUpgrade: stepByStep(
         from1To2: (m, schema) async {
           await m.alterTable(
+            // TableMigration is the only way to transform a column during an
+            // alterTable, and Drift has shipped it as experimental for years
+            // with no stable successor. The ignore must sit on the line
+            // immediately above the expression, hence the split from the prose.
+            // ignore: experimental_member_use
             TableMigration(
               schema.profileEntries,
               columnTransformer: {schema.profileEntries.type: const Constant<String>("remote")},

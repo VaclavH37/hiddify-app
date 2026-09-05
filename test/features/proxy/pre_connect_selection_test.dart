@@ -4,10 +4,10 @@ import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
 
 void main() {
   group('ProxySnapshot', () {
-    final snap = ProxySnapshot(
+    const snap = ProxySnapshot(
       groupTag: 'select',
       selectedTag: 'lowest',
-      items: const [
+      items: [
         SnapshotItem(
           tag: 'lowest',
           tagDisplay: 'lowest',

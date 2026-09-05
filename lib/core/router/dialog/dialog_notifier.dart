@@ -9,7 +9,6 @@ import 'package:hiddify/core/router/dialog/widgets/proxy_info_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/save_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_input_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_picker_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/setting_radio_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_slider_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/unknown_domains_warning_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/window_closing_dialog.dart';
@@ -104,18 +103,6 @@ class DialogNotifier extends _$DialogNotifier {
 
   Future<void> showProxyInfo({required OutboundInfo outboundInfo}) async {
     return await _show<void>(ProxyInfoDialog(outboundInfo: outboundInfo));
-  }
-
-  Future<T?> showSettingRadio<T>({
-    required String title,
-    required List<T> values,
-    required T value,
-    T? defaultValue,
-    Map<String, String>? t,
-  }) async {
-    return await _show<T?>(
-      SettingRadioDialog(title: title, values: values, value: value, defaultValue: defaultValue, t: t),
-    );
   }
 
   Future<T?> showSettingInput<T>({

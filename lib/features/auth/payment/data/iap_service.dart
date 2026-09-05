@@ -7,7 +7,6 @@ import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
-import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hiddify/utils/link_parsers.dart';
 import 'package:hiddify/utils/rayn_token.dart';
@@ -328,7 +327,7 @@ class IapService with InfraLogger implements RaynBillingEvents {
   Future<IapPurchaseOutcome> _pollImport(String cryptolink) async {
     final RaynLinkOk parsed;
     switch (LinkParser.parse(cryptolink)) {
-      case RaynLinkOk ok:
+      case final RaynLinkOk ok:
         parsed = ok;
       case RaynLinkUnsupportedVersion():
         // The purchase is safe; an updated build will import it on Restore.

@@ -1,32 +1,27 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:fpdart/fpdart.dart';
 import 'package:grpc/grpc.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
-import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
-import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
+import 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper_stub.dart'
+    if (dart.library.io) 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcommon/common.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
 import 'package:hiddify/hiddifycore/init_signal.dart';
-import 'package:hiddify/singbox/model/singbox_config_option.dart';
 import 'package:hiddify/singbox/model/core_status.dart';
+import 'package:hiddify/singbox/model/singbox_config_option.dart';
 import 'package:hiddify/singbox/model/warp_account.dart';
-
-import 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper_stub.dart'
-    if (dart.library.io) 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:loggy/loggy.dart' as loggyl;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 
 class RaynCoreService with InfraLogger {
@@ -294,7 +289,7 @@ class RaynCoreService with InfraLogger {
       loggy.debug("stopping");
       var errMsg = "";
       try {
-        final res = await core.bgClient.stop(Empty());
+        await core.bgClient.stop(Empty());
       } on GrpcError catch (e) {
         if (e.code == StatusCode.unknown && !(e.message?.contains("HTTP/2") ?? false)) {
           errMsg = e.message ?? "failed to stop core: $e";

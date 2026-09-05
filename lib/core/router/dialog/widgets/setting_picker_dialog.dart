@@ -30,18 +30,22 @@ class SettingPickerDialog<T> extends HookConsumerWidget with PresLogger {
     return AlertDialog(
       title: Text(title),
       content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: options.map((e) {
-            final title = getTitle(e);
-            return RadioListTile(
-              title: Text(title),
-              secondary: _getSecondaryWidget(title),
-              value: e,
-              groupValue: selected,
-              onChanged: (value) => context.pop(e),
-            );
-          }).toList(),
+        // The selection lives on the group now, not on each tile. The type
+        // argument has to be written out: inference used to come from
+        // `groupValue: selected` on the tiles, and it does not flow upward
+        // from a descendant.
+        child: RadioGroup<T>(
+          groupValue: selected,
+          // Equivalent to the old `(value) => context.pop(e)`: the group
+          // hands us the value of whichever tile was tapped.
+          onChanged: (value) => context.pop(value),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: options.map((e) {
+              final title = getTitle(e);
+              return RadioListTile<T>(title: Text(title), secondary: _getSecondaryWidget(title), value: e);
+            }).toList(),
+          ),
         ),
       ),
       actions: [

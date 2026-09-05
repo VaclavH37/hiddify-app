@@ -3,10 +3,9 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/db/db.dart';
-
 import 'package:hiddify/core/utils/exception_handler.dart';
-import 'package:hiddify/features/profile/data/profile_data_mapper.dart';
 import 'package:hiddify/features/profile/data/profile_config_cipher.dart';
+import 'package:hiddify/features/profile/data/profile_data_mapper.dart';
 import 'package:hiddify/features/profile/data/profile_data_source.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/data/profile_path_resolver.dart';
@@ -198,12 +197,12 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
         final id = profEntity?.id ?? const Uuid().v4();
         if (profEntity != null && profEntity is RemoteProfileEntity) {
           // Update
-          if (userOverride != null) {
-            profEntity = profEntity.copyWith(userOverride: userOverride);
-          }
+          final remote = userOverride != null
+              ? profEntity.copyWith(userOverride: userOverride)
+              : profEntity;
           return _profileParser
               .updateRemote(
-                rp: profEntity,
+                rp: remote,
                 cancelToken: cancelToken,
                 signal: signal,
                 counters: counters,
