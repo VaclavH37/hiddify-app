@@ -222,7 +222,6 @@
     "stats": {
       "connection": "Bağlantı",
       "traffic": "Trafik",
-      "trafficLive": "Canlı trafik",
       "trafficTotal": "Toplam trafik",
       "uplink": "Yükleme",
       "downlink": "İndirme",

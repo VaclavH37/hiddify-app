@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/theme/rayn_colors.dart';
+import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
@@ -7,12 +7,15 @@ import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/rayn_wordmark.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 
-/// Custom navigation rail for the Rayn redesign.
+/// The desktop and tablet sidebar: brand, two destinations, and a status
+/// footer. Built by hand because the stock `NavigationRail` cannot carry the
+/// brand block or a footer; the index/onTap contract matches it, so the shell
+/// talks to `navigationShell.currentIndex` and `goBranch()` as before.
 ///
-/// Stock `NavigationRail` cannot carry the brand block, glass active surface,
-/// or gold token-driven typography per item, so we build our own. Only the
-/// visuals change — the index/onTap contract matches `NavigationRail`, so the
-/// caller still talks to `navigationShell.currentIndex` and `goBranch()`.
+/// 240 wide when extended (the Material default is 256; 280, the old width,
+/// took a third of the default window), 72 when collapsed on a tablet. A
+/// hairline on its right edge separates it from the canvas, which on dark is
+/// within one level of the rail's own colour.
 class RaynNavigationRail extends StatelessWidget {
   const RaynNavigationRail({
     super.key,
@@ -20,7 +23,7 @@ class RaynNavigationRail extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.extended,
-    this.trailing,
+    this.footer,
   });
 
   final List<RaynNavRailDestination> destinations;
@@ -28,19 +31,22 @@ class RaynNavigationRail extends StatelessWidget {
   final ValueChanged<int> onDestinationSelected;
   final bool extended;
 
-  /// Optional widget rendered below the nav items. Intended for the desktop
-  /// stats column. Caller is responsible for omitting it when the rail is
-  /// collapsed (the [trailing] block won't fit in [_collapsedWidth]).
-  final Widget? trailing;
+  /// Rendered at the foot of the rail, in both widths; the widget decides
+  /// what fits. The shell passes the connection status.
+  final Widget? footer;
 
-  static const double _extendedWidth = 280;
-  static const double _collapsedWidth = 72;
+  static const double extendedWidth = 240;
+  static const double collapsedWidth = 72;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.rayn;
     return Container(
-      width: extended ? _extendedWidth : _collapsedWidth,
-      color: context.rayn.bgSurface,
+      width: extended ? extendedWidth : collapsedWidth,
+      decoration: BoxDecoration(
+        color: palette.bgSurface,
+        border: Border(right: BorderSide(color: palette.glassBorder)),
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
@@ -63,7 +69,7 @@ class RaynNavigationRail extends StatelessWidget {
                         ),
                         if (i != destinations.length - 1) const SizedBox(height: RaynSpacing.xs),
                       ],
-                      if (trailing != null) ...[const Spacer(), trailing!],
+                      if (footer != null) ...[const Spacer(), footer!],
                     ],
                   ),
                 ),
@@ -91,8 +97,7 @@ class _BrandBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!extended) {
-      // Collapsed rail: just the icon — the "RAYN VPN" wordmark won't fit in
-      // the 72px column.
+      // Collapsed rail: just the mark; the wordmark does not fit in 72.
       return Center(
         child: Assets.images.logo.image(
           width: 32,
@@ -102,8 +107,6 @@ class _BrandBlock extends StatelessWidget {
         ),
       );
     }
-    // Extended rail: full brand wordmark per WORDMARK.md, compact variant so
-    // the icon stays at the rail's established 32px.
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: RaynSpacing.sm),
       child: RaynWordmark(iconSize: 32, wordSize: 24, suffixSize: 14, gap: 6),
@@ -111,6 +114,9 @@ class _BrandBlock extends StatelessWidget {
   }
 }
 
+/// One destination. Selected: a tinted fill, the icon in the brand amber, the
+/// label in the primary text colour. No border: the old bordered pill was the
+/// same outlined-everything habit the settings rows lost.
 class _NavItem extends StatelessWidget {
   const _NavItem({required this.destination, required this.selected, required this.extended, required this.onTap});
 
@@ -122,25 +128,26 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.rayn;
-    final Color foreground = selected ? RaynColors.goldPrimary : palette.textSecondary;
-    final BorderRadius radius = BorderRadius.circular(RaynRadius.button);
+    final iconColor = selected ? AppTheme.brandAccent : palette.textSecondary;
+    final labelColor = selected ? palette.textPrimary : palette.textSecondary;
+    final radius = BorderRadius.circular(RaynRadius.control);
 
     final Widget content = extended
         ? Row(
             children: [
-              Icon(destination.icon, size: 22, color: foreground),
+              Icon(destination.icon, size: 20, color: iconColor),
               const SizedBox(width: RaynSpacing.md),
               Expanded(
                 child: Text(
                   destination.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: RaynTypography.body.copyWith(color: foreground),
+                  style: RaynTypography.body.copyWith(color: labelColor),
                 ),
               ),
             ],
           )
-        : Center(child: Icon(destination.icon, size: 22, color: foreground));
+        : Center(child: Icon(destination.icon, size: 20, color: iconColor));
 
     return Semantics(
       selected: selected,
@@ -152,15 +159,11 @@ class _NavItem extends StatelessWidget {
           onTap: onTap,
           borderRadius: radius,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 48),
-            decoration: BoxDecoration(
-              color: selected ? palette.navSelectedFill : Colors.transparent,
-              borderRadius: radius,
-              border: selected ? Border.all(color: palette.navSelectedBorder) : null,
-            ),
+            constraints: const BoxConstraints(minHeight: 40),
+            decoration: BoxDecoration(color: selected ? palette.navSelectedFill : null, borderRadius: radius),
             padding: EdgeInsets.symmetric(
-              horizontal: extended ? RaynSpacing.lg : RaynSpacing.sm,
-              vertical: RaynSpacing.md,
+              horizontal: extended ? RaynSpacing.md : RaynSpacing.sm,
+              vertical: RaynSpacing.sm,
             ),
             child: content,
           ),

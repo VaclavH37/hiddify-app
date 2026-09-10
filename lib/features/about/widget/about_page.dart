@@ -19,10 +19,6 @@ import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-/// Same column as Settings: a list of text stays a column, even on a wide
-/// window.
-const double _maxContentWidth = 640 + 2 * RaynSpacing.xl;
-
 class AboutPage extends HookConsumerWidget {
   const AboutPage({super.key});
 
@@ -85,62 +81,56 @@ class AboutPage extends HookConsumerWidget {
     ];
 
     return RaynPageScaffold(
-      body: Align(
-        alignment: Alignment.topLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),
-            children: [
-              RaynPageHeader(
-                title: t.pages.about.title,
-                padding: const EdgeInsets.only(top: RaynSpacing.xl, bottom: RaynSpacing.lg),
-                leading: const SubPageBackButton(fallback: 'settings'),
-                trailing: trailing,
-              ),
-              RaynSurface(
-                child: Row(
-                  children: [
-                    Assets.images.logo.image(
-                      width: 56,
-                      height: 56,
-                      color: palette.logoMark,
-                      colorBlendMode: BlendMode.srcIn,
-                    ),
-                    const SizedBox(width: RaynSpacing.lg),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(t.common.appTitle, style: RaynTypography.title.copyWith(color: palette.textPrimary)),
-                          const SizedBox(height: RaynSpacing.xs),
-                          Text(
-                            "${t.common.version} ${appInfo.presentVersion}",
-                            style: RaynTypography.caption.copyWith(color: palette.textMuted),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              RaynSectionHeader(t.pages.about.links),
-              RaynSettingsGroup(children: links),
-              const SizedBox(height: RaynSpacing.xl),
-              // Names the publisher inside the app, not just in the store listing.
-              // The year tracks the clock rather than being frozen in a literal that
-              // silently goes stale.
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg),
-                child: Text(
-                  t.pages.about.copyright(year: DateTime.now().year.toString(), company: Constants.companyLegalName),
-                  style: RaynTypography.caption.copyWith(color: palette.textMuted),
-                ),
-              ),
-            ],
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),
+        children: [
+          RaynPageHeader(
+            title: t.pages.about.title,
+            padding: const EdgeInsets.only(top: RaynSpacing.xl, bottom: RaynSpacing.lg),
+            leading: const SubPageBackButton(fallback: 'settings'),
+            trailing: trailing,
           ),
-        ),
+          RaynSurface(
+            child: Row(
+              children: [
+                Assets.images.logo.image(
+                  width: 56,
+                  height: 56,
+                  color: palette.logoMark,
+                  colorBlendMode: BlendMode.srcIn,
+                ),
+                const SizedBox(width: RaynSpacing.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(t.common.appTitle, style: RaynTypography.title.copyWith(color: palette.textPrimary)),
+                      const SizedBox(height: RaynSpacing.xs),
+                      Text(
+                        "${t.common.version} ${appInfo.presentVersion}",
+                        style: RaynTypography.caption.copyWith(color: palette.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          RaynSectionHeader(t.pages.about.links),
+          RaynSettingsGroup(children: links),
+          const SizedBox(height: RaynSpacing.xl),
+          // Names the publisher inside the app, not just in the store listing.
+          // The year tracks the clock rather than being frozen in a literal that
+          // silently goes stale.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg),
+            child: Text(
+              t.pages.about.copyright(year: DateTime.now().year.toString(), company: Constants.companyLegalName),
+              style: RaynTypography.caption.copyWith(color: palette.textMuted),
+            ),
+          ),
+        ],
       ),
     );
   }

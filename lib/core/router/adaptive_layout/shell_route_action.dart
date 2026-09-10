@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-//Helper class for storing details for each navigation action in my_adaptive_layout.dart
+/// One shell destination, as the rail and the bottom bar both see it.
 class ShellRouteAction {
   final IconData icon;
   final String title;

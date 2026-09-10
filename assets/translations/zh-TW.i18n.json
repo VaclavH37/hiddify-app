@@ -222,7 +222,6 @@
     "stats": {
       "connection": "連線",
       "traffic": "流量",
-      "trafficLive": "即時流量",
       "trafficTotal": "總流量",
       "uplink": "上傳",
       "downlink": "下載",

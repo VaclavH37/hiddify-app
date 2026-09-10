@@ -5,7 +5,6 @@ import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/widget/rayn_notification_bell.dart';
@@ -25,18 +24,12 @@ import 'package:hiddify/features/settings/widget/preference_tile.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-/// Widest the settings column grows. On a desktop window the rows used to
-/// stretch edge to edge, with each switch marooned at the far right; a list
-/// of settings is a column of text, and it stays one.
-const double _maxContentWidth = 640 + 2 * RaynSpacing.xl;
-
 class SettingsPage extends HookConsumerWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-    final isMobile = Breakpoint(context).isMobile();
 
     final generalTiles = <Widget>[
       const LocalePrefTile(),
@@ -168,57 +161,52 @@ class SettingsPage extends HookConsumerWidget {
             await ref.read(resetTunnelNotifierProvider.notifier).run();
           },
         ),
-      // Desktop and tablet reach About from the navigation rail. On a phone it
-      // is the last row here rather than a group of its own: one row does not
-      // earn a section.
-      if (isMobile)
-        RaynSettingsTile(
-          leading: Icons.info_outline_rounded,
-          title: t.pages.about.title,
-          trailing: const Icon(Icons.chevron_right_rounded),
-          onTap: () => context.go(context.namedLocation('about')),
-        ),
+      // Last row here rather than a group of its own: one row does not earn a
+      // section.
+      RaynSettingsTile(
+        leading: Icons.info_outline_rounded,
+        title: t.pages.about.title,
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () => context.go(context.namedLocation('about')),
+      ),
     ];
 
     return RaynPageScaffold(
-      body: Align(
-        alignment: Alignment.topLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),
-            children: [
-              RaynPageHeader(
-                title: t.pages.settings.title,
-                padding: const EdgeInsets.only(top: RaynSpacing.xl),
-                trailing: const [RaynNotificationBell()],
-              ),
-              RaynSectionHeader(t.auth.account),
-              const AccountSection(),
-              RaynSectionHeader(t.pages.settings.general.title),
-              RaynSettingsGroup(children: generalTiles),
-              RaynSectionHeader(t.pages.settings.advanced),
-              RaynSettingsGroup(children: advancedTiles),
-              // Account deletion gets its own group, last on the page. App Store
-              // guideline 5.1.1(v) requires it to be reachable in-app; keeping it
-              // apart from the Account block means it is never a mis-tap away from
-              // Copy token or Restore purchases.
-              RaynSectionHeader(t.auth.deleteSection),
-              RaynSettingsGroup(
-                children: [
-                  RaynSettingsTile(
-                    leading: Icons.person_remove_outlined,
-                    title: t.auth.deleteAccountRow,
-                    subtitle: t.auth.deleteAccountRowHint,
-                    accentColor: context.rayn.danger,
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => context.pushNamed('deleteAccount'),
-                  ),
-                ],
-              ),
-            ],
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),
+        children: [
+          RaynPageHeader(
+            title: t.pages.settings.title,
+            padding: const EdgeInsets.only(top: RaynSpacing.xl),
+            trailing: const [RaynNotificationBell()],
           ),
-        ),
+          RaynSectionHeader(t.auth.account),
+          const AccountSection(),
+          RaynSectionHeader(t.pages.settings.general.title),
+          RaynSettingsGroup(children: generalTiles),
+          RaynSectionHeader(t.pages.settings.advanced),
+          RaynSettingsGroup(children: advancedTiles),
+          // Account deletion is a store requirement (App Store guideline
+          // 5.1.1(v), Play's account-deletion policy), so it is a mobile-only
+          // row; desktop users delete from the website. It gets its own group,
+          // last on the page, so it is never a mis-tap away from Copy token or
+          // Restore purchases.
+          if (PlatformUtils.isMobile) ...[
+            RaynSectionHeader(t.auth.deleteSection),
+            RaynSettingsGroup(
+              children: [
+                RaynSettingsTile(
+                  leading: Icons.person_remove_outlined,
+                  title: t.auth.deleteAccountRow,
+                  subtitle: t.auth.deleteAccountRowHint,
+                  accentColor: context.rayn.danger,
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.pushNamed('deleteAccount'),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

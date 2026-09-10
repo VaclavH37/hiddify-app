@@ -222,7 +222,6 @@
     "stats": {
       "connection": "连接",
       "traffic": "流量",
-      "trafficLive": "实时流量",
       "trafficTotal": "总流量",
       "uplink": "上传",
       "downlink": "下载",

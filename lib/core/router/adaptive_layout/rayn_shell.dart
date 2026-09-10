@@ -8,14 +8,19 @@ import 'package:hiddify/core/router/adaptive_layout/rayn_navigation_rail.dart';
 import 'package:hiddify/core/router/adaptive_layout/shell_route_action.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/router/go_router/routing_config_notifier.dart';
-import 'package:hiddify/core/theme/rayn_colors.dart';
+import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
-import 'package:hiddify/features/home/widget/stats_column.dart';
+import 'package:hiddify/features/home/widget/sidebar_status.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class MyAdaptiveLayout extends HookConsumerWidget {
-  const MyAdaptiveLayout({super.key, required this.navigationShell, required this.isMobileBreakpoint});
+/// The app's frame around the shell branches: a sidebar on tablet and
+/// desktop, a bottom bar on a phone. Two destinations everywhere, Home and
+/// Settings; About is a Settings sub-page on every breakpoint, so the branch
+/// list no longer changes shape when a window is resized across 600px.
+class RaynShell extends HookConsumerWidget {
+  const RaynShell({super.key, required this.navigationShell, required this.isMobileBreakpoint});
+
   // managed by go router(Shell Route)
   final StatefulNavigationShell navigationShell;
   final bool isMobileBreakpoint;
@@ -38,7 +43,7 @@ class MyAdaptiveLayout extends HookConsumerWidget {
             if (branchesScope.values.any((node) => node.hasFocus)) {
               navScopeNode.requestFocus();
             } else if (navScopeNode.hasFocus) {
-              branchesScope[getNameOfBranch(isMobileBreakpoint, navigationShell.currentIndex)]?.requestFocus();
+              branchesScope[getNameOfBranch(navigationShell.currentIndex)]?.requestFocus();
             }
           }
         }
@@ -50,6 +55,9 @@ class MyAdaptiveLayout extends HookConsumerWidget {
         HardwareKeyboard.instance.removeHandler(handler);
       };
     }, [isMobileBreakpoint, navigationShell.currentIndex]);
+
+    final isDesktop = Breakpoint(context).isDesktop();
+
     return Material(
       child: Scaffold(
         body: isMobileBreakpoint
@@ -60,11 +68,11 @@ class MyAdaptiveLayout extends HookConsumerWidget {
                   FocusScope(
                     node: navScopeNode,
                     child: RaynNavigationRail(
-                      extended: Breakpoint(context).isDesktop(),
-                      destinations: _raynNavRailDests(_actions(t, isMobileBreakpoint)),
+                      extended: isDesktop,
+                      destinations: _raynNavRailDests(_actions(t)),
                       selectedIndex: navigationShell.currentIndex,
                       onDestinationSelected: (index) => _onTap(context, index),
-                      trailing: Breakpoint(context).isDesktop() ? const StatsColumn() : null,
+                      footer: SidebarStatus(extended: isDesktop),
                     ),
                   ),
                   Expanded(child: navigationShell),
@@ -75,8 +83,8 @@ class MyAdaptiveLayout extends HookConsumerWidget {
                 node: navScopeNode,
                 child: _raynBottomNavBar(
                   context: context,
-                  selectedIndex: navigationShell.currentIndex <= 1 ? navigationShell.currentIndex : 0,
-                  destinations: _navDests(_actions(t, isMobileBreakpoint)),
+                  selectedIndex: navigationShell.currentIndex,
+                  destinations: _navDests(_actions(t)),
                   onDestinationSelected: (index) => _onTap(context, index),
                 ),
               )
@@ -90,10 +98,11 @@ class MyAdaptiveLayout extends HookConsumerWidget {
     navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
   }
 
-  List<ShellRouteAction> _actions(Translations t, bool isMobileBreakpoint) => [
-    ShellRouteAction(Icons.power_settings_new_rounded, t.pages.home.title),
+  /// Home is a shield, not a power button: the power glyph reads as
+  /// "disconnect", which is what the orb on that page already does.
+  List<ShellRouteAction> _actions(Translations t) => [
+    ShellRouteAction(Icons.shield_rounded, t.pages.home.title),
     ShellRouteAction(Icons.settings_rounded, t.pages.settings.title),
-    if (!isMobileBreakpoint) ShellRouteAction(Icons.info_rounded, t.pages.about.title),
   ];
 
   List<NavigationDestination> _navDests(List<ShellRouteAction> actions) =>
@@ -102,9 +111,9 @@ class MyAdaptiveLayout extends HookConsumerWidget {
   List<RaynNavRailDestination> _raynNavRailDests(List<ShellRouteAction> actions) =>
       actions.map((e) => RaynNavRailDestination(icon: e.icon, label: e.title)).toList();
 
-  /// Mobile NavigationBar with Rayn token styling. Surface + active/inactive
-  /// colors come from the active palette so light mode picks up the cream +
-  /// warm-gray hierarchy.
+  /// Mobile NavigationBar with the same treatment as the rail's items: a
+  /// tinted indicator, the icon in the brand amber, the label in the primary
+  /// text colour.
   Widget _raynBottomNavBar({
     required BuildContext context,
     required int selectedIndex,
@@ -119,18 +128,20 @@ class MyAdaptiveLayout extends HookConsumerWidget {
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return RaynTypography.label.copyWith(color: selected ? RaynColors.goldPrimary : palette.textSecondary);
+          return RaynTypography.label.copyWith(color: selected ? palette.textPrimary : palette.textSecondary);
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return IconThemeData(color: selected ? RaynColors.goldPrimary : palette.textSecondary, size: 22);
+          return IconThemeData(color: selected ? AppTheme.brandAccent : palette.textSecondary, size: 22);
         }),
       ),
-      // A hairline top divider separates the bar from the page canvas — in light
+      // A hairline top divider separates the bar from the page canvas; in light
       // mode the pale surface would otherwise blend into the pale background.
       child: DecoratedBox(
         position: DecorationPosition.foreground,
-        decoration: BoxDecoration(border: Border(top: BorderSide(color: palette.glassBorder))),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: palette.glassBorder)),
+        ),
         child: NavigationBar(
           selectedIndex: selectedIndex,
           destinations: destinations,

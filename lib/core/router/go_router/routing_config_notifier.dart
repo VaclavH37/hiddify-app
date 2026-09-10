@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
-import 'package:hiddify/core/router/adaptive_layout/my_adaptive_layout.dart';
+import 'package:hiddify/core/router/adaptive_layout/rayn_shell.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/custom_transition.dart';
 import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
@@ -32,7 +32,6 @@ part 'routing_config_notifier.g.dart';
 final branchesScope = <String, FocusScopeNode>{
   'home': FocusScopeNode(),
   'settings': FocusScopeNode(),
-  'about': FocusScopeNode(),
 };
 
 // when the routing config is not yet initialized, this config is used
@@ -40,11 +39,12 @@ final loadingConfig = RoutingConfig(
   routes: <RouteBase>[GoRoute(path: '/home', builder: (context, state) => const Material())],
 );
 
-String getNameOfBranch(bool isMobileBreakpoint, int index) =>
-    isMobileBreakpoint ? ['home', 'settings'][index] : ['home', 'settings', 'about'][index];
+/// The shell's branches, in rail and bar order, on every breakpoint. About is
+/// a Settings sub-page everywhere, so the list no longer changes shape when a
+/// window is resized across the mobile breakpoint.
+const branchNames = ['home', 'settings'];
 
-int getIndexOfBranch(bool isMobileBreakpoint, String name) =>
-    isMobileBreakpoint ? ['home', 'settings'].indexOf(name) : ['home', 'settings', 'about'].indexOf(name);
+String getNameOfBranch(int index) => branchNames[index];
 
 @Riverpod(keepAlive: true)
 class RoutingConfigNotifier extends _$RoutingConfigNotifier {
@@ -114,7 +114,7 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
       routes: <RouteBase>[
         StatefulShellRoute.indexedStack(
           builder: (_, _, navigationShell) =>
-              MyAdaptiveLayout(navigationShell: navigationShell, isMobileBreakpoint: isMobileBreakpoint),
+              RaynShell(navigationShell: navigationShell, isMobileBreakpoint: isMobileBreakpoint),
           branches: <StatefulShellBranch>[
             StatefulShellBranch(
               routes: <GoRoute>[
@@ -153,30 +153,16 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                     ),
                   ),
                   routes: <GoRoute>[
-                    // Settings has no sub-pages left. General was the last one; its
-                    // tiles render inline on SettingsPage now, and Routing / DNS /
-                    // Inbound were removed entirely.
-                    if (isMobileBreakpoint)
-                      GoRoute(
-                        name: 'about',
-                        path: '/about',
-                        pageBuilder: (_, state) =>
-                            customTransition(TransitionType.slide, state.pageKey, const AboutPage()),
-                      ),
+                    GoRoute(
+                      name: 'about',
+                      path: '/about',
+                      pageBuilder: (_, state) =>
+                          customTransition(TransitionType.slide, state.pageKey, const AboutPage()),
+                    ),
                   ],
                 ),
               ],
             ),
-            if (!isMobileBreakpoint)
-              StatefulShellBranch(
-                routes: <GoRoute>[
-                  GoRoute(
-                    name: 'about',
-                    path: '/about',
-                    builder: (_, _) => FocusScope(node: branchesScope['about'], child: const AboutPage()),
-                  ),
-                ],
-              ),
           ],
         ),
         // Mobile prominent-disclosure screens (registered on all platforms but

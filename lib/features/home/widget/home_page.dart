@@ -43,7 +43,7 @@ class HomePage extends HookConsumerWidget {
     // showing about a fifth of its width on a portrait phone — a slice of one
     // region rather than a world map — so portrait gets art laid out for a 1:2
     // frame (3:2 for desktop, which is what the canvas measures once the
-    // navigation rail takes its 280). The light files are graded for a light
+    // navigation rail takes its 240). The light files are graded for a light
     // canvas rather than being the dark art behind an opacity multiplier, so
     // there is no runtime opacity here.
     final background = isPortrait

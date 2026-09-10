@@ -222,7 +222,6 @@
     "stats": {
       "connection": "اتصال",
       "traffic": "ترافیک",
-      "trafficLive": "ترافیک لحظه‌ای",
       "trafficTotal": "ترافیک کل",
       "uplink": "ارسال",
       "downlink": "دریافت",

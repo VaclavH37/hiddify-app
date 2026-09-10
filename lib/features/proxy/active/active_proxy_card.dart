@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
@@ -13,10 +12,9 @@ import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/proxy/active/ip_widget.dart';
 import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
 import 'package:hiddify/features/proxy/model/node_name.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
+class ActiveProxyFooter extends ConsumerWidget {
   const ActiveProxyFooter({super.key});
 
   @override
@@ -52,15 +50,6 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
     final displayName = display.name;
     final modeLabel = display.isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct;
 
-    Future<void> handleUrlTest() async {
-      try {
-        if (!context.mounted) return;
-        await ref.read(activeProxyNotifierProvider.notifier).urlTest("");
-      } catch (e) {
-        loggy.error("Error during URL test: $e");
-      }
-    }
-
     return Semantics(
       button: true,
       label: '${t.pages.proxies.activeProxy}: $displayName',
@@ -71,14 +60,6 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => context.goNamed('proxies'),
-            // Re-test and show the outbound's details. This used to hang off a
-            // second InkWell on the flag, nested inside the row's own; a target
-            // nobody can see inside a target everybody taps is a mis-tap trap.
-            onLongPress: () async {
-              await handleUrlTest();
-              if (!context.mounted) return;
-              await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: activeProxy);
-            },
             borderRadius: BorderRadius.circular(RaynRadius.card),
             child: Row(
               children: [

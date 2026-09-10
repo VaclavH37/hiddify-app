@@ -226,7 +226,6 @@
     "stats": {
       "connection": "Соединение",
       "traffic": "Трафик",
-      "trafficLive": "Текущий трафик",
       "trafficTotal": "Общий трафик",
       "uplink": "Отправка",
       "downlink": "Прием",

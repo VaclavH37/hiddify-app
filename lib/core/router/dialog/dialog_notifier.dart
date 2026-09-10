@@ -8,8 +8,6 @@ import 'package:hiddify/core/router/dialog/widgets/window_closing_dialog.dart';
 import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
 import 'package:hiddify/core/widget/rayn_option_list.dart';
 import 'package:hiddify/features/common/qr_code_scanner_screen.dart';
-import 'package:hiddify/features/proxy/widget/proxy_details_sheet.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -71,10 +69,6 @@ class DialogNotifier extends _$DialogNotifier {
       options: ActionsAtClosing.values,
       getTitle: (action) => action.present(t),
     );
-  }
-
-  Future<void> showProxyInfo({required OutboundInfo outboundInfo}) async {
-    return await _showPanel<void>((_) => ProxyDetailsSheet(outboundInfo: outboundInfo));
   }
 
   Future<T?> showSettingInput<T>({

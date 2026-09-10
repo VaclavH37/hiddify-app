@@ -450,7 +450,6 @@
     "stats": {
       "connection": "Connection",
       "traffic": "Traffic",
-      "trafficLive": "Live traffic",
       "trafficTotal": "Total traffic",
       "uplink": "Uplink",
       "downlink": "Downlink",
@@ -506,21 +505,6 @@
         "lastUpdate": "Recently updated"
       }
     },
-    "proxyInfo": {
-      "location": "Location",
-      "ipAddress": "IP address",
-      "organization": "Organization",
-      "latency": "Latency",
-      "lastTested": "Last tested",
-      "downloaded": "Downloaded",
-      "uploaded": "Uploaded",
-      "tag": "Tag",
-      "type": "Type",
-      "host": "Host",
-      "port": "Port",
-      "asn": "ASN",
-      "coordinates": "Coordinates"
-    },
     "windowClosing": {
       "askEachTime": "Ask each time",
       "alertMessage": "Hide or exit the application?",
@@ -538,9 +522,7 @@
     "reconnect": "Reconnect",
     "reconnectMsg": "Reconnecting for taking into account the changes...",
     "protected": "Protected",
-    "unprotected": "Unprotected",
-    "secureSubtitle": "Your connection is secure",
-    "exposedSubtitle": "Your connection is exposed"
+    "unprotected": "Not protected"
   },
   "errors": {
     "unexpected": "Unexpected error",

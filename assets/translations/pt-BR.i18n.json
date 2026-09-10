@@ -222,7 +222,6 @@
     "stats": {
       "connection": "Conexão",
       "traffic": "Tráfego",
-      "trafficLive": "Tráfego ao vivo",
       "trafficTotal": "Tráfego total",
       "uplink": "Envio",
       "downlink": "Recebimento",

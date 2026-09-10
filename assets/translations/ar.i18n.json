@@ -228,7 +228,6 @@
     "stats": {
       "connection": "الاتصال",
       "traffic": "البيانات",
-      "trafficLive": "البيانات الحالية",
       "trafficTotal": "إجمالي البيانات",
       "uplink": "الإرسال",
       "downlink": "الاستقبال",

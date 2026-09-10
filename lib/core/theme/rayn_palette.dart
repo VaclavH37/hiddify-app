@@ -28,7 +28,6 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     required this.logoMark,
     required this.orbFill,
     required this.navSelectedFill,
-    required this.navSelectedBorder,
   });
 
   /// Home page scaffold / canvas behind the map background.
@@ -117,9 +116,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   /// token is what stops them drifting apart.
   final Color orbFill;
 
-  /// Sidebar active-item pill background and border.
+  /// Sidebar and bottom-bar selected-item fill.
   final Color navSelectedFill;
-  final Color navSelectedBorder;
 
   static const RaynPalette dark = RaynPalette(
     bgPrimary: Color(0xFF101111),
@@ -141,7 +139,6 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     logoMark: Color(0xFFF59E0B),
     orbFill: Color(0xFFFFFFFF),
     navSelectedFill: Color(0x14FFFFFF),
-    navSelectedBorder: Color(0x1FFFFFFF),
   );
 
   static const RaynPalette light = RaynPalette(
@@ -167,7 +164,6 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     logoMark: Color(0xFFF59E0B),
     orbFill: Color(0xFFFFFFFF),
     navSelectedFill: Color(0x1FD6A34A),
-    navSelectedBorder: Color(0x3DD6A34A),
   );
 
   @override
@@ -191,7 +187,6 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     Color? logoMark,
     Color? orbFill,
     Color? navSelectedFill,
-    Color? navSelectedBorder,
   }) {
     return RaynPalette(
       bgPrimary: bgPrimary ?? this.bgPrimary,
@@ -213,7 +208,6 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       logoMark: logoMark ?? this.logoMark,
       orbFill: orbFill ?? this.orbFill,
       navSelectedFill: navSelectedFill ?? this.navSelectedFill,
-      navSelectedBorder: navSelectedBorder ?? this.navSelectedBorder,
     );
   }
 
@@ -240,7 +234,6 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       logoMark: Color.lerp(logoMark, other.logoMark, t)!,
       orbFill: Color.lerp(orbFill, other.orbFill, t)!,
       navSelectedFill: Color.lerp(navSelectedFill, other.navSelectedFill, t)!,
-      navSelectedBorder: Color.lerp(navSelectedBorder, other.navSelectedBorder, t)!,
     );
   }
 }

@@ -222,7 +222,6 @@
     "stats": {
       "connection": "Koneksi",
       "traffic": "Lalu lintas",
-      "trafficLive": "Lalu lintas langsung",
       "trafficTotal": "Total lalu lintas",
       "uplink": "Unggah",
       "downlink": "Unduh",

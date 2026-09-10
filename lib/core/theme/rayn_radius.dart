@@ -8,5 +8,8 @@ class RaynRadius {
   /// Grouped lists (settings sections). Same value as [button] today; a
   /// separate name so the two can move apart without a hunt.
   static const double group = 12;
+
+  /// Small controls: a sidebar item, a chip.
+  static const double control = 8;
   static const double button = 12;
 }
