@@ -566,10 +566,11 @@
   "connection": {
     "tapToConnect": "Tap to connect",
     "connect": "Connect",
-    "connecting": "Connecting...",
+    "starting": "Starting…",
+    "connecting": "Connecting…",
     "connected": "Connected",
     "disconnect": "Disconnect",
-    "disconnecting": "Disconnecting...",
+    "disconnecting": "Disconnecting…",
     "reconnect": "Reconnect",
     "reconnectMsg": "Reconnecting for taking into account the changes...",
     "protected": "Protected",

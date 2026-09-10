@@ -30,6 +30,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     required this.stateConnected,
     required this.stateError,
     required this.logoMark,
+    required this.orbFill,
     required this.goldGlow,
     required this.navSelectedFill,
     required this.navSelectedBorder,
@@ -122,6 +123,13 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   /// colour, and one token is what stops them drifting apart.
   final Color logoMark;
 
+  /// The connection orb's disc. White in both themes on purpose: the disc is
+  /// the ground the tinted mark sits on, and the mark's colours were chosen
+  /// against white. A token rather than a literal for the same reason as
+  /// [logoMark] — every site that draws the disc has to pass a colour, and one
+  /// token is what stops them drifting apart.
+  final Color orbFill;
+
   /// Pre-mixed gold glow (alpha already baked in) used by the ping-pill /
   /// orb shadow.
   final Color goldGlow;
@@ -150,6 +158,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     stateConnected: Color(0xFFF59E0B),
     stateError: Color(0xFFF24444),
     logoMark: Color(0xFFF59E0B),
+    orbFill: Color(0xFFFFFFFF),
     // Alpha encodes the *max* halo intensity; animation breathes from
     // glowMax * 0.6 → glowMax.
     goldGlow: Color(0x80E8A317),
@@ -180,6 +189,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     stateConnected: Color(0xFFF59E0B),
     stateError: Color(0xFFF24444),
     logoMark: Color(0xFFF59E0B),
+    orbFill: Color(0xFFFFFFFF),
     goldGlow: Color(0x33D6A34A),
     navSelectedFill: Color(0x1FD6A34A),
     navSelectedBorder: Color(0x3DD6A34A),
@@ -206,6 +216,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     Color? stateConnected,
     Color? stateError,
     Color? logoMark,
+    Color? orbFill,
     Color? goldGlow,
     Color? navSelectedFill,
     Color? navSelectedBorder,
@@ -230,6 +241,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       stateConnected: stateConnected ?? this.stateConnected,
       stateError: stateError ?? this.stateError,
       logoMark: logoMark ?? this.logoMark,
+      orbFill: orbFill ?? this.orbFill,
       goldGlow: goldGlow ?? this.goldGlow,
       navSelectedFill: navSelectedFill ?? this.navSelectedFill,
       navSelectedBorder: navSelectedBorder ?? this.navSelectedBorder,
@@ -259,6 +271,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       stateConnected: Color.lerp(stateConnected, other.stateConnected, t)!,
       stateError: Color.lerp(stateError, other.stateError, t)!,
       logoMark: Color.lerp(logoMark, other.logoMark, t)!,
+      orbFill: Color.lerp(orbFill, other.orbFill, t)!,
       goldGlow: Color.lerp(goldGlow, other.goldGlow, t)!,
       navSelectedFill: Color.lerp(navSelectedFill, other.navSelectedFill, t)!,
       navSelectedBorder: Color.lerp(navSelectedBorder, other.navSelectedBorder, t)!,

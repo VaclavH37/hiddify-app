@@ -1,21 +1,141 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:gap/gap.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
+import 'package:hiddify/core/theme/rayn_motion.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
-import 'package:hiddify/core/widget/animated_text.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
-import 'package:hiddify/features/settings/notifier/config_option/config_option_notifier.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-// TODO: rewrite
+/// URL-test delays at or above this are the core's "no answer" sentinel.
+const int _delayTimeout = 65000;
+
+/// Which brand colour the mark is tinted with. The tint IS the state
+/// indicator: the mark ships as one flat silhouette and there is no coloured
+/// asset per state, so this enum is the whole vocabulary. Resolved to a
+/// [RaynPalette] token at render time, which keeps the tray icons (pre-rendered
+/// at those same tokens) from drifting away from the in-app colour.
+enum OrbTint { disconnected, connecting, connected, error }
+
+/// Everything the orb needs to draw one connection state.
+///
+/// Derived by [orbStateFor] from the notifier's value, the URL-test delay and
+/// the translations, and nothing else, so the whole state table can be tested
+/// without a widget tree.
+@immutable
+class OrbState {
+  const OrbState({
+    required this.tint,
+    required this.label,
+    required this.ring,
+    required this.enabled,
+    this.dimmed = false,
+    this.isConnected = false,
+  });
+
+  final OrbTint tint;
+
+  /// Status line under the circle; also the semantics label. Never empty:
+  /// every branch of the notifier's value produces one, including the error
+  /// and initial-load cases that used to fall through to an empty string.
+  final String label;
+
+  /// Indeterminate arc drawn just outside the circle while the tunnel is on
+  /// its way up or down. It is the motion cue for the transition: the mark
+  /// keeps its amber, so without the ring "connecting" and "connected" would be
+  /// the same picture.
+  final bool ring;
+
+  /// Whether a tap does anything.
+  final bool enabled;
+
+  /// Mark at reduced opacity: only before the first status has arrived.
+  final bool dimmed;
+
+  /// Reported to assistive technology as the button's toggle state.
+  final bool isConnected;
+
+  @override
+  bool operator ==(Object other) =>
+      other is OrbState &&
+      other.tint == tint &&
+      other.label == label &&
+      other.ring == ring &&
+      other.enabled == enabled &&
+      other.dimmed == dimmed &&
+      other.isConnected == isConnected;
+
+  @override
+  int get hashCode => Object.hash(tint, label, ring, enabled, dimmed, isConnected);
+
+  @override
+  String toString() =>
+      'OrbState($tint, "$label", ring: $ring, enabled: $enabled, dimmed: $dimmed, connected: $isConnected)';
+}
+
+/// The state table. [delay] is the active outbound's URL-test delay, 0 when it
+/// has not been measured yet.
+///
+/// A `Connected` status with no measurement yet still reads "Connecting…" with
+/// the ring: the core reports the tunnel up before the first URL test answers,
+/// and for the user the connection is not usable until it does. A delay at the
+/// timeout sentinel is the opposite case: the tunnel is up and the test has
+/// finished, just without an answer, so that is "Connected" and the latency
+/// readout says "Timeout" on its own. Before this the orb said "Connecting…"
+/// for as long as the test server stayed unreachable.
+OrbState orbStateFor(AsyncValue<ConnectionStatus> status, int delay, Translations t) {
+  return switch (status) {
+    AsyncData(value: Disconnected()) => OrbState(
+      tint: OrbTint.disconnected,
+      label: t.connection.tapToConnect,
+      ring: false,
+      enabled: true,
+    ),
+    AsyncData(value: Connecting()) => OrbState(
+      tint: OrbTint.connecting,
+      label: t.connection.connecting,
+      ring: true,
+      enabled: false,
+    ),
+    AsyncData(value: Connected()) when delay <= 0 => OrbState(
+      tint: OrbTint.connecting,
+      label: t.connection.connecting,
+      ring: true,
+      enabled: true,
+      isConnected: true,
+    ),
+    AsyncData(value: Connected()) => OrbState(
+      tint: OrbTint.connected,
+      label: t.connection.connected,
+      ring: false,
+      enabled: true,
+      isConnected: true,
+    ),
+    AsyncData(value: Disconnecting()) => OrbState(
+      tint: OrbTint.connecting,
+      label: t.connection.disconnecting,
+      ring: true,
+      enabled: false,
+    ),
+    AsyncError(:final error) => OrbState(
+      tint: OrbTint.error,
+      label: t.presentShortError(error),
+      ring: false,
+      enabled: true,
+    ),
+    // AsyncLoading: the initial status has not arrived. The old fall-through
+    // painted this red for a frame, then navy with no label at all.
+    _ => OrbState(tint: OrbTint.disconnected, label: t.connection.starting, ring: false, enabled: false, dimmed: true),
+  };
+}
+
 class ConnectionButton extends HookConsumerWidget {
   const ConnectionButton({super.key});
 
@@ -27,269 +147,159 @@ class ConnectionButton extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final connectionStatus = ref.watch(connectionNotifierProvider);
-    final activeProxy = ref.watch(activeProxyNotifierProvider);
-    final delay = activeProxy.valueOrNull?.urlTestDelay ?? 0;
+    final delay = ref.watch(activeProxyNotifierProvider.select((value) => value.valueOrNull?.urlTestDelay ?? 0));
+    // A timed-out test counts as measured for the state table; see orbStateFor.
+    final measuredDelay = delay >= _delayTimeout ? _delayTimeout : delay;
+    final state = orbStateFor(connectionStatus, measuredDelay, t);
 
-    final requiresReconnect = ref.watch(configOptionNotifierProvider).valueOrNull;
-    // final animationController = useAnimationController(
-    //   duration: const Duration(seconds: 1),
-    // )..repeat(reverse: true); // Ensure the animation loops indefinitely
+    Future<void> onTap() async {
+      if (!state.enabled) return;
+      if (!state.isConnected) {
+        // Auth gate guarantees a profile exists by the time the home page is
+        // reachable; defensive null guard just no-ops.
+        if (ref.read(activeProfileProvider).valueOrNull == null) return;
+        if (!await ref.read(dialogNotifierProvider.notifier).showExperimentalFeatureNotice()) return;
+      }
+      await ref.read(connectionNotifierProvider.notifier).toggleConnection();
+    }
 
-    //   // Listen to the animation's value
-    //   final animationValue = useAnimation(Tween<double>(begin: 0.8, end: 1).animate(animationController));
-
-    //   // useEffect(() {
-    //   //   if (true) {
-    //   // Start repeating animation
-    //   //   } else {
-    //   //     animationController.stop(); // Stop animation if connected, disconnected, or error
-    //   //   }
-
-    //   //   // Cleanup when widget is disposed
-    //   //   return animationController.dispose;
-    //   // }, [connectionStatus.value]);
-
-    //   // ref.listen(
-    //   //   connectionNotifierProvider,
-    //   //   (_, next) {
-    //   //     if (next case AsyncError(:final error)) {
-    //   //       CustomAlertDialog.fromErr(t.presentError(error)).show(context);
-    //   //     }
-    //   //     if (next case AsyncData(value: Disconnected(:final connectionFailure?))) {
-    //   //       CustomAlertDialog.fromErr(t.presentError(connectionFailure)).show(context);
-    //   //     }
-    //   //   },
-    //   // );
-
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final palette = context.rayn;
-
-    //   // return CircleDesignWidget(
-    //   //   onTap: switch (connectionStatus) {
-    //   //     // AsyncData(value: Disconnected()) || AsyncError() => () async {
-    //   //     //     if (await showExperimentalNotice()) {
-    //   //     //       return await ref.read(connectionNotifierProvider.notifier).toggleConnection();
-    //   //     //     }
-    //   //     //   },
-    //   //     // AsyncData(value: Connected()) => () async {
-    //   //     //     if (requiresReconnect == true && await showExperimentalNotice()) {
-    //   //     //       return await ref.read(connectionNotifierProvider.notifier).reconnect(await ref.read(activeProfileProvider.future));
-    //   //     //     }
-    //   //     //     return await ref.read(connectionNotifierProvider.notifier).toggleConnection();
-    //   //     //   },
-    //   //     _ => () {},
-    //   //   },
-    //   //   // enabled: switch (connectionStatus) {
-    //   //   //   AsyncData(value: Connected()) || AsyncData(value: Disconnected()) || AsyncError() => true,
-    //   //   //   _ => false,
-    //   //   // },
-    //   //   // label: switch (connectionStatus) {
-    //   //   //   AsyncData(value: Connected()) when requiresReconnect == true => t.connection.reconnect,
-    //   //   //   AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => t.connection.connecting,
-    //   //   //   AsyncData(value: final status) => status.present(t),
-    //   //   //   _ => "",
-    //   //   // },
-    //   //   color: switch (connectionStatus) {
-    //   //     AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
-    //   //     AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => Color.fromARGB(255, 157, 139, 1),
-    //   //     AsyncData(value: Connected()) => Colors.green.shade900,
-    //   //     AsyncData(value: _) => Colors.indigo.shade700, // Color(0xFF3446A5), //buttonTheme.idleColor!,
-    //   //     _ => Colors.red,
-    //   //   },
-
-    //   //   animated: true ||
-    //   //       switch (connectionStatus) {
-    //   //         AsyncData(value: Connected()) when requiresReconnect == true => false,
-    //   //         AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => false,
-    //   //         AsyncData(value: Connected()) => true,
-    //   //         AsyncData(value: _) => true,
-    //   //         _ => false,
-    //   //       },
-    //   //   animationValue: animationValue,
-    //   // );
-    // }
-    const secureLabel = "";
-    return _ConnectionButton(
-      onTap: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => () async {
-          final activeProfile = await ref.read(activeProfileProvider.future);
-          return await ref.read(connectionNotifierProvider.notifier).reconnect(activeProfile);
-        },
-        AsyncData(value: Disconnected()) || AsyncError() => () async {
-          // Auth gate guarantees a profile exists by the time the home page
-          // is reachable; defensive null guard just no-ops.
-          if (ref.read(activeProfileProvider).valueOrNull == null) return;
-          if (await ref.read(dialogNotifierProvider.notifier).showExperimentalFeatureNotice()) {
-            return await ref.read(connectionNotifierProvider.notifier).toggleConnection();
-          }
-        },
-        AsyncData(value: Connected()) => () async {
-          if (requiresReconnect == true &&
-              await ref.read(dialogNotifierProvider.notifier).showExperimentalFeatureNotice()) {
-            return await ref
-                .read(connectionNotifierProvider.notifier)
-                .reconnect(await ref.read(activeProfileProvider.future));
-          }
-          return await ref.read(connectionNotifierProvider.notifier).toggleConnection();
-        },
-        _ => () {},
-      },
-      enabled: switch (connectionStatus) {
-        AsyncData(value: Connected()) || AsyncData(value: Disconnected()) || AsyncError() => true,
-        _ => false,
-      },
-      label: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => t.connection.reconnect,
-        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => t.connection.connecting,
-        AsyncData(value: final status) => status.present(t),
-        _ => "",
-      },
-      // Tints the logo silhouette (BlendMode.srcIn, below), so this switch IS
-      // the state indicator. Values come from RaynPalette rather than inline
-      // hex so the desktop tray icons, which are pre-rendered at these same
-      // colours, cannot drift away from the in-app tint.
-      //
-      // The two `when` guards keep their ad-hoc colours: they are sub-states of
-      // Connected ("reconnect to apply" and "connected but no usable delay")
-      // and have no brand colour assigned yet. Amber would make them
-      // indistinguishable from a healthy connection.
-      buttonColor: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
-        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color.fromARGB(255, 185, 176, 103),
-        AsyncData(value: Connected()) => palette.stateConnected,
-        // Both transitions share one colour, matching how the tray treats them.
-        AsyncData(value: Connecting()) => palette.stateConnecting,
-        AsyncData(value: Disconnecting()) => palette.stateConnecting,
-        AsyncData(value: Disconnected()) => palette.stateDisconnected,
-        AsyncError() => palette.stateError,
-        // AsyncLoading, and any ConnectionStatus added later. Previously this
-        // fell through to a bare `Colors.red`, so the orb flashed red during
-        // the initial load before the first status arrived.
-        _ => palette.stateDisconnected,
-      },
-      backgroundColor: switch (connectionStatus) {
-        AsyncData(value: Disconnected()) => isLight ? Colors.white : const Color(0xFFF4F4F5),
-        _ => Colors.white,
-      },
-      borderSide: isLight ? const BorderSide(color: Color(0xFFEFE6D9)) : BorderSide.none,
-      glowAlpha: isLight ? 0.35 : 0.5,
-      animated: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => false,
-        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => false,
-        AsyncData(value: Connected()) => true,
-        AsyncData(value: _) => true,
-        _ => false,
-      },
-      secureLabel: secureLabel,
-    );
+    return _Orb(state: state, onTap: onTap);
   }
 }
 
-class _ConnectionButton extends StatelessWidget {
-  const _ConnectionButton({
-    required this.onTap,
-    required this.enabled,
-    required this.label,
-    required this.buttonColor,
-    required this.backgroundColor,
-    required this.animated,
-    required this.secureLabel,
-    this.borderSide = BorderSide.none,
-    this.glowAlpha = 0.5,
-  });
+class _Orb extends HookWidget {
+  const _Orb({required this.state, required this.onTap});
 
+  final OrbState state;
   final VoidCallback onTap;
-  final bool enabled;
-  final String label;
-  final Color buttonColor;
-  final Color backgroundColor;
-  final String secureLabel;
 
-  final bool animated;
-
-  /// 1 px border around the orb. Used in light mode so the white circle
-  /// reads against cream.
-  final BorderSide borderSide;
-
-  /// Glow halo intensity. Softer on light to avoid blowing out cream.
-  final double glowAlpha;
-
-  /// Inset between the orb's edge and the mark's box.
+  /// Inset between the circle's edge and the mark's box.
   ///
   /// The artwork carries ~6% transparent margin per side of its own, so the
   /// visible ensō ring only ever comes out at ~88% of whatever box the image
   /// is given. At the old inset of 12 that put the ring at ~109px inside a
   /// 148px orb and it read as floating in the middle; at 3 it is ~125px, which
-  /// sits just inside the edge. That is a ~15% larger mark.
+  /// sits just inside the edge.
   static const double _markInset = 3;
+
+  /// How far outside the circle the progress ring sits, and its stroke.
+  static const double _ringGap = 4;
+  static const double _ringStroke = 3;
+
+  /// Widest the status label may grow before wrapping; error text can be a
+  /// sentence, and it should read as a caption under the orb, not a banner.
+  static const double _labelMaxWidth = 260;
 
   @override
   Widget build(BuildContext context) {
-    // The orb and its label stack in flow, so this widget's box is the pair.
-    // The home canvas centres on the circle using [ConnectionButton.diameter]
-    // rather than on this box, which is why the label no longer hangs below as
-    // an overflow overlay: it takes part in layout like everything else.
+    final palette = context.rayn;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final reduce = reduceMotion(context);
+    final pressed = useState(false);
+
+    final tint = switch (state.tint) {
+      OrbTint.disconnected => palette.stateDisconnected,
+      OrbTint.connecting => palette.stateConnecting,
+      OrbTint.connected => palette.stateConnected,
+      OrbTint.error => palette.stateError,
+    };
+
+    const diameter = ConnectionButton.diameter;
+    const ringDiameter = diameter + 2 * (_ringGap + _ringStroke);
+
+    final circle = Semantics(
+      button: true,
+      enabled: state.enabled,
+      toggled: state.isConnected,
+      label: state.label,
+      child: Container(
+        width: diameter,
+        height: diameter,
+        // A neutral shadow lifts the white disc off the canvas in both
+        // themes; the light shadow token is soft enough not to muddy cream.
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: palette.shadow, blurRadius: 24, offset: const Offset(0, 8))],
+        ),
+        child: Material(
+          key: const ValueKey("home_connection_button"),
+          color: palette.orbFill,
+          // On cream the white disc needs an edge to read as a disc at all.
+          shape: CircleBorder(side: isLight ? BorderSide(color: palette.glassBorder) : BorderSide.none),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: state.enabled ? onTap : null,
+            onHighlightChanged: (value) => pressed.value = value,
+            child: Padding(
+              padding: const EdgeInsets.all(_markInset),
+              child: AnimatedOpacity(
+                opacity: state.dimmed ? 0.4 : 1,
+                duration: reduce ? Duration.zero : RaynMotion.medium,
+                child: TweenAnimationBuilder<Color?>(
+                  tween: ColorTween(end: tint),
+                  duration: reduce ? Duration.zero : RaynMotion.medium,
+                  builder: (context, value, _) =>
+                      Assets.images.logo.image(color: value, colorBlendMode: BlendMode.srcIn),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // The ring is drawn outside the circle without changing this widget's box,
+    // so the canvas keeps centring on the circle; the few pixels of overflow
+    // stay well inside the gaps the canvas keeps around the orb.
+    final ring = AnimatedSwitcher(
+      duration: reduce ? Duration.zero : RaynMotion.fast,
+      child: state.ring
+          ? OverflowBox(
+              key: const ValueKey('ring'),
+              maxWidth: ringDiameter,
+              maxHeight: ringDiameter,
+              child: SizedBox(
+                width: ringDiameter,
+                height: ringDiameter,
+                child: CircularProgressIndicator(
+                  // Reduce-motion gets a still, three-quarter arc rather than
+                  // a spinning one: still unmistakably "in progress".
+                  value: reduce ? 0.75 : null,
+                  strokeWidth: _ringStroke,
+                  strokeCap: StrokeCap.round,
+                  color: tint.withValues(alpha: 0.6),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(key: ValueKey('no-ring')),
+    );
+
     return RepaintBoundary(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: ConnectionButton.diameter,
-            height: ConnectionButton.diameter,
-            child: Semantics(
-              button: true,
-              enabled: enabled,
-              label: label,
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: glowAlpha))],
-                ),
-                child: Material(
-                  key: const ValueKey("home_connection_button"),
-                  shape: CircleBorder(side: borderSide),
-                  color: backgroundColor,
-                  child: InkWell(
-                    focusColor: Colors.grey,
-                    onTap: onTap,
-                    child: Padding(
-                      padding: const EdgeInsets.all(_markInset),
-                      child: TweenAnimationBuilder(
-                        tween: ColorTween(end: buttonColor),
-                        duration: const Duration(milliseconds: 600),
-                        builder: (context, value, child) =>
-                            Assets.images.logo.image(color: value, colorBlendMode: BlendMode.srcIn),
-                      ),
-                    ),
-                  ),
-                ).animate(target: enabled ? 0 : 1).blurXY(end: 1),
-              ).animate(target: enabled ? 0 : 1).scaleXY(end: .88, curve: Curves.easeIn),
-            ),
+          AnimatedScale(
+            scale: pressed.value && state.enabled ? 0.97 : 1,
+            duration: reduce ? Duration.zero : const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [ring, circle]),
           ),
           const SizedBox(height: RaynSpacing.lg),
           ExcludeSemantics(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedText(label, style: Theme.of(context).textTheme.titleMedium),
-                if (secureLabel.isNotEmpty) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(FontAwesomeIcons.shieldHalved, size: 16, color: Theme.of(context).colorScheme.secondary),
-                      const Gap(4),
-                      Text(
-                        secureLabel,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.secondary),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: _labelMaxWidth),
+              child: AnimatedSwitcher(
+                duration: reduce ? Duration.zero : RaynMotion.fast,
+                child: Text(
+                  state.label,
+                  key: ValueKey(state.label),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: RaynTypography.title.copyWith(color: palette.textPrimary),
+                ),
+              ),
             ),
           ),
         ],
