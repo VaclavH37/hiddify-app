@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stop">Остановить</string>
+    <string name="quick_toggle">Переключить</string>
+    <string name="status_starting">Запуск службы…</string>
+    <string name="status_started">Служба запущена</string>
+</resources>

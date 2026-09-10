@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stop">توقف</string>
+    <string name="quick_toggle">تغییر وضعیت</string>
+    <string name="status_starting">در حال شروع سرویس…</string>
+    <string name="status_started">سرویس شروع شد</string>
+</resources>

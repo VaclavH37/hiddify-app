@@ -21,6 +21,32 @@
       }
     }
   },
+  "disclosure": {
+    "privacyPolicy": "Política de Privacidade",
+    "terms": "Termos de Serviço",
+    "vpn": {
+      "title": "Como o Rayn VPN funciona",
+      "whyTitle": "Conexão VPN",
+      "whyBody": "O Rayn VPN usa o serviço de VPN do seu dispositivo para criar um túnel criptografado e encaminhar seu tráfego de internet pela localização de servidor que você escolher, ajudando a proteger sua conexão em redes não confiáveis.",
+      "dataTitle": "Tráfego gerenciado pela VPN",
+      "dataBody": "Para encaminhar sua conexão, o serviço de VPN pode acessar o tráfego de rede do seu dispositivo. Esse acesso existe apenas para levar seu tráfego pelo túnel.",
+      "trafficTitle": "Como seu tráfego é usado",
+      "trafficBody": "Seu tráfego é encaminhado apenas ao servidor que você escolher. Não registramos, inspecionamos, armazenamos nem vendemos o conteúdo do seu tráfego ou sua atividade de navegação, e eles nunca são compartilhados com terceiros.",
+      "consent": "Ao tocar em Concordar e continuar, você consente com o uso do serviço de VPN conforme descrito acima."
+    },
+    "data": {
+      "title": "Os dados da sua conta",
+      "accountTitle": "O que coletamos",
+      "accountBody": "Para fazer seu login e gerenciar sua assinatura, coletamos seu endereço de e-mail, o identificador da sua conta e o status da sua assinatura.",
+      "passwordTitle": "Sua senha",
+      "passwordBody": "Sua senha é usada apenas para autenticar você. Ela nunca é armazenada no seu dispositivo de forma legível.",
+      "useTitle": "Como são usados",
+      "useBody": "Essas informações são usadas apenas para autenticar você e gerenciar sua assinatura. Elas não são vendidas nem compartilhadas com terceiros para uso próprio.",
+      "consent": "Ao tocar em Concordar e continuar, você consente com essa coleta conforme descrito em nossa Política de Privacidade."
+    },
+    "agree": "Concordar e continuar",
+    "decline": "Recusar"
+  },
   "pages": {
     "home": {
       "title": "Início"
@@ -31,10 +57,18 @@
       "testDelay": "Testar latência",
       "empty": "Nenhum proxy disponível",
       "activeProxy": "Proxy ativo",
+      "selectLocation": "Selecionar localização",
+      "tapToChoose": "Toque para escolher uma localização",
+      "snapshotEmpty": "Conecte-se uma vez para carregar as localizações disponíveis",
+      "autoRotate": "Rotação automática",
+      "fastestServer": "Servidor mais rápido",
+      "automatic": "Automático",
+      "locations": "Localizações",
       "sortOptions": {
         "unsorted": "Padrão",
         "name": "Alfabeticamente",
-        "delay": "Por latência"
+        "delay": "Por latência",
+        "usage": "Por uso"
       },
       "ipInfo": {
         "country": "País"
@@ -42,7 +76,9 @@
       "delay": {
         "result": "Latência: ${delay}ms",
         "timeout": "Tempo limite do teste de latência esgotado",
-        "testing": "Latência: testando..."
+        "testing": "Latência: testando...",
+        "measuring": "Medindo…",
+        "noResponse": "Sem resposta"
       }
     },
     "profiles": {
@@ -53,6 +89,7 @@
           "success": "Perfil salvo com sucesso"
         },
         "invalidUrl": "URL inválida",
+        "updateRequired": "Este link precisa de uma versão mais recente do Rayn. Atualize o app.",
         "add": {
           "failure": "Falha ao adicionar perfil"
         },
@@ -65,13 +102,21 @@
     },
     "about": {
       "title": "Sobre",
+      "links": "Links",
+      "support": "Suporte",
       "telegramChannel": "Canal do Telegram",
       "termsAndConditions": "Termos e Condições",
-      "privacyPolicy": "Política de Privacidade"
+      "privacyPolicy": "Política de Privacidade",
+      "copyright": "© ${year} ${company}"
     },
     "settings": {
       "title": "Configurações",
       "resetTunnel": "Redefinir perfil de VPN",
+      "exportDiagnostics": "Exportar diagnóstico",
+      "exportDiagnosticsMsg": "Compartilhar os registros do app e do túnel",
+      "exportDiagnosticsEmpty": "Ainda não há registros: conecte-se uma vez e tente novamente",
+      "exportDiagnosticsCopied": "Falha ao compartilhar: os registros foram copiados para a área de transferência",
+      "advanced": "Avançado",
       "general": {
         "title": "Geral",
         "locale": "Idioma",
@@ -104,6 +149,31 @@
     "stats": {
       "traffic": "Tráfego",
       "trafficTotal": "Tráfego total"
+    },
+    "subscriptionInfo": {
+      "planExpiry": "Plano expira em: ${date}",
+      "renewDate": "Data de renovação: ${date}",
+      "autoRenew": "Renovação automática",
+      "manualRenew": "Renovação manual",
+      "planExpiryNever": "Nunca"
+    }
+  },
+  "notifications": {
+    "title": "Notificações",
+    "empty": "Você está em dia",
+    "clearAll": "Limpar tudo",
+    "dismiss": "Dispensar",
+    "expiry": {
+      "title": "Assinatura expirando",
+      "body": "Sua assinatura expira em ${days} dia(s). Renove para continuar conectado."
+    },
+    "renewal": {
+      "title": "Renovação da assinatura",
+      "body": "Sua assinatura é renovada automaticamente amanhã; nenhuma ação é necessária."
+    },
+    "expired": {
+      "title": "Assinatura expirada",
+      "body": "Sua assinatura expirou. Renove para reconectar."
     }
   },
   "dialogs": {
@@ -122,12 +192,15 @@
   "connection": {
     "tapToConnect": "Toque para conectar",
     "connect": "Conectar",
+    "starting": "Iniciando…",
     "connecting": "Conectando...",
     "connected": "Conectado",
     "disconnect": "Desconectar",
     "disconnecting": "Desconectando...",
     "reconnect": "Reconectar",
-    "reconnectMsg": "Reconectando para aplicar as alterações..."
+    "reconnectMsg": "Reconectando para aplicar as alterações...",
+    "protected": "Protegido",
+    "unprotected": "Sem proteção"
   },
   "errors": {
     "unexpected": "Erro inesperado",
@@ -143,7 +216,10 @@
       "notFound": "Perfil não encontrado",
       "invalidConfig": "Configurações inválidas",
       "invalidUrl": "URL inválida",
-      "canceledByUser": "Cancelado pelo usuário"
+      "canceledByUser": "Cancelado pelo usuário",
+      "subscriptionExpired": "Sua assinatura expirou. Renove para continuar.",
+      "unsupportedLinkVersion": "Atualização do app necessária",
+      "configUnreadable": "Não foi possível ler sua configuração salva. Conecte-se à internet para atualizá-la."
     },
     "connectivity": {
       "unexpected": "Falha inesperada",
@@ -160,6 +236,58 @@
     }
   },
   "auth": {
+    "subtitle": "Cole seu link Rayn, leia seu código QR ou entre com seu e-mail para começar.",
+    "scanQr": "Ler código QR",
+    "paste": "Colar da área de transferência",
+    "pasteEmpty": "A área de transferência está vazia",
+    "alreadySignedIn": "Você já está conectado. Saia primeiro para usar outro token.",
+    "account": "Conta",
+    "copyToken": "Copiar seu token",
+    "tokenCopied": "Token copiado para a área de transferência. Guarde-o em um lugar seguro.",
+    "noTokenStored": "Token indisponível: importe-o novamente para poder copiá-lo.",
+    "manageSubscription": "Gerenciar assinatura",
+    "restorePurchases": "Restaurar compras",
+    "restorePurchasesHint": "Vincular novamente uma assinatura comprada em outro dispositivo",
+    "restoreDone": "Assinatura restaurada.",
+    "restoreActivating": "Assinatura encontrada: ativando sua conta.",
+    "restoreNone": "Nenhuma assinatura ativa encontrada para esta Conta Apple.",
+    "deleteSection": "Exclusão da conta",
+    "deleteAccountRow": "Excluir conta",
+    "deleteAccountRowHint": "Remover permanentemente sua conta e todos os seus dados",
+    "deleteAccount": {
+      "title": "Excluir conta",
+      "subtitle": "Isso exclui permanentemente sua conta Rayn. Confirme com sua senha para continuar.",
+      "consequencePermanent": "Sua conta, o registro da assinatura e o token de autenticação são excluídos permanentemente. Isso não pode ser desfeito.",
+      "consequenceDevice": "Este dispositivo é desconectado e sai da conta, e o perfil de conexão é removido.",
+      "consequenceStore": "Excluir sua conta não cancela uma assinatura da loja. Cancele-a separadamente em Ajustes > Conta Apple > Assinaturas, ou você continuará sendo cobrado.",
+      "needsSignIn": "Você entrou com um token neste dispositivo, então precisamos do seu e-mail e senha para confirmar que é você mesmo.",
+      "passwordLabel": "Senha",
+      "confirmAction": "Excluir minha conta",
+      "confirmTitle": "Excluir sua conta?",
+      "confirmBody": "Isso exclui permanentemente sua conta Rayn e não pode ser desfeito. Se você tiver uma assinatura da loja, lembre-se de cancelá-la separadamente.",
+      "confirmProceed": "Excluir permanentemente",
+      "cancel": "Manter minha conta",
+      "done": "Sua conta foi excluída.",
+      "supportHint": "Não consegue entrar? Fale conosco e nós a excluímos para você.",
+      "errorPassword": "Essa senha não está correta.",
+      "errorNeedsLogin": "Digite seu e-mail e senha para confirmar.",
+      "errorAccountLocked": "Esta conta está em análise e não pode ser excluída agora. Entre em contato com support@raynlabs.io.",
+      "errorPaymentInFlight": "Um pagamento ainda está sendo processado. Tente novamente em cerca de uma hora.",
+      "errorRateLimited": "Muitas tentativas. Tente novamente mais tarde.",
+      "errorUnreachable": "Não foi possível acessar o serviço de contas. Tente novamente.",
+      "errorGeneric": "Algo deu errado. Sua conta não foi excluída."
+    },
+    "logout": "Sair",
+    "logoutConfirmTitle": "Sair da conta?",
+    "logoutConfirmBody": "Sair desconecta e remove seu token de autenticação deste dispositivo. Se você não o salvou, copie-o primeiro com “Copiar seu token”. Continuar?",
+    "logoutConfirmAction": "Sair",
+    "logoutCancel": "Cancelar",
+    "unreachable": {
+      "body": "Não conseguimos acessar o servidor; sua rede pode estar bloqueando-o. Tente novamente em instantes ou importe o token de autenticação pela página da sua conta. Se não conseguir acessar sua conta, escreva para support@raynlabs.io.",
+      "bodyApple": "Não conseguimos acessar o servidor; sua rede pode estar bloqueando-o. Tente novamente em instantes ou importe seu link Rayn, se o tiver salvo. Se ainda não conseguir, escreva para support@raynlabs.io.",
+      "openAccount": "Abrir página da conta",
+      "contactSupport": "Falar com o suporte"
+    },
     "login": {
       "signInWithEmail": "Entrar com e-mail",
       "subtitle": "Digite o e-mail e a senha da sua conta para obter seu token automaticamente.",
@@ -171,11 +299,98 @@
       "invalidCredentials": "E-mail ou senha incorretos.",
       "emailNotVerified": "Verifique seu e-mail para continuar e entre novamente.",
       "accountSuspended": "Sua conta não está ativa. Acesse a página da sua conta para renovar.",
+      "accountSuspendedApple": "Sua conta não está ativa. Escreva para support@raynlabs.io e resolveremos isso.",
       "accountDeactivated": "Esta conta foi desativada. Entre em contato com o suporte.",
       "pendingActivation": "Sua conta está sendo ativada. Tente novamente em alguns minutos.",
       "verifyFailed": "Não foi possível verificar o aplicativo. Tente novamente.",
+      "updateRequired": "Esta conta precisa de uma versão mais recente do Rayn. Atualize o app e entre novamente.",
       "generic": "Algo deu errado. Tente novamente mais tarde.",
       "openWebsite": "Abrir página da conta"
+    },
+    "register": {
+      "createAccount": "Criar uma conta",
+      "subtitle": "Informe seus dados para criar uma conta Rayn.",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Senha",
+      "displayNameLabel": "Nome de exibição",
+      "passwordRule": "De 10 a 128 caracteres",
+      "displayNameRule": "Até 100 caracteres: letras, números, espaços, _ e -",
+      "emailRequired": "Digite seu e-mail",
+      "emailInvalid": "Digite um endereço de e-mail válido",
+      "passwordRequired": "Digite uma senha",
+      "passwordTooShort": "A senha deve ter pelo menos 10 caracteres",
+      "passwordTooLong": "A senha deve ter no máximo 128 caracteres",
+      "displayNameRequired": "Digite um nome de exibição",
+      "displayNameTooLong": "O nome de exibição deve ter no máximo 100 caracteres",
+      "displayNameInvalid": "Use apenas letras, números, espaços, _ e -",
+      "submit": "Criar conta",
+      "tooManyRequests": "Muitas tentativas a partir desta rede. Tente novamente mais tarde.",
+      "verifyFailed": "Não foi possível verificar o app. Tente novamente.",
+      "generic": "Algo deu errado. Tente novamente mais tarde."
+    },
+    "verifyEmail": {
+      "title": "Verifique seu e-mail",
+      "body": "Enviamos um link de verificação para ${email}. Abra-o para ativar sua conta e depois entre.",
+      "bodyGeneric": "Enviamos um link de verificação para você. Abra-o para ativar sua conta e depois entre.",
+      "note": "A verificação e o pagamento são concluídos no seu navegador.",
+      "noteApple": "A verificação é concluída no seu navegador. Volte aqui e entre quando terminar.",
+      "resend": "Reenviar e-mail de verificação",
+      "resendSent": "Se a conta existir, enviamos outro e-mail.",
+      "resendFailed": "Não foi possível reenviar agora. Tente novamente mais tarde.",
+      "openWebsite": "Abrir página da conta",
+      "backToLogin": "Voltar ao login"
+    },
+    "payment": {
+      "title": "Escolha seu plano",
+      "subtitle": "Ative uma assinatura para começar a usar o Rayn VPN.",
+      "expiredTitle": "Assinatura expirada",
+      "expiredNotice": "Sua assinatura expirou. Escolha um plano abaixo para renovar e continuar usando o Rayn VPN.",
+      "monthly": "Mensal",
+      "quarterly": "Trimestral",
+      "annual": "Anual",
+      "perMonth": "por mês",
+      "perQuarter": "a cada 3 meses",
+      "perYear": "por ano",
+      "perMonthEquiv": "Apenas ${price}/mês",
+      "bestValue": "Melhor custo-benefício",
+      "freeTrial": "Teste grátis",
+      "loading": "Carregando planos…",
+      "activating": "Ativando seu plano…",
+      "activatingAccount": "Ativando sua conta…",
+      "activatingHint": "Isso costuma levar menos de um minuto. Mantenha o app aberto.",
+      "errorProvisioning": "Seu plano está sendo ativado e está demorando um pouco mais que o normal. Ele estará pronto em breve; toque em Restaurar para concluir.",
+      "processing": "Pagamento em processamento; ativaremos seu plano assim que for confirmado.",
+      "restore": "Restaurar compra",
+      "autoRenew": "As assinaturas são renovadas automaticamente até serem canceladas. Gerencie ou cancele a qualquer momento no Google Play.",
+      "autoRenewApple": "As assinaturas são renovadas automaticamente até serem canceladas. Gerencie ou cancele a qualquer momento em Ajustes > Conta Apple > Assinaturas.",
+      "unavailableTitle": "Compras no app indisponíveis",
+      "unavailableBody": "O faturamento do Google Play não está disponível neste dispositivo. Você pode gerenciar sua assinatura pela página da sua conta.",
+      "unavailableBodyApple": "As compras no app não estão disponíveis neste dispositivo no momento. Se as compras estiverem restritas em Ajustes > Tempo de Uso, permita-as e tente novamente, ou escreva para support@raynlabs.io e ajudaremos você.",
+      "openAccount": "Abrir página da conta",
+      "errorAccountMismatch": "Esta compra pertence a outra conta.",
+      "errorTokenInUse": "Esta compra já está vinculada a outra conta. Entre em contato com support@raynlabs.io.",
+      "errorIneligible": "Sua conta ainda não pode ser ativada. Verifique seu e-mail e tente novamente.",
+      "errorFamilyShared": "Esta assinatura é compartilhada pelo Compartilhamento Familiar, então pertence à conta do organizador e não pode ser vinculada aqui. Entre com a conta que a comprou ou escreva para support@raynlabs.io.",
+      "errorNeedsLogin": "Sua sessão expirou. Entre novamente para concluir.",
+      "errorReauth": "Entre novamente para concluir a ativação do seu plano.",
+      "errorRateLimited": "Muitas tentativas. Aguarde um instante e tente novamente.",
+      "errorUnreachable": "Não conseguimos acessar o servidor. Verifique sua conexão e tente novamente.",
+      "errorUpdateRequired": "Sua compra está segura, mas esta versão do Rayn não consegue concluir a ativação. Atualize o app e toque em Restaurar.",
+      "errorGeneric": "Algo deu errado. Sua compra está segura; tente novamente.",
+      "backToSignIn": "Voltar ao login"
+    },
+    "planTransition": {
+      "settingsRow": "Assinar pelo Google Play",
+      "settingsRowApple": "Assinar pela App Store",
+      "settingsRowHint": "Comece um plano novo hoje, com renovação automática",
+      "title": "Mudar para renovação automática",
+      "explainer": "Ao assinar, seu plano recomeça hoje: seu teste termina agora e sua franquia de dados volta ao total. Depois, o Google Play renova sua assinatura automaticamente.",
+      "explainerApple": "Ao assinar, seu plano recomeça hoje: seu teste termina agora e sua franquia de dados volta ao total. Depois, a App Store renova sua assinatura automaticamente.",
+      "nextBilling": "Próxima renovação: ~${date}",
+      "needsSignIn": "Entre na sua conta para mudar seu plano para renovação automática.",
+      "accountMismatch": "Essas credenciais são de outra conta. Saia para trocar de conta.",
+      "success": "Seu plano agora é renovado automaticamente.",
+      "close": "Fechar"
     }
   }
 }

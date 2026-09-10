@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stop">Arrêter</string>
+    <string name="quick_toggle">Basculer</string>
+    <string name="status_starting">Démarrage du service…</string>
+    <string name="status_started">Service démarré</string>
+</resources>

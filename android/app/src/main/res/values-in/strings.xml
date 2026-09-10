@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stop">Berhenti</string>
+    <string name="quick_toggle">Alihkan</string>
+    <string name="status_starting">Memulai layanan…</string>
+    <string name="status_started">Layanan dimulai</string>
+</resources>

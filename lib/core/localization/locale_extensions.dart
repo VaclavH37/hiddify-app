@@ -9,11 +9,11 @@ extension AppLocaleX on AppLocale {
   String get localeName => switch (flutterLocale.toString()) {
     "ar" => "العربية",
     "en" => "English",
-    "es" => "Spanish",
+    "es" => "Español",
     "fa" => "فارسی",
     "fr" => "Français",
     "id" => "Indonesian",
-    "pt_BR" => "Portuguese (Brazil)",
+    "pt_BR" => "Português (Brasil)",
     "ru" => "Русский",
     "tr" => "Türkçe",
     "zh" || "zh_CN" => "中文 (中国)",

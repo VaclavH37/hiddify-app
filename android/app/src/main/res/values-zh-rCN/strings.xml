@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stop">停止</string>
+    <string name="quick_toggle">切换</string>
+    <string name="status_starting">服务正在启动…</string>
+    <string name="status_started">服务已启动</string>
+</resources>

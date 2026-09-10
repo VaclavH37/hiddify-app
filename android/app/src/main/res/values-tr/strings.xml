@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stop">Durdur</string>
+    <string name="quick_toggle">Aç/Kapat</string>
+    <string name="status_starting">Hizmet başlatılıyor…</string>
+    <string name="status_started">Hizmet başlatıldı</string>
+</resources>

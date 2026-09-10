@@ -21,6 +21,32 @@
       }
     }
   },
+  "disclosure": {
+    "privacyPolicy": "Kebijakan Privasi",
+    "terms": "Ketentuan Layanan",
+    "vpn": {
+      "title": "Cara kerja Rayn VPN",
+      "whyTitle": "Koneksi VPN",
+      "whyBody": "Rayn VPN menggunakan layanan VPN perangkat Anda untuk membuat terowongan terenkripsi dan mengarahkan lalu lintas internet Anda melalui lokasi server yang Anda pilih, sehingga membantu melindungi koneksi Anda di jaringan yang tidak tepercaya.",
+      "dataTitle": "Lalu lintas yang ditangani VPN",
+      "dataBody": "Untuk mengarahkan koneksi Anda, layanan VPN dapat mengakses lalu lintas jaringan perangkat Anda. Akses ini hanya ada untuk membawa lalu lintas Anda melalui terowongan.",
+      "trafficTitle": "Bagaimana lalu lintas Anda digunakan",
+      "trafficBody": "Lalu lintas Anda hanya diteruskan ke server yang Anda pilih. Kami tidak mencatat, memeriksa, menyimpan, atau menjual isi lalu lintas maupun aktivitas penjelajahan Anda, dan tidak pernah membagikannya kepada pihak ketiga.",
+      "consent": "Dengan mengetuk Setuju & Lanjutkan, Anda menyetujui penggunaan layanan VPN seperti dijelaskan di atas."
+    },
+    "data": {
+      "title": "Data akun Anda",
+      "accountTitle": "Apa yang kami kumpulkan",
+      "accountBody": "Untuk memasukkan Anda dan mengelola langganan Anda, kami mengumpulkan alamat email, pengenal akun, dan status langganan Anda.",
+      "passwordTitle": "Kata sandi Anda",
+      "passwordBody": "Kata sandi Anda hanya digunakan untuk mengautentikasi Anda. Kata sandi tidak pernah disimpan di perangkat Anda dalam bentuk yang dapat dibaca.",
+      "useTitle": "Bagaimana data digunakan",
+      "useBody": "Informasi ini hanya digunakan untuk mengautentikasi Anda dan mengelola langganan Anda. Informasi ini tidak dijual dan tidak dibagikan kepada pihak ketiga untuk kepentingan mereka sendiri.",
+      "consent": "Dengan mengetuk Setuju & Lanjutkan, Anda menyetujui pengumpulan ini seperti dijelaskan dalam Kebijakan Privasi kami."
+    },
+    "agree": "Setuju & Lanjutkan",
+    "decline": "Tolak"
+  },
   "pages": {
     "home": {
       "title": "Beranda"
@@ -31,10 +57,18 @@
       "testDelay": "Uji latensi",
       "empty": "Tidak ada proksi yang tersedia",
       "activeProxy": "Proksi aktif",
+      "selectLocation": "Pilih lokasi",
+      "tapToChoose": "Ketuk untuk memilih lokasi",
+      "snapshotEmpty": "Sambungkan sekali untuk memuat lokasi yang tersedia",
+      "autoRotate": "Rotasi otomatis",
+      "fastestServer": "Server tercepat",
+      "automatic": "Otomatis",
+      "locations": "Lokasi",
       "sortOptions": {
         "unsorted": "Default",
         "name": "Berdasarkan abjad",
-        "delay": "Berdasarkan latensi"
+        "delay": "Berdasarkan latensi",
+        "usage": "Berdasarkan penggunaan"
       },
       "ipInfo": {
         "country": "Negara"
@@ -42,7 +76,9 @@
       "delay": {
         "result": "Latensi: ${delay}ms",
         "timeout": "Waktu tes latensi habis",
-        "testing": "Latensi: sedang menguji..."
+        "testing": "Latensi: sedang menguji...",
+        "measuring": "Mengukur…",
+        "noResponse": "Tidak ada respons"
       }
     },
     "profiles": {
@@ -53,6 +89,7 @@
           "success": "Profil berhasil disimpan"
         },
         "invalidUrl": "URL tidak valid",
+        "updateRequired": "Tautan ini memerlukan versi Rayn yang lebih baru. Perbarui aplikasi.",
         "add": {
           "failure": "Gagal menambahkan profil"
         },
@@ -65,13 +102,21 @@
     },
     "about": {
       "title": "Tentang",
+      "links": "Tautan",
+      "support": "Dukungan",
       "telegramChannel": "Saluran Telegram",
       "termsAndConditions": "Syarat dan Ketentuan",
-      "privacyPolicy": "Kebijakan Privasi"
+      "privacyPolicy": "Kebijakan Privasi",
+      "copyright": "© ${year} ${company}"
     },
     "settings": {
       "title": "Pengaturan",
       "resetTunnel": "Setel ulang profil VPN",
+      "exportDiagnostics": "Ekspor diagnostik",
+      "exportDiagnosticsMsg": "Bagikan log aplikasi dan terowongan",
+      "exportDiagnosticsEmpty": "Belum ada log: sambungkan sekali, lalu coba lagi",
+      "exportDiagnosticsCopied": "Gagal membagikan: log disalin ke papan klip",
+      "advanced": "Lanjutan",
       "general": {
         "title": "Umum",
         "locale": "Bahasa",
@@ -104,6 +149,31 @@
     "stats": {
       "traffic": "Lalu lintas",
       "trafficTotal": "Total lalu lintas"
+    },
+    "subscriptionInfo": {
+      "planExpiry": "Paket berakhir: ${date}",
+      "renewDate": "Tanggal perpanjangan: ${date}",
+      "autoRenew": "Perpanjangan otomatis",
+      "manualRenew": "Perpanjangan manual",
+      "planExpiryNever": "Tidak pernah"
+    }
+  },
+  "notifications": {
+    "title": "Notifikasi",
+    "empty": "Semua sudah terbaca",
+    "clearAll": "Hapus semua",
+    "dismiss": "Tutup",
+    "expiry": {
+      "title": "Langganan akan berakhir",
+      "body": "Langganan Anda berakhir dalam ${days} hari. Perbarui agar tetap terhubung."
+    },
+    "renewal": {
+      "title": "Perpanjangan langganan",
+      "body": "Langganan Anda diperpanjang otomatis besok; tidak perlu tindakan apa pun."
+    },
+    "expired": {
+      "title": "Langganan kedaluwarsa",
+      "body": "Langganan Anda telah kedaluwarsa. Perbarui untuk menyambung kembali."
     }
   },
   "dialogs": {
@@ -122,12 +192,15 @@
   "connection": {
     "tapToConnect": "Ketuk untuk menyambungkan",
     "connect": "Sambungkan",
+    "starting": "Memulai…",
     "connecting": "Menyambungkan...",
     "connected": "Tersambung",
     "disconnect": "Putuskan",
     "disconnecting": "Memutuskan...",
     "reconnect": "Sambungkan kembali",
-    "reconnectMsg": "Menyambungkan kembali untuk menerapkan perubahan..."
+    "reconnectMsg": "Menyambungkan kembali untuk menerapkan perubahan...",
+    "protected": "Terlindungi",
+    "unprotected": "Tidak terlindungi"
   },
   "errors": {
     "unexpected": "Kesalahan tak terduga",
@@ -143,7 +216,10 @@
       "notFound": "Profil tidak ditemukan",
       "invalidConfig": "Konfigurasi tidak valid",
       "invalidUrl": "URL tidak valid",
-      "canceledByUser": "Dibatalkan oleh pengguna"
+      "canceledByUser": "Dibatalkan oleh pengguna",
+      "subscriptionExpired": "Langganan Anda telah kedaluwarsa. Perbarui untuk melanjutkan.",
+      "unsupportedLinkVersion": "Pembaruan aplikasi diperlukan",
+      "configUnreadable": "Konfigurasi tersimpan Anda tidak dapat dibaca. Sambungkan ke internet untuk memperbaruinya."
     },
     "connectivity": {
       "unexpected": "Kegagalan tak terduga",
@@ -160,6 +236,58 @@
     }
   },
   "auth": {
+    "subtitle": "Tempel tautan Rayn Anda, pindai kode QR Anda, atau masuk dengan email untuk memulai.",
+    "scanQr": "Pindai kode QR",
+    "paste": "Tempel dari papan klip",
+    "pasteEmpty": "Papan klip kosong",
+    "alreadySignedIn": "Anda sudah masuk. Keluar terlebih dahulu untuk menggunakan token lain.",
+    "account": "Akun",
+    "copyToken": "Salin token Anda",
+    "tokenCopied": "Token disalin ke papan klip. Simpan di tempat yang aman.",
+    "noTokenStored": "Token tidak tersedia: impor ulang agar dapat disalin.",
+    "manageSubscription": "Kelola langganan",
+    "restorePurchases": "Pulihkan pembelian",
+    "restorePurchasesHint": "Tautkan kembali langganan yang dibeli di perangkat lain",
+    "restoreDone": "Langganan dipulihkan.",
+    "restoreActivating": "Langganan ditemukan: mengaktifkan akun Anda.",
+    "restoreNone": "Tidak ditemukan langganan aktif untuk Akun Apple ini.",
+    "deleteSection": "Penghapusan akun",
+    "deleteAccountRow": "Hapus akun",
+    "deleteAccountRowHint": "Hapus akun Anda dan semua datanya secara permanen",
+    "deleteAccount": {
+      "title": "Hapus akun",
+      "subtitle": "Tindakan ini menghapus akun Rayn Anda secara permanen. Konfirmasi dengan kata sandi Anda untuk melanjutkan.",
+      "consequencePermanent": "Akun, catatan langganan, dan token autentikasi Anda dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
+      "consequenceDevice": "Perangkat ini diputus dan dikeluarkan, dan profil koneksi dihapus.",
+      "consequenceStore": "Menghapus akun tidak membatalkan langganan toko. Batalkan secara terpisah di Pengaturan > Akun Apple > Langganan, atau Anda akan terus ditagih.",
+      "needsSignIn": "Anda masuk dengan token di perangkat ini, jadi kami memerlukan email dan kata sandi Anda untuk memastikan itu benar-benar Anda.",
+      "passwordLabel": "Kata sandi",
+      "confirmAction": "Hapus akun saya",
+      "confirmTitle": "Hapus akun Anda?",
+      "confirmBody": "Tindakan ini menghapus akun Rayn Anda secara permanen dan tidak dapat dibatalkan. Jika Anda memiliki langganan toko, ingatlah untuk membatalkannya secara terpisah.",
+      "confirmProceed": "Hapus permanen",
+      "cancel": "Pertahankan akun saya",
+      "done": "Akun Anda telah dihapus.",
+      "supportHint": "Tidak bisa masuk? Hubungi kami dan kami akan menghapusnya untuk Anda.",
+      "errorPassword": "Kata sandi itu tidak benar.",
+      "errorNeedsLogin": "Masukkan email dan kata sandi Anda untuk konfirmasi.",
+      "errorAccountLocked": "Akun ini sedang ditinjau, jadi tidak dapat dihapus saat ini. Hubungi support@raynlabs.io.",
+      "errorPaymentInFlight": "Pembayaran masih diproses. Coba lagi sekitar satu jam lagi.",
+      "errorRateLimited": "Terlalu banyak percobaan. Coba lagi nanti.",
+      "errorUnreachable": "Tidak dapat menghubungi layanan akun. Coba lagi.",
+      "errorGeneric": "Terjadi kesalahan. Akun Anda tidak dihapus."
+    },
+    "logout": "Keluar",
+    "logoutConfirmTitle": "Keluar?",
+    "logoutConfirmBody": "Keluar akan memutus koneksi dan menghapus token autentikasi Anda dari perangkat ini. Jika token belum disimpan, salin dulu dengan “Salin token Anda”. Lanjutkan?",
+    "logoutConfirmAction": "Keluar",
+    "logoutCancel": "Batal",
+    "unreachable": {
+      "body": "Kami tidak dapat menghubungi server; jaringan Anda mungkin memblokirnya. Coba lagi sebentar lagi, atau impor token autentikasi dari halaman akun Anda. Jika Anda tidak dapat mengakses akun, hubungi kami di support@raynlabs.io.",
+      "bodyApple": "Kami tidak dapat menghubungi server; jaringan Anda mungkin memblokirnya. Coba lagi sebentar lagi, atau impor tautan Rayn Anda jika sudah disimpan. Jika masih bermasalah, hubungi kami di support@raynlabs.io.",
+      "openAccount": "Buka halaman akun",
+      "contactSupport": "Hubungi dukungan"
+    },
     "login": {
       "signInWithEmail": "Masuk dengan email",
       "subtitle": "Masukkan email dan kata sandi akun Anda untuk mengambil token secara otomatis.",
@@ -171,11 +299,98 @@
       "invalidCredentials": "Email atau kata sandi salah.",
       "emailNotVerified": "Harap verifikasi email Anda untuk melanjutkan, lalu masuk lagi.",
       "accountSuspended": "Akun Anda tidak aktif. Kunjungi halaman akun Anda untuk memperbarui.",
+      "accountSuspendedApple": "Akun Anda tidak aktif. Hubungi kami di support@raynlabs.io dan kami akan membantu.",
       "accountDeactivated": "Akun ini telah dinonaktifkan. Silakan hubungi dukungan.",
       "pendingActivation": "Akun Anda sedang diaktifkan. Silakan periksa kembali dalam beberapa menit.",
       "verifyFailed": "Tidak dapat memverifikasi aplikasi. Silakan coba lagi.",
+      "updateRequired": "Akun ini memerlukan versi Rayn yang lebih baru. Perbarui aplikasi, lalu masuk lagi.",
       "generic": "Terjadi kesalahan. Silakan coba lagi nanti.",
       "openWebsite": "Buka halaman akun"
+    },
+    "register": {
+      "createAccount": "Buat akun",
+      "subtitle": "Masukkan data Anda untuk membuat akun Rayn.",
+      "emailLabel": "Email",
+      "passwordLabel": "Kata sandi",
+      "displayNameLabel": "Nama tampilan",
+      "passwordRule": "10 sampai 128 karakter",
+      "displayNameRule": "Maksimal 100 karakter: huruf, angka, spasi, _ dan -",
+      "emailRequired": "Masukkan email Anda",
+      "emailInvalid": "Masukkan alamat email yang valid",
+      "passwordRequired": "Masukkan kata sandi",
+      "passwordTooShort": "Kata sandi minimal 10 karakter",
+      "passwordTooLong": "Kata sandi maksimal 128 karakter",
+      "displayNameRequired": "Masukkan nama tampilan",
+      "displayNameTooLong": "Nama tampilan maksimal 100 karakter",
+      "displayNameInvalid": "Gunakan hanya huruf, angka, spasi, _ dan -",
+      "submit": "Buat akun",
+      "tooManyRequests": "Terlalu banyak percobaan dari jaringan ini. Coba lagi nanti.",
+      "verifyFailed": "Tidak dapat memverifikasi aplikasi. Coba lagi.",
+      "generic": "Terjadi kesalahan. Coba lagi nanti."
+    },
+    "verifyEmail": {
+      "title": "Verifikasi email Anda",
+      "body": "Kami telah mengirim tautan verifikasi ke ${email}. Buka tautan itu untuk mengaktifkan akun Anda, lalu masuk.",
+      "bodyGeneric": "Kami telah mengirimkan tautan verifikasi kepada Anda. Buka tautan itu untuk mengaktifkan akun Anda, lalu masuk.",
+      "note": "Verifikasi dan pembayaran diselesaikan di browser Anda.",
+      "noteApple": "Verifikasi diselesaikan di browser Anda. Kembali ke sini dan masuk setelah selesai.",
+      "resend": "Kirim ulang email verifikasi",
+      "resendSent": "Jika akun ada, kami telah mengirim email lain.",
+      "resendFailed": "Tidak dapat mengirim ulang saat ini. Coba lagi nanti.",
+      "openWebsite": "Buka halaman akun",
+      "backToLogin": "Kembali ke halaman masuk"
+    },
+    "payment": {
+      "title": "Pilih paket Anda",
+      "subtitle": "Aktifkan langganan untuk mulai menggunakan Rayn VPN.",
+      "expiredTitle": "Langganan kedaluwarsa",
+      "expiredNotice": "Langganan Anda telah kedaluwarsa. Pilih paket di bawah untuk memperbarui dan terus menggunakan Rayn VPN.",
+      "monthly": "Bulanan",
+      "quarterly": "Triwulanan",
+      "annual": "Tahunan",
+      "perMonth": "per bulan",
+      "perQuarter": "per 3 bulan",
+      "perYear": "per tahun",
+      "perMonthEquiv": "Hanya ${price}/bulan",
+      "bestValue": "Paling hemat",
+      "freeTrial": "Uji coba gratis",
+      "loading": "Memuat paket…",
+      "activating": "Mengaktifkan paket Anda…",
+      "activatingAccount": "Mengaktifkan akun Anda…",
+      "activatingHint": "Biasanya memerlukan waktu kurang dari satu menit. Biarkan aplikasi tetap terbuka.",
+      "errorProvisioning": "Paket Anda sedang diaktifkan dan memerlukan waktu sedikit lebih lama dari biasanya. Sebentar lagi siap; ketuk Pulihkan untuk menyelesaikan.",
+      "processing": "Pembayaran sedang diproses; kami akan mengaktifkan paket Anda begitu dikonfirmasi.",
+      "restore": "Pulihkan pembelian",
+      "autoRenew": "Langganan diperpanjang otomatis sampai dibatalkan. Kelola atau batalkan kapan saja di Google Play.",
+      "autoRenewApple": "Langganan diperpanjang otomatis sampai dibatalkan. Kelola atau batalkan kapan saja di Pengaturan > Akun Apple > Langganan.",
+      "unavailableTitle": "Pembelian dalam aplikasi tidak tersedia",
+      "unavailableBody": "Penagihan Google Play tidak tersedia di perangkat ini. Anda dapat mengelola langganan dari halaman akun Anda.",
+      "unavailableBodyApple": "Pembelian dalam aplikasi tidak tersedia di perangkat ini saat ini. Jika pembelian dibatasi di Pengaturan > Durasi Layar, izinkan lalu coba lagi, atau kirim email ke support@raynlabs.io dan kami akan membantu.",
+      "openAccount": "Buka halaman akun",
+      "errorAccountMismatch": "Pembelian ini milik akun lain.",
+      "errorTokenInUse": "Pembelian ini sudah ditautkan ke akun lain. Hubungi support@raynlabs.io.",
+      "errorIneligible": "Akun Anda belum dapat diaktifkan. Verifikasi email Anda, lalu coba lagi.",
+      "errorFamilyShared": "Langganan ini dibagikan melalui Keluarga Berbagi, jadi milik akun penyelenggara dan tidak dapat ditautkan di sini. Masuk dengan akun yang membelinya, atau kirim email ke support@raynlabs.io.",
+      "errorNeedsLogin": "Sesi Anda berakhir. Masuk lagi untuk menyelesaikan.",
+      "errorReauth": "Masuk lagi untuk menyelesaikan pengaktifan paket Anda.",
+      "errorRateLimited": "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
+      "errorUnreachable": "Kami tidak dapat menghubungi server. Periksa koneksi Anda dan coba lagi.",
+      "errorUpdateRequired": "Pembelian Anda aman, tetapi versi Rayn ini tidak dapat menyelesaikan pengaktifannya. Perbarui aplikasi, lalu ketuk Pulihkan.",
+      "errorGeneric": "Terjadi kesalahan. Pembelian Anda aman; coba lagi.",
+      "backToSignIn": "Kembali ke halaman masuk"
+    },
+    "planTransition": {
+      "settingsRow": "Berlangganan lewat Google Play",
+      "settingsRowApple": "Berlangganan lewat App Store",
+      "settingsRowHint": "Mulai paket baru hari ini dengan perpanjangan otomatis",
+      "title": "Beralih ke perpanjangan otomatis",
+      "explainer": "Berlangganan memulai paket Anda dari awal hari ini: uji coba berakhir sekarang dan kuota data Anda kembali penuh. Selanjutnya Google Play memperpanjang langganan Anda secara otomatis.",
+      "explainerApple": "Berlangganan memulai paket Anda dari awal hari ini: uji coba berakhir sekarang dan kuota data Anda kembali penuh. Selanjutnya App Store memperpanjang langganan Anda secara otomatis.",
+      "nextBilling": "Perpanjangan berikutnya: ~${date}",
+      "needsSignIn": "Masuk ke akun Anda untuk mengubah paket ke perpanjangan otomatis.",
+      "accountMismatch": "Kredensial ini milik akun lain. Keluar untuk berganti akun.",
+      "success": "Paket Anda kini diperpanjang otomatis.",
+      "close": "Tutup"
     }
   }
 }

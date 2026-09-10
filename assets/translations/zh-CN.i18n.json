@@ -21,6 +21,32 @@
       }
     }
   },
+  "disclosure": {
+    "privacyPolicy": "隐私政策",
+    "terms": "服务条款",
+    "vpn": {
+      "title": "Rayn VPN 的工作原理",
+      "whyTitle": "VPN 连接",
+      "whyBody": "Rayn VPN 使用设备的 VPN 服务建立加密隧道，并通过您选择的服务器位置转发互联网流量，帮助您在不受信任的网络上保护连接。",
+      "dataTitle": "VPN 处理的流量",
+      "dataBody": "为了转发您的连接，VPN 服务可以访问设备的网络流量。此访问权限仅用于将您的流量传送到隧道中。",
+      "trafficTitle": "流量的使用方式",
+      "trafficBody": "您的流量仅会转发到您选择的服务器。我们不会记录、检查、存储或出售您的流量内容或浏览活动，也绝不会与第三方共享。",
+      "consent": "点按“同意并继续”，即表示您同意按上述说明使用 VPN 服务。"
+    },
+    "data": {
+      "title": "您的账户数据",
+      "accountTitle": "我们收集的内容",
+      "accountBody": "为了让您登录并管理订阅，我们会收集您的电子邮件地址、账户 ID 和订阅状态。",
+      "passwordTitle": "您的密码",
+      "passwordBody": "您的密码仅用于验证身份，绝不会以可读形式存储在设备上。",
+      "useTitle": "使用方式",
+      "useBody": "这些信息仅用于验证您的身份和管理订阅，不会出售，也不会为第三方自身目的与其共享。",
+      "consent": "点按“同意并继续”，即表示您同意按照我们隐私政策中的说明进行此项数据收集。"
+    },
+    "agree": "同意并继续",
+    "decline": "拒绝"
+  },
   "pages": {
     "home": {
       "title": "主页"
@@ -31,10 +57,18 @@
       "testDelay": "测试延迟",
       "empty": "无可用代理",
       "activeProxy": "当前代理",
+      "selectLocation": "选择位置",
+      "tapToChoose": "点按以选择位置",
+      "snapshotEmpty": "连接一次即可加载可用位置",
+      "autoRotate": "自动轮换",
+      "fastestServer": "最快服务器",
+      "automatic": "自动",
+      "locations": "位置",
       "sortOptions": {
         "unsorted": "默认",
         "name": "按名称",
-        "delay": "按延迟"
+        "delay": "按延迟",
+        "usage": "按用量"
       },
       "ipInfo": {
         "country": "国家"
@@ -42,7 +76,9 @@
       "delay": {
         "result": "延迟：${delay}毫秒",
         "timeout": "延迟测试超时",
-        "testing": "延迟：测试中..."
+        "testing": "延迟：测试中...",
+        "measuring": "测量中…",
+        "noResponse": "无响应"
       }
     },
     "profiles": {
@@ -53,6 +89,7 @@
           "success": "配置文件保存成功"
         },
         "invalidUrl": "无效的 URL",
+        "updateRequired": "此链接需要更新版本的 Rayn。请更新应用。",
         "add": {
           "failure": "添加配置文件失败"
         },
@@ -65,13 +102,21 @@
     },
     "about": {
       "title": "关于",
+      "links": "链接",
+      "support": "支持",
       "telegramChannel": "Telegram 频道",
       "termsAndConditions": "条款与条件",
-      "privacyPolicy": "隐私政策"
+      "privacyPolicy": "隐私政策",
+      "copyright": "© ${year} ${company}"
     },
     "settings": {
       "title": "设置",
       "resetTunnel": "重置 VPN 配置文件",
+      "exportDiagnostics": "导出诊断信息",
+      "exportDiagnosticsMsg": "分享应用和隧道日志",
+      "exportDiagnosticsEmpty": "暂无日志：请连接一次后重试",
+      "exportDiagnosticsCopied": "分享失败：日志已改为复制到剪贴板",
+      "advanced": "高级",
       "general": {
         "title": "通用",
         "locale": "语言",
@@ -104,6 +149,31 @@
     "stats": {
       "traffic": "流量",
       "trafficTotal": "总流量"
+    },
+    "subscriptionInfo": {
+      "planExpiry": "套餐到期：${date}",
+      "renewDate": "续订日期：${date}",
+      "autoRenew": "自动续订",
+      "manualRenew": "手动续订",
+      "planExpiryNever": "永不"
+    }
+  },
+  "notifications": {
+    "title": "通知",
+    "empty": "暂无新通知",
+    "clearAll": "全部清除",
+    "dismiss": "忽略",
+    "expiry": {
+      "title": "订阅即将到期",
+      "body": "您的订阅将在 ${days} 天后到期。请续订以保持连接。"
+    },
+    "renewal": {
+      "title": "订阅续订",
+      "body": "您的订阅将于明天自动续订，无需任何操作。"
+    },
+    "expired": {
+      "title": "订阅已到期",
+      "body": "您的订阅已到期。请续订以重新连接。"
     }
   },
   "dialogs": {
@@ -122,12 +192,15 @@
   "connection": {
     "tapToConnect": "点击连接",
     "connect": "连接",
+    "starting": "正在启动…",
     "connecting": "连接中...",
     "connected": "已连接",
     "disconnect": "断开连接",
     "disconnecting": "断开连接中...",
     "reconnect": "重新连接",
-    "reconnectMsg": "正在重新连接以应用更改..."
+    "reconnectMsg": "正在重新连接以应用更改...",
+    "protected": "已保护",
+    "unprotected": "未保护"
   },
   "errors": {
     "unexpected": "意外错误",
@@ -143,7 +216,10 @@
       "notFound": "未找到配置文件",
       "invalidConfig": "配置无效",
       "invalidUrl": "URL 无效",
-      "canceledByUser": "用户已取消"
+      "canceledByUser": "用户已取消",
+      "subscriptionExpired": "您的订阅已到期，请续订以继续使用。",
+      "unsupportedLinkVersion": "需要更新应用",
+      "configUnreadable": "无法读取已保存的配置。请连接互联网以刷新。"
     },
     "connectivity": {
       "unexpected": "意外失败",
@@ -160,6 +236,58 @@
     }
   },
   "auth": {
+    "subtitle": "粘贴您的 Rayn 链接、扫描二维码或使用电子邮件登录即可开始。",
+    "scanQr": "扫描二维码",
+    "paste": "从剪贴板粘贴",
+    "pasteEmpty": "剪贴板为空",
+    "alreadySignedIn": "您已登录。请先退出登录，再使用其他令牌。",
+    "account": "账户",
+    "copyToken": "复制您的令牌",
+    "tokenCopied": "令牌已复制到剪贴板，请妥善保存。",
+    "noTokenStored": "令牌不可用：请重新导入后再复制。",
+    "manageSubscription": "管理订阅",
+    "restorePurchases": "恢复购买",
+    "restorePurchasesHint": "重新关联在其他设备上购买的订阅",
+    "restoreDone": "订阅已恢复。",
+    "restoreActivating": "已找到订阅：正在激活您的账户。",
+    "restoreNone": "未找到此 Apple 账户的有效订阅。",
+    "deleteSection": "账户删除",
+    "deleteAccountRow": "删除账户",
+    "deleteAccountRowHint": "永久移除您的账户及其全部数据",
+    "deleteAccount": {
+      "title": "删除账户",
+      "subtitle": "此操作将永久删除您的 Rayn 账户。请输入密码确认以继续。",
+      "consequencePermanent": "您的账户、订阅记录和身份验证令牌将被永久删除，且无法撤销。",
+      "consequenceDevice": "此设备将断开连接并退出登录，连接配置也会被移除。",
+      "consequenceStore": "删除账户不会取消应用商店订阅。请前往“设置”>“Apple 账户”>“订阅”单独取消，否则将继续扣费。",
+      "needsSignIn": "您在此设备上是通过令牌登录的，因此我们需要您的电子邮件和密码来确认是您本人。",
+      "passwordLabel": "密码",
+      "confirmAction": "删除我的账户",
+      "confirmTitle": "要删除您的账户吗？",
+      "confirmBody": "此操作将永久删除您的 Rayn 账户，且无法撤销。如果您有应用商店订阅，请记得单独取消。",
+      "confirmProceed": "永久删除",
+      "cancel": "保留我的账户",
+      "done": "您的账户已删除。",
+      "supportHint": "无法登录？请联系我们，我们会为您删除。",
+      "errorPassword": "密码不正确。",
+      "errorNeedsLogin": "请输入您的电子邮件和密码进行确认。",
+      "errorAccountLocked": "此账户正在审核中，目前无法删除。请联系 support@raynlabs.io。",
+      "errorPaymentInFlight": "有一笔付款仍在处理中，请大约一小时后再试。",
+      "errorRateLimited": "尝试次数过多，请稍后再试。",
+      "errorUnreachable": "无法连接账户服务，请重试。",
+      "errorGeneric": "出了点问题，您的账户未被删除。"
+    },
+    "logout": "退出登录",
+    "logoutConfirmTitle": "要退出登录吗？",
+    "logoutConfirmBody": "退出登录会断开连接并从此设备移除您的身份验证令牌。如果尚未保存令牌，请先使用“复制您的令牌”进行复制。要继续吗？",
+    "logoutConfirmAction": "退出登录",
+    "logoutCancel": "取消",
+    "unreachable": {
+      "body": "无法连接服务器，可能是您的网络在阻止访问。请稍后再试，或改为从账户页面导入身份验证令牌。如果无法访问账户，请联系 support@raynlabs.io。",
+      "bodyApple": "无法连接服务器，可能是您的网络在阻止访问。请稍后再试，或导入您之前保存的 Rayn 链接。如果问题仍然存在，请联系 support@raynlabs.io。",
+      "openAccount": "打开账户页面",
+      "contactSupport": "联系支持"
+    },
     "login": {
       "signInWithEmail": "使用邮箱登录",
       "subtitle": "输入您的账户邮箱和密码以自动获取您的令牌。",
@@ -171,11 +299,98 @@
       "invalidCredentials": "邮箱或密码不正确。",
       "emailNotVerified": "请先验证您的邮箱以继续，然后重新登录。",
       "accountSuspended": "您的账户未激活。请访问您的账户页面以续订。",
+      "accountSuspendedApple": "您的账户未处于活动状态。请联系 support@raynlabs.io，我们会为您处理。",
       "accountDeactivated": "此账户已被停用。请联系支持。",
       "pendingActivation": "您的账户正在激活中。请稍后几分钟再试。",
       "verifyFailed": "无法验证应用。请重试。",
+      "updateRequired": "此账户需要更新版本的 Rayn。请更新应用后重新登录。",
       "generic": "出了点问题。请稍后重试。",
       "openWebsite": "打开账户页面"
+    },
+    "register": {
+      "createAccount": "创建账户",
+      "subtitle": "输入您的信息以创建 Rayn 账户。",
+      "emailLabel": "电子邮件",
+      "passwordLabel": "密码",
+      "displayNameLabel": "显示名称",
+      "passwordRule": "10 到 128 个字符",
+      "displayNameRule": "最多 100 个字符：字母、数字、空格、_ 和 -",
+      "emailRequired": "请输入您的电子邮件",
+      "emailInvalid": "请输入有效的电子邮件地址",
+      "passwordRequired": "请输入密码",
+      "passwordTooShort": "密码至少需要 10 个字符",
+      "passwordTooLong": "密码最多 128 个字符",
+      "displayNameRequired": "请输入显示名称",
+      "displayNameTooLong": "显示名称最多 100 个字符",
+      "displayNameInvalid": "只能使用字母、数字、空格、_ 和 -",
+      "submit": "创建账户",
+      "tooManyRequests": "来自此网络的尝试次数过多，请稍后再试。",
+      "verifyFailed": "无法验证应用，请重试。",
+      "generic": "出了点问题，请稍后再试。"
+    },
+    "verifyEmail": {
+      "title": "验证您的电子邮件",
+      "body": "我们已向 ${email} 发送验证链接。请打开链接激活账户，然后登录。",
+      "bodyGeneric": "我们已向您发送验证链接。请打开链接激活账户，然后登录。",
+      "note": "验证和付款将在浏览器中完成。",
+      "noteApple": "验证将在浏览器中完成。完成后请返回此处并登录。",
+      "resend": "重新发送验证邮件",
+      "resendSent": "如果该账户存在，我们已再发送一封邮件。",
+      "resendFailed": "目前无法重新发送，请稍后再试。",
+      "openWebsite": "打开账户页面",
+      "backToLogin": "返回登录"
+    },
+    "payment": {
+      "title": "选择套餐",
+      "subtitle": "激活订阅即可开始使用 Rayn VPN。",
+      "expiredTitle": "订阅已到期",
+      "expiredNotice": "您的订阅已到期。请在下方选择套餐续订，继续使用 Rayn VPN。",
+      "monthly": "月付",
+      "quarterly": "季付",
+      "annual": "年付",
+      "perMonth": "每月",
+      "perQuarter": "每 3 个月",
+      "perYear": "每年",
+      "perMonthEquiv": "仅需 ${price}/月",
+      "bestValue": "最划算",
+      "freeTrial": "免费试用",
+      "loading": "正在加载套餐…",
+      "activating": "正在激活您的套餐…",
+      "activatingAccount": "正在激活您的账户…",
+      "activatingHint": "通常不到一分钟即可完成，请保持应用打开。",
+      "errorProvisioning": "您的套餐正在激活，所需时间比平时稍长。很快就会就绪；请点按“恢复”完成。",
+      "processing": "付款正在处理中；确认后我们会立即激活您的套餐。",
+      "restore": "恢复购买",
+      "autoRenew": "订阅将自动续订，直到取消为止。您可以随时在 Google Play 中管理或取消。",
+      "autoRenewApple": "订阅将自动续订，直到取消为止。您可以随时在“设置”>“Apple 账户”>“订阅”中管理或取消。",
+      "unavailableTitle": "应用内购买不可用",
+      "unavailableBody": "此设备不支持 Google Play 结算。您可以在账户页面管理订阅。",
+      "unavailableBodyApple": "此设备目前无法进行应用内购买。如果购买在“设置”>“屏幕使用时间”中受到限制，请允许后重试，或发送邮件至 support@raynlabs.io，我们会为您提供帮助。",
+      "openAccount": "打开账户页面",
+      "errorAccountMismatch": "此购买属于另一个账户。",
+      "errorTokenInUse": "此购买已关联到另一个账户。请联系 support@raynlabs.io。",
+      "errorIneligible": "您的账户尚无法激活。请先验证电子邮件，然后重试。",
+      "errorFamilyShared": "此订阅通过“家人共享”共享，归组织者的账户所有，无法在此关联。请使用购买该订阅的账户登录，或发送邮件至 support@raynlabs.io。",
+      "errorNeedsLogin": "您的会话已过期，请重新登录以完成操作。",
+      "errorReauth": "请重新登录以完成套餐激活。",
+      "errorRateLimited": "尝试次数过多，请稍等片刻后再试。",
+      "errorUnreachable": "无法连接服务器，请检查网络连接后重试。",
+      "errorUpdateRequired": "您的购买是安全的，但此版本的 Rayn 无法完成激活。请更新应用，然后点按“恢复”。",
+      "errorGeneric": "出了点问题。您的购买是安全的，请重试。",
+      "backToSignIn": "返回登录"
+    },
+    "planTransition": {
+      "settingsRow": "通过 Google Play 订阅",
+      "settingsRowApple": "通过 App Store 订阅",
+      "settingsRowHint": "今天开始一个自动续订的新套餐",
+      "title": "切换为自动续订",
+      "explainer": "订阅后，您的套餐将从今天重新开始：试用期立即结束，流量配额恢复满额。之后 Google Play 会自动为您续订。",
+      "explainerApple": "订阅后，您的套餐将从今天重新开始：试用期立即结束，流量配额恢复满额。之后 App Store 会自动为您续订。",
+      "nextBilling": "下次续订：约 ${date}",
+      "needsSignIn": "请登录您的账户，以将套餐切换为自动续订。",
+      "accountMismatch": "这些凭据属于另一个账户。请退出登录以切换账户。",
+      "success": "您的套餐现已自动续订。",
+      "close": "关闭"
     }
   }
 }

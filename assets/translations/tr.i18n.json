@@ -21,6 +21,32 @@
       }
     }
   },
+  "disclosure": {
+    "privacyPolicy": "Gizlilik Politikası",
+    "terms": "Hizmet Şartları",
+    "vpn": {
+      "title": "Rayn VPN nasıl çalışır",
+      "whyTitle": "VPN bağlantısı",
+      "whyBody": "Rayn VPN, şifreli bir tünel kurmak ve internet trafiğinizi seçtiğiniz sunucu konumu üzerinden yönlendirmek için cihazınızın VPN hizmetini kullanır; bu, güvenilmeyen ağlarda bağlantınızı korumaya yardımcı olur.",
+      "dataTitle": "VPN'in işlediği trafik",
+      "dataBody": "Bağlantınızı yönlendirmek için VPN hizmeti cihazınızın ağ trafiğine erişebilir. Bu erişim yalnızca trafiğinizi tünelden geçirmek için vardır.",
+      "trafficTitle": "Trafiğiniz nasıl kullanılır",
+      "trafficBody": "Trafiğiniz yalnızca seçtiğiniz sunucuya iletilir. Trafiğinizin içeriğini veya gezinme etkinliğinizi kaydetmez, incelemez, saklamaz veya satmayız ve bunlar hiçbir zaman üçüncü taraflarla paylaşılmaz.",
+      "consent": "Kabul Et ve Devam Et'e dokunarak VPN hizmetinin yukarıda açıklandığı şekilde kullanılmasına onay verirsiniz."
+    },
+    "data": {
+      "title": "Hesap verileriniz",
+      "accountTitle": "Neler topluyoruz",
+      "accountBody": "Sizi oturum açtırmak ve aboneliğinizi yönetmek için e-posta adresinizi, hesap kimliğinizi ve abonelik durumunuzu topluyoruz.",
+      "passwordTitle": "Parolanız",
+      "passwordBody": "Parolanız yalnızca kimliğinizi doğrulamak için kullanılır. Cihazınızda hiçbir zaman okunabilir biçimde saklanmaz.",
+      "useTitle": "Nasıl kullanılır",
+      "useBody": "Bu bilgiler yalnızca kimliğinizi doğrulamak ve aboneliğinizi yönetmek için kullanılır. Satılmaz ve üçüncü tarafların kendi kullanımı için paylaşılmaz.",
+      "consent": "Kabul Et ve Devam Et'e dokunarak Gizlilik Politikamızda açıklandığı şekilde bu veri toplamaya onay verirsiniz."
+    },
+    "agree": "Kabul Et ve Devam Et",
+    "decline": "Reddet"
+  },
   "pages": {
     "home": {
       "title": "Ana Sayfa"
@@ -31,10 +57,18 @@
       "testDelay": "Gecikmeyi test et",
       "empty": "Kullanılabilir proxy yok",
       "activeProxy": "Aktif proxy",
+      "selectLocation": "Konum seç",
+      "tapToChoose": "Konum seçmek için dokunun",
+      "snapshotEmpty": "Kullanılabilir konumları yüklemek için bir kez bağlanın",
+      "autoRotate": "Otomatik dönüşüm",
+      "fastestServer": "En hızlı sunucu",
+      "automatic": "Otomatik",
+      "locations": "Konumlar",
       "sortOptions": {
         "unsorted": "Varsayılan",
         "name": "Alfabetik",
-        "delay": "Gecikmeye göre"
+        "delay": "Gecikmeye göre",
+        "usage": "Kullanıma göre"
       },
       "ipInfo": {
         "country": "Ülke"
@@ -42,7 +76,9 @@
       "delay": {
         "result": "Gecikme: ${delay}ms",
         "timeout": "Gecikme testi zaman aşımına uğradı",
-        "testing": "Gecikme: test ediliyor..."
+        "testing": "Gecikme: test ediliyor...",
+        "measuring": "Ölçülüyor…",
+        "noResponse": "Yanıt yok"
       }
     },
     "profiles": {
@@ -53,6 +89,7 @@
           "success": "Profil başarıyla kaydedildi"
         },
         "invalidUrl": "Geçersiz URL",
+        "updateRequired": "Bu bağlantı için Rayn'ın daha yeni bir sürümü gerekiyor. Lütfen uygulamayı güncelleyin.",
         "add": {
           "failure": "Profil eklenemedi"
         },
@@ -65,13 +102,21 @@
     },
     "about": {
       "title": "Hakkında",
+      "links": "Bağlantılar",
+      "support": "Destek",
       "telegramChannel": "Telegram kanalı",
       "termsAndConditions": "Şartlar ve Koşullar",
-      "privacyPolicy": "Gizlilik Politikası"
+      "privacyPolicy": "Gizlilik Politikası",
+      "copyright": "© ${year} ${company}"
     },
     "settings": {
       "title": "Ayarlar",
       "resetTunnel": "VPN profilini sıfırla",
+      "exportDiagnostics": "Tanılamayı dışa aktar",
+      "exportDiagnosticsMsg": "Uygulama ve tünel günlüklerini paylaşın",
+      "exportDiagnosticsEmpty": "Henüz günlük yok: bir kez bağlanın, sonra tekrar deneyin",
+      "exportDiagnosticsCopied": "Paylaşım başarısız: günlükler bunun yerine panoya kopyalandı",
+      "advanced": "Gelişmiş",
       "general": {
         "title": "Genel",
         "locale": "Dil",
@@ -104,6 +149,31 @@
     "stats": {
       "traffic": "Trafik",
       "trafficTotal": "Toplam trafik"
+    },
+    "subscriptionInfo": {
+      "planExpiry": "Plan bitişi: ${date}",
+      "renewDate": "Yenileme tarihi: ${date}",
+      "autoRenew": "Otomatik yenileme",
+      "manualRenew": "Elle yenileme",
+      "planExpiryNever": "Hiçbir zaman"
+    }
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "empty": "Her şey güncel",
+    "clearAll": "Tümünü temizle",
+    "dismiss": "Kapat",
+    "expiry": {
+      "title": "Abonelik sona eriyor",
+      "body": "Aboneliğiniz ${days} gün içinde sona eriyor. Bağlı kalmak için yenileyin."
+    },
+    "renewal": {
+      "title": "Abonelik yenileniyor",
+      "body": "Aboneliğiniz yarın otomatik olarak yenileniyor; bir şey yapmanız gerekmiyor."
+    },
+    "expired": {
+      "title": "Abonelik sona erdi",
+      "body": "Aboneliğiniz sona erdi. Yeniden bağlanmak için yenileyin."
     }
   },
   "dialogs": {
@@ -122,12 +192,15 @@
   "connection": {
     "tapToConnect": "Bağlanmak için dokunun",
     "connect": "Bağlan",
+    "starting": "Başlatılıyor…",
     "connecting": "Bağlanıyor...",
     "connected": "Bağlı",
     "disconnect": "Bağlantıyı kes",
     "disconnecting": "Bağlantı kesiliyor...",
     "reconnect": "Yeniden bağlan",
-    "reconnectMsg": "Değişiklikleri uygulamak için yeniden bağlanılıyor..."
+    "reconnectMsg": "Değişiklikleri uygulamak için yeniden bağlanılıyor...",
+    "protected": "Korunuyor",
+    "unprotected": "Korunmuyor"
   },
   "errors": {
     "unexpected": "Beklenmeyen hata",
@@ -143,7 +216,10 @@
       "notFound": "Profil bulunamadı",
       "invalidConfig": "Geçersiz yapılandırmalar",
       "invalidUrl": "Geçersiz URL",
-      "canceledByUser": "Kullanıcı tarafından iptal edildi"
+      "canceledByUser": "Kullanıcı tarafından iptal edildi",
+      "subscriptionExpired": "Aboneliğiniz sona erdi. Devam etmek için lütfen yenileyin.",
+      "unsupportedLinkVersion": "Uygulama güncellemesi gerekli",
+      "configUnreadable": "Kaydedilmiş yapılandırmanız okunamadı. Yenilemek için internete bağlanın."
     },
     "connectivity": {
       "unexpected": "Beklenmeyen hata",
@@ -160,6 +236,58 @@
     }
   },
   "auth": {
+    "subtitle": "Başlamak için Rayn bağlantınızı yapıştırın, QR kodunuzu tarayın veya e-posta ile oturum açın.",
+    "scanQr": "QR kodu tara",
+    "paste": "Panodan yapıştır",
+    "pasteEmpty": "Pano boş",
+    "alreadySignedIn": "Zaten oturum açtınız. Farklı bir belirteç kullanmak için önce oturumu kapatın.",
+    "account": "Hesap",
+    "copyToken": "Belirtecinizi kopyalayın",
+    "tokenCopied": "Belirteç panoya kopyalandı. Güvenli bir yere kaydedin.",
+    "noTokenStored": "Belirteç mevcut değil: kopyalanabilmesi için yeniden içe aktarın.",
+    "manageSubscription": "Aboneliği yönet",
+    "restorePurchases": "Satın alımları geri yükle",
+    "restorePurchasesHint": "Başka bir cihazda satın alınan aboneliği yeniden bağlayın",
+    "restoreDone": "Abonelik geri yüklendi.",
+    "restoreActivating": "Abonelik bulundu: hesabınız etkinleştiriliyor.",
+    "restoreNone": "Bu Apple Hesabı için etkin abonelik bulunamadı.",
+    "deleteSection": "Hesap silme",
+    "deleteAccountRow": "Hesabı sil",
+    "deleteAccountRowHint": "Hesabınızı ve tüm verilerini kalıcı olarak kaldırın",
+    "deleteAccount": {
+      "title": "Hesabı sil",
+      "subtitle": "Bu işlem Rayn hesabınızı kalıcı olarak siler. Devam etmek için parolanızla onaylayın.",
+      "consequencePermanent": "Hesabınız, abonelik kaydınız ve kimlik doğrulama belirteciniz kalıcı olarak silinir. Bu işlem geri alınamaz.",
+      "consequenceDevice": "Bu cihazın bağlantısı kesilir, oturumu kapatılır ve bağlantı profili kaldırılır.",
+      "consequenceStore": "Hesabınızı silmek mağaza aboneliğini iptal etmez. Ayarlar > Apple Hesabı > Abonelikler bölümünden ayrıca iptal edin; aksi halde ücretlendirilmeye devam edersiniz.",
+      "needsSignIn": "Bu cihazda bir belirteçle oturum açtınız; bu yüzden gerçekten siz olduğunuzu doğrulamak için e-postanıza ve parolanıza ihtiyacımız var.",
+      "passwordLabel": "Parola",
+      "confirmAction": "Hesabımı sil",
+      "confirmTitle": "Hesabınız silinsin mi?",
+      "confirmBody": "Bu işlem Rayn hesabınızı kalıcı olarak siler ve geri alınamaz. Mağaza aboneliğiniz varsa ayrıca iptal etmeyi unutmayın.",
+      "confirmProceed": "Kalıcı olarak sil",
+      "cancel": "Hesabımı koru",
+      "done": "Hesabınız silindi.",
+      "supportHint": "Oturum açamıyor musunuz? Bize ulaşın, sizin için silelim.",
+      "errorPassword": "Bu parola doğru değil.",
+      "errorNeedsLogin": "Onaylamak için e-postanızı ve parolanızı girin.",
+      "errorAccountLocked": "Bu hesap inceleme altında olduğundan şu anda silinemiyor. Lütfen support@raynlabs.io ile iletişime geçin.",
+      "errorPaymentInFlight": "Bir ödeme hâlâ işleniyor. Lütfen yaklaşık bir saat sonra tekrar deneyin.",
+      "errorRateLimited": "Çok fazla deneme. Lütfen daha sonra tekrar deneyin.",
+      "errorUnreachable": "Hesap hizmetine ulaşılamadı. Lütfen tekrar deneyin.",
+      "errorGeneric": "Bir şeyler ters gitti. Hesabınız silinmedi."
+    },
+    "logout": "Oturumu kapat",
+    "logoutConfirmTitle": "Oturum kapatılsın mı?",
+    "logoutConfirmBody": "Oturumu kapatmak bağlantıyı keser ve kimlik doğrulama belirtecinizi bu cihazdan kaldırır. Belirteci kaydetmediyseniz önce “Belirtecinizi kopyalayın” ile kopyalayın. Devam edilsin mi?",
+    "logoutConfirmAction": "Oturumu kapat",
+    "logoutCancel": "İptal",
+    "unreachable": {
+      "body": "Sunucuya ulaşamadık; ağınız engelliyor olabilir. Lütfen biraz sonra tekrar deneyin veya kimlik doğrulama belirtecini hesap sayfanızdan içe aktarın. Hesabınıza erişemiyorsanız support@raynlabs.io adresinden bize ulaşın.",
+      "bodyApple": "Sunucuya ulaşamadık; ağınız engelliyor olabilir. Lütfen biraz sonra tekrar deneyin veya kaydettiyseniz Rayn bağlantınızı içe aktarın. Sorun devam ederse support@raynlabs.io adresinden bize ulaşın.",
+      "openAccount": "Hesap sayfasını aç",
+      "contactSupport": "Destekle iletişime geç"
+    },
     "login": {
       "signInWithEmail": "E-posta ile oturum aç",
       "subtitle": "Jetonunuzu otomatik olarak almak için hesap e-postanızı ve parolanızı girin.",
@@ -171,11 +299,98 @@
       "invalidCredentials": "E-posta veya parola hatalı.",
       "emailNotVerified": "Devam etmek için lütfen e-postanızı doğrulayın, ardından tekrar oturum açın.",
       "accountSuspended": "Hesabınız etkin değil. Yenilemek için hesap sayfanızı ziyaret edin.",
+      "accountSuspendedApple": "Hesabınız etkin değil. support@raynlabs.io adresinden bize ulaşın, çözelim.",
       "accountDeactivated": "Bu hesap devre dışı bırakıldı. Lütfen destek ile iletişime geçin.",
       "pendingActivation": "Hesabınız etkinleştiriliyor. Lütfen birkaç dakika sonra tekrar kontrol edin.",
       "verifyFailed": "Uygulama doğrulanamadı. Lütfen tekrar deneyin.",
+      "updateRequired": "Bu hesap için Rayn'ın daha yeni bir sürümü gerekiyor. Lütfen uygulamayı güncelleyip yeniden oturum açın.",
       "generic": "Bir şeyler ters gitti. Lütfen daha sonra tekrar deneyin.",
       "openWebsite": "Hesap sayfasını aç"
+    },
+    "register": {
+      "createAccount": "Hesap oluştur",
+      "subtitle": "Rayn hesabı oluşturmak için bilgilerinizi girin.",
+      "emailLabel": "E-posta",
+      "passwordLabel": "Parola",
+      "displayNameLabel": "Görünen ad",
+      "passwordRule": "10 ile 128 karakter arası",
+      "displayNameRule": "En fazla 100 karakter: harfler, rakamlar, boşluk, _ ve -",
+      "emailRequired": "E-postanızı girin",
+      "emailInvalid": "Geçerli bir e-posta adresi girin",
+      "passwordRequired": "Bir parola girin",
+      "passwordTooShort": "Parola en az 10 karakter olmalı",
+      "passwordTooLong": "Parola en fazla 128 karakter olmalı",
+      "displayNameRequired": "Bir görünen ad girin",
+      "displayNameTooLong": "Görünen ad en fazla 100 karakter olmalı",
+      "displayNameInvalid": "Yalnızca harf, rakam, boşluk, _ ve - kullanın",
+      "submit": "Hesap oluştur",
+      "tooManyRequests": "Bu ağdan çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.",
+      "verifyFailed": "Uygulama doğrulanamadı. Lütfen tekrar deneyin.",
+      "generic": "Bir şeyler ters gitti. Lütfen daha sonra tekrar deneyin."
+    },
+    "verifyEmail": {
+      "title": "E-postanızı doğrulayın",
+      "body": "${email} adresine bir doğrulama bağlantısı gönderdik. Hesabınızı etkinleştirmek için bağlantıyı açın, ardından oturum açın.",
+      "bodyGeneric": "Size bir doğrulama bağlantısı gönderdik. Hesabınızı etkinleştirmek için bağlantıyı açın, ardından oturum açın.",
+      "note": "Doğrulama ve ödeme tarayıcınızda tamamlanır.",
+      "noteApple": "Doğrulama tarayıcınızda tamamlanır. Bittiğinde buraya dönüp oturum açın.",
+      "resend": "Doğrulama e-postasını yeniden gönder",
+      "resendSent": "Hesap mevcutsa yeni bir e-posta gönderdik.",
+      "resendFailed": "Şu anda yeniden gönderilemedi. Lütfen daha sonra tekrar deneyin.",
+      "openWebsite": "Hesap sayfasını aç",
+      "backToLogin": "Oturum açmaya dön"
+    },
+    "payment": {
+      "title": "Planınızı seçin",
+      "subtitle": "Rayn VPN'i kullanmaya başlamak için bir abonelik etkinleştirin.",
+      "expiredTitle": "Abonelik sona erdi",
+      "expiredNotice": "Aboneliğiniz sona erdi. Yenilemek ve Rayn VPN'i kullanmaya devam etmek için aşağıdan bir plan seçin.",
+      "monthly": "Aylık",
+      "quarterly": "3 aylık",
+      "annual": "Yıllık",
+      "perMonth": "aylık",
+      "perQuarter": "3 ayda bir",
+      "perYear": "yıllık",
+      "perMonthEquiv": "Yalnızca ${price}/ay",
+      "bestValue": "En avantajlı",
+      "freeTrial": "Ücretsiz deneme",
+      "loading": "Planlar yükleniyor…",
+      "activating": "Planınız etkinleştiriliyor…",
+      "activatingAccount": "Hesabınız etkinleştiriliyor…",
+      "activatingHint": "Bu genellikle bir dakikadan az sürer. Lütfen uygulamayı açık tutun.",
+      "errorProvisioning": "Planınız etkinleştiriliyor ve her zamankinden biraz daha uzun sürüyor. Kısa süre içinde hazır olacak; bitirmek için Geri Yükle'ye dokunun.",
+      "processing": "Ödeme işleniyor; onaylanır onaylanmaz planınızı etkinleştireceğiz.",
+      "restore": "Satın alımı geri yükle",
+      "autoRenew": "Abonelikler iptal edilene kadar otomatik olarak yenilenir. İstediğiniz zaman Google Play'den yönetin veya iptal edin.",
+      "autoRenewApple": "Abonelikler iptal edilene kadar otomatik olarak yenilenir. İstediğiniz zaman Ayarlar > Apple Hesabı > Abonelikler bölümünden yönetin veya iptal edin.",
+      "unavailableTitle": "Uygulama içi satın alma kullanılamıyor",
+      "unavailableBody": "Google Play faturalandırması bu cihazda kullanılamıyor. Aboneliğinizi hesap sayfanızdan yönetebilirsiniz.",
+      "unavailableBodyApple": "Uygulama içi satın alımlar şu anda bu cihazda kullanılamıyor. Satın alımlar Ayarlar > Ekran Süresi altında kısıtlanmışsa izin verip tekrar deneyin ya da support@raynlabs.io adresine yazın, yardımcı olalım.",
+      "openAccount": "Hesap sayfasını aç",
+      "errorAccountMismatch": "Bu satın alım farklı bir hesaba ait.",
+      "errorTokenInUse": "Bu satın alım zaten başka bir hesaba bağlı. Lütfen support@raynlabs.io ile iletişime geçin.",
+      "errorIneligible": "Hesabınız henüz etkinleştirilemiyor. Lütfen e-postanızı doğrulayıp tekrar deneyin.",
+      "errorFamilyShared": "Bu abonelik Aile Paylaşımı ile paylaşılıyor; bu yüzden düzenleyicinin hesabına ait ve burada bağlanamaz. Satın alan hesapla oturum açın veya support@raynlabs.io adresine yazın.",
+      "errorNeedsLogin": "Oturumunuzun süresi doldu. Bitirmek için lütfen yeniden oturum açın.",
+      "errorReauth": "Planınızın etkinleştirilmesini bitirmek için lütfen yeniden oturum açın.",
+      "errorRateLimited": "Çok fazla deneme. Lütfen biraz bekleyip tekrar deneyin.",
+      "errorUnreachable": "Sunucuya ulaşamadık. Bağlantınızı kontrol edip tekrar deneyin.",
+      "errorUpdateRequired": "Satın alımınız güvende, ancak Rayn'ın bu sürümü etkinleştirmeyi tamamlayamıyor. Lütfen uygulamayı güncelleyip Geri Yükle'ye dokunun.",
+      "errorGeneric": "Bir şeyler ters gitti. Satın alımınız güvende; lütfen tekrar deneyin.",
+      "backToSignIn": "Oturum açmaya dön"
+    },
+    "planTransition": {
+      "settingsRow": "Google Play ile abone ol",
+      "settingsRowApple": "App Store ile abone ol",
+      "settingsRowHint": "Bugün yeni bir plana başlayın ve otomatik olarak yenileyin",
+      "title": "Otomatik yenilemeye geç",
+      "explainer": "Abone olmak planınızı bugün yeniden başlatır: denemeniz şimdi sona erer ve veri hakkınız tamamen sıfırlanır. Ardından Google Play aboneliğinizi otomatik olarak yeniler.",
+      "explainerApple": "Abone olmak planınızı bugün yeniden başlatır: denemeniz şimdi sona erer ve veri hakkınız tamamen sıfırlanır. Ardından App Store aboneliğinizi otomatik olarak yeniler.",
+      "nextBilling": "Sonraki yenileme: ~${date}",
+      "needsSignIn": "Planınızı otomatik yenilemeye geçirmek için hesabınızda oturum açın.",
+      "accountMismatch": "Bu kimlik bilgileri farklı bir hesaba ait. Hesap değiştirmek için oturumu kapatın.",
+      "success": "Planınız artık otomatik olarak yenileniyor.",
+      "close": "Kapat"
     }
   }
 }

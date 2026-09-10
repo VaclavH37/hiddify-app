@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stop">إيقاف</string>
+    <string name="quick_toggle">تبديل</string>
+    <string name="status_starting">جارٍ بدء الخدمة…</string>
+    <string name="status_started">بدأت الخدمة</string>
+</resources>
