@@ -12,7 +12,7 @@ extension AppLocaleX on AppLocale {
     "es" => "Español",
     "fa" => "فارسی",
     "fr" => "Français",
-    "id" => "Indonesian",
+    "id" => "Bahasa Indonesia",
     "pt_BR" => "Português (Brasil)",
     "ru" => "Русский",
     "tr" => "Türkçe",
