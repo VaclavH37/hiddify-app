@@ -40,6 +40,36 @@ void main() {
     });
   });
 
+  group('text and status colours clear AA on every surface', () {
+    // Alpha text colours (the dark theme's secondary and muted) are composited
+    // onto the surface first, which is what the eye sees.
+    Color over(Color fg, Color bg) => Color.alphaBlend(fg, bg);
+
+    for (final (name, palette) in [('light', RaynPalette.light), ('dark', RaynPalette.dark)]) {
+      test(name, () {
+        final surfaces = [palette.bgPrimary, palette.bgSurface, palette.pageBackground, palette.groupFill];
+        final texts = {
+          'textPrimary': palette.textPrimary,
+          'textSecondary': palette.textSecondary,
+          'textMuted': palette.textMuted,
+          'accentText': palette.accentText,
+          'success': palette.success,
+          'warning': palette.warning,
+          'danger': palette.danger,
+        };
+        for (final MapEntry(key: label, value: colour) in texts.entries) {
+          for (final surface in surfaces) {
+            expect(
+              contrast(over(colour, surface), surface),
+              greaterThanOrEqualTo(4.5),
+              reason: '$label on ${surface.toARGB32().toRadixString(16)}',
+            );
+          }
+        }
+      });
+    }
+  });
+
   group('theme mode', () {
     test('a stored "black" becomes dark; unknown values become system', () {
       expect(AppThemeMode.fromPersisted('black'), AppThemeMode.dark);
