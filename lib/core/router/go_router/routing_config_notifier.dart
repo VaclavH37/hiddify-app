@@ -5,7 +5,6 @@ import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/router/adaptive_layout/rayn_shell.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
-import 'package:hiddify/core/router/go_router/helper/custom_transition.dart';
 import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
 import 'package:hiddify/features/about/widget/about_page.dart';
 import 'package:hiddify/features/auth/delete/widget/delete_account_page.dart';
@@ -126,14 +125,12 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                     GoRoute(
                       name: 'proxies',
                       path: '/proxies',
-                      pageBuilder: (_, state) =>
-                          customTransition(TransitionType.fade, state.pageKey, const ProxiesOverviewPage()),
+                      builder: (_, _) => const ProxiesOverviewPage(),
                     ),
                     GoRoute(
                       name: 'notifications',
                       path: '/notifications',
-                      pageBuilder: (_, state) =>
-                          customTransition(TransitionType.slide, state.pageKey, const NotificationsInboxPage()),
+                      builder: (_, _) => const NotificationsInboxPage(),
                     ),
                   ],
                 ),
@@ -156,8 +153,7 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                     GoRoute(
                       name: 'about',
                       path: '/about',
-                      pageBuilder: (_, state) =>
-                          customTransition(TransitionType.slide, state.pageKey, const AboutPage()),
+                      builder: (_, _) => const AboutPage(),
                     ),
                   ],
                 ),

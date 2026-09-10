@@ -51,6 +51,20 @@ void main() {
     });
   });
 
+  group('page transitions', () {
+    test('Apple platforms slide, the rest fade forwards, in both themes', () {
+      final theme = AppTheme(AppThemeMode.system, 'Geist');
+      for (final data in [theme.lightTheme(), theme.darkTheme()]) {
+        final builders = data.pageTransitionsTheme.builders;
+        expect(builders[TargetPlatform.iOS], isA<CupertinoPageTransitionsBuilder>());
+        expect(builders[TargetPlatform.macOS], isA<CupertinoPageTransitionsBuilder>());
+        expect(builders[TargetPlatform.android], isA<FadeForwardsPageTransitionsBuilder>());
+        expect(builders[TargetPlatform.windows], isA<FadeForwardsPageTransitionsBuilder>());
+        expect(builders[TargetPlatform.linux], isA<FadeForwardsPageTransitionsBuilder>());
+      }
+    });
+  });
+
   group('text theme', () {
     test('headings and titles are on the Geist scale in both themes', () {
       final theme = AppTheme(AppThemeMode.system, 'Geist');

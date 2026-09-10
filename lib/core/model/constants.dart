@@ -105,7 +105,6 @@ abstract class Constants {
   static const iapProductId = "rayn_premium";
 }
 
-const kAnimationDuration = Duration(milliseconds: 250);
 
 abstract class AddProfileModalConst {
   static const fixBtnsGap = 16.0;

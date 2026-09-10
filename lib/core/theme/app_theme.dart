@@ -45,6 +45,20 @@ class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: palette.bgPrimary,
       fontFamily: fontFamily,
+      // Sub-pages move the way the platform's own apps do: the Cupertino
+      // slide on Apple platforms, Material's fade-forwards elsewhere. Routes
+      // use plain MaterialPages and pick this up; there is no per-route
+      // custom transition any more.
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       // The roles Material widgets and the auth pages read, on the app's own
       // scale. Body and label sizes stay at Material's defaults: they are the
       // sizes buttons and fields were designed around.
