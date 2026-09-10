@@ -1,4 +1,3 @@
-import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
@@ -73,7 +72,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
       PopupMenuButton<ProxiesSort>(
         initialValue: sortBy,
         onSelected: sortNotifier.update,
-        icon: Icon(FluentIcons.arrow_sort_24_regular, color: palette.textPrimary),
+        icon: Icon(Icons.sort_rounded, color: palette.textPrimary),
         tooltip: t.pages.proxies.sort,
         itemBuilder: (context) {
           return [...ProxiesSort.values.map((e) => PopupMenuItem(value: e, child: Text(e.present(t))))];

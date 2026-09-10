@@ -36,7 +36,7 @@ class NotificationBanner extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(copy.icon, size: 24, color: palette.accentText),
+              Icon(copy.icon, size: 24, color: notificationTint(copy, palette)),
               const SizedBox(width: RaynSpacing.md),
               Expanded(
                 child: Column(

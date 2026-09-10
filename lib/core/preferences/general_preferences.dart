@@ -50,8 +50,6 @@ abstract class Preferences {
 
   static final dynamicNotification = PreferencesNotifier.create<bool, bool>("dynamic_notification", true);
 
-  static final autoCheckIp = PreferencesNotifier.create<bool, bool>("auto_check_ip", true);
-
   static final startedByUser = PreferencesNotifier.create<bool, bool>("started_by_user", false);
 
   static final storeReviewedByUser = PreferencesNotifier.create<bool, bool>("store_reviewed_by_user", false);

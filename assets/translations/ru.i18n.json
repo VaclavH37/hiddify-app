@@ -1,97 +1,29 @@
 {
   "common": {
     "appTitle": "Rayn VPN",
-    "start": "Начать",
     "version": "Версия",
     "ok": "OK",
     "cancel": "Отмена",
     "kContinue": "Продолжить",
-    "showMore": "Показать больше",
-    "showLess": "Показать меньше",
-    "filter": "Фильтр",
-    "all": "Все",
-    "pause": "Пауза",
-    "resume": "Возобновить",
-    "clear": "Очистить",
     "close": "Закрыть",
-    "auto": "Авто",
-    "manually": "Вручную",
-    "name": "Имя",
-    "url": "URL",
     "add": "Добавить",
-    "clipboard": "Буфер обмена",
     "addToClipboard": "Добавить в буфер обмена",
-    "scanQr": "Сканировать QR",
-    "free": "Бесплатно",
-    "fragment": "Фрагмент",
-    "help": "Справка",
-    "save": "Сохранить",
-    "update": "Обновить",
-    "share": "Поделиться",
-    "edit": "Изменить",
-    "delete": "Удалить",
-    "discard": "Отменить",
-    "import": "Импорт",
-    "export": "Экспорт",
-    "later": "Позже",
-    "ignore": "Игнорировать",
     "quit": "Выход",
     "notSet": "Не задано",
     "hide": "Скрыть",
     "exit": "Выйти",
     "reset": "Сброс",
-    "done": "Готово",
-    "search": "Поиск",
-    "decline": "Отклонить",
-    "agree": "Согласен",
-    "empty": "Пусто",
     "unknown": "Неизвестно",
-    "hidden": "Скрытый",
-    "timeout": "Тайм-аут",
-    "sort": "Сортировать",
     "dashboard": "Панель управления",
-    "interval": {
-      "day": {
-        "zero": "",
-        "one": "$n день",
-        "few": "$n дня",
-        "many": "$n дней",
-        "other": "$n дня"
-      },
-      "hour": {
-        "zero": "",
-        "one": "$n час",
-        "few": "$n часа",
-        "many": "$n часов",
-        "other": "$n часа"
-      }
-    },
     "msg": {
       "permission": {
         "denied": "Доступ запрещен"
-      },
-      "export": {
-        "clipboard": {
-          "success": "Успешно добавлено в буфер обмена",
-          "failure": "Не удалось скопировать в буфер обмена",
-          "contentTooLarge": "Слишком большой контент. Используйте экспорт в файл"
-        },
-        "file": {
-          "success": "Файл JSON успешно создан",
-          "failure": "Не удалось создать файл"
-        }
-      },
-      "import": {
-        "confirm": "Подтвердить импорт",
-        "success": "Успешно импортировано",
-        "failure": "Не удалось импортировать"
       }
     }
   },
   "pages": {
     "home": {
-      "title": "Главная",
-      "quickSettings": "Быстрые настройки"
+      "title": "Главная"
     },
     "proxies": {
       "title": "Прокси",
@@ -99,16 +31,13 @@
       "testDelay": "Проверить задержку",
       "empty": "Нет доступных прокси",
       "activeProxy": "Активный прокси",
-      "unknownIp": "Неизвестный IP",
       "sortOptions": {
         "unsorted": "По умолчанию",
         "name": "По алфавиту",
         "delay": "По задержке"
       },
       "ipInfo": {
-        "address": "IP-адрес",
-        "country": "Страна",
-        "organization": "Организация"
+        "country": "Страна"
       },
       "delay": {
         "result": "Задержка: ${delay} мс",
@@ -117,20 +46,8 @@
       }
     },
     "profiles": {
-      "title": "Профили",
       "add": "Добавить профиль",
       "update": "Обновить профиль",
-      "viewAllProfiles": "Посмотреть все профили",
-      "activeProfileName": "Имя активного профиля: \"${name}\".",
-      "nonActiveProfileName": "Выбрать \"${name}\" как активный профиль",
-      "freeSubNotFound": "Бесплатная подписка не найдена",
-      "failedToLoad": "Не удалось загрузить",
-      "updateSubscriptions": "Обновить подписки",
-      "share": {
-        "urlToClipboard": "URL в буфер обмена",
-        "showUrlQr": "Показать QR-код URL",
-        "jsonToClipboard": "JSON в буфер обмена"
-      },
       "msg": {
         "save": {
           "success": "Профиль успешно сохранен"
@@ -143,23 +60,7 @@
           "success": "Профиль успешно обновлен",
           "failure": "Не удалось обновить профиль",
           "failureNamed": "Не удалось обновить \"${name}\""
-        },
-        "delete": {
-          "success": "Профиль успешно удален"
         }
-      }
-    },
-    "profileDetails": {
-      "title": "Профиль",
-      "lastUpdate": "Последнее обновление",
-      "form": {
-        "nameHint": "Имя профиля",
-        "emptyName": "Имя обязательно для заполнения",
-        "invalidUrl": "Неверный URL",
-        "urlHint": "Полный URL конфигурации",
-        "disableAutoUpdate": "Отключить автообновление",
-        "autoUpdateInterval": "Интервал автообновления",
-        "loading": "Добавление профиля..."
       }
     },
     "about": {
@@ -180,7 +81,6 @@
           "dark": "Темная",
           "light": "Светлая"
         },
-        "autoIpCheck": "Автоматически проверять IP-адрес",
         "blockAds": "Блокировать рекламу",
         "dynamicNotification": "Отображать скорость в уведомлении",
         "hapticFeedback": "Тактильный отклик",
@@ -195,62 +95,19 @@
         "debugModeMsg": "Перезапустите приложение, чтобы применить это изменение",
         "logLevel": "Уровень логирования",
         "connectionTestUrl": "URL для теста соединения",
-        "urlTestInterval": "Интервал теста URL",
         "ignoreBatteryOptimizationsDialogTitle": "Оставить VPN активным в фоне?",
         "ignoreBatteryOptimizationsDialogBody": "Для стабильного и бесперебойного соединения Rayn VPN должен продолжать работать при выключенном экране. На следующем экране можно исключить приложение из оптимизации батареи. Это необязательно — вы можете изменить это в любое время в настройках системы."
-      },
-      "tlsTricks": {
-        "title": "Трюки TLS",
-        "enable": "Включить фрагментацию",
-        "packets": "Пакеты фрагментации",
-        "packetsTlsHello": "TLS Hello",
-        "packets1_1": "1-1",
-        "packets1_2": "1-2",
-        "packets1_3": "1-3",
-        "packets1_4": "1-4",
-        "packets1_5": "1-5",
-        "size": "Размер фрагмента",
-        "sleep": "Задержка фрагмента",
-        "mixedSniCase": {
-          "enable": "Включить смешанный регистр SNI"
-        },
-        "padding": {
-          "enable": "Включить дополнение",
-          "size": "Размер дополнения"
-        }
       }
     }
   },
   "components": {
     "stats": {
-      "connection": "Соединение",
       "traffic": "Трафик",
-      "trafficTotal": "Общий трафик",
-      "uplink": "Отправка",
-      "downlink": "Прием",
-      "speed": "Скорость",
-      "totalTransferred": "Всего передано"
-    },
-    "subscriptionInfo": {
-      "upload": "Отправлено",
-      "download": "Получено",
-      "total": "Всего трафика",
-      "expireDate": "Дата окончания",
-      "expired": "Истек",
-      "noTraffic": "Квота исчерпана",
-      "remainingTime": "Оставшееся время",
-      "remainingDuration": "осталось ${duration} дней",
-      "remainingDurationNew": "${duration} дней",
-      "remainingTrafficSemanticLabel": "израсходовано ${consumed} из ${total} трафика",
-      "remainingTraffic": "Оставшийся трафик",
-      "remainingUsage": "Осталось",
-      "profileSite": "Провайдер",
-      "profileSupport": "Поддержка"
+      "trafficTotal": "Общий трафик"
     }
   },
   "dialogs": {
     "sortProfiles": {
-      "title": "Сортировать по",
       "sort": {
         "name": "По алфавиту",
         "lastUpdate": "Последнему обновлению"
@@ -305,7 +162,6 @@
   "auth": {
     "login": {
       "signInWithEmail": "Войти по электронной почте",
-      "title": "Вход",
       "subtitle": "Введите электронную почту и пароль вашей учётной записи, чтобы автоматически получить токен.",
       "emailLabel": "Электронная почта",
       "passwordLabel": "Пароль",
@@ -316,10 +172,8 @@
       "emailNotVerified": "Подтвердите электронную почту, чтобы продолжить, затем войдите снова.",
       "accountSuspended": "Ваша учётная запись неактивна. Откройте страницу учётной записи, чтобы продлить.",
       "accountDeactivated": "Эта учётная запись отключена. Обратитесь в службу поддержки.",
-      "pendingPayment": "Ваша учётная запись ещё не активна. Завершите её настройку на странице учётной записи.",
       "pendingActivation": "Ваша учётная запись активируется. Повторите попытку через несколько минут.",
       "verifyFailed": "Не удалось проверить приложение. Повторите попытку.",
-      "unreachable": "Не удалось связаться со службой входа. Вместо этого вы можете вставить свой токен.",
       "generic": "Что-то пошло не так. Повторите попытку позже.",
       "openWebsite": "Открыть страницу учётной записи"
     }

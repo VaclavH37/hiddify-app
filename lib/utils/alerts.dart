@@ -1,4 +1,3 @@
-import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 
@@ -19,11 +18,11 @@ class CustomToast extends StatelessWidget {
 
   const CustomToast.error(this.message, {this.duration = const Duration(seconds: 5)})
     : type = AlertType.error,
-      icon = FluentIcons.error_circle_24_regular;
+      icon = Icons.error_outline_rounded;
 
   const CustomToast.success(this.message, {this.duration = const Duration(seconds: 3)})
     : type = AlertType.success,
-      icon = FluentIcons.checkmark_24_regular;
+      icon = Icons.check_rounded;
 
   final String message;
   final AlertType type;

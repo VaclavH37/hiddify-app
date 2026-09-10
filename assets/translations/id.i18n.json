@@ -1,93 +1,29 @@
 {
   "common": {
     "appTitle": "Rayn VPN",
-    "start": "Mulai",
     "version": "Versi",
     "ok": "Oke",
     "cancel": "Batal",
     "kContinue": "Lanjutkan",
-    "showMore": "Tampilkan lebih banyak",
-    "showLess": "Tampilkan lebih sedikit",
-    "filter": "Filter",
-    "all": "Semua",
-    "pause": "Jeda",
-    "resume": "Lanjutkan",
-    "clear": "Bersihkan",
     "close": "Tutup",
-    "auto": "Otomatis",
-    "manually": "Manual",
-    "name": "Nama",
-    "url": "URL",
     "add": "Tambah",
-    "clipboard": "Papan klip",
     "addToClipboard": "Tambah ke papan klip",
-    "scanQr": "Pindai QR",
-    "free": "Gratis",
-    "fragment": "Fragmen",
-    "help": "Bantuan",
-    "save": "Simpan",
-    "update": "Perbarui",
-    "share": "Bagikan",
-    "edit": "Edit",
-    "delete": "Hapus",
-    "discard": "Buang",
-    "import": "Impor",
-    "export": "Ekspor",
-    "later": "Nanti",
-    "ignore": "Abaikan",
     "quit": "Keluar",
     "notSet": "Belum diatur",
     "hide": "Sembunyikan",
     "exit": "Keluar",
     "reset": "Setel ulang",
-    "done": "Selesai",
-    "search": "Cari",
-    "decline": "Tolak",
-    "agree": "Setuju",
-    "empty": "Kosong",
     "unknown": "Tidak dikenal",
-    "hidden": "Tersembunyi",
-    "timeout": "Waktu habis",
-    "sort": "Urutkan",
     "dashboard": "Dasbor",
-    "interval": {
-      "day": {
-        "zero": "",
-        "one": "$n hari",
-        "other": "$n hari"
-      },
-      "hour": {
-        "zero": "",
-        "one": "$n jam",
-        "other": "$n jam"
-      }
-    },
     "msg": {
       "permission": {
         "denied": "Izin ditolak"
-      },
-      "export": {
-        "clipboard": {
-          "success": "Berhasil ditambahkan ke papan klip",
-          "failure": "Gagal menyalin ke papan klip",
-          "contentTooLarge": "Konten terlalu besar. Gunakan ekspor file saja"
-        },
-        "file": {
-          "success": "File JSON berhasil dibuat",
-          "failure": "Gagal membuat file"
-        }
-      },
-      "import": {
-        "confirm": "Konfirmasi impor",
-        "success": "Berhasil diimpor",
-        "failure": "Gagal mengimpor"
       }
     }
   },
   "pages": {
     "home": {
-      "title": "Beranda",
-      "quickSettings": "Pengaturan cepat"
+      "title": "Beranda"
     },
     "proxies": {
       "title": "Proxy",
@@ -95,16 +31,13 @@
       "testDelay": "Uji latensi",
       "empty": "Tidak ada proksi yang tersedia",
       "activeProxy": "Proksi aktif",
-      "unknownIp": "IP tidak dikenal",
       "sortOptions": {
         "unsorted": "Default",
         "name": "Berdasarkan abjad",
         "delay": "Berdasarkan latensi"
       },
       "ipInfo": {
-        "address": "Alamat IP",
-        "country": "Negara",
-        "organization": "Organisasi"
+        "country": "Negara"
       },
       "delay": {
         "result": "Latensi: ${delay}ms",
@@ -113,20 +46,8 @@
       }
     },
     "profiles": {
-      "title": "Profil",
       "add": "Tambah profil",
       "update": "Perbarui profil",
-      "viewAllProfiles": "Lihat semua profil",
-      "activeProfileName": "Nama profil aktif: \"${name}\".",
-      "nonActiveProfileName": "Pilih \"${name}\" sebagai profil aktif",
-      "freeSubNotFound": "Tidak ada langganan gratis yang ditemukan",
-      "failedToLoad": "Gagal memuat",
-      "updateSubscriptions": "Perbarui langganan",
-      "share": {
-        "urlToClipboard": "URL ke papan klip",
-        "showUrlQr": "Tampilkan QR URL",
-        "jsonToClipboard": "JSON ke papan klip"
-      },
       "msg": {
         "save": {
           "success": "Profil berhasil disimpan"
@@ -139,23 +60,7 @@
           "success": "Profil berhasil diperbarui",
           "failure": "Gagal memperbarui profil",
           "failureNamed": "Gagal memperbarui \"${name}\""
-        },
-        "delete": {
-          "success": "Profil berhasil dihapus"
         }
-      }
-    },
-    "profileDetails": {
-      "title": "Profil",
-      "lastUpdate": "Terakhir diperbarui",
-      "form": {
-        "nameHint": "Nama profil",
-        "emptyName": "Nama wajib diisi",
-        "invalidUrl": "URL tidak valid",
-        "urlHint": "URL konfigurasi lengkap",
-        "disableAutoUpdate": "Nonaktifkan pembaruan otomatis",
-        "autoUpdateInterval": "Interval pembaruan otomatis",
-        "loading": "Menambahkan profil..."
       }
     },
     "about": {
@@ -176,7 +81,6 @@
           "dark": "Mode gelap",
           "light": "Mode terang"
         },
-        "autoIpCheck": "Periksa IP koneksi secara otomatis",
         "blockAds": "Blokir iklan",
         "dynamicNotification": "Tampilkan kecepatan di notifikasi",
         "hapticFeedback": "Umpan balik haptik",
@@ -191,62 +95,19 @@
         "debugModeMsg": "Mulai ulang aplikasi untuk menerapkan perubahan ini",
         "logLevel": "Level log",
         "connectionTestUrl": "URL uji koneksi",
-        "urlTestInterval": "Interval uji URL",
         "ignoreBatteryOptimizationsDialogTitle": "Biarkan VPN berjalan di latar belakang?",
         "ignoreBatteryOptimizationsDialogBody": "Untuk koneksi yang stabil dan tanpa gangguan, Rayn VPN perlu terus berjalan saat layar mati. Layar berikutnya memungkinkan Anda mengecualikan aplikasi dari pengoptimalan baterai. Ini opsional — Anda dapat mengubahnya kapan saja di pengaturan sistem."
-      },
-      "tlsTricks": {
-        "title": "Trik TLS",
-        "enable": "Aktifkan fragmen",
-        "packets": "Paket Fragmentasi",
-        "packetsTlsHello": "TLS Hello",
-        "packets1_1": "1-1",
-        "packets1_2": "1-2",
-        "packets1_3": "1-3",
-        "packets1_4": "1-4",
-        "packets1_5": "1-5",
-        "size": "Ukuran fragmen",
-        "sleep": "Jeda fragmen",
-        "mixedSniCase": {
-          "enable": "Aktifkan kasus SNI campuran"
-        },
-        "padding": {
-          "enable": "Aktifkan padding",
-          "size": "Ukuran padding"
-        }
       }
     }
   },
   "components": {
     "stats": {
-      "connection": "Koneksi",
       "traffic": "Lalu lintas",
-      "trafficTotal": "Total lalu lintas",
-      "uplink": "Unggah",
-      "downlink": "Unduh",
-      "speed": "Kecepatan",
-      "totalTransferred": "Total ditransfer"
-    },
-    "subscriptionInfo": {
-      "upload": "Unggah",
-      "download": "Unduh",
-      "total": "Total lalu lintas",
-      "expireDate": "Tanggal kedaluwarsa",
-      "expired": "Kedaluwarsa",
-      "noTraffic": "Kuota habis",
-      "remainingTime": "Sisa waktu",
-      "remainingDuration": "tersisa ${duration} hari",
-      "remainingDurationNew": "${duration} hari",
-      "remainingTrafficSemanticLabel": "${consumed} dari ${total} lalu lintas terpakai",
-      "remainingTraffic": "Sisa lalu lintas",
-      "remainingUsage": "Sisa",
-      "profileSite": "Penyedia",
-      "profileSupport": "Dukungan"
+      "trafficTotal": "Total lalu lintas"
     }
   },
   "dialogs": {
     "sortProfiles": {
-      "title": "Urut berdasarkan",
       "sort": {
         "name": "Menurut abjad",
         "lastUpdate": "Terakhir diperbarui"
@@ -301,7 +162,6 @@
   "auth": {
     "login": {
       "signInWithEmail": "Masuk dengan email",
-      "title": "Masuk",
       "subtitle": "Masukkan email dan kata sandi akun Anda untuk mengambil token secara otomatis.",
       "emailLabel": "Email",
       "passwordLabel": "Kata sandi",
@@ -312,10 +172,8 @@
       "emailNotVerified": "Harap verifikasi email Anda untuk melanjutkan, lalu masuk lagi.",
       "accountSuspended": "Akun Anda tidak aktif. Kunjungi halaman akun Anda untuk memperbarui.",
       "accountDeactivated": "Akun ini telah dinonaktifkan. Silakan hubungi dukungan.",
-      "pendingPayment": "Akun Anda belum aktif. Selesaikan penyiapannya di halaman akun Anda.",
       "pendingActivation": "Akun Anda sedang diaktifkan. Silakan periksa kembali dalam beberapa menit.",
       "verifyFailed": "Tidak dapat memverifikasi aplikasi. Silakan coba lagi.",
-      "unreachable": "Tidak dapat menjangkau layanan masuk. Anda dapat menempelkan token Anda sebagai gantinya.",
       "generic": "Terjadi kesalahan. Silakan coba lagi nanti.",
       "openWebsite": "Buka halaman akun"
     }

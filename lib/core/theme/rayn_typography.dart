@@ -21,8 +21,6 @@ class RaynTypography {
 
   static const TextStyle metric = TextStyle(fontFamily: _family, fontSize: 18, fontWeight: FontWeight.w600);
 
-  static const TextStyle metricUnit = TextStyle(fontFamily: _family, fontSize: 16, fontWeight: FontWeight.w400);
-
   static const TextStyle label = TextStyle(fontFamily: _family, fontSize: 13, fontWeight: FontWeight.w500);
 
   static const TextStyle caption = TextStyle(fontFamily: _family, fontSize: 12, fontWeight: FontWeight.w400);

@@ -35,12 +35,6 @@ class SettingsPage extends HookConsumerWidget {
       const LocalePrefTile(),
       const ThemeModePrefTile(),
       RaynSwitchTile(
-        icon: Icons.flag_rounded,
-        title: t.pages.settings.general.autoIpCheck,
-        value: ref.watch(Preferences.autoCheckIp),
-        onChanged: ref.read(Preferences.autoCheckIp.notifier).update,
-      ),
-      RaynSwitchTile(
         icon: Icons.block_rounded,
         title: t.pages.settings.general.blockAds,
         value: ref.watch(ConfigOptions.blockAds),

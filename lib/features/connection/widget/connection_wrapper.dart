@@ -4,7 +4,6 @@ import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/settings/notifier/config_option/config_option_notifier.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ConnectionWrapper extends StatefulHookConsumerWidget {
@@ -16,7 +15,7 @@ class ConnectionWrapper extends StatefulHookConsumerWidget {
   ConsumerState<ConsumerStatefulWidget> createState() => _ConnectionWrapperState();
 }
 
-class _ConnectionWrapperState extends ConsumerState<ConnectionWrapper> with AppLogger {
+class _ConnectionWrapperState extends ConsumerState<ConnectionWrapper> {
   @override
   Widget build(BuildContext context) {
     ref.listen(connectionNotifierProvider, (_, _) {});
@@ -40,20 +39,5 @@ class _ConnectionWrapperState extends ConsumerState<ConnectionWrapper> with AppL
     });
 
     return widget.child;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // remove for now...
-    //
-    // Future.delayed(const Duration(seconds: 2)).then(
-    //   (_) async {
-    //     if (ref.read(startedByUserProvider) && PlatformUtils.isDesktop) {
-    //       loggy.debug("previously started by user, trying to connect");
-    //       return ref.read(connectionNotifierProvider.notifier).mayConnect();
-    //     }
-    //   },
-    // );
   }
 }

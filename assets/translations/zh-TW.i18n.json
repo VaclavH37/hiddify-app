@@ -1,93 +1,29 @@
 {
   "common": {
     "appTitle": "Rayn VPN",
-    "start": "開始",
     "version": "版本",
     "ok": "確定",
     "cancel": "取消",
     "kContinue": "繼續",
-    "showMore": "顯示更多",
-    "showLess": "顯示較少",
-    "filter": "篩選",
-    "all": "全部",
-    "pause": "暫停",
-    "resume": "恢復",
-    "clear": "清除",
     "close": "關閉",
-    "auto": "自動",
-    "manually": "手動",
-    "name": "名稱",
-    "url": "URL",
     "add": "新增",
-    "clipboard": "剪貼簿",
     "addToClipboard": "新增至剪貼簿",
-    "scanQr": "掃描 QR Code",
-    "free": "免費",
-    "fragment": "Fragment",
-    "help": "說明",
-    "save": "儲存",
-    "update": "更新",
-    "share": "分享",
-    "edit": "編輯",
-    "delete": "刪除",
-    "discard": "捨棄",
-    "import": "匯入",
-    "export": "匯出",
-    "later": "稍後",
-    "ignore": "忽略",
     "quit": "退出",
     "notSet": "未設定",
     "hide": "隱藏",
     "exit": "退出",
     "reset": "重設",
-    "done": "完成",
-    "search": "搜尋",
-    "decline": "拒絕",
-    "agree": "同意",
-    "empty": "空",
     "unknown": "未知",
-    "hidden": "隱藏",
-    "timeout": "超時",
-    "sort": "排序",
     "dashboard": "儀表板",
-    "interval": {
-      "day": {
-        "zero": "",
-        "one": "$n 天",
-        "other": "$n 天"
-      },
-      "hour": {
-        "zero": "",
-        "one": "$n 小時",
-        "other": "$n 小時"
-      }
-    },
     "msg": {
       "permission": {
         "denied": "權限被拒絕"
-      },
-      "export": {
-        "clipboard": {
-          "success": "已成功新增至剪貼簿",
-          "failure": "複製到剪貼簿失敗",
-          "contentTooLarge": "內容過大，請改用匯出檔案"
-        },
-        "file": {
-          "success": "JSON 檔案建立成功",
-          "failure": "建立檔案失敗"
-        }
-      },
-      "import": {
-        "confirm": "確認匯入",
-        "success": "匯入成功",
-        "failure": "匯入失敗"
       }
     }
   },
   "pages": {
     "home": {
-      "title": "首頁",
-      "quickSettings": "快速設定"
+      "title": "首頁"
     },
     "proxies": {
       "title": "代理",
@@ -95,16 +31,13 @@
       "testDelay": "測試延遲",
       "empty": "無可用代理",
       "activeProxy": "當前代理",
-      "unknownIp": "未知 IP",
       "sortOptions": {
         "unsorted": "預設",
         "name": "按名稱",
         "delay": "按延遲"
       },
       "ipInfo": {
-        "address": "IP 位址",
-        "country": "國家",
-        "organization": "組織"
+        "country": "國家"
       },
       "delay": {
         "result": "延遲：${delay}毫秒",
@@ -113,20 +46,8 @@
       }
     },
     "profiles": {
-      "title": "設定檔",
       "add": "新增設定檔",
       "update": "更新設定檔",
-      "viewAllProfiles": "檢視所有設定檔",
-      "activeProfileName": "目前設定檔：「${name}」",
-      "nonActiveProfileName": "選擇「${name}」作為目前設定檔",
-      "freeSubNotFound": "未找到免費訂閱",
-      "failedToLoad": "載入失敗",
-      "updateSubscriptions": "更新訂閱",
-      "share": {
-        "urlToClipboard": "URL 到剪貼簿",
-        "showUrlQr": "顯示 URL QR Code",
-        "jsonToClipboard": "JSON 到剪貼簿"
-      },
       "msg": {
         "save": {
           "success": "設定檔儲存成功"
@@ -139,23 +60,7 @@
           "success": "設定檔更新成功",
           "failure": "更新設定檔失敗",
           "failureNamed": "更新「${name}」失敗"
-        },
-        "delete": {
-          "success": "設定檔刪除成功"
         }
-      }
-    },
-    "profileDetails": {
-      "title": "設定檔",
-      "lastUpdate": "最後更新",
-      "form": {
-        "nameHint": "設定檔名稱",
-        "emptyName": "名稱為必填項",
-        "invalidUrl": "無效的 URL",
-        "urlHint": "完整的設定 URL",
-        "disableAutoUpdate": "停用自動更新",
-        "autoUpdateInterval": "自動更新間隔",
-        "loading": "正在新增設定檔..."
       }
     },
     "about": {
@@ -176,7 +81,6 @@
           "dark": "深色模式",
           "light": "淺色模式"
         },
-        "autoIpCheck": "自動檢查連線 IP",
         "blockAds": "攔截廣告",
         "dynamicNotification": "在通知中顯示速度",
         "hapticFeedback": "觸覺回饋",
@@ -191,62 +95,19 @@
         "debugModeMsg": "重新啟動應用程式以套用此變更",
         "logLevel": "日誌級別",
         "connectionTestUrl": "連線測試 URL",
-        "urlTestInterval": "URL 測試間隔",
         "ignoreBatteryOptimizationsDialogTitle": "讓 VPN 在背景保持執行？",
         "ignoreBatteryOptimizationsDialogBody": "為了穩定且不中斷的連線，Rayn VPN 需要在螢幕關閉時保持執行。下一個畫面可讓您將應用程式排除在電池最佳化之外。此為選用項目——您可以隨時在系統設定中變更。"
-      },
-      "tlsTricks": {
-        "title": "TLS 技巧",
-        "enable": "啟用分片",
-        "packets": "分片封包",
-        "packetsTlsHello": "TLS Hello",
-        "packets1_1": "1-1",
-        "packets1_2": "1-2",
-        "packets1_3": "1-3",
-        "packets1_4": "1-4",
-        "packets1_5": "1-5",
-        "size": "分片大小",
-        "sleep": "分片延遲",
-        "mixedSniCase": {
-          "enable": "啟用混合大小寫 SNI"
-        },
-        "padding": {
-          "enable": "啟用填充",
-          "size": "填充大小"
-        }
       }
     }
   },
   "components": {
     "stats": {
-      "connection": "連線",
       "traffic": "流量",
-      "trafficTotal": "總流量",
-      "uplink": "上傳",
-      "downlink": "下載",
-      "speed": "速度",
-      "totalTransferred": "總傳輸量"
-    },
-    "subscriptionInfo": {
-      "upload": "上傳",
-      "download": "下載",
-      "total": "總流量",
-      "expireDate": "到期日期",
-      "expired": "已到期",
-      "noTraffic": "流量已用盡",
-      "remainingTime": "剩餘時間",
-      "remainingDuration": "剩餘 ${duration} 天",
-      "remainingDurationNew": "${duration} 天",
-      "remainingTrafficSemanticLabel": "已使用 ${consumed} / ${total} 流量",
-      "remainingTraffic": "剩餘流量",
-      "remainingUsage": "剩餘",
-      "profileSite": "提供商",
-      "profileSupport": "支援"
+      "trafficTotal": "總流量"
     }
   },
   "dialogs": {
     "sortProfiles": {
-      "title": "排序方式",
       "sort": {
         "name": "按字母順序",
         "lastUpdate": "最近更新"
@@ -301,7 +162,6 @@
   "auth": {
     "login": {
       "signInWithEmail": "使用電子郵件登入",
-      "title": "登入",
       "subtitle": "輸入您的帳戶電子郵件和密碼以自動取得您的權杖。",
       "emailLabel": "電子郵件",
       "passwordLabel": "密碼",
@@ -312,10 +172,8 @@
       "emailNotVerified": "請先驗證您的電子郵件以繼續，然後重新登入。",
       "accountSuspended": "您的帳戶未啟用。請前往您的帳戶頁面續訂。",
       "accountDeactivated": "此帳戶已被停用。請聯絡支援。",
-      "pendingPayment": "您的帳戶尚未啟用。請在您的帳戶頁面完成設定。",
       "pendingActivation": "您的帳戶正在啟用中。請於幾分鐘後再試。",
       "verifyFailed": "無法驗證應用程式。請再試一次。",
-      "unreachable": "無法連線到登入服務。您可以改為貼上您的權杖。",
       "generic": "發生錯誤。請稍後再試。",
       "openWebsite": "開啟帳戶頁面"
     }

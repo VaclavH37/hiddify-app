@@ -231,7 +231,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 //             ),
 //         actions: [
 //           IconButton(
-//             icon: const Icon(FluentIcons.flash_24_regular),
+//             icon: const Icon(Icons.flash_on_rounded),
 //             tooltip: t.profile.add.qrScanner.torchSemanticLabel,
 //             onPressed: () => controller.toggleTorch(),
 //           ),
@@ -242,12 +242,12 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 //           //       switch (state) {
 //           //         case TorchState.off:
 //           //           return const Icon(
-//           //             FluentIcons.flash_off_24_regular,
+//           //             Icons.flash_off_rounded,
 //           //             color: Colors.grey,
 //           //           );
 //           //         case TorchState.on:
 //           //           return const Icon(
-//           //             FluentIcons.flash_24_regular,
+//           //             Icons.flash_on_rounded,
 //           //             color: Colors.yellow,
 //           //           );
 //           //       }
@@ -257,7 +257,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 //           //   onPressed: () => controller.toggleTorch(),
 //           // ),
 //           IconButton(
-//             icon: const Icon(FluentIcons.camera_switch_24_regular),
+//             icon: const Icon(Icons.cameraswitch_rounded),
 //             tooltip: t.profile.add.qrScanner.facingSemanticLabel,
 //             onPressed: () => controller.switchCamera(),
 //           ),
@@ -293,7 +293,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 //                     const Padding(
 //                       padding: EdgeInsets.only(bottom: 8),
 //                       child: Icon(
-//                         FluentIcons.error_circle_24_regular,
+//                         Icons.error_outline_rounded,
 //                         color: Colors.white,
 //                       ),
 //                     ),

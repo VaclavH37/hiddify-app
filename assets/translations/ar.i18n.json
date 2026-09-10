@@ -1,99 +1,29 @@
 {
   "common": {
     "appTitle": "Rayn VPN",
-    "start": "ابدأ",
     "version": "الإصدار",
     "ok": "موافق",
     "cancel": "إلغاء",
     "kContinue": "متابعة",
-    "showMore": "عرض المزيد",
-    "showLess": "عرض أقل",
-    "filter": "تصفية",
-    "all": "الكل",
-    "pause": "إيقاف مؤقت",
-    "resume": "استئناف",
-    "clear": "مسح",
     "close": "إغلاق",
-    "auto": "تلقائي",
-    "manually": "يدوي",
-    "name": "الاسم",
-    "url": "الرابط",
     "add": "إضافة",
-    "clipboard": "الحافظة",
     "addToClipboard": "إضافة إلى الحافظة",
-    "scanQr": "مسح رمز QR",
-    "free": "مجاني",
-    "fragment": "Fragment",
-    "help": "مساعدة",
-    "save": "حفظ",
-    "update": "تحديث",
-    "share": "مشاركة",
-    "edit": "تعديل",
-    "delete": "حذف",
-    "discard": "تجاهل",
-    "import": "استيراد",
-    "export": "تصدير",
-    "later": "لاحقًا",
-    "ignore": "تجاهل",
     "quit": "خروج",
     "notSet": "غير محدد",
     "hide": "إخفاء",
     "exit": "خروج",
     "reset": "إعادة تعيين",
-    "done": "تم",
-    "search": "بحث",
-    "decline": "رفض",
-    "agree": "أوافق",
-    "empty": "فارغ",
     "unknown": "غير معروف",
-    "hidden": "مخفي",
-    "timeout": "انتهى الوقت",
-    "sort": "فرز",
     "dashboard": "لوحة التحكم",
-    "interval": {
-      "day": {
-        "zero": "",
-        "one": "يوم واحد",
-        "two": "يومان",
-        "few": "$n أيام",
-        "many": "$n يومًا",
-        "other": "$n يوم"
-      },
-      "hour": {
-        "zero": "",
-        "one": "ساعة واحدة",
-        "two": "ساعتان",
-        "few": "$n ساعات",
-        "many": "$n ساعة",
-        "other": "$n ساعة"
-      }
-    },
     "msg": {
       "permission": {
         "denied": "تم رفض الإذن"
-      },
-      "export": {
-        "clipboard": {
-          "success": "تمت الإضافة إلى الحافظة بنجاح",
-          "failure": "فشل النسخ إلى الحافظة",
-          "contentTooLarge": "المحتوى كبير جدًا. استخدم تصدير الملف بدلاً من ذلك"
-        },
-        "file": {
-          "success": "تم إنشاء ملف JSON بنجاح",
-          "failure": "فشل إنشاء الملف"
-        }
-      },
-      "import": {
-        "confirm": "تأكيد الاستيراد",
-        "success": "تم الاستيراد بنجاح",
-        "failure": "فشل الاستيراد"
       }
     }
   },
   "pages": {
     "home": {
-      "title": "الرئيسية",
-      "quickSettings": "الإعدادات السريعة"
+      "title": "الرئيسية"
     },
     "proxies": {
       "title": "البروكسيات",
@@ -101,16 +31,13 @@
       "testDelay": "اختبار التأخير",
       "empty": "لا توجد بروكسيات متاحة",
       "activeProxy": "البروكسي النشط",
-      "unknownIp": "IP غير معروف",
       "sortOptions": {
         "unsorted": "الافتراضي",
         "name": "أبجديًا",
         "delay": "حسب التأخير"
       },
       "ipInfo": {
-        "address": "عنوان IP",
-        "country": "الدولة",
-        "organization": "المُنظمة"
+        "country": "الدولة"
       },
       "delay": {
         "result": "التأخير: ${delay} مللي ثانية",
@@ -119,20 +46,8 @@
       }
     },
     "profiles": {
-      "title": "الملفات الشخصية",
       "add": "إضافة ملف شخصي",
       "update": "تحديث الملف الشخصي",
-      "viewAllProfiles": "عرض جميع الملفات الشخصية",
-      "activeProfileName": "اسم الملف النشط: \"${name}\".",
-      "nonActiveProfileName": "تحديد \"${name}\" كملف نشط",
-      "freeSubNotFound": "لم يتم العثور على اشتراك مجاني",
-      "failedToLoad": "فشل التحميل",
-      "updateSubscriptions": "تحديث الاشتراكات",
-      "share": {
-        "urlToClipboard": "رابط URL إلى الحافظة",
-        "showUrlQr": "عرض رمز QR للرابط",
-        "jsonToClipboard": "JSON إلى الحافظة"
-      },
       "msg": {
         "save": {
           "success": "تم حفظ الملف الشخصي بنجاح"
@@ -145,23 +60,7 @@
           "success": "تم تحديث الملف الشخصي بنجاح",
           "failure": "فشل تحديث الملف الشخصي",
           "failureNamed": "فشل تحديث \"${name}\""
-        },
-        "delete": {
-          "success": "تم حذف الملف الشخصي بنجاح"
         }
-      }
-    },
-    "profileDetails": {
-      "title": "الملف الشخصي",
-      "lastUpdate": "آخر تحديث",
-      "form": {
-        "nameHint": "اسم الملف الشخصي",
-        "emptyName": "الاسم مطلوب",
-        "invalidUrl": "رابط غير صالح",
-        "urlHint": "رابط الإعدادات الكامل",
-        "disableAutoUpdate": "تعطيل التحديث التلقائي",
-        "autoUpdateInterval": "فاصل التحديث التلقائي",
-        "loading": "جاري إضافة الملف الشخصي..."
       }
     },
     "about": {
@@ -182,7 +81,6 @@
           "dark": "الوضع الداكن",
           "light": "الوضع الفاتح"
         },
-        "autoIpCheck": "التحقق التلقائي من IP الاتصال",
         "blockAds": "حظر الإعلانات",
         "dynamicNotification": "عرض السرعة في الإشعار",
         "hapticFeedback": "ردود الفعل اللمسية",
@@ -197,62 +95,19 @@
         "debugModeMsg": "أعد تشغيل التطبيق لتطبيق هذا التغيير",
         "logLevel": "مستوى السجل",
         "connectionTestUrl": "رابط اختبار الاتصال",
-        "urlTestInterval": "فاصل اختبار الرابط",
         "ignoreBatteryOptimizationsDialogTitle": "هل تريد إبقاء VPN يعمل في الخلفية؟",
         "ignoreBatteryOptimizationsDialogBody": "للحصول على اتصال مستقر دون انقطاع، يحتاج Rayn VPN إلى مواصلة العمل أثناء إيقاف تشغيل الشاشة. تتيح لك الشاشة التالية استثناء التطبيق من تحسين البطارية. هذا اختياري — يمكنك تغييره في أي وقت من إعدادات النظام."
-      },
-      "tlsTricks": {
-        "title": "حيل TLS",
-        "enable": "تفعيل fragment",
-        "packets": "حزم التجزئة",
-        "packetsTlsHello": "TLS Hello",
-        "packets1_1": "1-1",
-        "packets1_2": "1-2",
-        "packets1_3": "1-3",
-        "packets1_4": "1-4",
-        "packets1_5": "1-5",
-        "size": "حجم fragment",
-        "sleep": "تأخير fragment",
-        "mixedSniCase": {
-          "enable": "تفعيل الأحرف المختلطة لـ SNI"
-        },
-        "padding": {
-          "enable": "تفعيل padding",
-          "size": "حجم padding"
-        }
       }
     }
   },
   "components": {
     "stats": {
-      "connection": "الاتصال",
       "traffic": "البيانات",
-      "trafficTotal": "إجمالي البيانات",
-      "uplink": "الإرسال",
-      "downlink": "الاستقبال",
-      "speed": "السرعة",
-      "totalTransferred": "إجمالي النقل"
-    },
-    "subscriptionInfo": {
-      "upload": "الرفع",
-      "download": "التنزيل",
-      "total": "إجمالي البيانات",
-      "expireDate": "تاريخ الانتهاء",
-      "expired": "منتهي الصلاحية",
-      "noTraffic": "نفدت الباقة",
-      "remainingTime": "الوقت المتبقي",
-      "remainingDuration": "متبقٍ ${duration} يوم",
-      "remainingDurationNew": "${duration} يوم",
-      "remainingTrafficSemanticLabel": "تم استهلاك ${consumed} من ${total}",
-      "remainingTraffic": "البيانات المتبقية",
-      "remainingUsage": "المتبقي",
-      "profileSite": "المزوّد",
-      "profileSupport": "الدعم"
+      "trafficTotal": "إجمالي البيانات"
     }
   },
   "dialogs": {
     "sortProfiles": {
-      "title": "فرز حسب",
       "sort": {
         "name": "أبجديًا",
         "lastUpdate": "آخر تحديث"
@@ -307,7 +162,6 @@
   "auth": {
     "login": {
       "signInWithEmail": "تسجيل الدخول بالبريد الإلكتروني",
-      "title": "تسجيل الدخول",
       "subtitle": "أدخل بريدك الإلكتروني وكلمة المرور لحسابك لجلب الرمز المميز تلقائيًا.",
       "emailLabel": "البريد الإلكتروني",
       "passwordLabel": "كلمة المرور",
@@ -318,10 +172,8 @@
       "emailNotVerified": "يرجى تأكيد بريدك الإلكتروني للمتابعة، ثم تسجيل الدخول مرة أخرى.",
       "accountSuspended": "حسابك غير نشط. تفضل بزيارة صفحة حسابك للتجديد.",
       "accountDeactivated": "تم تعطيل هذا الحساب. يرجى التواصل مع الدعم.",
-      "pendingPayment": "حسابك ليس نشطًا بعد. أكمل إعداده من صفحة حسابك.",
       "pendingActivation": "يجري تفعيل حسابك. يرجى المحاولة مرة أخرى بعد بضع دقائق.",
       "verifyFailed": "تعذّر التحقق من التطبيق. يرجى المحاولة مرة أخرى.",
-      "unreachable": "تعذّر الوصول إلى خدمة تسجيل الدخول. يمكنك لصق الرمز المميز بدلاً من ذلك.",
       "generic": "حدث خطأ ما. يرجى المحاولة لاحقًا.",
       "openWebsite": "فتح صفحة الحساب"
     }

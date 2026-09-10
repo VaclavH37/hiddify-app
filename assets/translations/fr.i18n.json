@@ -1,93 +1,29 @@
 {
   "common": {
     "appTitle": "Rayn VPN",
-    "start": "Commencer",
     "version": "Version",
     "ok": "OK",
     "cancel": "Annuler",
     "kContinue": "Continuer",
-    "showMore": "Afficher plus",
-    "showLess": "Afficher moins",
-    "filter": "Filtrer",
-    "all": "Tous",
-    "pause": "Pause",
-    "resume": "Reprendre",
-    "clear": "Effacer",
     "close": "Fermer",
-    "auto": "Automatique",
-    "manually": "Manuellement",
-    "name": "Nom",
-    "url": "URL",
     "add": "Ajouter",
-    "clipboard": "Presse-papiers",
     "addToClipboard": "Ajouter au presse-papiers",
-    "scanQr": "Scanner le QR code",
-    "free": "Gratuit",
-    "fragment": "Fragment",
-    "help": "Aide",
-    "save": "Enregistrer",
-    "update": "Mettre à jour",
-    "share": "Partager",
-    "edit": "Modifier",
-    "delete": "Supprimer",
-    "discard": "Ignorer",
-    "import": "Importer",
-    "export": "Exporter",
-    "later": "Plus tard",
-    "ignore": "Ignorer",
     "quit": "Quitter",
     "notSet": "Non défini",
     "hide": "Masquer",
     "exit": "Quitter",
     "reset": "Réinitialiser",
-    "done": "Terminé",
-    "search": "Rechercher",
-    "decline": "Refuser",
-    "agree": "Accepter",
-    "empty": "Vide",
     "unknown": "Inconnu",
-    "hidden": "Caché",
-    "timeout": "Délai expiré",
-    "sort": "Trier",
     "dashboard": "Tableau de bord",
-    "interval": {
-      "day": {
-        "zero": "",
-        "one": "$n jour",
-        "other": "$n jours"
-      },
-      "hour": {
-        "zero": "",
-        "one": "$n heure",
-        "other": "$n heures"
-      }
-    },
     "msg": {
       "permission": {
         "denied": "Permission refusée"
-      },
-      "export": {
-        "clipboard": {
-          "success": "Ajouté au presse-papiers avec succès",
-          "failure": "Échec de la copie dans le presse-papiers",
-          "contentTooLarge": "Contenu trop volumineux. Utilisez plutôt l'exportation de fichier"
-        },
-        "file": {
-          "success": "Fichier JSON créé avec succès",
-          "failure": "Échec de la création du fichier"
-        }
-      },
-      "import": {
-        "confirm": "Confirmer l'importation",
-        "success": "Importé avec succès",
-        "failure": "Échec de l'importation"
       }
     }
   },
   "pages": {
     "home": {
-      "title": "Accueil",
-      "quickSettings": "Réglages rapides"
+      "title": "Accueil"
     },
     "proxies": {
       "title": "Proxys",
@@ -95,16 +31,13 @@
       "testDelay": "Tester le délai",
       "empty": "Aucun proxy disponible",
       "activeProxy": "Proxy actif",
-      "unknownIp": "IP inconnue",
       "sortOptions": {
         "unsorted": "Par défaut",
         "name": "Alphabétiquement",
         "delay": "Par latence"
       },
       "ipInfo": {
-        "address": "Adresse IP",
-        "country": "Pays",
-        "organization": "Organisation"
+        "country": "Pays"
       },
       "delay": {
         "result": "Latence : ${delay} ms",
@@ -113,20 +46,8 @@
       }
     },
     "profiles": {
-      "title": "Profils",
       "add": "Ajouter un profil",
       "update": "Mettre à jour le profil",
-      "viewAllProfiles": "Voir tous les profils",
-      "activeProfileName": "Nom du profil actif : \"${name}\".",
-      "nonActiveProfileName": "Sélectionner \"${name}\" comme profil actif",
-      "freeSubNotFound": "Aucun abonnement gratuit trouvé",
-      "failedToLoad": "Échec du chargement",
-      "updateSubscriptions": "Mettre à jour les abonnements",
-      "share": {
-        "urlToClipboard": "URL dans le presse-papiers",
-        "showUrlQr": "Afficher le QR code de l'URL",
-        "jsonToClipboard": "JSON dans le presse-papiers"
-      },
       "msg": {
         "save": {
           "success": "Profil enregistré avec succès"
@@ -139,23 +60,7 @@
           "success": "Profil mis à jour avec succès",
           "failure": "Échec de la mise à jour du profil",
           "failureNamed": "Échec de la mise à jour de \"${name}\""
-        },
-        "delete": {
-          "success": "Profil supprimé avec succès"
         }
-      }
-    },
-    "profileDetails": {
-      "title": "Profil",
-      "lastUpdate": "Dernière mise à jour",
-      "form": {
-        "nameHint": "Nom du profil",
-        "emptyName": "Le nom est requis",
-        "invalidUrl": "URL invalide",
-        "urlHint": "URL complète de la configuration",
-        "disableAutoUpdate": "Désactiver la mise à jour automatique",
-        "autoUpdateInterval": "Intervalle de mise à jour automatique",
-        "loading": "Ajout du profil..."
       }
     },
     "about": {
@@ -176,7 +81,6 @@
           "dark": "Mode sombre",
           "light": "Mode clair"
         },
-        "autoIpCheck": "Vérifier automatiquement l'IP de connexion",
         "blockAds": "Bloquer les publicités",
         "dynamicNotification": "Afficher la vitesse dans la notification",
         "hapticFeedback": "Retour haptique",
@@ -191,62 +95,19 @@
         "debugModeMsg": "Redémarrez l'application pour appliquer cette modification",
         "logLevel": "Niveau de journalisation",
         "connectionTestUrl": "URL de test de connexion",
-        "urlTestInterval": "Intervalle de test de l'URL",
         "ignoreBatteryOptimizationsDialogTitle": "Maintenir le VPN actif en arrière-plan ?",
         "ignoreBatteryOptimizationsDialogBody": "Pour une connexion stable et ininterrompue, Rayn VPN doit continuer à fonctionner lorsque l'écran est éteint. L'écran suivant vous permet d'exclure l'application de l'optimisation de la batterie. C'est facultatif : vous pouvez le modifier à tout moment dans les paramètres du système."
-      },
-      "tlsTricks": {
-        "title": "Astuces TLS",
-        "enable": "Activer le fragment",
-        "packets": "Paquets de fragmentation",
-        "packetsTlsHello": "TLS Hello",
-        "packets1_1": "1-1",
-        "packets1_2": "1-2",
-        "packets1_3": "1-3",
-        "packets1_4": "1-4",
-        "packets1_5": "1-5",
-        "size": "Taille du fragment",
-        "sleep": "Délai du fragment",
-        "mixedSniCase": {
-          "enable": "Activer la casse mixte pour SNI"
-        },
-        "padding": {
-          "enable": "Activer le remplissage",
-          "size": "Taille du remplissage"
-        }
       }
     }
   },
   "components": {
     "stats": {
-      "connection": "Connexion",
       "traffic": "Trafic",
-      "trafficTotal": "Trafic total",
-      "uplink": "Envoi",
-      "downlink": "Réception",
-      "speed": "Vitesse",
-      "totalTransferred": "Total transféré"
-    },
-    "subscriptionInfo": {
-      "upload": "Envoi",
-      "download": "Téléchargement",
-      "total": "Trafic total",
-      "expireDate": "Date d'expiration",
-      "expired": "Expiré",
-      "noTraffic": "Quota épuisé",
-      "remainingTime": "Temps restant",
-      "remainingDuration": "${duration} jours restants",
-      "remainingDurationNew": "${duration} jours",
-      "remainingTrafficSemanticLabel": "${consumed} sur ${total} de trafic consommé",
-      "remainingTraffic": "Trafic restant",
-      "remainingUsage": "Restant",
-      "profileSite": "Fournisseur",
-      "profileSupport": "Support"
+      "trafficTotal": "Trafic total"
     }
   },
   "dialogs": {
     "sortProfiles": {
-      "title": "Trier par",
       "sort": {
         "name": "Alphabétiquement",
         "lastUpdate": "Dernière mise à jour"
@@ -301,7 +162,6 @@
   "auth": {
     "login": {
       "signInWithEmail": "Se connecter par e-mail",
-      "title": "Connexion",
       "subtitle": "Saisissez l'e-mail et le mot de passe de votre compte pour récupérer automatiquement votre jeton.",
       "emailLabel": "E-mail",
       "passwordLabel": "Mot de passe",
@@ -312,10 +172,8 @@
       "emailNotVerified": "Veuillez vérifier votre e-mail pour continuer, puis reconnectez-vous.",
       "accountSuspended": "Votre compte n'est pas actif. Consultez la page de votre compte pour le renouveler.",
       "accountDeactivated": "Ce compte a été désactivé. Veuillez contacter le support.",
-      "pendingPayment": "Votre compte n'est pas encore actif. Terminez sa configuration sur la page de votre compte.",
       "pendingActivation": "Votre compte est en cours d'activation. Veuillez réessayer dans quelques minutes.",
       "verifyFailed": "Impossible de vérifier l'application. Veuillez réessayer.",
-      "unreachable": "Impossible de joindre le service de connexion. Vous pouvez coller votre jeton à la place.",
       "generic": "Une erreur s'est produite. Veuillez réessayer plus tard.",
       "openWebsite": "Ouvrir la page du compte"
     }

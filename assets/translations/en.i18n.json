@@ -1,92 +1,27 @@
 {
   "common": {
     "appTitle": "Rayn VPN",
-    "start": "Start",
     "version": "Version",
     "ok": "OK",
     "cancel": "Cancel",
     "kContinue": "Continue",
-    "showMore": "Show more",
-    "showLess": "Show less",
-    "filter": "Filter",
-    "all": "All",
-    "pause": "Pause",
-    "resume": "Resume",
-    "clear": "Clear",
     "close": "Close",
-    "auto": "Auto",
-    "manually": "Manually",
-    "name": "Name",
-    "url": "URL",
     "add": "Add",
-    "clipboard": "Clipboard",
     "addToClipboard": "Add to clipboard",
-    "scanQr": "Scan QR",
-    "free": "Free",
-    "fragment": "Fragment",
-    "help": "Help",
-    "save": "Save",
-    "update": "Update",
-    "share": "Share",
-    "edit": "Edit",
-    "delete": "Delete",
-    "discard": "Discard",
-    "import": "Import",
-    "export": "Export",
-    "later": "Later",
-    "ignore": "Ignore",
     "quit": "Quit",
     "notSet": "Not set",
     "hide": "Hide",
     "exit": "Exit",
     "reset": "Reset",
-    "done": "Done",
-    "search": "Search",
-    "decline": "Decline",
-    "agree": "Agree",
-    "empty": "Empty",
     "unknown": "Unknown",
-    "hidden": "Hidden",
-    "timeout": "Timeout",
-    "sort": "Sort",
     "dashboard": "Dashboard",
-    "interval": {
-      "day": {
-        "zero": "",
-        "one": "$n day",
-        "other": "$n days"
-      },
-      "hour": {
-        "zero": "",
-        "one": "$n hour",
-        "other": "$n hours"
-      }
-    },
     "msg": {
       "permission": {
         "denied": "Permission denied"
-      },
-      "export": {
-        "clipboard": {
-          "success": "Added to clipboard successfully",
-          "failure": "Failed to copy to clipboard",
-          "contentTooLarge": "Content too large. Use export file instead"
-        },
-        "file": {
-          "success": "JSON file created successfully",
-          "failure": "Failed to create file"
-        }
-      },
-      "import": {
-        "confirm": "Confirm import",
-        "success": "Imported successfully",
-        "failure": "Failed to import"
       }
     }
   },
   "disclosure": {
-    "agree": "Agree & Continue",
-    "decline": "Decline",
     "privacyPolicy": "Privacy Policy",
     "terms": "Terms of Service",
     "vpn": {
@@ -108,10 +43,11 @@
       "useTitle": "How it's used",
       "useBody": "This information is used only to authenticate you and manage your subscription. It is not sold, and it is not shared with third parties for their own use.",
       "consent": "By tapping Agree & Continue, you consent to this collection as described in our Privacy Policy."
-    }
+    },
+    "agree": "Agree & Continue",
+    "decline": "Decline"
   },
   "auth": {
-    "title": "Sign in with your token",
     "subtitle": "Paste your Rayn link, scan your QR code, or sign in with email to get started.",
     "scanQr": "Scan QR code",
     "paste": "Paste from clipboard",
@@ -166,7 +102,6 @@
     },
     "login": {
       "signInWithEmail": "Sign in with email",
-      "title": "Sign in",
       "subtitle": "Enter your account email and password to authenticate.",
       "emailLabel": "Email",
       "passwordLabel": "Password",
@@ -178,17 +113,14 @@
       "accountSuspended": "Your account isn't active. Visit your account page to renew.",
       "accountSuspendedApple": "Your account isn't active. Contact us at support@raynlabs.io and we'll get it sorted.",
       "accountDeactivated": "This account has been disabled. Please contact support.",
-      "pendingPayment": "Your account isn't active yet. Finish setting it up on your account page.",
       "pendingActivation": "Your account is activating. Please check back in a few minutes.",
       "verifyFailed": "Couldn't verify the app. Please try again.",
-      "unreachable": "Couldn't reach the sign-in service. You can paste your token instead.",
       "updateRequired": "This account needs a newer version of Rayn. Please update the app, then sign in again.",
       "generic": "Something went wrong. Please try again later.",
       "openWebsite": "Open account page"
     },
     "register": {
       "createAccount": "Create an account",
-      "title": "Create your account",
       "subtitle": "Enter your details to create a Rayn account.",
       "emailLabel": "Email",
       "passwordLabel": "Password",
@@ -206,7 +138,6 @@
       "submit": "Create account",
       "tooManyRequests": "Too many attempts from this network. Please try again later.",
       "verifyFailed": "Couldn't verify the app. Please try again.",
-      "unreachable": "Couldn't reach the sign-up service. Please try again later.",
       "generic": "Something went wrong. Please try again later."
     },
     "verifyEmail": {
@@ -276,25 +207,7 @@
   },
   "pages": {
     "home": {
-      "title": "Home",
-      "quickSettings": "Quick settings",
-      "actions": {
-        "changeServer": "Change server",
-        "bestLocation": "Best location",
-        "killSwitch": "Kill switch",
-        "splitTunneling": "Split tunneling",
-        "on": "On",
-        "off": "Off",
-        "routingMode": {
-          "title": "Routing Mode",
-          "active": "Active",
-          "disabled": "Disabled",
-          "subtitleActive": "Selected apps use direct connection",
-          "subtitleDisabled": "All apps protected",
-          "hintActive": "Some apps may connect outside the protected tunnel.",
-          "hintDisabled": "Traffic from all apps is routed through the VPN."
-        }
-      }
+      "title": "Home"
     },
     "proxies": {
       "title": "Location",
@@ -302,7 +215,6 @@
       "testDelay": "Test latency",
       "empty": "No locations available",
       "activeProxy": "Current location",
-      "unknownIp": "Unknown IP",
       "selectLocation": "Select location",
       "tapToChoose": "Tap to choose a location",
       "snapshotEmpty": "Connect once to load available locations",
@@ -317,9 +229,7 @@
         "usage": "By usage"
       },
       "ipInfo": {
-        "address": "IP address",
-        "country": "Country",
-        "organization": "Organization"
+        "country": "Country"
       },
       "delay": {
         "result": "Latency: ${delay} ms",
@@ -330,20 +240,8 @@
       }
     },
     "profiles": {
-      "title": "Profiles",
       "add": "Add profile",
       "update": "Update profile",
-      "viewAllProfiles": "View all profiles",
-      "activeProfileName": "Active profile name: \"${name}\".",
-      "nonActiveProfileName": "Select \"${name}\" as active profile",
-      "freeSubNotFound": "No free subscription was found",
-      "failedToLoad": "Failed to load",
-      "updateSubscriptions": "Update subscriptions",
-      "share": {
-        "urlToClipboard": "URL to clipboard",
-        "showUrlQr": "Show URL QR",
-        "jsonToClipboard": "JSON to clipboard"
-      },
       "msg": {
         "save": {
           "success": "Subscription updated"
@@ -357,23 +255,7 @@
           "success": "Subscription updated",
           "failure": "Failed to update profile",
           "failureNamed": "Failed to update \"${name}\""
-        },
-        "delete": {
-          "success": "Profile deleted successfully"
         }
-      }
-    },
-    "profileDetails": {
-      "title": "Profile",
-      "lastUpdate": "Last update",
-      "form": {
-        "nameHint": "Profile name",
-        "emptyName": "Name is required",
-        "invalidUrl": "Invalid URL",
-        "urlHint": "Full config URL",
-        "disableAutoUpdate": "Disable auto update",
-        "autoUpdateInterval": "Auto update interval",
-        "loading": "Adding profile..."
       }
     },
     "about": {
@@ -391,7 +273,6 @@
       "exportDiagnostics": "Export diagnostics",
       "exportDiagnosticsMsg": "Share the app and tunnel logs",
       "exportDiagnosticsEmpty": "No logs yet — connect once, then try again",
-      "exportDiagnosticsFailed": "Couldn't share the logs",
       "exportDiagnosticsCopied": "Sharing failed — logs copied to the clipboard instead",
       "advanced": "Advanced",
       "general": {
@@ -403,7 +284,6 @@
           "dark": "Dark mode",
           "light": "Light mode"
         },
-        "autoIpCheck": "Check IP after connecting",
         "blockAds": "Block advertisements",
         "dynamicNotification": "Display speed in notification",
         "hapticFeedback": "Haptic feedback",
@@ -419,57 +299,16 @@
         "debugMode": "Debug mode",
         "debugModeMsg": "Restart the app to apply this change",
         "logLevel": "Log level",
-        "connectionTestUrl": "Connection test URL",
-        "urlTestInterval": "URL test interval"
-      },
-      "tlsTricks": {
-        "title": "TLS tricks",
-        "enable": "Enable fragment",
-        "packets": "Fragmentation Packets",
-        "packetsTlsHello": "TLS Hello",
-        "packets1_1": "1-1",
-        "packets1_2": "1-2",
-        "packets1_3": "1-3",
-        "packets1_4": "1-4",
-        "packets1_5": "1-5",
-        "size": "Fragment size",
-        "sleep": "Fragment sleep",
-        "mixedSniCase": {
-          "enable": "Enable mixed SNI case"
-        },
-        "padding": {
-          "enable": "Enable padding",
-          "size": "Padding size"
-        }
+        "connectionTestUrl": "Connection test URL"
       }
     }
   },
   "components": {
     "stats": {
-      "connection": "Connection",
       "traffic": "Traffic",
-      "trafficTotal": "Total traffic",
-      "uplink": "Uplink",
-      "downlink": "Downlink",
-      "speed": "Speed",
-      "totalTransferred": "Total transferred"
+      "trafficTotal": "Total traffic"
     },
     "subscriptionInfo": {
-      "upload": "Upload",
-      "download": "Download",
-      "total": "Total traffic",
-      "expireDate": "Expire date",
-      "expired": "Expired",
-      "noTraffic": "Out of quota",
-      "remainingTime": "Remaining time",
-      "remainingDuration": "${duration} days remaining",
-      "remainingDurationNew": "${duration} days",
-      "remainingTrafficSemanticLabel": "${consumed} of ${total} traffic consumed",
-      "remainingTraffic": "Remaining traffic",
-      "remainingUsage": "Remaining",
-      "profileSite": "Provider",
-      "profileSupport": "Support",
-      "daysLeft": "${days} days left",
       "planExpiry": "Plan expiry: ${date}",
       "renewDate": "Renew date: ${date}",
       "autoRenew": "Auto-renew",
@@ -497,7 +336,6 @@
   },
   "dialogs": {
     "sortProfiles": {
-      "title": "Sort by",
       "sort": {
         "name": "Alphabetically",
         "lastUpdate": "Recently updated"

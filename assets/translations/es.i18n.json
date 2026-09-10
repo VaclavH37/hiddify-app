@@ -1,93 +1,29 @@
 {
   "common": {
     "appTitle": "Rayn VPN",
-    "start": "Comenzar",
     "version": "Versión",
     "ok": "Aceptar",
     "cancel": "Cancelar",
     "kContinue": "Continuar",
-    "showMore": "Mostrar más",
-    "showLess": "Mostrar menos",
-    "filter": "Filtrar",
-    "all": "Todos",
-    "pause": "Pausar",
-    "resume": "Reanudar",
-    "clear": "Limpiar",
     "close": "Cerrar",
-    "auto": "Automático",
-    "manually": "Manualmente",
-    "name": "Nombre",
-    "url": "URL",
     "add": "Añadir",
-    "clipboard": "Portapapeles",
     "addToClipboard": "Añadir al portapapeles",
-    "scanQr": "Escanear QR",
-    "free": "Gratis",
-    "fragment": "Fragmento",
-    "help": "Ayuda",
-    "save": "Guardar",
-    "update": "Actualizar",
-    "share": "Compartir",
-    "edit": "Editar",
-    "delete": "Eliminar",
-    "discard": "Descartar",
-    "import": "Importar",
-    "export": "Exportar",
-    "later": "Más tarde",
-    "ignore": "Ignorar",
     "quit": "Salir",
     "notSet": "No establecido",
     "hide": "Ocultar",
     "exit": "Salir",
     "reset": "Restablecer",
-    "done": "Hecho",
-    "search": "Buscar",
-    "decline": "Rechazar",
-    "agree": "Aceptar",
-    "empty": "Vacío",
     "unknown": "Desconocido",
-    "hidden": "Oculto",
-    "timeout": "Tiempo agotado",
-    "sort": "Ordenar",
     "dashboard": "Panel",
-    "interval": {
-      "day": {
-        "zero": "",
-        "one": "$n día",
-        "other": "$n días"
-      },
-      "hour": {
-        "zero": "",
-        "one": "$n hora",
-        "other": "$n horas"
-      }
-    },
     "msg": {
       "permission": {
         "denied": "Permiso denegado"
-      },
-      "export": {
-        "clipboard": {
-          "success": "Añadido al portapapeles con éxito",
-          "failure": "Error al copiar al portapapeles",
-          "contentTooLarge": "Contenido demasiado grande. Use la exportación a archivo en su lugar"
-        },
-        "file": {
-          "success": "Archivo JSON creado con éxito",
-          "failure": "Error al crear el archivo"
-        }
-      },
-      "import": {
-        "confirm": "Confirmar importación",
-        "success": "Importado con éxito",
-        "failure": "Error al importar"
       }
     }
   },
   "pages": {
     "home": {
-      "title": "Inicio",
-      "quickSettings": "Ajustes rápidos"
+      "title": "Inicio"
     },
     "proxies": {
       "title": "Proxies",
@@ -95,16 +31,13 @@
       "testDelay": "Probar latencia",
       "empty": "No hay proxies disponibles",
       "activeProxy": "Proxy activo",
-      "unknownIp": "IP desconocida",
       "sortOptions": {
         "unsorted": "Por defecto",
         "name": "Alfabéticamente",
         "delay": "Por latencia"
       },
       "ipInfo": {
-        "address": "Dirección IP",
-        "country": "País",
-        "organization": "Organización"
+        "country": "País"
       },
       "delay": {
         "result": "Latencia: ${delay}ms",
@@ -113,20 +46,8 @@
       }
     },
     "profiles": {
-      "title": "Perfiles",
       "add": "Añadir perfil",
       "update": "Actualizar perfil",
-      "viewAllProfiles": "Ver todos los perfiles",
-      "activeProfileName": "Nombre del perfil activo: \"${name}\".",
-      "nonActiveProfileName": "Seleccionar \"${name}\" como perfil activo",
-      "freeSubNotFound": "No se encontró ninguna suscripción gratuita",
-      "failedToLoad": "Error al cargar",
-      "updateSubscriptions": "Actualizar suscripciones",
-      "share": {
-        "urlToClipboard": "URL al portapapeles",
-        "showUrlQr": "Mostrar QR de la URL",
-        "jsonToClipboard": "JSON al portapapeles"
-      },
       "msg": {
         "save": {
           "success": "Perfil guardado con éxito"
@@ -139,23 +60,7 @@
           "success": "Perfil actualizado con éxito",
           "failure": "Error al actualizar el perfil",
           "failureNamed": "Error al actualizar \"${name}\""
-        },
-        "delete": {
-          "success": "Perfil eliminado con éxito"
         }
-      }
-    },
-    "profileDetails": {
-      "title": "Perfil",
-      "lastUpdate": "Última actualización",
-      "form": {
-        "nameHint": "Nombre del perfil",
-        "emptyName": "El nombre es obligatorio",
-        "invalidUrl": "URL no válida",
-        "urlHint": "URL de configuración completa",
-        "disableAutoUpdate": "Desactivar actualización automática",
-        "autoUpdateInterval": "Intervalo de actualización automática",
-        "loading": "Añadiendo perfil..."
       }
     },
     "about": {
@@ -176,7 +81,6 @@
           "dark": "Modo oscuro",
           "light": "Modo claro"
         },
-        "autoIpCheck": "Comprobar IP de conexión automáticamente",
         "blockAds": "Bloquear anuncios",
         "dynamicNotification": "Mostrar velocidad en la notificación",
         "hapticFeedback": "Respuesta háptica",
@@ -191,62 +95,19 @@
         "debugModeMsg": "Reinicia la aplicación para aplicar este cambio",
         "logLevel": "Nivel de registro",
         "connectionTestUrl": "URL de prueba de conexión",
-        "urlTestInterval": "Intervalo de prueba de URL",
         "ignoreBatteryOptimizationsDialogTitle": "¿Mantener la VPN activa en segundo plano?",
         "ignoreBatteryOptimizationsDialogBody": "Para una conexión estable e ininterrumpida, Rayn VPN necesita seguir funcionando con la pantalla apagada. La siguiente pantalla te permite excluir la aplicación de la optimización de batería. Es opcional: puedes cambiarlo cuando quieras en los ajustes del sistema."
-      },
-      "tlsTricks": {
-        "title": "Trucos de TLS",
-        "enable": "Habilitar fragmento",
-        "packets": "Paquetes de fragmentación",
-        "packetsTlsHello": "TLS Hello",
-        "packets1_1": "1-1",
-        "packets1_2": "1-2",
-        "packets1_3": "1-3",
-        "packets1_4": "1-4",
-        "packets1_5": "1-5",
-        "size": "Tamaño de fragmento",
-        "sleep": "Retraso de fragmento",
-        "mixedSniCase": {
-          "enable": "Habilitar mayúsculas/minúsculas mixtas en SNI"
-        },
-        "padding": {
-          "enable": "Habilitar relleno",
-          "size": "Tamaño de relleno"
-        }
       }
     }
   },
   "components": {
     "stats": {
-      "connection": "Conexión",
       "traffic": "Tráfico",
-      "trafficTotal": "Tráfico total",
-      "uplink": "Subida",
-      "downlink": "Bajada",
-      "speed": "Velocidad",
-      "totalTransferred": "Total transferido"
-    },
-    "subscriptionInfo": {
-      "upload": "Subida",
-      "download": "Descarga",
-      "total": "Tráfico total",
-      "expireDate": "Fecha de caducidad",
-      "expired": "Caducado",
-      "noTraffic": "Cuota agotada",
-      "remainingTime": "Tiempo restante",
-      "remainingDuration": "${duration} días restantes",
-      "remainingDurationNew": "${duration} días",
-      "remainingTrafficSemanticLabel": "${consumed} de ${total} de tráfico consumido",
-      "remainingTraffic": "Tráfico restante",
-      "remainingUsage": "Restante",
-      "profileSite": "Proveedor",
-      "profileSupport": "Soporte"
+      "trafficTotal": "Tráfico total"
     }
   },
   "dialogs": {
     "sortProfiles": {
-      "title": "Ordenar por",
       "sort": {
         "name": "Alfabéticamente",
         "lastUpdate": "Última actualización"
@@ -301,7 +162,6 @@
   "auth": {
     "login": {
       "signInWithEmail": "Iniciar sesión con correo",
-      "title": "Iniciar sesión",
       "subtitle": "Introduce el correo y la contraseña de tu cuenta para obtener tu token automáticamente.",
       "emailLabel": "Correo electrónico",
       "passwordLabel": "Contraseña",
@@ -312,10 +172,8 @@
       "emailNotVerified": "Verifica tu correo para continuar y luego inicia sesión de nuevo.",
       "accountSuspended": "Tu cuenta no está activa. Visita la página de tu cuenta para renovarla.",
       "accountDeactivated": "Esta cuenta ha sido deshabilitada. Ponte en contacto con soporte.",
-      "pendingPayment": "Tu cuenta aún no está activa. Termina de configurarla en la página de tu cuenta.",
       "pendingActivation": "Tu cuenta se está activando. Vuelve a intentarlo en unos minutos.",
       "verifyFailed": "No se pudo verificar la aplicación. Inténtalo de nuevo.",
-      "unreachable": "No se pudo conectar con el servicio de inicio de sesión. Puedes pegar tu token en su lugar.",
       "generic": "Algo salió mal. Inténtalo de nuevo más tarde.",
       "openWebsite": "Abrir página de la cuenta"
     }

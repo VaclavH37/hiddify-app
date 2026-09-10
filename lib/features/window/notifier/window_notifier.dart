@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -12,7 +13,11 @@ import 'package:window_manager/window_manager.dart';
 
 part 'window_notifier.g.dart';
 
-const minimumWindowSize = Size(368, 568);
+/// Never narrower than the phone breakpoint (600): below it the shell swaps
+/// to the bottom bar and the phone app bar, which is not a layout a desktop
+/// window should ever present. 640 tall keeps the orb, its label and the
+/// location card on screen without the canvas having to scroll.
+const minimumWindowSize = Size(600, 640);
 const defaultWindowSize = Size(868, 668);
 
 @Riverpod(keepAlive: true)
@@ -20,11 +25,6 @@ class WindowNotifier extends _$WindowNotifier with AppLogger {
   @override
   Future<void> build() async {
     if (!PlatformUtils.isDesktop) return;
-
-    // if (Platform.isWindows) {
-    //   loggy.debug("ensuring single instance");
-    //   await WindowsSingleInstance.ensureSingleInstance([], "Hiddify");
-    // }
 
     await windowManager.ensureInitialized();
     await initWindowState();
@@ -46,10 +46,16 @@ class WindowNotifier extends _$WindowNotifier with AppLogger {
   Future<void> initWindowState() async {
     final isMaximized = ref.read(Preferences.windowMaximized);
     loggy.debug("window state. maximized: $isMaximized");
-    final size = ref.read(Preferences.windowSize);
+    // A size saved by an earlier build can sit below the floor; the OS would
+    // clamp it on the next resize but not necessarily on show.
+    final stored = ref.read(Preferences.windowSize);
+    final size = Size(
+      math.max(stored.width, minimumWindowSize.width),
+      math.max(stored.height, minimumWindowSize.height),
+    );
     loggy.debug("window state. size: $size");
     final position = ref.read(Preferences.windowPosition);
-    final isWindowVisible = position != null && await checkWindowVisivility(position, size);
+    final isWindowVisible = position != null && await checkWindowVisibility(position, size);
     loggy.debug("window state. position: ${isWindowVisible ? position : "centered"}");
     final silentStart = ref.read(Preferences.silentStart);
     loggy.debug("window state. silent start: ${silentStart ? "Enabled" : "Disabled"}");
@@ -75,7 +81,7 @@ class WindowNotifier extends _$WindowNotifier with AppLogger {
     }
   }
 
-  Future<bool> checkWindowVisivility(Offset windowPos, Size windowSize, {double tolerance = 10.0}) async {
+  Future<bool> checkWindowVisibility(Offset windowPos, Size windowSize, {double tolerance = 10.0}) async {
     final Rect windowRect = windowPos & windowSize;
 
     final displays = await screenRetriever.getAllDisplays();

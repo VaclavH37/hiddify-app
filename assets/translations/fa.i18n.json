@@ -1,93 +1,29 @@
 {
   "common": {
     "appTitle": "Rayn VPN",
-    "start": "شروع",
     "version": "نسخه",
     "ok": "باشه",
     "cancel": "لغو",
     "kContinue": "ادامه",
-    "showMore": "نمایش بیشتر",
-    "showLess": "نمایش کمتر",
-    "filter": "فیلتر",
-    "all": "همه",
-    "pause": "مکث",
-    "resume": "ادامه",
-    "clear": "پاک‌سازی",
     "close": "بستن",
-    "auto": "خودکار",
-    "manually": "دستی",
-    "name": "نام",
-    "url": "URL",
     "add": "افزودن",
-    "clipboard": "کلیپ‌بورد",
     "addToClipboard": "افزودن به کلیپ‌بورد",
-    "scanQr": "اسکن QR",
-    "free": "رایگان",
-    "fragment": "Fragment",
-    "help": "راهنما",
-    "save": "ذخیره",
-    "update": "به‌روزرسانی",
-    "share": "اشتراک‌گذاری",
-    "edit": "ویرایش",
-    "delete": "حذف",
-    "discard": "صرف‌نظر",
-    "import": "وارد کردن",
-    "export": "خروجی گرفتن",
-    "later": "بعداً",
-    "ignore": "نادیده گرفتن",
     "quit": "خروج",
     "notSet": "تنظیم نشده",
     "hide": "پنهان کردن",
     "exit": "خروج",
     "reset": "بازنشانی",
-    "done": "انجام شد",
-    "search": "جستجو",
-    "decline": "رد کردن",
-    "agree": "موافقم",
-    "empty": "خالی",
     "unknown": "ناشناخته",
-    "hidden": "پنهان",
-    "timeout": "عدم پاسخ",
-    "sort": "مرتب‌سازی",
     "dashboard": "داشبورد",
-    "interval": {
-      "day": {
-        "zero": "",
-        "one": "$n روز",
-        "other": "$n روز"
-      },
-      "hour": {
-        "zero": "",
-        "one": "$n ساعت",
-        "other": "$n ساعت"
-      }
-    },
     "msg": {
       "permission": {
         "denied": "دسترسی رد شد"
-      },
-      "export": {
-        "clipboard": {
-          "success": "با موفقیت در کلیپ‌بورد کپی شد",
-          "failure": "کپی در کلیپ‌بورد ناموفق بود",
-          "contentTooLarge": "محتوا بیش از حد بزرگ است. به جای آن از خروجی فایل استفاده کنید"
-        },
-        "file": {
-          "success": "فایل JSON با موفقیت ایجاد شد",
-          "failure": "ایجاد فایل ناموفق بود"
-        }
-      },
-      "import": {
-        "confirm": "تأیید ورود اطلاعات",
-        "success": "با موفقیت وارد شد",
-        "failure": "وارد کردن ناموفق بود"
       }
     }
   },
   "pages": {
     "home": {
-      "title": "خانه",
-      "quickSettings": "تنظیمات سریع"
+      "title": "خانه"
     },
     "proxies": {
       "title": "پروکسی‌ها",
@@ -95,16 +31,13 @@
       "testDelay": "تست تأخیر",
       "empty": "هیچ پروکسی موجود نیست",
       "activeProxy": "پروکسی فعال",
-      "unknownIp": "IP ناشناخته",
       "sortOptions": {
         "unsorted": "پیش‌فرض",
         "name": "بر اساس نام",
         "delay": "بر اساس تأخیر"
       },
       "ipInfo": {
-        "address": "آدرس IP",
-        "country": "کشور",
-        "organization": "سازمان"
+        "country": "کشور"
       },
       "delay": {
         "result": "تأخیر: ${delay} میلی‌ثانیه",
@@ -113,20 +46,8 @@
       }
     },
     "profiles": {
-      "title": "پروفایل‌ها",
       "add": "افزودن پروفایل",
       "update": "به‌روزرسانی پروفایل",
-      "viewAllProfiles": "مشاهده همه پروفایل‌ها",
-      "activeProfileName": "نام پروفایل فعال: «${name}»",
-      "nonActiveProfileName": "انتخاب «${name}» به عنوان پروفایل فعال",
-      "freeSubNotFound": "اشتراک رایگان یافت نشد",
-      "failedToLoad": "بارگذاری ناموفق بود",
-      "updateSubscriptions": "به‌روزرسانی اشتراک‌ها",
-      "share": {
-        "urlToClipboard": "URL به کلیپ‌بورد",
-        "showUrlQr": "نمایش QR کد URL",
-        "jsonToClipboard": "JSON به کلیپ‌بورد"
-      },
       "msg": {
         "save": {
           "success": "پروفایل با موفقیت ذخیره شد"
@@ -139,23 +60,7 @@
           "success": "پروفایل با موفقیت به‌روز شد",
           "failure": "به‌روزرسانی پروفایل ناموفق بود",
           "failureNamed": "به‌روزرسانی «${name}» ناموفق بود"
-        },
-        "delete": {
-          "success": "پروفایل با موفقیت حذف شد"
         }
-      }
-    },
-    "profileDetails": {
-      "title": "پروفایل",
-      "lastUpdate": "آخرین به‌روزرسانی",
-      "form": {
-        "nameHint": "نام پروفایل",
-        "emptyName": "نام الزامی است",
-        "invalidUrl": "URL نامعتبر است",
-        "urlHint": "URL کامل کانفیگ",
-        "disableAutoUpdate": "غیرفعال کردن به‌روزرسانی خودکار",
-        "autoUpdateInterval": "فاصله زمانی به‌روزرسانی خودکار",
-        "loading": "در حال افزودن پروفایل..."
       }
     },
     "about": {
@@ -176,7 +81,6 @@
           "dark": "حالت تیره",
           "light": "حالت روشن"
         },
-        "autoIpCheck": "بررسی خودکار IP اتصال",
         "blockAds": "مسدودسازی تبلیغات",
         "dynamicNotification": "نمایش سرعت در اعلان",
         "hapticFeedback": "بازخورد لرزشی",
@@ -191,62 +95,19 @@
         "debugModeMsg": "برای اعمال این تغییر، برنامه را مجدداً راه‌اندازی کنید",
         "logLevel": "سطح گزارش‌گیری",
         "connectionTestUrl": "URL تست اتصال",
-        "urlTestInterval": "فاصله زمانی تست URL",
         "ignoreBatteryOptimizationsDialogTitle": "VPN در پس‌زمینه فعال بماند؟",
         "ignoreBatteryOptimizationsDialogBody": "برای اتصالی پایدار و بدون وقفه، Rayn VPN باید هنگام خاموش بودن صفحه به کار خود ادامه دهد. صفحه بعدی به شما امکان می‌دهد برنامه را از بهینه‌سازی باتری مستثنا کنید. این کار اختیاری است — هر زمان می‌توانید آن را در تنظیمات سیستم تغییر دهید."
-      },
-      "tlsTricks": {
-        "title": "ترفندهای TLS",
-        "enable": "فعال‌سازی fragment",
-        "packets": "بسته‌های Fragment",
-        "packetsTlsHello": "TLS Hello",
-        "packets1_1": "1-1",
-        "packets1_2": "1-2",
-        "packets1_3": "1-3",
-        "packets1_4": "1-4",
-        "packets1_5": "1-5",
-        "size": "اندازه fragment",
-        "sleep": "تأخیر fragment",
-        "mixedSniCase": {
-          "enable": "فعال‌سازی mixed SNI case"
-        },
-        "padding": {
-          "enable": "فعال‌سازی padding",
-          "size": "اندازه padding"
-        }
       }
     }
   },
   "components": {
     "stats": {
-      "connection": "اتصال",
       "traffic": "ترافیک",
-      "trafficTotal": "ترافیک کل",
-      "uplink": "ارسال",
-      "downlink": "دریافت",
-      "speed": "سرعت",
-      "totalTransferred": "کل منتقل شده"
-    },
-    "subscriptionInfo": {
-      "upload": "آپلود",
-      "download": "دانلود",
-      "total": "کل ترافیک",
-      "expireDate": "تاریخ انقضا",
-      "expired": "منقضی شده",
-      "noTraffic": "حجم تمام شده",
-      "remainingTime": "زمان باقی‌مانده",
-      "remainingDuration": "${duration} روز باقی‌مانده",
-      "remainingDurationNew": "${duration} روز",
-      "remainingTrafficSemanticLabel": "${consumed} از ${total} ترافیک مصرف شده",
-      "remainingTraffic": "ترافیک باقی‌مانده",
-      "remainingUsage": "باقی‌مانده",
-      "profileSite": "سرویس‌دهنده",
-      "profileSupport": "پشتیبانی"
+      "trafficTotal": "ترافیک کل"
     }
   },
   "dialogs": {
     "sortProfiles": {
-      "title": "مرتب‌سازی بر اساس",
       "sort": {
         "name": "بر اساس نام",
         "lastUpdate": "آخرین به‌روزرسانی"
@@ -301,7 +162,6 @@
   "auth": {
     "login": {
       "signInWithEmail": "ورود با ایمیل",
-      "title": "ورود",
       "subtitle": "ایمیل و رمز عبور حساب خود را وارد کنید تا توکن شما به‌طور خودکار دریافت شود.",
       "emailLabel": "ایمیل",
       "passwordLabel": "رمز عبور",
@@ -312,10 +172,8 @@
       "emailNotVerified": "برای ادامه، ایمیل خود را تأیید کنید و سپس دوباره وارد شوید.",
       "accountSuspended": "حساب شما فعال نیست. برای تمدید به صفحه حساب خود مراجعه کنید.",
       "accountDeactivated": "این حساب غیرفعال شده است. لطفاً با پشتیبانی تماس بگیرید.",
-      "pendingPayment": "حساب شما هنوز فعال نیست. راه‌اندازی آن را در صفحه حساب خود کامل کنید.",
       "pendingActivation": "حساب شما در حال فعال‌سازی است. لطفاً چند دقیقه دیگر دوباره بررسی کنید.",
       "verifyFailed": "تأیید برنامه ممکن نشد. لطفاً دوباره تلاش کنید.",
-      "unreachable": "دسترسی به سرویس ورود ممکن نشد. می‌توانید به‌جای آن توکن خود را جای‌گذاری کنید.",
       "generic": "مشکلی پیش آمد. لطفاً بعداً دوباره تلاش کنید.",
       "openWebsite": "باز کردن صفحه حساب"
     }
