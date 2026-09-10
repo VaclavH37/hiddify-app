@@ -1,5 +1,6 @@
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
+import 'package:meta/meta.dart';
 
 /// Prices a screenshots build shows on the paywall, in micros — the unit
 /// [RaynOffer.priceAmountMicros] uses, where 1,000,000 is one currency unit.
@@ -65,7 +66,7 @@ List<RaynOffer> marketingOffers() => [
       ),
     ];
 
-/// Fills the paywall in when the store answered with nothing.
+/// Completes the paywall with whatever the store did not return.
 ///
 /// Applied where the store's answer enters the app rather than in the widgets,
 /// so both purchase screens agree: the sign-up paywall (`PaymentPage`) and the
@@ -73,20 +74,39 @@ List<RaynOffer> marketingOffers() => [
 /// and it is that notifier which turns an empty list into
 /// `PurchaseState.unavailable` and the "In-app purchases unavailable" card.
 ///
-/// Only fills a vacuum. A non-empty list is returned untouched even with the
-/// gate on, so once the products go live the real, store-localized prices win
-/// and this retires itself.
-///
 /// **Never distribute a build with [Constants.marketingScreenshots] set.** The
 /// prices above are asserted, not fetched: not localized, not in the user's
 /// currency, and not necessarily what the store would charge.
 ///
 /// In a normal build that constant is a `const false`, so this is an identity
 /// function the tree shaker removes.
-List<RaynOffer> pinOffersForMarketing(List<RaynOffer> offers) {
-  if (!Constants.marketingScreenshots) return offers;
-  if (offers.isNotEmpty) return offers;
-  return marketingOffers();
+List<RaynOffer> pinOffersForMarketing(List<RaynOffer> offers) =>
+    Constants.marketingScreenshots ? withMissingPlansFilledIn(offers) : offers;
+
+/// [offers], plus a fabricated one for every base plan missing from it.
+///
+/// Per plan, not all-or-nothing, because a store populates one product at a
+/// time. Submitting subscriptions to App Store Connect means the products
+/// become visible to `Product.products(for:)` as each reaches "Ready to
+/// Submit", so the realistic state is a *partial* answer — one real monthly and
+/// nothing else — and a rule that only replaced a completely empty list left
+/// that showing a single card.
+///
+/// A real offer always wins for its own plan. Once all three are live this
+/// returns [offers] untouched and the whole thing retires itself.
+///
+/// Order is not fixed here: `reduceStoreOffers` and `reduceUpgradeOffers` both
+/// sort by base plan afterwards, which is also what dedupes if a store ever
+/// returns two offers for one plan.
+///
+/// The one thing to watch when the answer is partial: the fabricated prices are
+/// US dollars, so a device on another storefront gets a real price in its own
+/// currency beside two placeholders in USD. Capture on the US storefront.
+@visibleForTesting
+List<RaynOffer> withMissingPlansFilledIn(List<RaynOffer> offers) {
+  final present = offers.map((o) => o.basePlanId).toSet();
+  final missing = marketingOffers().where((o) => !present.contains(o.basePlanId)).toList();
+  return missing.isEmpty ? offers : [...offers, ...missing];
 }
 
 /// Reports the store as reachable in a screenshots build.

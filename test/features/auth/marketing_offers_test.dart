@@ -32,10 +32,44 @@ void main() {
       expect(identical(pinOffersForMarketing(offers), offers), isTrue);
     });
 
-    // Everything below tests `marketingOffers()` directly. The gate is a const
-    // false in a test host, so the branch that substitutes them cannot be
-    // reached from here — but the offers themselves can, and they are where the
-    // mistakes would be.
+    // The gate is a const false in a test host, so `pinOffersForMarketing`
+    // cannot be seen doing anything from here. Its logic lives in
+    // `withMissingPlansFilledIn`, which reads no gate and is tested directly.
+
+    group('withMissingPlansFilledIn', () {
+      test('an empty answer becomes all three plans', () {
+        expect(withMissingPlansFilledIn(const []).map((o) => o.basePlanId), ['monthly', 'quarter', 'annual']);
+      });
+
+      test('fills in only what the store did not return, keeping the real offer', () {
+        // The state App Store Connect leaves you in while submitting: monthly
+        // is Ready to Submit and returns from Product.products(for:), the other
+        // two do not exist yet. A rule that only replaced an *empty* answer
+        // showed one card here.
+        final real = _storeOffer('monthly');
+        final filled = withMissingPlansFilledIn([real]);
+
+        expect(filled.length, 3);
+        expect(filled.where((o) => o.basePlanId == 'monthly').single, same(real));
+        expect(filled.where(isMarketingOffer).map((o) => o.basePlanId), ['quarter', 'annual']);
+      });
+
+      test('the reducers sort a part-real answer back into plan order', () {
+        // Nothing above fixes the order, so this is what the paywall relies on.
+        final filled = withMissingPlansFilledIn([_storeOffer('annual')]);
+        expect(reduceStoreOffers(filled).map((o) => o.basePlanId), ['monthly', 'quarter', 'annual']);
+        expect(reduceUpgradeOffers(filled).map((o) => o.basePlanId), ['monthly', 'quarter', 'annual']);
+      });
+
+      test('a complete answer is returned untouched, so real prices always win', () {
+        final real = [_storeOffer('monthly'), _storeOffer('quarter'), _storeOffer('annual')];
+        expect(identical(withMissingPlansFilledIn(real), real), isTrue);
+        expect(withMissingPlansFilledIn(real).any(isMarketingOffer), isFalse);
+      });
+    });
+
+    // Everything below tests `marketingOffers()` directly — the offers
+    // themselves are where the mistakes would be.
 
     test('the display price and the amount it divides cannot drift', () {
       // Each price is written twice, because that is the shape both store APIs

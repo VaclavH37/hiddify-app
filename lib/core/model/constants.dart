@@ -54,11 +54,11 @@ abstract class Constants {
   /// drops the connection button back to its "connected, no usable delay"
   /// state. See `pinDelayForMarketing`.
   ///
-  /// It also fills the paywall in with placeholder prices when the store
-  /// returns no products — the state App Store Connect leaves you in until
-  /// the subscriptions are at least "Ready to Submit", which is a problem
-  /// because it asks for a screenshot of the paywall before then. See
-  /// `pinOffersForMarketing`.
+  /// It also puts a placeholder price on the paywall for every plan the
+  /// store did not return — the state App Store Connect leaves you in while
+  /// the subscriptions are being submitted, since a product only becomes
+  /// visible to the app once it reaches "Ready to Submit" and the screenshot
+  /// it asks for is due before then. See `pinOffersForMarketing`.
   ///
   /// **Never distribute a build with this set.** The latency it reports is
   /// asserted, not measured, and so are the prices.
