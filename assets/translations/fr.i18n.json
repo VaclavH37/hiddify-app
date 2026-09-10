@@ -254,54 +254,6 @@
         "lastUpdate": "Dernière mise à jour"
       }
     },
-    "confirmation": {
-      "profile": {
-        "delete": {
-          "title": "Supprimer le profil",
-          "msg": "Êtes-vous sûr de vouloir supprimer ce profil définitivement ?"
-        }
-      },
-      "perAppProxy": {
-        "import": {
-          "msg": "Cette action remplacera toutes vos sélections actuelles de proxy par application. Êtes-vous sûr de vouloir continuer ?"
-        }
-      },
-      "routeRule": {
-        "delete": {
-          "title": "Supprimer la règle",
-          "msg": "Êtes-vous sûr de vouloir supprimer la règle \"$rulename\" ?"
-        }
-      }
-    },
-    "experimentalNotice": {
-      "title": "Fonctionnalités expérimentales en cours d'utilisation",
-      "msg": "Vous avez activé des fonctionnalités expérimentales qui pourraient affecter la qualité de la connexion et causer des erreurs inattendues. Vous pouvez toujours modifier ou réinitialiser ces options depuis la page de configuration.",
-      "disable": "Ne plus afficher"
-    },
-    "unknownDomainsWarning": {
-      "title": "Avertissement de lien externe",
-      "youAreAboutToVisit": "Vous êtes sur le point de visiter :",
-      "thisWebsiteIsNotInOurTrustedList": "Ce site web ne figure pas dans notre liste de confiance. Veuillez procéder avec prudence."
-    },
-    "proxyInfo": {
-      "fullTag": "Tag complet :",
-      "type": "Type :",
-      "testTime": "Heure du test :",
-      "testDelay": "Délai du test :",
-      "isSelected": "Sélectionné :",
-      "isGroup": "Est un groupe",
-      "isSecure": "Est sécurisé :",
-      "port": "Port :",
-      "host": "Hôte :",
-      "ip": "IP :",
-      "countryCode": "Code pays :",
-      "region": "Région :",
-      "city": "Ville :",
-      "asn": "ASN :",
-      "organization": "Organisation :",
-      "location": "Emplacement :",
-      "postalCode": "Code postal :"
-    },
     "windowClosing": {
       "askEachTime": "Demander à chaque fois",
       "alertMessage": "Masquer ou quitter l'application ?",

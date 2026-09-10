@@ -55,14 +55,10 @@ class SettingInputDialog<T> extends HookConsumerWidget with PresLogger {
     return AlertDialog(
       title: Text(title),
       icon: icon != null ? Icon(icon) : null,
-      // material: (context, platform) => MaterialAlertDialogData(
-      //   icon: icon != null ? Icon(icon) : null,
-      // ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (possibleValues != null)
-            // AutocompleteField(initialValue: initialValue.toString(), options: possibleValues!.map((e) => e.toString()).toList())
             TypeAheadField<String>(
               controller: textController,
               builder: (context, controller, focusNode) {
@@ -72,10 +68,6 @@ class SettingInputDialog<T> extends HookConsumerWidget with PresLogger {
                   focusNode: focusNode,
                   textDirection: TextDirection.ltr,
                   autofocus: true,
-                  // decoration: InputDecoration(
-                  //     // border: OutlineInputBorder(),
-                  //     // labelText: 'City',
-                  //     )
                 );
               },
               // Callback to fetch suggestions based on user input
@@ -101,8 +93,6 @@ class SettingInputDialog<T> extends HookConsumerWidget with PresLogger {
               },
               // Callback when a suggestion is selected
               onSelected: (suggestion) {
-                // Handle the selected suggestion
-                // print('Selected: $suggestion');
                 textController.text = suggestion;
               },
             )
@@ -125,7 +115,7 @@ class SettingInputDialog<T> extends HookConsumerWidget with PresLogger {
               optionalAction!.$2();
               context.pop(T == String ? textController.value.text : null);
             },
-            child: Text(optionalAction!.$1.toUpperCase()),
+            child: Text(optionalAction!.$1),
           ),
         if (onReset != null)
           TextButton(
@@ -139,7 +129,7 @@ class SettingInputDialog<T> extends HookConsumerWidget with PresLogger {
           onPressed: () {
             context.pop();
           },
-          child: Text(localizations.cancelButtonLabel.toUpperCase()),
+          child: Text(localizations.cancelButtonLabel),
         ),
         TextButton(
           focusNode: okBtnFocusNode,
@@ -152,7 +142,7 @@ class SettingInputDialog<T> extends HookConsumerWidget with PresLogger {
               context.pop(T == String ? textController.value.text : null);
             }
           },
-          child: Text(localizations.okButtonLabel.toUpperCase()),
+          child: Text(localizations.okButtonLabel),
         ),
       ],
     );

@@ -254,54 +254,6 @@
         "lastUpdate": "Última actualización"
       }
     },
-    "confirmation": {
-      "profile": {
-        "delete": {
-          "title": "Eliminar perfil",
-          "msg": "¿Estás seguro de que quieres eliminar este perfil permanentemente?"
-        }
-      },
-      "perAppProxy": {
-        "import": {
-          "msg": "Esto reemplazará todas tus selecciones actuales de proxy por aplicación. ¿Estás seguro de que quieres continuar?"
-        }
-      },
-      "routeRule": {
-        "delete": {
-          "title": "Eliminar regla",
-          "msg": "¿Estás seguro de que quieres eliminar la regla \"$rulename\"?"
-        }
-      }
-    },
-    "experimentalNotice": {
-      "title": "Funciones experimentales en uso",
-      "msg": "Has habilitado algunas funciones experimentales que podrían afectar la calidad de la conexión y causar errores inesperados. Siempre puedes cambiar o restablecer estas opciones desde la página de configuración.",
-      "disable": "No volver a mostrar"
-    },
-    "unknownDomainsWarning": {
-      "title": "Advertencia de enlace externo",
-      "youAreAboutToVisit": "Estás a punto de visitar:",
-      "thisWebsiteIsNotInOurTrustedList": "Este sitio web no está en nuestra lista de confianza. Procede con precaución."
-    },
-    "proxyInfo": {
-      "fullTag": "Etiqueta completa:",
-      "type": "Tipo:",
-      "testTime": "Hora de la prueba:",
-      "testDelay": "Latencia de la prueba:",
-      "isSelected": "Seleccionado:",
-      "isGroup": "Es un grupo",
-      "isSecure": "Es seguro:",
-      "port": "Puerto:",
-      "host": "Host:",
-      "ip": "IP:",
-      "countryCode": "Código de país:",
-      "region": "Región:",
-      "city": "Ciudad:",
-      "asn": "ASN:",
-      "organization": "Organización:",
-      "location": "Ubicación:",
-      "postalCode": "Código postal:"
-    },
     "windowClosing": {
       "askEachTime": "Preguntar cada vez",
       "alertMessage": "¿Ocultar o salir de la aplicación?",

@@ -70,7 +70,6 @@ class ChoicePreferenceWidget<T> extends HookConsumerWidget {
     this.enabled = true,
     required this.choices,
     required this.title,
-    this.showFlag = false,
     this.icon,
     required this.presentChoice,
     this.validateInput,
@@ -82,7 +81,6 @@ class ChoicePreferenceWidget<T> extends HookConsumerWidget {
   final bool enabled;
   final List<T> choices;
   final String title;
-  final bool showFlag;
   final IconData? icon;
   final String Function(T value) presentChoice;
   final bool Function(String value)? validateInput;
@@ -100,11 +98,9 @@ class ChoicePreferenceWidget<T> extends HookConsumerWidget {
             .read(dialogNotifierProvider.notifier)
             .showSettingPicker<T>(
               title: title,
-              showFlag: showFlag,
               selected: selected,
               options: choices,
               getTitle: (e) => presentChoice(e),
-              onReset: preferences.reset,
             );
         if (selection == null) return;
         final out = await preferences.update(selection);
@@ -137,7 +133,7 @@ class BatteryOptimizationWidget extends HookConsumerWidget {
                 // straight onto an opaque "allow?" system dialog.
                 final confirmed = await showDialog<bool>(
                   context: context,
-                  builder: (dialogContext) => AlertDialog(
+                  builder: (dialogContext) => AlertDialog.adaptive(
                     title: Text(t.pages.settings.general.ignoreBatteryOptimizationsDialogTitle),
                     content: Text(t.pages.settings.general.ignoreBatteryOptimizationsDialogBody),
                     actions: [

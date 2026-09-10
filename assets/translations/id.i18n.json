@@ -254,54 +254,6 @@
         "lastUpdate": "Terakhir diperbarui"
       }
     },
-    "confirmation": {
-      "profile": {
-        "delete": {
-          "title": "Hapus profil",
-          "msg": "Anda yakin ingin menghapus profil ini secara permanen?"
-        }
-      },
-      "perAppProxy": {
-        "import": {
-          "msg": "Ini akan menggantikan semua pilihan proksi per aplikasi Anda saat ini. Anda yakin ingin melanjutkan?"
-        }
-      },
-      "routeRule": {
-        "delete": {
-          "title": "Hapus aturan",
-          "msg": "Anda yakin ingin menghapus aturan \"$rulename\"?"
-        }
-      }
-    },
-    "experimentalNotice": {
-      "title": "Fitur eksperimental sedang digunakan",
-      "msg": "Anda telah mengaktifkan beberapa fitur eksperimental yang mungkin memengaruhi kualitas koneksi dan menyebabkan kesalahan tak terduga. Anda selalu dapat mengubah atau menyetel ulang opsi ini dari halaman konfigurasi.",
-      "disable": "Jangan tampilkan lagi"
-    },
-    "unknownDomainsWarning": {
-      "title": "Peringatan tautan eksternal",
-      "youAreAboutToVisit": "Anda akan mengunjungi:",
-      "thisWebsiteIsNotInOurTrustedList": "Situs web ini tidak ada dalam daftar tepercaya kami. Harap lanjutkan dengan hati-hati."
-    },
-    "proxyInfo": {
-      "fullTag": "Tag lengkap:",
-      "type": "Tipe:",
-      "testTime": "Waktu uji:",
-      "testDelay": "Jeda uji:",
-      "isSelected": "Dipilih:",
-      "isGroup": "Grup",
-      "isSecure": "Aman:",
-      "port": "Port:",
-      "host": "Host:",
-      "ip": "IP:",
-      "countryCode": "Kode negara:",
-      "region": "Wilayah:",
-      "city": "Kota:",
-      "asn": "ASN:",
-      "organization": "Organisasi:",
-      "location": "Lokasi:",
-      "postalCode": "Kode pos:"
-    },
     "windowClosing": {
       "askEachTime": "Tanyakan setiap kali",
       "alertMessage": "Sembunyikan atau keluar dari aplikasi?",

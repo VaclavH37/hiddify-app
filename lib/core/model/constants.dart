@@ -118,11 +118,6 @@ abstract class AddProfileModalConst {
   static const navBarHeight = navBarGap + navBarBottomGap + navBarcontentHeight;
 }
 
-abstract class AlertDialogConst {
-  static const minWidth = 280.0;
-  static const maxWidth = 560.0;
-  static const boxConstraints = BoxConstraints(minWidth: minWidth, maxWidth: maxWidth);
-}
 
 abstract class BottomSheetConst {
   static const maxWidth = 456.0;

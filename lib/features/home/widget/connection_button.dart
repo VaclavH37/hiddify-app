@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/failures.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/rayn_motion.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
@@ -158,7 +157,6 @@ class ConnectionButton extends HookConsumerWidget {
         // Auth gate guarantees a profile exists by the time the home page is
         // reachable; defensive null guard just no-ops.
         if (ref.read(activeProfileProvider).valueOrNull == null) return;
-        if (!await ref.read(dialogNotifierProvider.notifier).showExperimentalFeatureNotice()) return;
       }
       await ref.read(connectionNotifierProvider.notifier).toggleConnection();
     }

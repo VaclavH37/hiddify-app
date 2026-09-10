@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/actions_at_closing.dart';
-import 'package:hiddify/core/router/dialog/widgets/action_at_closing_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/confirmation_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/custom_alert_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/experimental_feature_notice.dart';
 import 'package:hiddify/core/router/dialog/widgets/ok_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/proxy_info_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/save_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/setting_input_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/setting_picker_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/setting_slider_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/unknown_domains_warning_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/window_closing_dialog.dart';
 import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
-import 'package:hiddify/features/common/qr_code_dialog.dart';
+import 'package:hiddify/core/widget/rayn_option_list.dart';
 import 'package:hiddify/features/common/qr_code_scanner_screen.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
+import 'package:hiddify/features/proxy/widget/proxy_details_sheet.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
+import 'package:hiddify/utils/platform_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dialog_notifier.g.dart';
@@ -29,80 +23,58 @@ class DialogNotifier extends _$DialogNotifier {
   Future<T?> _show<T>(Widget child) async {
     final context = rootNavKey.currentContext;
     if (context == null) return null;
-    // ref.read(popupCountNotifierProvider.notifier).increase();
-    return await Navigator.of(context).push<T>(DialogRoute(context: context, builder: (context) => child)).then((
-      value,
-    ) {
-      // ref.read(popupCountNotifierProvider.notifier).decrease();
-      return value;
-    });
+    return await Navigator.of(context).push<T>(DialogRoute(context: context, builder: (context) => child));
+  }
+
+  /// A picker or a details panel. A bottom sheet on a phone, where that is
+  /// the platform's idiom and a thumb can reach it; a small dialog on
+  /// desktop, where a sheet sliding up the bottom of a large window is
+  /// neither. [builder] gets the context of the route it is in, so
+  /// `Navigator.of(that).pop(value)` closes the panel with a result.
+  Future<T?> _showPanel<T>(WidgetBuilder builder) async {
+    final context = rootNavKey.currentContext;
+    if (context == null) return null;
+    if (PlatformUtils.isMobile) {
+      return showModalBottomSheet<T>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (sheetContext) => SingleChildScrollView(child: builder(sheetContext)),
+      );
+    }
+    return _show<T>(
+      Builder(
+        builder: (dialogContext) => Dialog(
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: SingleChildScrollView(child: builder(dialogContext)),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<String?> showQrScanner() async {
     return await _show<String?>(const QrCodeScannerDialog());
   }
 
-  Future<void> showQrCode(String link, {String? message}) async {
-    return await _show<void>(QrCodeDialog(link, message: message));
-  }
-
   Future<void> showOk(String title, String description) async {
     return await _show<void>(OkDialog(title: title, description: description));
   }
 
-  Future<double?> showSettingSlider({
-    required String title,
-    required double initialValue,
-    VoidCallback? onReset,
-    double min = 0,
-    double max = 1,
-    int? divisions,
-    String Function(double value)? labelGen,
-  }) async {
-    return await _show<double?>(
-      SettingsSliderDialog(
-        title: title,
-        initialValue: initialValue,
-        onReset: onReset,
-        min: min,
-        max: max,
-        divisions: divisions,
-        labelGen: labelGen,
-      ),
+  Future<ActionsAtClosing?> showActionAtClosing({required ActionsAtClosing selected}) {
+    final t = ref.read(translationsProvider).requireValue;
+    return showSettingPicker<ActionsAtClosing>(
+      title: t.pages.settings.general.actionAtClosing,
+      selected: selected,
+      options: ActionsAtClosing.values,
+      getTitle: (action) => action.present(t),
     );
   }
 
-  Future<bool> showConfirmation({
-    required String title,
-    required String message,
-    IconData? icon,
-    String? positiveBtnTxt,
-  }) async {
-    return await _show<bool>(
-          ConfirmationDialog(title: title, message: message, icon: icon, positiveBtnTxt: positiveBtnTxt),
-        ) ??
-        false;
-  }
-
-  Future<ActionsAtClosing?> showActionAtClosing({required ActionsAtClosing selected}) async {
-    return await _show<ActionsAtClosing?>(ActionsAtClosingDialog(selected: selected));
-  }
-
-  Future<bool> showExperimentalFeatureNotice() async {
-    final hasExperimental = ref.read(ConfigOptions.hasExperimentalFeatures);
-    final canShowNotice = !ref.read(disableExperimentalFeatureNoticeProvider);
-    if (hasExperimental && canShowNotice) {
-      return await _show<bool?>(const ExperimentalFeatureNoticeDialog()) ?? false;
-    }
-    return true;
-  }
-
-  Future<bool> showUnknownDomainsWarning({required String url}) async {
-    return await _show<bool?>(UnknownDomainsWarningDialog(url: url)) ?? false;
-  }
-
   Future<void> showProxyInfo({required OutboundInfo outboundInfo}) async {
-    return await _show<void>(ProxyInfoDialog(outboundInfo: outboundInfo));
+    return await _showPanel<void>((_) => ProxyDetailsSheet(outboundInfo: outboundInfo));
   }
 
   Future<T?> showSettingInput<T>({
@@ -133,36 +105,27 @@ class DialogNotifier extends _$DialogNotifier {
     );
   }
 
+  /// One of a few values, with the current one checked. There is no reset
+  /// action any more: the default is in the list like every other value.
   Future<T?> showSettingPicker<T>({
     required String title,
-    bool showFlag = false,
     required T selected,
     required List<T> options,
     required String Function(T e) getTitle,
-    VoidCallback? onReset,
   }) async {
-    return await _show<T?>(
-      SettingPickerDialog(
+    return await _showPanel<T?>(
+      (panelContext) => RaynOptionList<T>(
         title: title,
-        showFlag: showFlag,
-        selected: selected,
         options: options,
+        selected: selected,
         getTitle: getTitle,
-        onReset: onReset,
+        onSelected: (value) => Navigator.of(panelContext).pop(value),
       ),
     );
   }
 
-  Future<bool?> showSave({required String title, required String description}) async {
-    return await _show<bool?>(SaveDialog(title: title, description: description));
-  }
-
   Future<void> showWindowClosing() async {
     return await _show<void>(const WindowClosingDialog());
-  }
-
-  Future<void> showCustomAlert({String? title, required String message}) async {
-    return await _show<void>(CustomAlertDialog(title: title, message: message));
   }
 
   Future<void> showCustomAlertFromErr(({String type, String? message}) err) async {

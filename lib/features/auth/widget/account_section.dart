@@ -197,7 +197,7 @@ class AccountSection extends ConsumerWidget {
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(t.auth.logoutCancel)),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            style: FilledButton.styleFrom(backgroundColor: ctx.rayn.danger),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(t.auth.logoutConfirmAction),
           ),

@@ -127,17 +127,6 @@ abstract class ConfigOptions {
     noiseDelay: OptionalRange(min: 10, max: 30),
   );
 
-  static final hasExperimentalFeatures = Provider.autoDispose<bool>((ref) {
-    // final mode = ref.watch(serviceMode);
-    // if (PlatformUtils.isDesktop && mode == ServiceMode.tun) {
-    //   return true;
-    // }
-    // if (ref.watch(enableTlsFragment) || ref.watch(enableTlsMixedSniCase) || ref.watch(enableTlsPadding) || ref.watch(enableMux) || ref.watch(enableWarp) || ref.watch(bypassLan)) {
-    //   return true;
-    // }
-
-    return false;
-  });
 
   /// preferences to exclude from share and export
   static final privatePreferencesKeys = <String>{};

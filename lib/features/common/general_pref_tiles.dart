@@ -26,7 +26,6 @@ class LocalePrefTile extends ConsumerWidget {
             .showSettingPicker<AppLocale>(
               title: t.pages.settings.general.locale,
               selected: locale,
-              onReset: () => ref.read(localePreferencesProvider.notifier).changeLocale(AppLocale.en),
               options: AppLocale.values,
               getTitle: (e) => e.localeName,
             );
@@ -60,7 +59,6 @@ class ThemeModePrefTile extends ConsumerWidget {
             .showSettingPicker<AppThemeMode>(
               title: t.pages.settings.general.themeMode,
               selected: themeMode,
-              onReset: () => ref.read(themePreferencesProvider.notifier).changeThemeMode(AppThemeMode.system),
               options: AppThemeMode.values,
               getTitle: (e) => e.present(t),
             );

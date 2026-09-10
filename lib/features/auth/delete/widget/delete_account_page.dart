@@ -86,12 +86,9 @@ class DeleteAccountPage extends HookConsumerWidget {
           title: Text(t.auth.deleteAccount.confirmTitle),
           content: Text(t.auth.deleteAccount.confirmBody),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(t.auth.deleteAccount.cancel),
-            ),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(t.auth.deleteAccount.cancel)),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+              style: FilledButton.styleFrom(backgroundColor: ctx.rayn.danger),
               onPressed: () => Navigator.of(ctx).pop(true),
               child: Text(t.auth.deleteAccount.confirmProceed),
             ),
@@ -103,12 +100,9 @@ class DeleteAccountPage extends HookConsumerWidget {
       if (needsEmail) {
         // Establish a session without re-importing the profile: the user
         // already has one, and the import guard would reject a second.
-        await ref.read(loginNotifierProvider.notifier).login(
-              emailCtrl.text.trim(),
-              password,
-              importProfile: false,
-              expectedSubscriptionUrl: remote?.url,
-            );
+        await ref
+            .read(loginNotifierProvider.notifier)
+            .login(emailCtrl.text.trim(), password, importProfile: false, expectedSubscriptionUrl: remote?.url);
         return; // the listener below continues into the delete on success
       }
       await ref.read(deleteAccountNotifierProvider.notifier).deleteAccount(password);
@@ -206,10 +200,7 @@ class DeleteAccountPage extends HookConsumerWidget {
                     ),
                   ),
                   const Gap(8),
-                  TextButton(
-                    onPressed: busy ? null : () => context.pop(),
-                    child: Text(t.auth.deleteAccount.cancel),
-                  ),
+                  TextButton(onPressed: busy ? null : () => context.pop(), child: Text(t.auth.deleteAccount.cancel)),
                   const Gap(16),
                   // Escape hatch for an account that cannot sign in — a token
                   // issued without credentials, or a forgotten password. The

@@ -254,54 +254,6 @@
         "lastUpdate": "Son güncelleme"
       }
     },
-    "confirmation": {
-      "profile": {
-        "delete": {
-          "title": "Profili sil",
-          "msg": "Bu profili kalıcı olarak silmek istediğinizden emin misiniz?"
-        }
-      },
-      "perAppProxy": {
-        "import": {
-          "msg": "Bu işlem mevcut tüm uygulama bazlı proxy seçimlerinizi değiştirecektir. Devam etmek istediğinizden emin misiniz?"
-        }
-      },
-      "routeRule": {
-        "delete": {
-          "title": "Kuralı sil",
-          "msg": "\"$rulename\" kuralını silmek istediğinizden emin misiniz?"
-        }
-      }
-    },
-    "experimentalNotice": {
-      "title": "Deneysel özellikler kullanılıyor",
-      "msg": "Bağlantı kalitesini etkileyebilecek ve beklenmedik hatalara neden olabilecek bazı deneysel özellikleri etkinleştirdiniz. Bu seçenekleri istediğiniz zaman yapılandırma sayfasından değiştirebilir veya sıfırlayabilirsiniz.",
-      "disable": "Tekrar gösterme"
-    },
-    "unknownDomainsWarning": {
-      "title": "Dış bağlantı uyarısı",
-      "youAreAboutToVisit": "Şu adresi ziyaret etmek üzeresiniz:",
-      "thisWebsiteIsNotInOurTrustedList": "Bu web sitesi güvenilir listemizde değil. Lütfen dikkatli devam edin."
-    },
-    "proxyInfo": {
-      "fullTag": "Tam etiket:",
-      "type": "Tür:",
-      "testTime": "Test zamanı:",
-      "testDelay": "Test gecikmesi:",
-      "isSelected": "Seçili:",
-      "isGroup": "Grup",
-      "isSecure": "Güvenli:",
-      "port": "Port:",
-      "host": "Sunucu:",
-      "ip": "IP:",
-      "countryCode": "Ülke kodu:",
-      "region": "Bölge:",
-      "city": "Şehir:",
-      "asn": "ASN:",
-      "organization": "Kuruluş:",
-      "location": "Konum:",
-      "postalCode": "Posta kodu:"
-    },
     "windowClosing": {
       "askEachTime": "Her seferinde sor",
       "alertMessage": "Uygulama gizlensin mi, kapatılsın mı?",

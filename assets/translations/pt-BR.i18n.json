@@ -254,54 +254,6 @@
         "lastUpdate": "Última atualização"
       }
     },
-    "confirmation": {
-      "profile": {
-        "delete": {
-          "title": "Excluir perfil",
-          "msg": "Tem certeza de que deseja excluir este perfil permanentemente?"
-        }
-      },
-      "perAppProxy": {
-        "import": {
-          "msg": "Isso substituirá todas as suas seleções atuais de proxy por aplicativo. Tem certeza de que deseja continuar?"
-        }
-      },
-      "routeRule": {
-        "delete": {
-          "title": "Excluir regra",
-          "msg": "Tem certeza de que deseja excluir a regra \"$rulename\"?"
-        }
-      }
-    },
-    "experimentalNotice": {
-      "title": "Recursos experimentais em uso",
-      "msg": "Você ativou alguns recursos experimentais que podem afetar a qualidade da conexão e causar erros inesperados. Você sempre pode alterar ou redefinir essas opções na página de configurações.",
-      "disable": "Não mostrar novamente"
-    },
-    "unknownDomainsWarning": {
-      "title": "Aviso de link externo",
-      "youAreAboutToVisit": "Você está prestes a visitar:",
-      "thisWebsiteIsNotInOurTrustedList": "Este site não está na nossa lista de confiança. Prossiga com cautela."
-    },
-    "proxyInfo": {
-      "fullTag": "Tag completa:",
-      "type": "Tipo:",
-      "testTime": "Hora do teste:",
-      "testDelay": "Latência do teste:",
-      "isSelected": "Selecionado:",
-      "isGroup": "É um grupo",
-      "isSecure": "É seguro:",
-      "port": "Porta:",
-      "host": "Host:",
-      "ip": "IP:",
-      "countryCode": "Código do país:",
-      "region": "Região:",
-      "city": "Cidade:",
-      "asn": "ASN:",
-      "organization": "Organização:",
-      "location": "Localização:",
-      "postalCode": "Código postal:"
-    },
     "windowClosing": {
       "askEachTime": "Perguntar sempre",
       "alertMessage": "Ocultar ou sair do aplicativo?",

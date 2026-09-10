@@ -506,55 +506,20 @@
         "lastUpdate": "Recently updated"
       }
     },
-    "confirmation": {
-      "profile": {
-        "delete": {
-          "title": "Delete profile",
-          "msg": "Are you sure you want to permanently delete this profile?"
-        }
-      },
-      "perAppProxy": {
-        "import": {
-          "msg": "This will replace all your current per-app proxy selections. Are you sure you want to continue?"
-        }
-      },
-      "routeRule": {
-        "delete": {
-          "title": "Delete rule",
-          "msg": "Are you sure you want to delete the \"$rulename\" rule?"
-        }
-      }
-    },
-    "experimentalNotice": {
-      "title": "Experimental features in use",
-      "msg": "You've enabled some experimental features which might affect connection quality and cause unexpected errors. You can always change or reset these options from config options page.",
-      "disable": "Don't show again"
-    },
-    "unknownDomainsWarning": {
-      "title": "External link warning",
-      "youAreAboutToVisit": "You are about to visit :",
-      "thisWebsiteIsNotInOurTrustedList": "This website is not in our trusted list. Please proceed with caution."
-    },
     "proxyInfo": {
-      "fullTag": "Full tag:",
-      "type": "Type:",
-      "testTime": "Test time:",
-      "testDelay": "Test delay:",
-      "isSelected": "Is selected:",
-      "isGroup": "Is group",
-      "isSecure": "Is secure:",
-      "port": "Port:",
-      "host": "Host:",
-      "ip": "IP:",
-      "countryCode": "Country code:",
-      "region": "Region:",
-      "city": "City:",
-      "asn": "ASN:",
-      "organization": "Organization:",
-      "location": "Location:",
-      "postalCode": "Postal code:",
-      "download": "Download:",
-      "upload": "Upload:"
+      "location": "Location",
+      "ipAddress": "IP address",
+      "organization": "Organization",
+      "latency": "Latency",
+      "lastTested": "Last tested",
+      "downloaded": "Downloaded",
+      "uploaded": "Uploaded",
+      "tag": "Tag",
+      "type": "Type",
+      "host": "Host",
+      "port": "Port",
+      "asn": "ASN",
+      "coordinates": "Coordinates"
     },
     "windowClosing": {
       "askEachTime": "Ask each time",

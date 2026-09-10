@@ -168,6 +168,16 @@ class SettingsPage extends HookConsumerWidget {
             await ref.read(resetTunnelNotifierProvider.notifier).run();
           },
         ),
+      // Desktop and tablet reach About from the navigation rail. On a phone it
+      // is the last row here rather than a group of its own: one row does not
+      // earn a section.
+      if (isMobile)
+        RaynSettingsTile(
+          leading: Icons.info_outline_rounded,
+          title: t.pages.about.title,
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => context.go(context.namedLocation('about')),
+        ),
     ];
 
     return RaynPageScaffold(
@@ -189,20 +199,6 @@ class SettingsPage extends HookConsumerWidget {
               RaynSettingsGroup(children: generalTiles),
               RaynSectionHeader(t.pages.settings.advanced),
               RaynSettingsGroup(children: advancedTiles),
-              // Desktop and tablet reach About from the navigation rail.
-              if (isMobile) ...[
-                const SizedBox(height: RaynSpacing.xl),
-                RaynSettingsGroup(
-                  children: [
-                    RaynSettingsTile(
-                      leading: Icons.info_outline_rounded,
-                      title: t.pages.about.title,
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => context.go(context.namedLocation('about')),
-                    ),
-                  ],
-                ),
-              ],
               // Account deletion gets its own group, last on the page. App Store
               // guideline 5.1.1(v) requires it to be reachable in-app; keeping it
               // apart from the Account block means it is never a mis-tap away from

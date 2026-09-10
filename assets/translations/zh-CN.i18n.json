@@ -254,54 +254,6 @@
         "lastUpdate": "最近更新"
       }
     },
-    "confirmation": {
-      "profile": {
-        "delete": {
-          "title": "删除配置文件",
-          "msg": "您确定要永久删除此配置文件吗？"
-        }
-      },
-      "perAppProxy": {
-        "import": {
-          "msg": "这将替换您当前所有的分应用代理选择。您确定要继续吗？"
-        }
-      },
-      "routeRule": {
-        "delete": {
-          "title": "删除规则",
-          "msg": "您确定要删除规则 \"$rulename\" 吗？"
-        }
-      }
-    },
-    "experimentalNotice": {
-      "title": "正在使用实验性功能",
-      "msg": "您已启用了一些实验性功能，这可能会影响连接质量并导致意外错误。您可以随时在配置选项页面更改或重置这些选项。",
-      "disable": "不再显示"
-    },
-    "unknownDomainsWarning": {
-      "title": "外部链接警告",
-      "youAreAboutToVisit": "您即将访问：",
-      "thisWebsiteIsNotInOurTrustedList": "此网站不在我们的信任列表中。请谨慎操作。"
-    },
-    "proxyInfo": {
-      "fullTag": "完整标签：",
-      "type": "类型：",
-      "testTime": "测试时间：",
-      "testDelay": "测试延迟：",
-      "isSelected": "已选择：",
-      "isGroup": "是组",
-      "isSecure": "安全：",
-      "port": "端口：",
-      "host": "主机：",
-      "ip": "IP：",
-      "countryCode": "国家代码：",
-      "region": "地区：",
-      "city": "城市：",
-      "asn": "ASN：",
-      "organization": "组织：",
-      "location": "位置：",
-      "postalCode": "邮政编码："
-    },
     "windowClosing": {
       "askEachTime": "每次询问",
       "alertMessage": "隐藏还是退出应用程序？",

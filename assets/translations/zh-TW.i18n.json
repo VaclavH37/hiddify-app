@@ -254,54 +254,6 @@
         "lastUpdate": "最近更新"
       }
     },
-    "confirmation": {
-      "profile": {
-        "delete": {
-          "title": "刪除設定檔",
-          "msg": "您確定要永久刪除此設定檔嗎？"
-        }
-      },
-      "perAppProxy": {
-        "import": {
-          "msg": "這將取代您目前所有的依應用程式代理選擇。您確定要繼續嗎？"
-        }
-      },
-      "routeRule": {
-        "delete": {
-          "title": "刪除規則",
-          "msg": "您確定要刪除規則「$rulename」嗎？"
-        }
-      }
-    },
-    "experimentalNotice": {
-      "title": "正在使用實驗性功能",
-      "msg": "您已啟用了一些實驗性功能，這可能會影響連線品質並導致意外錯誤。您可以隨時在設定選項頁面變更或重設這些選項。",
-      "disable": "不再顯示"
-    },
-    "unknownDomainsWarning": {
-      "title": "外部連結警告",
-      "youAreAboutToVisit": "您即將造訪：",
-      "thisWebsiteIsNotInOurTrustedList": "此網站不在我們的信任清單中。請謹慎操作。"
-    },
-    "proxyInfo": {
-      "fullTag": "完整標籤：",
-      "type": "類型：",
-      "testTime": "測試時間：",
-      "testDelay": "測試延遲：",
-      "isSelected": "已選擇：",
-      "isGroup": "是群組",
-      "isSecure": "安全：",
-      "port": "連接埠：",
-      "host": "主機：",
-      "ip": "IP：",
-      "countryCode": "國家代碼：",
-      "region": "地區：",
-      "city": "城市：",
-      "asn": "ASN：",
-      "organization": "組織：",
-      "location": "位置：",
-      "postalCode": "郵遞區號："
-    },
     "windowClosing": {
       "askEachTime": "每次詢問",
       "alertMessage": "隱藏還是退出應用程式？",
