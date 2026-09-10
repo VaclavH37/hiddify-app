@@ -10,9 +10,9 @@ import 'package:protobuf/protobuf.dart';
 /// desktop on ethernet claiming the same round trip as a phone on Wi-Fi is the
 /// kind of detail that makes a store listing look staged.
 ///
-/// Both sit well inside the delay pill's green band (< 300ms) and well outside
-/// its timeout threshold, so the pill, its status dot and the connection
-/// button all land in their connected state.
+/// Both sit well inside the latency readout's healthy band (< 300ms) and well
+/// outside its timeout threshold, so the readout and the connection button both
+/// land in their connected state.
 const marketingDelayDesktopMs = 21;
 
 /// Android and iOS share this — the split is desktop versus handset, not
@@ -32,9 +32,9 @@ int get marketingDelayMs => Constants.marketingDelayMsOverride > 0
 /// Pins [OutboundInfo.urlTestDelay] when this is a screenshots build.
 ///
 /// Applied once where the core's outbound stream enters the app rather than at
-/// each widget, so every surface agrees: the latency pill, the connection
-/// button (which reads a missing or timed-out delay as "connecting" and paints
-/// itself olive), and the desktop tray tooltip and macOS badge.
+/// each widget, so every surface agrees: the latency readout on the location
+/// card, the connection button (which reads a missing delay as "connecting"),
+/// and the desktop tray tooltip and macOS badge.
 ///
 /// Copies rather than mutating. The message belongs to the gRPC stream and may
 /// be handed to other listeners; `rebuild` is not an option either, as it

@@ -300,7 +300,7 @@
       "title": "Proxies",
       "subtitle": "Choose a server to route your traffic through.",
       "sort": "Sort proxies",
-      "testDelay": "Test delay",
+      "testDelay": "Test latency",
       "empty": "No proxies available",
       "activeProxy": "Active proxy",
       "unknownIp": "Unknown IP",
@@ -324,9 +324,11 @@
         "organization": "Organization"
       },
       "delay": {
-        "result": "Delay: ${delay}ms",
-        "timeout": "Delay test timeout",
-        "testing": "Delay: testing..."
+        "result": "Latency: ${delay} ms",
+        "timeout": "Latency test timed out",
+        "testing": "Measuring latency",
+        "measuring": "Measuring…",
+        "noResponse": "No response"
       }
     },
     "profiles": {

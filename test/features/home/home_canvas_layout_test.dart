@@ -9,7 +9,6 @@ void main() {
   const orbDiameter = 148.0;
   const labelBlock = 16.0 + 28.0; // gap + one line of label under the circle
   const orbHeight = orbDiameter + labelBlock;
-  const statusHeight = 48.0;
   const cardHeight = 88.0;
 
   // The default test surface is 800x600, which would silently clamp a taller
@@ -41,10 +40,6 @@ void main() {
                   child: const SizedBox(key: Key('orb'), width: orbDiameter, height: orbHeight),
                 ),
                 LayoutId(
-                  id: HomeCanvasSlot.status,
-                  child: const SizedBox(key: Key('status'), width: 120, height: statusHeight),
-                ),
-                LayoutId(
                   id: HomeCanvasSlot.card,
                   child: const SizedBox(key: Key('card'), height: cardHeight),
                 ),
@@ -61,7 +56,7 @@ void main() {
     return tester.getRect(find.byKey(Key(key))).shift(-origin);
   }
 
-  testWidgets('a tall canvas centres the circle and stacks the rest below it', (tester) async {
+  testWidgets('a tall canvas centres the circle and puts the card below it', (tester) async {
     const size = Size(400, 700);
     await pumpCanvas(tester, size: size);
 
@@ -69,12 +64,8 @@ void main() {
     expect(orb.top, (size.height - orbDiameter) / 2);
     expect(orb.center.dx, size.width / 2);
 
-    final status = rectOf(tester, 'status');
-    expect(status.top, orb.bottom + HomeCanvasLayout.orbToStatus);
-    expect(status.center.dx, size.width / 2);
-
     final card = rectOf(tester, 'card');
-    expect(card.top, status.bottom + HomeCanvasLayout.statusToCard);
+    expect(card.top, orb.bottom + HomeCanvasLayout.orbToCard);
     expect(card.left, 0);
     expect(card.width, size.width);
     expect(card.bottom, lessThanOrEqualTo(size.height - HomeCanvasLayout.bottomInset));
@@ -83,7 +74,7 @@ void main() {
   testWidgets('a short canvas lifts the group so the card stays inside', (tester) async {
     // 368x568 is the desktop minimum window; the body is shorter still once
     // the app bar and navigation bar take their share.
-    const size = Size(368, 440);
+    const size = Size(368, 400);
     await pumpCanvas(tester, size: size);
 
     final orb = rectOf(tester, 'orb');
@@ -119,7 +110,7 @@ void main() {
   });
 
   testWidgets('a banner on a short canvas keeps the orb below it', (tester) async {
-    const size = Size(400, 520);
+    const size = Size(400, 480);
     const topInset = 100.0;
     const bannerHeight = 80.0;
     await pumpCanvas(tester, size: size, topInset: topInset, bannerHeight: bannerHeight);

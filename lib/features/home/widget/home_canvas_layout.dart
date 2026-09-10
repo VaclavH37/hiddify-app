@@ -2,15 +2,15 @@ import 'package:flutter/rendering.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 
 /// The pieces of the connection page, laid out by [HomeCanvasLayout].
-enum HomeCanvasSlot { banner, orb, status, card }
+enum HomeCanvasSlot { banner, orb, card }
 
-/// Places the connection page's four pieces without any of them knowing about
-/// the others.
+/// Places the connection page's three pieces without any of them knowing
+/// about the others.
 ///
 /// The orb is the anchor: its circle sits at the vertical centre of the canvas,
-/// which is where the page has always put it. Below it, in flow, come the
-/// status slot (the latency readout) and the location card, each after a fixed
-/// gap. The banner, when there is one, sits at the top just under [topInset].
+/// which is where the page has always put it. Below it, in flow, comes the
+/// location card after a fixed gap. The banner, when there is one, sits at the
+/// top just under [topInset].
 ///
 /// This replaces a `Stack` of `Transform.translate` offsets that had been
 /// worked out by hand from the children's heights. A translate moves paint and
@@ -37,11 +37,8 @@ class HomeCanvasLayout extends MultiChildLayoutDelegate {
   /// Gap between the banner and the orb when the two would otherwise meet.
   static const double bannerToOrb = RaynSpacing.lg;
 
-  /// Gap between the orb's label and the status slot.
-  static const double orbToStatus = RaynSpacing.sm;
-
-  /// Gap between the status slot and the location card.
-  static const double statusToCard = RaynSpacing.lg;
+  /// Gap between the orb's label and the location card.
+  static const double orbToCard = RaynSpacing.xxl;
 
   /// Space kept below the card.
   static const double bottomInset = RaynSpacing.lg;
@@ -58,12 +55,11 @@ class HomeCanvasLayout extends MultiChildLayoutDelegate {
     }
 
     final orbSize = layoutChild(HomeCanvasSlot.orb, loose);
-    final statusSize = layoutChild(HomeCanvasSlot.status, loose);
     final cardSize = layoutChild(HomeCanvasSlot.card, BoxConstraints.tightFor(width: size.width));
 
     // Everything from the top of the orb to the bottom of the card, plus the
     // space kept below the card.
-    final groupHeight = orbSize.height + orbToStatus + statusSize.height + statusToCard + cardSize.height + bottomInset;
+    final groupHeight = orbSize.height + orbToCard + cardSize.height + bottomInset;
 
     // Centre the circle; then move the whole group up if the card would run
     // off the bottom, but never above the banner (or the app bar). When both
@@ -76,9 +72,7 @@ class HomeCanvasLayout extends MultiChildLayoutDelegate {
     if (orbTop < minTop) orbTop = minTop;
 
     positionChild(HomeCanvasSlot.orb, Offset((size.width - orbSize.width) / 2, orbTop));
-    final statusTop = orbTop + orbSize.height + orbToStatus;
-    positionChild(HomeCanvasSlot.status, Offset((size.width - statusSize.width) / 2, statusTop));
-    positionChild(HomeCanvasSlot.card, Offset(0, statusTop + statusSize.height + statusToCard));
+    positionChild(HomeCanvasSlot.card, Offset(0, orbTop + orbSize.height + orbToCard));
   }
 
   @override

@@ -10,6 +10,7 @@ import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
+import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
 import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_notifier.dart';
@@ -31,9 +32,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
     final sortBy = ref.watch(proxiesSortNotifierProvider);
     final notifier = ref.read(proxiesOverviewNotifierProvider.notifier);
     final sortNotifier = ref.read(proxiesSortNotifierProvider.notifier);
-    final isConnected = ref.watch(
-      connectionNotifierProvider.select((v) => v.valueOrNull?.isConnected ?? false),
-    );
+    final isConnected = ref.watch(connectionNotifierProvider.select((v) => v.valueOrNull?.isConnected ?? false));
 
     // Connected → change the live selection in the core. Disconnected → record
     // the choice against the cached snapshot and return to the home screen; it's
@@ -60,6 +59,14 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
     }
 
     final trailing = <Widget>[
+      // Re-runs the URL test for the group. The connection page's latency
+      // readout used to be the tap target for this; a readout that is also a
+      // button is easy to miss, so it lives here as a named action instead.
+      IconButton(
+        icon: Icon(Icons.network_check_rounded, color: palette.textPrimary),
+        tooltip: t.pages.proxies.testDelay,
+        onPressed: isConnected ? () => ref.read(activeProxyNotifierProvider.notifier).urlTest("") : null,
+      ),
       PopupMenuButton<ProxiesSort>(
         initialValue: sortBy,
         onSelected: sortNotifier.update,
@@ -91,7 +98,11 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
-                      child: Text(message, textAlign: TextAlign.center, style: TextStyle(color: palette.textMuted)),
+                      child: Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: palette.textMuted),
+                      ),
                     ),
                   );
                 }

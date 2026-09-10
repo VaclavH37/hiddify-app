@@ -1,7 +1,4 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
@@ -80,23 +77,23 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => context.goNamed('proxies'),
+            // Re-test and show the outbound's details. This used to hang off a
+            // second InkWell on the flag, nested inside the row's own; a target
+            // nobody can see inside a target everybody taps is a mis-tap trap.
+            onLongPress: () async {
+              await handleUrlTest();
+              if (!context.mounted) return;
+              await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: activeProxy);
+            },
             borderRadius: BorderRadius.circular(RaynRadius.card),
             child: Row(
               children: [
-                InkWell(
-                  onTap: () async {
-                    await handleUrlTest();
-                    if (!context.mounted) return;
-                    await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: activeProxy);
-                  },
-                  borderRadius: BorderRadius.circular(RaynRadius.button),
-                  child: Padding(
-                    padding: const EdgeInsets.all(RaynSpacing.xs),
-                    child: IPCountryFlag(
-                      countryCode: activeProxy.ipinfo.countryCode,
-                      organization: activeProxy.ipinfo.org,
-                      size: 40,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.all(RaynSpacing.xs),
+                  child: IPCountryFlag(
+                    countryCode: activeProxy.ipinfo.countryCode,
+                    organization: activeProxy.ipinfo.org,
+                    size: 40,
                   ),
                 ),
                 const SizedBox(width: RaynSpacing.md),
@@ -120,8 +117,8 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
                     ],
                   ),
                 ),
-                const SizedBox(width: RaynSpacing.sm),
-                const _SignalBars(),
+                const SizedBox(width: RaynSpacing.md),
+                const _LatencyLabel(),
                 const SizedBox(width: RaynSpacing.sm),
                 Icon(Icons.chevron_right_rounded, size: 22, color: context.rayn.textSecondary),
               ],
@@ -207,57 +204,40 @@ String? _balancerLocationName(OutboundInfo proxy) {
   return null;
 }
 
-/// Renders 4 ascending bars whose active count is derived from the active
-/// proxy's `urlTestDelay`. Updates are debounced to 1s — the underlying
-/// provider can tick frequently and a steady visual is more useful than a
-/// jittery one.
-class _SignalBars extends HookConsumerWidget {
-  const _SignalBars();
+/// The active outbound's URL-test latency as plain text: "21 ms" while
+/// healthy, coloured only once it degrades, "Measuring…" before the first
+/// answer, "No response" when the test times out.
+///
+/// This is the one encoding of the number on the page. It replaced a glass
+/// pill with a pulsing dot next to four signal bars on this row: three
+/// pictures of one value, on two different colour scales. The thresholds here
+/// are the pill's (300 / 600 ms).
+class _LatencyLabel extends ConsumerWidget {
+  const _LatencyLabel();
+
+  /// URL-test delays at or above this are the core's "no answer" sentinel.
+  static const int _timeout = 65000;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final delay = ref.watch(activeProxyNotifierProvider.select((v) => v.valueOrNull?.urlTestDelay ?? 0));
-    final displayed = useState<int>(delay);
-
-    useEffect(() {
-      if (displayed.value == delay) return null;
-      final timer = Timer(const Duration(seconds: 1), () {
-        displayed.value = delay;
-      });
-      return timer.cancel;
-    }, [delay]);
-
+    final t = ref.watch(translationsProvider).requireValue;
     final palette = context.rayn;
-    final activeBars = _barCount(displayed.value);
-    return SizedBox(
-      height: 16,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(4, (i) {
-          final active = i < activeBars;
-          return Padding(
-            padding: EdgeInsets.only(left: i == 0 ? 0 : 2),
-            child: Container(
-              width: 4,
-              height: 7.0 + i * 3.0,
-              decoration: BoxDecoration(
-                color: active ? palette.success : palette.glassBorder,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
+    final delay = ref.watch(activeProxyNotifierProvider.select((value) => value.valueOrNull?.urlTestDelay ?? 0));
 
-  int _barCount(int delay) {
-    if (delay <= 0) return 0; // untested / no value
-    if (delay < 300) return 4; // full bars
-    if (delay < 600) return 3; // 300–600ms
-    if (delay < 900) return 2; // 600–900ms
-    return 1; // 900ms+
+    final (String text, String semantics, Color colour) = switch (delay) {
+      <= 0 => (t.pages.proxies.delay.measuring, t.pages.proxies.delay.testing, palette.textMuted),
+      >= _timeout => (t.pages.proxies.delay.noResponse, t.pages.proxies.delay.timeout, palette.danger),
+      < 300 => ('$delay ms', t.pages.proxies.delay.result(delay: delay), palette.textSecondary),
+      < 600 => ('$delay ms', t.pages.proxies.delay.result(delay: delay), palette.warning),
+      _ => ('$delay ms', t.pages.proxies.delay.result(delay: delay), palette.danger),
+    };
+
+    return Text(
+      text,
+      semanticsLabel: semantics,
+      // Tabular figures keep the row from shifting when the value changes.
+      style: RaynTypography.body.copyWith(color: colour, fontFeatures: const [FontFeature.tabularFigures()]),
+    );
   }
 }
 

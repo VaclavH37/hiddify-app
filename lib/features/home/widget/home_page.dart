@@ -11,7 +11,6 @@ import 'package:hiddify/features/home/widget/home_canvas_layout.dart';
 import 'package:hiddify/features/home/widget/home_top_bar.dart';
 import 'package:hiddify/features/notifications/widget/notification_banner.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
-import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
 import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
 import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
 import 'package:hiddify/gen/assets.gen.dart';
@@ -94,13 +93,9 @@ class _HomeCanvas extends StatelessWidget {
   final bool isMobile;
 
   /// Height the layout needs below the top inset before it has to give up on
-  /// keeping the card inside the canvas: the orb and its label, the status
-  /// slot, the card, and the gaps and bottom inset [HomeCanvasLayout] adds.
-  static const double _minHeight = 380;
-
-  /// Height of the status slot. Fixed so the orb stays put when the latency
-  /// readout appears on connect and disappears on disconnect.
-  static const double _statusHeight = 48;
+  /// keeping the card inside the canvas: the orb and its label, the card, and
+  /// the gap and bottom inset [HomeCanvasLayout] adds.
+  static const double _minHeight = 340;
 
   @override
   Widget build(BuildContext context) {
@@ -141,10 +136,6 @@ class _HomeCanvas extends StatelessWidget {
                           ),
                         ),
                         LayoutId(id: HomeCanvasSlot.orb, child: const ConnectionButton()),
-                        LayoutId(
-                          id: HomeCanvasSlot.status,
-                          child: const SizedBox(height: _statusHeight, child: ActiveProxyDelayIndicator()),
-                        ),
                         LayoutId(id: HomeCanvasSlot.card, child: const ActiveProxyFooter()),
                       ],
                     ),

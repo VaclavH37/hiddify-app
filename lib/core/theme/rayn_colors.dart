@@ -17,7 +17,6 @@ class RaynColors {
   // Brand gold
   static const Color goldPrimary = Color(0xFFE8A317);
   static const Color goldSoft = Color(0xFFF2C46B);
-  static const Color goldGlow = Color(0x55E8A317);
 
   // Semantic
   static const Color success = Color(0xFF3DD68C);

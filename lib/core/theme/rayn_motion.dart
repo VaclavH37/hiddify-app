@@ -13,10 +13,6 @@ class RaynMotion {
   static const Duration medium = Duration(milliseconds: 320);
   static const Duration slow = Duration(milliseconds: 600);
 
-  // Ambient cycles
-  static const Duration glowBreath = Duration(seconds: 5);
-  static const Duration dotPulse = Duration(milliseconds: 1800);
-
   // Curves
   static const Curve standardCurve = Curves.easeOutCubic;
   static const Curve ambient = Curves.easeInOut;
