@@ -5,28 +5,24 @@ import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
+import 'package:hiddify/features/proxy/model/node_name.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'selected_location_notifier.g.dart';
 
 /// The exit location shown on the connection screen: what the user last used, or
-/// what they picked pre-connect. Purely a display record — the country code is
-/// for the flag, the name is already prettified ("Seoul, SK").
+/// what they picked pre-connect. Purely a display record: the country code is
+/// for the flag, the name is already in display form ("Seoul, SK").
 class SelectedLocation {
-  const SelectedLocation({
-    required this.displayName,
-    required this.countryCode,
-    required this.isAutoSelected,
-  });
+  const SelectedLocation({required this.displayName, required this.countryCode, required this.mode});
 
   final String displayName;
   final String countryCode;
 
-  /// True for the auto-selector modes (Lowest Latency / Auto rotate) → the tile
-  /// subtitle reads "Auto-selected"; false for a specific exit → "Direct".
-  final bool isAutoSelected;
+  /// How the exit was chosen; the tile's caption.
+  final ExitMode mode;
 
-  String encode() => jsonEncode({'n': displayName, 'c': countryCode, 'a': isAutoSelected});
+  String encode() => jsonEncode({'n': displayName, 'c': countryCode, 'm': mode.code});
 
   static SelectedLocation? tryDecode(String? raw) {
     if (raw == null) return null;
@@ -37,7 +33,11 @@ class SelectedLocation {
       return SelectedLocation(
         displayName: name,
         countryCode: (m['c'] as String?) ?? '',
-        isAutoSelected: (m['a'] as bool?) ?? false,
+        // 'm' is the mode. 'a' is what earlier builds stored: a bare
+        // "automatic" flag, which can only have meant the fastest-server group.
+        mode: m.containsKey('m')
+            ? ExitMode.fromCode(m['m'] as String?)
+            : ((m['a'] as bool?) ?? false ? ExitMode.fastest : ExitMode.chosen),
       );
     } catch (_) {
       return null;
@@ -49,10 +49,10 @@ class SelectedLocation {
       other is SelectedLocation &&
       other.displayName == displayName &&
       other.countryCode == countryCode &&
-      other.isAutoSelected == isAutoSelected;
+      other.mode == mode;
 
   @override
-  int get hashCode => Object.hash(displayName, countryCode, isAutoSelected);
+  int get hashCode => Object.hash(displayName, countryCode, mode);
 }
 
 @Riverpod(keepAlive: true)
@@ -63,7 +63,7 @@ class SelectedLocationNotifier extends _$SelectedLocationNotifier {
   @override
   SelectedLocation? build() {
     // Apply an explicit pre-connect pick once the tunnel comes up. Only fires for
-    // a user-made choice (pendingKey set) — otherwise the core reuses its own
+    // a user-made choice (pendingKey set); otherwise the core reuses its own
     // persisted selection and we must not fight it.
     ref.listen(connectionNotifierProvider, (_, next) {
       if (next.valueOrNull is Connected) unawaited(_applyPending());
@@ -74,10 +74,10 @@ class SelectedLocationNotifier extends _$SelectedLocationNotifier {
   }
 
   /// Update the displayed location from the live core while connected. Never
-  /// marks a pending apply — this only reflects reality.
-  Future<void> recordActive(String displayName, String countryCode, bool isAutoSelected) async {
+  /// marks a pending apply; this only reflects reality.
+  Future<void> recordActive(String displayName, String countryCode, ExitMode mode) async {
     if (displayName.isEmpty) return;
-    final loc = SelectedLocation(displayName: displayName, countryCode: countryCode, isAutoSelected: isAutoSelected);
+    final loc = SelectedLocation(displayName: displayName, countryCode: countryCode, mode: mode);
     if (loc == state) return;
     state = loc;
     await ref.read(sharedPreferencesProvider).requireValue.setString(_key, loc.encode());
@@ -90,10 +90,10 @@ class SelectedLocationNotifier extends _$SelectedLocationNotifier {
     required String outboundTag,
     required String displayName,
     required String countryCode,
-    required bool isAutoSelected,
+    required ExitMode mode,
   }) async {
     final prefs = ref.read(sharedPreferencesProvider).requireValue;
-    state = SelectedLocation(displayName: displayName, countryCode: countryCode, isAutoSelected: isAutoSelected);
+    state = SelectedLocation(displayName: displayName, countryCode: countryCode, mode: mode);
     await prefs.setString(_key, state!.encode());
     await prefs.setString(_pendingKey, jsonEncode({'g': groupTag, 'o': outboundTag}));
   }

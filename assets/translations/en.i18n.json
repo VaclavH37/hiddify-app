@@ -297,24 +297,23 @@
       }
     },
     "proxies": {
-      "title": "Proxies",
-      "sort": "Sort proxies",
+      "title": "Location",
+      "sort": "Sort locations",
       "testDelay": "Test latency",
-      "empty": "No proxies available",
-      "activeProxy": "Active proxy",
+      "empty": "No locations available",
+      "activeProxy": "Current location",
       "unknownIp": "Unknown IP",
-      "autoSelected": "Auto-selected",
-      "direct": "Direct",
-      "lastLocation": "Last location",
       "selectLocation": "Select location",
       "tapToChoose": "Tap to choose a location",
       "snapshotEmpty": "Connect once to load available locations",
-      "lowestLatency": "Lowest Latency",
       "autoRotate": "Auto rotate",
+      "fastestServer": "Fastest server",
+      "automatic": "Automatic",
+      "locations": "Locations",
       "sortOptions": {
         "unsorted": "Default",
         "name": "Alphabetically",
-        "delay": "By delay",
+        "delay": "By latency",
         "usage": "By usage"
       },
       "ipInfo": {

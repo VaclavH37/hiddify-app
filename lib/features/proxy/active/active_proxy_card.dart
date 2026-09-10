@@ -17,6 +17,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 class ActiveProxyFooter extends ConsumerWidget {
   const ActiveProxyFooter({super.key});
 
+  /// The flag on both states of the card, so connecting does not reflow the row.
+  static const double flagSize = 32;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Remember the live exit location so the home screen can show where the next
@@ -29,9 +32,7 @@ class ActiveProxyFooter extends ConsumerWidget {
       // Only remember real, resolved exits — never an auto-selector placeholder
       // ("Lowest Latency") captured before the group has picked a member.
       if (!display.resolved) return;
-      ref
-          .read(selectedLocationNotifierProvider.notifier)
-          .recordActive(display.name, display.countryCode, display.isAutoSelected);
+      ref.read(selectedLocationNotifierProvider.notifier).recordActive(display.name, display.countryCode, display.mode);
     });
 
     final connectionState = ref.watch(
@@ -48,7 +49,9 @@ class ActiveProxyFooter extends ConsumerWidget {
 
     final display = activeProxyDisplay(activeProxy, t);
     final displayName = display.name;
-    final modeLabel = display.isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct;
+    // No caption for a location the user chose, and none that would only
+    // repeat the title (an automatic mode whose member is not known yet).
+    final modeLabel = _captionFor(display.mode.caption(t), displayName);
 
     return Semantics(
       button: true,
@@ -65,11 +68,7 @@ class ActiveProxyFooter extends ConsumerWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(RaynSpacing.xs),
-                  child: IPCountryFlag(
-                    countryCode: activeProxy.ipinfo.countryCode,
-                    organization: activeProxy.ipinfo.org,
-                    size: 40,
-                  ),
+                  child: IPCountryFlag(countryCode: activeProxy.ipinfo.countryCode, size: ActiveProxyFooter.flagSize),
                 ),
                 const SizedBox(width: RaynSpacing.md),
                 Expanded(
@@ -87,8 +86,10 @@ class ActiveProxyFooter extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(modeLabel, style: RaynTypography.caption.copyWith(color: context.rayn.textMuted)),
+                      if (modeLabel != null) ...[
+                        const SizedBox(height: 2),
+                        Text(modeLabel, style: RaynTypography.caption.copyWith(color: context.rayn.textMuted)),
+                      ],
                     ],
                   ),
                 ),
@@ -104,6 +105,9 @@ class ActiveProxyFooter extends ConsumerWidget {
     );
   }
 }
+
+/// A mode caption, unless it would only repeat the title.
+String? _captionFor(String? caption, String title) => caption == null || caption == title ? null : caption;
 
 /// The active outbound's URL-test latency as plain text: "21 ms" while
 /// healthy, coloured only once it degrades, "Measuring…" before the first
@@ -158,13 +162,11 @@ class SelectedLocationTile extends ConsumerWidget {
 
     final hasSelection = selected != null;
     final title = hasSelection ? selected.displayName : t.pages.proxies.selectLocation;
-    final subtitle = hasSelection
-        ? (selected.isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct)
-        : t.pages.proxies.tapToChoose;
+    final subtitle = hasSelection ? _captionFor(selected.mode.caption(t), title) : t.pages.proxies.tapToChoose;
 
     return Semantics(
       button: true,
-      label: '$title: $subtitle',
+      label: subtitle == null ? title : '$title: $subtitle',
       child: RaynSurface(
         padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
         elevated: true,
@@ -178,8 +180,8 @@ class SelectedLocationTile extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.all(RaynSpacing.xs),
                   child: hasSelection
-                      ? IPCountryFlag(countryCode: selected.countryCode, size: 40)
-                      : Icon(Icons.public_outlined, size: 36, color: palette.textSecondary),
+                      ? IPCountryFlag(countryCode: selected.countryCode, size: ActiveProxyFooter.flagSize)
+                      : Icon(Icons.public_outlined, size: ActiveProxyFooter.flagSize, color: palette.textSecondary),
                 ),
                 const SizedBox(width: RaynSpacing.md),
                 Expanded(
@@ -194,8 +196,10 @@ class SelectedLocationTile extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Text(subtitle, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(subtitle, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
+                      ],
                     ],
                   ),
                 ),

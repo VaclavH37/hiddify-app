@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
 import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
+import 'package:hiddify/features/proxy/model/node_name.dart';
 
 void main() {
   group('ProxySnapshot', () {
@@ -68,18 +69,23 @@ void main() {
   });
 
   group('SelectedLocation', () {
-    test('encode/decode round-trips displayName, country, and auto-selected flag', () {
-      const loc = SelectedLocation(displayName: 'Tokyo, JP', countryCode: 'JP', isAutoSelected: true);
+    test('encode/decode round-trips displayName, country, and mode', () {
+      const loc = SelectedLocation(displayName: 'Tokyo, JP', countryCode: 'JP', mode: ExitMode.fastest);
       final decoded = SelectedLocation.tryDecode(loc.encode())!;
       expect(decoded.displayName, 'Tokyo, JP');
       expect(decoded.countryCode, 'JP');
-      expect(decoded.isAutoSelected, isTrue);
+      expect(decoded.mode, ExitMode.fastest);
       expect(decoded, loc);
     });
 
     test('a specific exit is not auto-selected', () {
-      const loc = SelectedLocation(displayName: 'Seoul, SK', countryCode: 'KR', isAutoSelected: false);
-      expect(SelectedLocation.tryDecode(loc.encode())!.isAutoSelected, isFalse);
+      const loc = SelectedLocation(displayName: 'Seoul, SK', countryCode: 'KR', mode: ExitMode.chosen);
+      expect(SelectedLocation.tryDecode(loc.encode())!.mode, ExitMode.chosen);
+    });
+
+    test('a record stored by an earlier build, with the bare automatic flag, still decodes', () {
+      expect(SelectedLocation.tryDecode('{"n":"Tokyo, JP","c":"JP","a":true}')!.mode, ExitMode.fastest);
+      expect(SelectedLocation.tryDecode('{"n":"Seoul, SK","c":"KR","a":false}')!.mode, ExitMode.chosen);
     });
 
     test('tryDecode returns null for null, empty name, or garbage', () {

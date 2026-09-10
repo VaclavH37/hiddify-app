@@ -8,6 +8,8 @@ import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/widget/rayn_notification_bell.dart';
 import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
+import 'package:hiddify/core/widget/rayn_section_header.dart';
+import 'package:hiddify/core/widget/rayn_settings_group.dart';
 import 'package:hiddify/core/widget/sub_page_back_button.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
@@ -50,7 +52,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
             outboundTag: proxy.tag,
             displayName: display.name,
             countryCode: display.countryCode,
-            isAutoSelected: display.isAutoSelected,
+            mode: display.mode,
           );
       // Reflect the pick in the cached snapshot so reopening the list highlights
       // the new choice (not the previously connected node).
@@ -104,11 +106,8 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                 }
                 final groupItems = group.items.where((p) => p.isGroup).toList();
                 final serverItems = group.items.where((p) => !p.isGroup).toList();
-                final children = <Widget>[];
-                for (var i = 0; i < groupItems.length; i++) {
-                  if (i > 0) children.add(const SizedBox(height: RaynSpacing.sm));
-                  final proxy = groupItems[i];
-                  children.add(
+                List<Widget> rows(List<OutboundInfo> items) => [
+                  for (final proxy in items)
                     ProxyTile(
                       proxy,
                       selected: group.selected == proxy.tag,
@@ -116,38 +115,25 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                         await handleTap(group.tag, proxy);
                       },
                     ),
-                  );
-                }
-                if (groupItems.isNotEmpty && serverItems.isNotEmpty) {
-                  children.add(
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: RaynSpacing.md),
-                      child: Divider(color: palette.glassBorder, height: 1, thickness: 1),
-                    ),
-                  );
-                }
-                for (var i = 0; i < serverItems.length; i++) {
-                  if (i > 0) children.add(const SizedBox(height: RaynSpacing.sm));
-                  final proxy = serverItems[i];
-                  children.add(
-                    ProxyTile(
-                      proxy,
-                      selected: group.selected == proxy.tag,
-                      onTap: () async {
-                        await handleTap(group.tag, proxy);
-                      },
-                    ),
-                  );
-                }
+                ];
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),
-                  children: children,
+                  children: [
+                    if (groupItems.isNotEmpty) ...[
+                      RaynSectionHeader(t.pages.proxies.automatic),
+                      RaynSettingsGroup(children: rows(groupItems)),
+                    ],
+                    if (serverItems.isNotEmpty) ...[
+                      RaynSectionHeader(t.pages.proxies.locations),
+                      RaynSettingsGroup(children: rows(serverItems)),
+                    ],
+                  ],
                 );
               },
               error: (error, stackTrace) => Center(
                 child: Text(t.presentShortError(error), style: TextStyle(color: palette.danger)),
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator.adaptive()),
             ),
           ),
         ],
