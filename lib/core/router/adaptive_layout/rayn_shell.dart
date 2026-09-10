@@ -8,7 +8,6 @@ import 'package:hiddify/core/router/adaptive_layout/rayn_navigation_rail.dart';
 import 'package:hiddify/core/router/adaptive_layout/shell_route_action.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/router/go_router/routing_config_notifier.dart';
-import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/features/home/widget/sidebar_status.dart';
@@ -132,7 +131,7 @@ class RaynShell extends HookConsumerWidget {
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return IconThemeData(color: selected ? AppTheme.brandAccent : palette.textSecondary, size: 22);
+          return IconThemeData(color: selected ? palette.accentText : palette.textSecondary, size: 22);
         }),
       ),
       // A hairline top divider separates the bar from the page canvas; in light

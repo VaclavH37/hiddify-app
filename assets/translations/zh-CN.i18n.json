@@ -174,8 +174,7 @@
         "themeModes": {
           "system": "跟随系统",
           "dark": "深色模式",
-          "light": "浅色模式",
-          "black": "纯黑模式"
+          "light": "浅色模式"
         },
         "autoIpCheck": "自动检查连接 IP",
         "blockAds": "拦截广告",

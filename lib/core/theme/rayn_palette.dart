@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 /// widgets can read `context.rayn.bgPrimary` (etc.) without inspecting
 /// `Theme.of(context).brightness` themselves.
 ///
-/// `RaynColors` constants are retained for callers that always render dark
-/// (legacy surfaces); new redesign code should reach for the palette.
 @immutable
 class RaynPalette extends ThemeExtension<RaynPalette> {
   const RaynPalette({
@@ -25,6 +23,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     required this.stateConnecting,
     required this.stateConnected,
     required this.stateError,
+    required this.accent,
+    required this.accentText,
     required this.logoMark,
     required this.orbFill,
     required this.navSelectedFill,
@@ -99,6 +99,18 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   final Color stateConnected;
   final Color stateError;
 
+  /// The brand amber as a fill: the selected switch track, the primary
+  /// button, the orb's connected tint. The same in both themes, because it is
+  /// the brand and not a surface. The one amber; the sidebar used to carry a
+  /// second one five percent off this.
+  final Color accent;
+
+  /// The brand amber as text or an icon: the selected sidebar item, a check
+  /// mark, a text button. Identical to [accent] on dark. On cream the brand
+  /// amber measures 2:1 against the page, half of what body text needs, so
+  /// the light theme uses a darker step of the same amber that clears 4.5:1.
+  final Color accentText;
+
   /// The brand mark's own amber — the same value as the app icon and the
   /// splash. Identical on both themes on purpose: the mark IS the brand, not a
   /// surface treatment, so it must not read as white in the app and amber on
@@ -136,6 +148,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     stateConnecting: Color(0xFFF59E0B),
     stateConnected: Color(0xFFF59E0B),
     stateError: Color(0xFFF24444),
+    accent: Color(0xFFF59E0B),
+    accentText: Color(0xFFF59E0B),
     logoMark: Color(0xFFF59E0B),
     orbFill: Color(0xFFFFFFFF),
     navSelectedFill: Color(0x14FFFFFF),
@@ -161,6 +175,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     stateConnecting: Color(0xFFF59E0B),
     stateConnected: Color(0xFFF59E0B),
     stateError: Color(0xFFF24444),
+    accent: Color(0xFFF59E0B),
+    accentText: Color(0xFFB45309),
     logoMark: Color(0xFFF59E0B),
     orbFill: Color(0xFFFFFFFF),
     navSelectedFill: Color(0x1FD6A34A),
@@ -184,6 +200,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     Color? stateConnecting,
     Color? stateConnected,
     Color? stateError,
+    Color? accent,
+    Color? accentText,
     Color? logoMark,
     Color? orbFill,
     Color? navSelectedFill,
@@ -205,6 +223,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       stateConnecting: stateConnecting ?? this.stateConnecting,
       stateConnected: stateConnected ?? this.stateConnected,
       stateError: stateError ?? this.stateError,
+      accent: accent ?? this.accent,
+      accentText: accentText ?? this.accentText,
       logoMark: logoMark ?? this.logoMark,
       orbFill: orbFill ?? this.orbFill,
       navSelectedFill: navSelectedFill ?? this.navSelectedFill,
@@ -231,6 +251,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       stateConnecting: Color.lerp(stateConnecting, other.stateConnecting, t)!,
       stateConnected: Color.lerp(stateConnected, other.stateConnected, t)!,
       stateError: Color.lerp(stateError, other.stateError, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      accentText: Color.lerp(accentText, other.accentText, t)!,
       logoMark: Color.lerp(logoMark, other.logoMark, t)!,
       orbFill: Color.lerp(orbFill, other.orbFill, t)!,
       navSelectedFill: Color.lerp(navSelectedFill, other.navSelectedFill, t)!,

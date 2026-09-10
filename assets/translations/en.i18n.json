@@ -401,8 +401,7 @@
         "themeModes": {
           "system": "System default",
           "dark": "Dark mode",
-          "light": "Light mode",
-          "black": "Black mode"
+          "light": "Light mode"
         },
         "autoIpCheck": "Check IP after connecting",
         "blockAds": "Block advertisements",

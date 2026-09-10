@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
@@ -79,7 +78,7 @@ class ProxyTile extends ConsumerWidget {
                   ],
                   if (selected) ...[
                     const SizedBox(width: RaynSpacing.md),
-                    const Icon(Icons.check_rounded, size: 24, color: AppTheme.brandAccent),
+                    Icon(Icons.check_rounded, size: 24, color: palette.accentText),
                   ],
                 ],
               ),

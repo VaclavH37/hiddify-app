@@ -174,8 +174,7 @@
         "themeModes": {
           "system": "Default sistem",
           "dark": "Mode gelap",
-          "light": "Mode terang",
-          "black": "Mode hitam"
+          "light": "Mode terang"
         },
         "autoIpCheck": "Periksa IP koneksi secara otomatis",
         "blockAds": "Blokir iklan",

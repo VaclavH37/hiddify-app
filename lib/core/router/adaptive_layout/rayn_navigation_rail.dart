@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
@@ -128,7 +127,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.rayn;
-    final iconColor = selected ? AppTheme.brandAccent : palette.textSecondary;
+    final iconColor = selected ? palette.accentText : palette.textSecondary;
     final labelColor = selected ? palette.textPrimary : palette.textSecondary;
     final radius = BorderRadius.circular(RaynRadius.control);
 

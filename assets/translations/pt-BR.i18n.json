@@ -174,8 +174,7 @@
         "themeModes": {
           "system": "Padrão do sistema",
           "dark": "Modo escuro",
-          "light": "Modo claro",
-          "black": "Modo preto"
+          "light": "Modo claro"
         },
         "autoIpCheck": "Verificar IP da conexão automaticamente",
         "blockAds": "Bloquear anúncios",

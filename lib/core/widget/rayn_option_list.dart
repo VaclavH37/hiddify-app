@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
@@ -78,7 +77,7 @@ class _OptionRow extends StatelessWidget {
                 ),
                 if (selected) ...[
                   const SizedBox(width: RaynSpacing.md),
-                  const Icon(Icons.check_rounded, size: 22, color: AppTheme.brandAccent),
+                  Icon(Icons.check_rounded, size: 22, color: palette.accentText),
                 ],
               ],
             ),

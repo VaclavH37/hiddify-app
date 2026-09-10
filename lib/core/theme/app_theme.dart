@@ -10,48 +10,60 @@ class AppTheme {
   final AppThemeMode mode;
   final String fontFamily;
 
-  /// Brand accent. Used as the seed for the generated [ColorScheme] and forced
-  /// onto [ColorScheme.primary] in dark mode so widgets reading the accent
-  /// (`theme.colorScheme.primary`) render in this exact hex.
+  /// The brand amber, as a compile-time constant for the few sites that need
+  /// one. The same value as [RaynPalette.accent]; the palette is the source
+  /// for everything that has a context.
   static const Color brandAccent = Color(0xFFF59E0B);
 
-  /// Primary colour in light mode: a near-black for high contrast on light
-  /// surfaces. The amber [brandAccent] still seeds the rest of the palette.
-  static const Color lightPrimary = Color(0xFF09090B);
+  /// What sits on amber: the dark text colour of the light theme. White on
+  /// amber does not read.
+  static const Color onBrandAccent = Color(0xFF2A241F);
 
-  ThemeData lightTheme(ColorScheme? _) {
-    final ColorScheme scheme = ColorScheme.fromSeed(seedColor: brandAccent).copyWith(primary: lightPrimary);
-    return _themed(scheme, RaynPalette.light, scaffoldBackground: RaynPalette.light.bgPrimary);
-  }
+  ThemeData lightTheme() => _themed(RaynPalette.light, Brightness.light);
 
-  ThemeData darkTheme(ColorScheme? _) {
-    final ColorScheme scheme = ColorScheme.fromSeed(
+  ThemeData darkTheme() => _themed(RaynPalette.dark, Brightness.dark);
+
+  /// One theme, from the palette, for both brightnesses. The colour scheme is
+  /// seeded from the brand amber and its primary IS the brand amber in both
+  /// themes, so a filled button is the same button on cream as on charcoal;
+  /// the light theme used to make it near-black. Text and icons in the accent
+  /// read the palette's text-safe amber, which is a darker step on cream.
+  ///
+  /// The component themes are set here, once, so a dialog, a sheet, a menu, a
+  /// switch or a divider looks the same wherever it appears and no call site
+  /// styles one by hand.
+  ThemeData _themed(RaynPalette palette, Brightness brightness) {
+    final scheme = ColorScheme.fromSeed(
       seedColor: brandAccent,
-      brightness: Brightness.dark,
-    ).copyWith(primary: brandAccent);
-    const darkSurface = Color(0xFF09090B);
-    return _themed(
-      scheme,
-      RaynPalette.dark,
-      scaffoldBackground: mode.trueBlack ? Colors.black : scheme.surface,
-      appBar: const AppBarTheme(backgroundColor: darkSurface),
-    );
-  }
-
-  /// Component themes, once, from the palette: a dialog, a sheet, a menu, a
-  /// switch or a divider looks the same wherever it appears, and no call site
-  /// styles one by hand. Surfaces are the same opaque `groupFill` as a card;
-  /// the accent is the brand amber; the corners are the app's own.
-  ThemeData _themed(ColorScheme scheme, RaynPalette palette, {required Color scaffoldBackground, AppBarTheme? appBar}) {
+      brightness: brightness,
+    ).copyWith(primary: palette.accent, onPrimary: onBrandAccent, error: palette.danger);
     final cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(RaynRadius.card));
     Color? whenSelected(Set<WidgetState> states, Color color) => states.contains(WidgetState.selected) ? color : null;
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: scaffoldBackground,
-      appBarTheme: appBar,
+      scaffoldBackgroundColor: palette.bgPrimary,
       fontFamily: fontFamily,
+      // The roles Material widgets and the auth pages read, on the app's own
+      // scale. Body and label sizes stay at Material's defaults: they are the
+      // sizes buttons and fields were designed around.
+      textTheme: TextTheme(
+        displaySmall: RaynTypography.display,
+        headlineSmall: RaynTypography.title,
+        titleLarge: RaynTypography.title,
+        titleMedium: RaynTypography.body,
+        bodyLarge: RaynTypography.body.copyWith(fontWeight: FontWeight.w400),
+      ).apply(bodyColor: palette.textPrimary, displayColor: palette.textPrimary),
+      appBarTheme: AppBarTheme(
+        backgroundColor: palette.bgSurface,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: palette.textPrimary,
+      ),
+      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: palette.accentText)),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(foregroundColor: palette.accentText),
+      ),
       dialogTheme: DialogThemeData(
         backgroundColor: palette.groupFill,
         surfaceTintColor: Colors.transparent,
@@ -76,29 +88,27 @@ class AppTheme {
       dividerTheme: DividerThemeData(color: palette.glassBorder, thickness: 1, space: 1),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) => whenSelected(states, Colors.white)),
-        trackColor: WidgetStateProperty.resolveWith((states) => whenSelected(states, brandAccent)),
+        trackColor: WidgetStateProperty.resolveWith((states) => whenSelected(states, palette.accent)),
         trackOutlineColor: WidgetStateProperty.resolveWith((states) => whenSelected(states, Colors.transparent)),
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: WidgetStateProperty.resolveWith((states) => whenSelected(states, brandAccent)),
-        // Dark on amber reads; white on amber does not.
-        checkColor: const WidgetStatePropertyAll(Color(0xFF2A241F)),
+        fillColor: WidgetStateProperty.resolveWith((states) => whenSelected(states, palette.accent)),
+        checkColor: const WidgetStatePropertyAll(onBrandAccent),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(color: brandAccent),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: palette.accent),
       extensions: <ThemeExtension<dynamic>>{palette},
     );
   }
 
-  CupertinoThemeData cupertinoThemeData(bool sysDark, ColorScheme? lightColorScheme, ColorScheme? darkColorScheme) {
+  CupertinoThemeData cupertinoThemeData(bool sysDark) {
     final bool isDark = switch (mode) {
       AppThemeMode.system => sysDark,
       AppThemeMode.light => false,
       AppThemeMode.dark => true,
-      AppThemeMode.black => true,
     };
     final def = CupertinoThemeData(brightness: isDark ? Brightness.dark : Brightness.light);
 
-    final defaultMaterialTheme = isDark ? darkTheme(darkColorScheme) : lightTheme(lightColorScheme);
+    final defaultMaterialTheme = isDark ? darkTheme() : lightTheme();
     return MaterialBasedCupertinoThemeData(
       materialTheme: defaultMaterialTheme.copyWith(
         cupertinoOverrideTheme: def.copyWith(

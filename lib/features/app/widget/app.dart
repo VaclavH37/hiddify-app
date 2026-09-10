@@ -1,5 +1,4 @@
 import 'package:accessibility_tools/accessibility_tools.dart';
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -114,43 +113,39 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
       ShortcutWrapper(
         ToastificationWrapper(
           child: ConnectionWrapper(
-            DynamicColorBuilder(
-              builder: (ColorScheme? lightColorScheme, ColorScheme? darkColorScheme) {
-                return MaterialApp.router(
-                  routerConfig: router,
-                  locale: locale.flutterLocale,
-                  supportedLocales: AppLocaleUtils.supportedLocales,
-                  localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                  debugShowCheckedModeBanner: false,
-                  themeMode: themeMode.flutterThemeMode,
-                  theme: theme.lightTheme(lightColorScheme),
-                  darkTheme: theme.darkTheme(darkColorScheme),
-                  title: Constants.appName,
-                  builder: (context, child) {
-                    final theme = Theme.of(context);
-                    // Branded launch screen over the first route. Inside the
-                    // builder rather than around MaterialApp so it inherits the
-                    // theme and Directionality, and mobile-only (see SplashGate).
-                    //
-                    // Assigned to a local rather than back onto `child`: the
-                    // parameter reassignment this replaces tripped
-                    // parameter_assignments, and rebinding a parameter makes the
-                    // wrapping order harder to follow than it needs to be.
-                    final Widget content = SplashGate(child: child ?? const SizedBox());
-                    if (kDebugMode && _debugAccessibility) {
-                      return AccessibilityTools(checkFontOverflows: true, child: content);
-                    }
-                    return AnnotatedRegion<SystemUiOverlayStyle>(
-                      value: SystemUiOverlayStyle(
-                        statusBarColor: theme.scaffoldBackgroundColor,
-                        systemNavigationBarColor: theme.scaffoldBackgroundColor,
-                        systemNavigationBarIconBrightness: theme.brightness == Brightness.dark
-                            ? Brightness.light
-                            : Brightness.dark,
-                      ),
-                      child: content,
-                    );
-                  },
+            MaterialApp.router(
+              routerConfig: router,
+              locale: locale.flutterLocale,
+              supportedLocales: AppLocaleUtils.supportedLocales,
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              debugShowCheckedModeBanner: false,
+              themeMode: themeMode.flutterThemeMode,
+              theme: theme.lightTheme(),
+              darkTheme: theme.darkTheme(),
+              title: Constants.appName,
+              builder: (context, child) {
+                final theme = Theme.of(context);
+                // Branded launch screen over the first route. Inside the
+                // builder rather than around MaterialApp so it inherits the
+                // theme and Directionality, and mobile-only (see SplashGate).
+                //
+                // Assigned to a local rather than back onto `child`: the
+                // parameter reassignment this replaces tripped
+                // parameter_assignments, and rebinding a parameter makes the
+                // wrapping order harder to follow than it needs to be.
+                final Widget content = SplashGate(child: child ?? const SizedBox());
+                if (kDebugMode && _debugAccessibility) {
+                  return AccessibilityTools(checkFontOverflows: true, child: content);
+                }
+                return AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: SystemUiOverlayStyle(
+                    statusBarColor: theme.scaffoldBackgroundColor,
+                    systemNavigationBarColor: theme.scaffoldBackgroundColor,
+                    systemNavigationBarIconBrightness: theme.brightness == Brightness.dark
+                        ? Brightness.light
+                        : Brightness.dark,
+                  ),
+                  child: content,
                 );
               },
             ),

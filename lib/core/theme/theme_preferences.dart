@@ -8,9 +8,7 @@ part 'theme_preferences.g.dart';
 class ThemePreferences extends _$ThemePreferences {
   @override
   AppThemeMode build() {
-    final persisted = ref.watch(sharedPreferencesProvider).requireValue.getString("theme_mode");
-    if (persisted == null) return AppThemeMode.system;
-    return AppThemeMode.values.byName(persisted);
+    return AppThemeMode.fromPersisted(ref.watch(sharedPreferencesProvider).requireValue.getString("theme_mode"));
   }
 
   Future<void> changeThemeMode(AppThemeMode value) async {

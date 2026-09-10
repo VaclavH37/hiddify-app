@@ -174,8 +174,7 @@
         "themeModes": {
           "system": "Sistem varsayılanı",
           "dark": "Karanlık mod",
-          "light": "Açık mod",
-          "black": "Siyah mod"
+          "light": "Açık mod"
         },
         "autoIpCheck": "Bağlantı IP'sini otomatik kontrol et",
         "blockAds": "Reklamları engelle",
