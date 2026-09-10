@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 /// Brightness-aware Rayn design tokens, distributed via [ThemeExtension] so
@@ -18,9 +16,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
-    required this.glassFill,
     required this.glassBorder,
-    required this.glassBlurSigma,
     required this.shadow,
     required this.success,
     required this.warning,
@@ -46,14 +42,12 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   /// themes so the content area sits visually above the rail.
   final Color pageBackground;
 
-  /// Fill for a surface raised one step above [pageBackground] — used by the
-  /// payment flow's plan cards and detail rows.
-  ///
-  /// Named for `RaynPreferenceGroup`, the bordered settings container it was
-  /// introduced for. That widget is gone: its rows were inlined onto the settings
-  /// page, where a filled, bordered box read as a foreign element next to the bare
-  /// tiles around it. The colour outlived it because the payment surfaces use the
-  /// same one-step-raised relationship.
+  /// Fill for a surface raised one step above the page or canvas: every
+  /// `RaynSurface` (the location card, list rows, the banner) and the payment
+  /// flow's plan cards. Depth in this app is tone, not blur or borders, so this
+  /// is a real step in both themes: on dark it is about twelve levels above
+  /// [pageBackground], which is what a card needs to read as a card without a
+  /// hairline; the previous value was four levels up and invisible.
   final Color groupFill;
 
   /// Default body-text color. Inherited via DefaultTextStyle.
@@ -65,14 +59,8 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   /// Captions and helper text.
   final Color textMuted;
 
-  /// Default GlassSurface fill (translucent on dark; mostly opaque on light).
-  final Color glassFill;
-
-  /// Default GlassSurface border.
+  /// Hairline: the border on a light-mode surface, and inset dividers.
   final Color glassBorder;
-
-  /// Default GlassSurface BackdropFilter blur sigma.
-  final double glassBlurSigma;
 
   /// Card drop shadow.
   final Color shadow;
@@ -137,13 +125,11 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     bgPrimary: Color(0xFF101111),
     bgSurface: Color(0xFF111111),
     pageBackground: Color(0xFF1A1816),
-    groupFill: Color(0xFF1E1B15),
+    groupFill: Color(0xFF262320),
     textPrimary: Color(0xFFFFFFFF),
     textSecondary: Color(0xB3FFFFFF),
     textMuted: Color(0x80FFFFFF),
-    glassFill: Color(0x14FFFFFF),
     glassBorder: Color(0x1FFFFFFF),
-    glassBlurSigma: 20,
     shadow: Color(0x66000000),
     success: Color(0xFF3DD68C),
     warning: Color(0xFFE8C547),
@@ -169,9 +155,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     textPrimary: Color(0xFF2A241F),
     textSecondary: Color(0xFF6D5A4F),
     textMuted: Color(0xFF8C7A6E),
-    glassFill: Color(0xD9FFF9F2),
     glassBorder: Color(0xFFEFE6D9),
-    glassBlurSigma: 12,
     shadow: Color(0x142B1E12),
     success: Color(0xFF15803D),
     warning: Color(0xFFCA8A04),
@@ -195,9 +179,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
-    Color? glassFill,
     Color? glassBorder,
-    double? glassBlurSigma,
     Color? shadow,
     Color? success,
     Color? warning,
@@ -219,9 +201,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textMuted: textMuted ?? this.textMuted,
-      glassFill: glassFill ?? this.glassFill,
       glassBorder: glassBorder ?? this.glassBorder,
-      glassBlurSigma: glassBlurSigma ?? this.glassBlurSigma,
       shadow: shadow ?? this.shadow,
       success: success ?? this.success,
       warning: warning ?? this.warning,
@@ -248,9 +228,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
-      glassFill: Color.lerp(glassFill, other.glassFill, t)!,
       glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
-      glassBlurSigma: lerpDouble(glassBlurSigma, other.glassBlurSigma, t)!,
       shadow: Color.lerp(shadow, other.shadow, t)!,
       success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,

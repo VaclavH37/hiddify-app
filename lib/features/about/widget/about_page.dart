@@ -8,12 +8,12 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/adaptive_icon.dart';
-import 'package:hiddify/core/widget/glass_surface.dart';
 import 'package:hiddify/core/widget/rayn_notification_bell.dart';
 import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
 import 'package:hiddify/core/widget/rayn_section_header.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
+import 'package:hiddify/core/widget/rayn_surface.dart';
 import 'package:hiddify/features/settings/widget/sub_page_back_button.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/utils/utils.dart';
@@ -55,7 +55,7 @@ class AboutPage extends HookConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
-            child: GlassSurface(
+            child: RaynSurface(
               child: Row(
                 children: [
                   Assets.images.logo.image(
@@ -140,10 +140,7 @@ class AboutPage extends HookConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
             child: Text(
-              t.pages.about.copyright(
-                year: DateTime.now().year.toString(),
-                company: Constants.companyLegalName,
-              ),
+              t.pages.about.copyright(year: DateTime.now().year.toString(), company: Constants.companyLegalName),
               textAlign: TextAlign.center,
               style: RaynTypography.caption.copyWith(color: palette.textMuted),
             ),

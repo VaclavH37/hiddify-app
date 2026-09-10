@@ -3,6 +3,6 @@ class RaynRadius {
   const RaynRadius._();
 
   static const double pill = 999;
-  static const double card = 24;
-  static const double button = 18;
+  static const double card = 16;
+  static const double button = 12;
 }

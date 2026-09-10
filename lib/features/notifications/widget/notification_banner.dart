@@ -4,7 +4,7 @@ import 'package:hiddify/core/theme/rayn_colors.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
-import 'package:hiddify/core/widget/glass_surface.dart';
+import 'package:hiddify/core/widget/rayn_surface.dart';
 import 'package:hiddify/features/notifications/data/notification_data_providers.dart';
 import 'package:hiddify/features/notifications/notifier/notifications_list_notifier.dart';
 import 'package:hiddify/features/notifications/widget/notification_copy.dart';
@@ -32,8 +32,8 @@ class NotificationBanner extends ConsumerWidget {
       child: Dismissible(
         key: ValueKey(notification.id),
         onDismissed: (_) => dismiss(),
-        child: GlassSurface(
-          glowColor: RaynColors.goldPrimary.withValues(alpha: 0.12),
+        child: RaynSurface(
+          elevated: true,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -4,7 +4,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
-import 'package:hiddify/core/widget/glass_surface.dart';
+import 'package:hiddify/core/widget/rayn_surface.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/stats/notifier/stats_notifier.dart';
@@ -52,7 +52,7 @@ class _ProtectedCard extends ConsumerWidget {
     final title = isProtected ? t.connection.protected : t.connection.unprotected;
     final subtitle = isProtected ? t.connection.secureSubtitle : t.connection.exposedSubtitle;
 
-    return GlassSurface(
+    return RaynSurface(
       child: Row(
         children: [
           Icon(FluentIcons.shield_24_filled, size: 28, color: accent),
@@ -90,7 +90,7 @@ class _TrafficCard extends ConsumerWidget {
     final downloadSpeed = stats.downlink.toInt().speed();
     final totalDownload = stats.downlinkTotal.toInt().size();
 
-    return GlassSurface(
+    return RaynSurface(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -27,8 +27,4 @@ class RaynColors {
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xB3FFFFFF);
   static const Color textMuted = Color(0x80FFFFFF);
-
-  // Glass
-  static const Color glass = Color(0x14FFFFFF);
-  static const Color glassBorder = Color(0x1FFFFFFF);
 }

@@ -6,7 +6,7 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
-import 'package:hiddify/core/widget/glass_surface.dart';
+import 'package:hiddify/core/widget/rayn_surface.dart';
 import 'package:hiddify/features/proxy/active/ip_widget.dart';
 import 'package:hiddify/features/proxy/model/node_name.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
@@ -55,7 +55,7 @@ class ProxyTile extends HookConsumerWidget with PresLogger {
         onTap: onTap,
         onLongPress: () async => await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: proxy),
         borderRadius: BorderRadius.circular(RaynRadius.card),
-        child: GlassSurface(
+        child: RaynSurface(
           padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
           fillColor: selected ? AppTheme.brandAccent.withValues(alpha: 0.16) : null,
           border: selected ? Border.all(color: AppTheme.brandAccent.withValues(alpha: 0.55)) : null,

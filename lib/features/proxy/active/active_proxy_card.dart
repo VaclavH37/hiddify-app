@@ -6,7 +6,7 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
-import 'package:hiddify/core/widget/glass_surface.dart';
+import 'package:hiddify/core/widget/rayn_surface.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
@@ -66,13 +66,9 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
     return Semantics(
       button: true,
       label: '${t.pages.proxies.activeProxy}: $displayName',
-      child: GlassSurface(
+      child: RaynSurface(
         padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
-        // Light mode's pale surfaces blend into the pale background — a subtle
-        // drop shadow lifts the card so it reads as a surface above the canvas.
-        boxShadow: Theme.of(context).brightness == Brightness.light
-            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))]
-            : null,
+        elevated: true,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -264,11 +260,9 @@ class SelectedLocationTile extends ConsumerWidget {
     return Semantics(
       button: true,
       label: '$title: $subtitle',
-      child: GlassSurface(
+      child: RaynSurface(
         padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
-        boxShadow: Theme.of(context).brightness == Brightness.light
-            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))]
-            : null,
+        elevated: true,
         child: Material(
           color: Colors.transparent,
           child: InkWell(

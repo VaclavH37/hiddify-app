@@ -4,7 +4,7 @@ import 'package:hiddify/core/theme/rayn_colors.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
-import 'package:hiddify/core/widget/glass_surface.dart';
+import 'package:hiddify/core/widget/rayn_surface.dart';
 import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/notifications/widget/notification_copy.dart';
 import 'package:hiddify/utils/date_time_formatter.dart';
@@ -21,7 +21,7 @@ class NotificationTile extends StatelessWidget {
     final copy = notificationCopy(notification, t);
     final palette = context.rayn;
 
-    return GlassSurface(
+    return RaynSurface(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
