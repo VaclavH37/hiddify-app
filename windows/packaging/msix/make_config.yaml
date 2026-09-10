@@ -4,7 +4,7 @@ identity_name: RaynLabs.RaynVPN
 # Keep the first three components equal to pubspec.yaml's version; the fourth is
 # always 0. Was 4.1.2.0 — upstream Hiddify's number, the last thing in this file
 # still carrying it, while the app itself reported 1.3.x.
-msix_version: 1.5.1.0
+msix_version: 1.5.2.0
 logo_path: windows\runner\resources\app_icon.ico
 capabilities: internetClient, internetClientServer, privateNetworkClientServer
 languages: ar, en-us, es-es, fa-ir, fr-fr, id-id, pt-br, ru-ru, tr-tr, zh-cn, zh-tw
