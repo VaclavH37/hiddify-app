@@ -3,43 +3,40 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
 
-/// Inline page header (large title + optional subtitle) used by Settings,
-/// Logs, and About. Replaces the default Material [AppBar] on those pages.
+/// Inline page title used by Settings, About, the location picker and the
+/// inbox, in place of a Material [AppBar]. Scrolls with the content.
 ///
-/// [leading] is an optional widget rendered to the left of the title (e.g.
-/// a back arrow on sub-pages). [trailing] is a list of action widgets
-/// rendered as a Row on the right (typically icon buttons + the notification
-/// bell). Both align to the top of the title so a multi-line subtitle does
-/// not push them down.
+/// [leading] is an optional widget rendered to the left of the title (a back
+/// arrow on sub-pages). [trailing] is a list of actions rendered as a Row on
+/// the right. There is no subtitle slot any more: every page had one and
+/// every one restated its title.
 class RaynPageHeader extends StatelessWidget {
-  const RaynPageHeader({super.key, required this.title, this.subtitle, this.leading, this.trailing = const []});
+  const RaynPageHeader({
+    super.key,
+    required this.title,
+    this.leading,
+    this.trailing = const [],
+    this.padding = const EdgeInsets.fromLTRB(RaynSpacing.xl, RaynSpacing.xl, RaynSpacing.xl, RaynSpacing.lg),
+  });
 
   final String title;
-  final String? subtitle;
   final Widget? leading;
   final List<Widget> trailing;
+
+  /// Pages whose scroll view already carries the horizontal margin pass a
+  /// vertical-only padding here.
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.rayn;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, RaynSpacing.xl, RaynSpacing.xl, RaynSpacing.lg),
+      padding: padding,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (leading != null) ...[leading!, const SizedBox(width: RaynSpacing.md)],
+          if (leading != null) ...[leading!, const SizedBox(width: RaynSpacing.sm)],
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(title, style: RaynTypography.display.copyWith(color: palette.textPrimary)),
-                if (subtitle != null) ...[
-                  const SizedBox(height: RaynSpacing.xs),
-                  Text(subtitle!, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
-                ],
-              ],
-            ),
+            child: Text(title, style: RaynTypography.display.copyWith(color: palette.textPrimary)),
           ),
           if (trailing.isNotEmpty) ...[
             const SizedBox(width: RaynSpacing.md),

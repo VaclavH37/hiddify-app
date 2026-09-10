@@ -91,7 +91,6 @@
     },
     "proxies": {
       "title": "Proxies",
-      "subtitle": "Choose a server to route your traffic through.",
       "sort": "Ordenar proxies",
       "testDelay": "Probar latencia",
       "empty": "No hay proxies disponibles",
@@ -168,7 +167,6 @@
     "settings": {
       "title": "Ajustes",
       "resetTunnel": "Restablecer perfil de VPN",
-      "troubleshooting": "Solución de problemas",
       "general": {
         "title": "General",
         "locale": "Idioma",

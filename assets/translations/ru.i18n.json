@@ -95,7 +95,6 @@
     },
     "proxies": {
       "title": "Прокси",
-      "subtitle": "Choose a server to route your traffic through.",
       "sort": "Сортировать прокси",
       "testDelay": "Проверить задержку",
       "empty": "Нет доступных прокси",
@@ -172,7 +171,6 @@
     "settings": {
       "title": "Настройки",
       "resetTunnel": "Сбросить профиль VPN",
-      "troubleshooting": "Диагностика",
       "general": {
         "title": "Общие",
         "locale": "Язык",

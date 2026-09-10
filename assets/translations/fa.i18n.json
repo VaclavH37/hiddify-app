@@ -91,7 +91,6 @@
     },
     "proxies": {
       "title": "پروکسی‌ها",
-      "subtitle": "Choose a server to route your traffic through.",
       "sort": "مرتب‌سازی پروکسی‌ها",
       "testDelay": "تست تأخیر",
       "empty": "هیچ پروکسی موجود نیست",
@@ -168,7 +167,6 @@
     "settings": {
       "title": "تنظیمات",
       "resetTunnel": "بازنشانی پروفایل VPN",
-      "troubleshooting": "عیب‌یابی",
       "general": {
         "title": "عمومی",
         "locale": "زبان",

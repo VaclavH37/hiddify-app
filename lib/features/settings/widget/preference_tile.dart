@@ -1,31 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
-import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/settings/notifier/battery_optimization/battery_optimizations_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
-class _ValueLabel extends StatelessWidget {
-  const _ValueLabel(this.value);
-  final String value;
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.rayn;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 200),
-      child: Text(
-        value,
-        textAlign: TextAlign.end,
-        overflow: TextOverflow.ellipsis,
-        style: RaynTypography.body.copyWith(color: palette.textMuted),
-      ),
-    );
-  }
-}
 
 class ValuePreferenceWidget<T> extends HookConsumerWidget {
   const ValuePreferenceWidget({
@@ -59,7 +39,7 @@ class ValuePreferenceWidget<T> extends HookConsumerWidget {
       leading: icon,
       title: title,
       enabled: enabled,
-      trailing: _ValueLabel(presentValue?.call(value) ?? value.toString()),
+      trailing: RaynSettingsValue(presentValue?.call(value) ?? value.toString()),
       onTap: () async {
         final inputValue = await ref
             .read(dialogNotifierProvider.notifier)
@@ -114,7 +94,7 @@ class ChoicePreferenceWidget<T> extends HookConsumerWidget {
       leading: icon,
       title: title,
       enabled: enabled,
-      trailing: _ValueLabel(presentChoice(selected)),
+      trailing: RaynSettingsValue(presentChoice(selected)),
       onTap: () async {
         final selection = await ref
             .read(dialogNotifierProvider.notifier)
@@ -161,10 +141,7 @@ class BatteryOptimizationWidget extends HookConsumerWidget {
                     title: Text(t.pages.settings.general.ignoreBatteryOptimizationsDialogTitle),
                     content: Text(t.pages.settings.general.ignoreBatteryOptimizationsDialogBody),
                     actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(false),
-                        child: Text(t.common.cancel),
-                      ),
+                      TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: Text(t.common.cancel)),
                       TextButton(
                         onPressed: () => Navigator.of(dialogContext).pop(true),
                         child: Text(t.common.kContinue),

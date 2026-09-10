@@ -155,7 +155,7 @@
     },
     "logout": "Log out",
     "logoutConfirmTitle": "Log out?",
-    "logoutConfirmBody": "Logging out disconnects and removes your authentication token from this device.\nYour token will also be removed. If you don't have it saved, copy it first using the button above. Continue?",
+    "logoutConfirmBody": "Logging out disconnects and removes your authentication token from this device. If you don't have the token saved, copy it first with “Copy your token”. Continue?",
     "logoutConfirmAction": "Log out",
     "logoutCancel": "Cancel",
     "unreachable": {
@@ -298,7 +298,6 @@
     },
     "proxies": {
       "title": "Proxies",
-      "subtitle": "Choose a server to route your traffic through.",
       "sort": "Sort proxies",
       "testDelay": "Test latency",
       "empty": "No proxies available",
@@ -380,7 +379,6 @@
     },
     "about": {
       "title": "About",
-      "subtitle": "App version, links, and legal information.",
       "links": "Links",
       "support": "Support",
       "telegramChannel": "Telegram channel",
@@ -390,14 +388,13 @@
     },
     "settings": {
       "title": "Settings",
-      "subtitle": "Configure your account and application preferences.",
       "resetTunnel": "Reset VPN profile",
       "exportDiagnostics": "Export diagnostics",
       "exportDiagnosticsMsg": "Share the app and tunnel logs",
       "exportDiagnosticsEmpty": "No logs yet — connect once, then try again",
       "exportDiagnosticsFailed": "Couldn't share the logs",
       "exportDiagnosticsCopied": "Sharing failed — logs copied to the clipboard instead",
-      "troubleshooting": "Troubleshooting",
+      "advanced": "Advanced",
       "general": {
         "title": "General",
         "locale": "Language",
@@ -408,11 +405,11 @@
           "light": "Light mode",
           "black": "Black mode"
         },
-        "autoIpCheck": "Automatically check connection IP",
+        "autoIpCheck": "Check IP after connecting",
         "blockAds": "Block advertisements",
         "dynamicNotification": "Display speed in notification",
         "hapticFeedback": "Haptic feedback",
-        "actionAtClosing": "Action at closing",
+        "actionAtClosing": "When the window closes",
         "autoStart": "Start at login",
         "silentStart": "Start minimized",
         "ignoreBatteryOptimizations": "Disable battery optimization",
@@ -422,7 +419,7 @@
         "memoryLimit": "Memory limit",
         "memoryLimitMsg": "Enable if you're experiencing out of memory errors or frequent app crashes",
         "debugMode": "Debug mode",
-        "debugModeMsg": "Restart the app for applying this change",
+        "debugModeMsg": "Restart the app to apply this change",
         "logLevel": "Log level",
         "connectionTestUrl": "Connection test URL",
         "urlTestInterval": "URL test interval"

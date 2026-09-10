@@ -91,7 +91,6 @@
     },
     "proxies": {
       "title": "代理",
-      "subtitle": "Choose a server to route your traffic through.",
       "sort": "排序代理",
       "testDelay": "测试延迟",
       "empty": "无可用代理",
@@ -168,7 +167,6 @@
     "settings": {
       "title": "设置",
       "resetTunnel": "重置 VPN 配置文件",
-      "troubleshooting": "故障排除",
       "general": {
         "title": "通用",
         "locale": "语言",

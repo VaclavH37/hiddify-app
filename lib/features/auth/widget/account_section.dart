@@ -7,6 +7,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/widget/rayn_settings_group.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auth/model/payment_provider.dart';
 import 'package:hiddify/features/auth/notifier/logout_notifier.dart';
@@ -21,10 +22,10 @@ import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hiddify/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-/// Settings → Account block. Three stacked [RaynSettingsTile]s:
-/// profile + refresh, Copy-Token (gated on the original token still being on
-/// disk), and a destructive Logout. Loading indicator renders below when the
-/// logout request is in flight.
+/// Settings → Account block: one [RaynSettingsGroup] of profile + refresh,
+/// the store rows where they apply, Copy-Token (gated on the original token
+/// still being on disk), and a destructive Logout. Loading indicator renders
+/// below the group when the logout request is in flight.
 class AccountSection extends ConsumerWidget {
   const AccountSection({super.key});
 
@@ -57,93 +58,91 @@ class AccountSection extends ConsumerWidget {
         ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod)
         : null;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          RaynSettingsTile(
-            leading: Icons.account_circle_outlined,
-            title: profile.name,
-            subtitle: subInfoLine,
-            trailing: IconButton(
-              tooltip: t.pages.profiles.update,
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: () => ref.read(foregroundProfilesUpdateNotifierProvider.notifier).trigger(),
-            ),
-          ),
-          const SizedBox(height: RaynSpacing.sm),
-          // Offer converting a plan that does not renew itself — a legacy
-          // web-paid one, or a backend trial — to an auto-renewing store
-          // subscription. Hidden once the provider is already store-managed:
-          // offering a second one there would charge the user twice for the
-          // same account, in either direction (Play sub, iOS build, or vice
-          // versa), and neither store refunds that on our behalf.
-          if (showStoreRows && remote?.subInfo != null && !isStoreManaged) ...[
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        RaynSettingsGroup(
+          children: [
             RaynSettingsTile(
-              leading: Icons.shop_outlined,
-              title: PlatformUtils.isIOS ? t.auth.planTransition.settingsRowApple : t.auth.planTransition.settingsRow,
-              subtitle: t.auth.planTransition.settingsRowHint,
-              enabled: !logoutLoading,
-              onTap: () => context.pushNamed('planTransition'),
+              leading: Icons.account_circle_outlined,
+              title: profile.name,
+              subtitle: subInfoLine,
+              trailing: IconButton(
+                tooltip: t.pages.profiles.update,
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: () => ref.read(foregroundProfilesUpdateNotifierProvider.notifier).trigger(),
+              ),
             ),
-            const SizedBox(height: RaynSpacing.sm),
-          ],
-          RaynSettingsTile(
-            leading: Icons.content_copy,
-            title: t.auth.copyToken,
-            subtitle: sourceToken == null ? t.auth.noTokenStored : null,
-            enabled: sourceToken != null && !logoutLoading,
-            onTap: sourceToken == null
-                ? null
-                : () async {
-                    await Clipboard.setData(ClipboardData(text: sourceToken));
-                    if (!context.mounted) return;
-                    ref.read(inAppNotificationControllerProvider).showSuccessToast(t.auth.tokenCopied);
-                  },
-          ),
-          const SizedBox(height: RaynSpacing.sm),
-          // Manage subscription — store subscribers only. It deep-links to that
-          // store's subscription centre (the URL comes from the middleware, so
-          // Apple's and Google's both flow through unchanged); for any other
-          // provider we must NOT link out to the account page, because it
-          // exposes external payment options, which both stores forbid.
-          if (showStoreRows && isStoreManaged && manageUrl != null) ...[
+            // Offer converting a plan that does not renew itself — a legacy
+            // web-paid one, or a backend trial — to an auto-renewing store
+            // subscription. Hidden once the provider is already store-managed:
+            // offering a second one there would charge the user twice for the
+            // same account, in either direction (Play sub, iOS build, or vice
+            // versa), and neither store refunds that on our behalf.
+            if (showStoreRows && remote?.subInfo != null && !isStoreManaged) ...[
+              RaynSettingsTile(
+                leading: Icons.shop_outlined,
+                title: PlatformUtils.isIOS ? t.auth.planTransition.settingsRowApple : t.auth.planTransition.settingsRow,
+                subtitle: t.auth.planTransition.settingsRowHint,
+                enabled: !logoutLoading,
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.pushNamed('planTransition'),
+              ),
+            ],
             RaynSettingsTile(
-              leading: Icons.card_membership_outlined,
-              title: t.auth.manageSubscription,
-              enabled: !logoutLoading,
-              onTap: () => UriUtils.tryLaunch(Uri.parse(manageUrl)),
+              leading: Icons.content_copy,
+              title: t.auth.copyToken,
+              subtitle: sourceToken == null ? t.auth.noTokenStored : null,
+              enabled: sourceToken != null && !logoutLoading,
+              onTap: sourceToken == null
+                  ? null
+                  : () async {
+                      await Clipboard.setData(ClipboardData(text: sourceToken));
+                      if (!context.mounted) return;
+                      ref.read(inAppNotificationControllerProvider).showSuccessToast(t.auth.tokenCopied);
+                    },
             ),
-            const SizedBox(height: RaynSpacing.sm),
-          ],
-          // Restore purchases — iOS only. App Review tests this explicitly, and
-          // the paywall copy of it is unreachable once a profile exists (the
-          // router sends /auth/* to /home), so it needs a home in Settings.
-          if (PlatformUtils.isIOS) ...[
+            // Manage subscription — store subscribers only. It deep-links to that
+            // store's subscription centre (the URL comes from the middleware, so
+            // Apple's and Google's both flow through unchanged); for any other
+            // provider we must NOT link out to the account page, because it
+            // exposes external payment options, which both stores forbid.
+            if (showStoreRows && isStoreManaged && manageUrl != null) ...[
+              RaynSettingsTile(
+                leading: Icons.card_membership_outlined,
+                title: t.auth.manageSubscription,
+                enabled: !logoutLoading,
+                trailing: const Icon(Icons.open_in_new_rounded),
+                onTap: () => UriUtils.tryLaunch(Uri.parse(manageUrl)),
+              ),
+            ],
+            // Restore purchases — iOS only. App Review tests this explicitly, and
+            // the paywall copy of it is unreachable once a profile exists (the
+            // router sends /auth/* to /home), so it needs a home in Settings.
+            if (PlatformUtils.isIOS) ...[
+              RaynSettingsTile(
+                leading: Icons.restore,
+                title: t.auth.restorePurchases,
+                subtitle: t.auth.restorePurchasesHint,
+                enabled: !logoutLoading,
+                onTap: () => unawaited(_restorePurchases(context, ref, t)),
+              ),
+            ],
             RaynSettingsTile(
-              leading: Icons.restore,
-              title: t.auth.restorePurchases,
-              subtitle: t.auth.restorePurchasesHint,
+              leading: Icons.logout,
+              title: t.auth.logout,
+              accentColor: palette.danger,
               enabled: !logoutLoading,
-              onTap: () => unawaited(_restorePurchases(context, ref, t)),
+              onTap: () => _confirmLogout(context, ref, t),
             ),
-            const SizedBox(height: RaynSpacing.sm),
           ],
-          RaynSettingsTile(
-            leading: Icons.logout,
-            title: t.auth.logout,
-            accentColor: palette.danger,
-            enabled: !logoutLoading,
-            onTap: () => _confirmLogout(context, ref, t),
+        ),
+        if (logoutLoading)
+          const Padding(
+            padding: EdgeInsets.only(top: RaynSpacing.sm),
+            child: LinearProgressIndicator(),
           ),
-          if (logoutLoading)
-            const Padding(
-              padding: EdgeInsets.only(top: RaynSpacing.sm),
-              child: LinearProgressIndicator(),
-            ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -218,12 +217,7 @@ class AccountSection extends ConsumerWidget {
 /// allowance used" line. Both were removed with the quota card: throttling is
 /// meant to be invisible to the subscriber, and a usage figure is how they
 /// would work out that it had happened.
-String _formatSubInfo(
-  RemoteProfileEntity profile,
-  Translations t, {
-  String? provider,
-  String? billingPeriod,
-}) {
+String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? provider, String? billingPeriod}) {
   final sub = profile.subInfo!;
   final isStoreManaged = isStoreManagedProvider(provider);
 

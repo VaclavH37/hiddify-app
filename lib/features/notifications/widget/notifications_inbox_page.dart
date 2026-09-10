@@ -7,10 +7,10 @@ import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
+import 'package:hiddify/core/widget/sub_page_back_button.dart';
 import 'package:hiddify/features/notifications/data/notification_data_providers.dart';
 import 'package:hiddify/features/notifications/notifier/notifications_list_notifier.dart';
 import 'package:hiddify/features/notifications/widget/notification_tile.dart';
-import 'package:hiddify/features/settings/widget/sub_page_back_button.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// The notifications inbox, reached from the bell. Lists notifications newest
@@ -50,10 +50,7 @@ class NotificationsInboxPage extends HookConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl, vertical: RaynSpacing.xxl),
               child: Center(
-                child: Text(
-                  t.notifications.empty,
-                  style: RaynTypography.body.copyWith(color: palette.textMuted),
-                ),
+                child: Text(t.notifications.empty, style: RaynTypography.body.copyWith(color: palette.textMuted)),
               ),
             )
           else

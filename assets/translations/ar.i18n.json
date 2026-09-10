@@ -97,7 +97,6 @@
     },
     "proxies": {
       "title": "البروكسيات",
-      "subtitle": "Choose a server to route your traffic through.",
       "sort": "فرز البروكسيات",
       "testDelay": "اختبار التأخير",
       "empty": "لا توجد بروكسيات متاحة",
@@ -174,7 +173,6 @@
     "settings": {
       "title": "الإعدادات",
       "resetTunnel": "إعادة تعيين ملف VPN",
-      "troubleshooting": "استكشاف الأخطاء وإصلاحها",
       "general": {
         "title": "عام",
         "locale": "اللغة",

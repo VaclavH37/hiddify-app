@@ -12,6 +12,7 @@ import 'package:hiddify/core/widget/rayn_notification_bell.dart';
 import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
 import 'package:hiddify/core/widget/rayn_section_header.dart';
+import 'package:hiddify/core/widget/rayn_settings_group.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auth/widget/account_section.dart';
 import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
@@ -24,32 +25,19 @@ import 'package:hiddify/features/settings/widget/preference_tile.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-enum ConfigOptionSection {
-  fragment;
-
-  static final _fragmentKey = GlobalKey(debugLabel: "fragment-section-key");
-
-  GlobalKey get key => switch (this) {
-    ConfigOptionSection.fragment => _fragmentKey,
-  };
-}
+/// Widest the settings column grows. On a desktop window the rows used to
+/// stretch edge to edge, with each switch marooned at the far right; a list
+/// of settings is a column of text, and it stays one.
+const double _maxContentWidth = 640 + 2 * RaynSpacing.xl;
 
 class SettingsPage extends HookConsumerWidget {
-  SettingsPage({super.key, String? section})
-    : section = section != null ? ConfigOptionSection.values.byName(section) : null;
-
-  final ConfigOptionSection? section;
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final isMobile = Breakpoint(context).isMobile();
 
-    // Preferences, formerly the Settings → General sub-page. That page was the last
-    // sub-page left once Routing, DNS and Inbound were removed, which left a
-    // "General" section header whose only child was a "General" tile — a navigation
-    // hop that revealed everything behind it. With this few settings the level of
-    // hierarchy earned nothing, so the tiles live here directly.
     final generalTiles = <Widget>[
       const LocalePrefTile(),
       const ThemeModePrefTile(),
@@ -99,12 +87,12 @@ class SettingsPage extends HookConsumerWidget {
       if (PlatformUtils.isAndroid) const BatteryOptimizationWidget(),
     ];
 
-    // Diagnostics, deliberately kept in their own group rather than mixed in above.
-    // These are for investigating a problem, not for configuring the product:
-    // debug mode warns before enabling, and the connection-test URL feeds a hostname
-    // the core pins to the CN-direct resolver for 24h — a bad value there breaks
-    // ordinary browsing, not just the probe. Grouping them signals that.
-    final troubleshootingTiles = <Widget>[
+    // Kept in their own group rather than mixed in above. These are for
+    // investigating a problem, not for configuring the product: debug mode warns
+    // before enabling, and the connection-test URL feeds a hostname the core pins
+    // to the CN-direct resolver for 24h, so a bad value there breaks ordinary
+    // browsing, not just the probe. Grouping them signals that.
+    final advancedTiles = <Widget>[
       RaynSwitchTile(
         icon: Icons.memory_rounded,
         title: t.pages.settings.general.memoryLimit,
@@ -121,7 +109,7 @@ class SettingsPage extends HookConsumerWidget {
       // and every DNS lookup, which documents both the user's activity and this
       // client's routing/DNS design. Selecting `debug`/`trace` also sets static.debug
       // in the core, which used to write a goroutine dump naming sing-box and
-      // hiddify-core — undoing the de-branding done elsewhere.
+      // hiddify-core, undoing the de-branding done elsewhere.
       //
       // Nothing is lost in development: a debug build gets both tiles, and
       // bootstrap forces the core's debug flag on regardless.
@@ -156,13 +144,13 @@ class SettingsPage extends HookConsumerWidget {
       ),
       // On iOS this is the ONLY way to read the logs. The tunnel runs in a Network
       // Extension, a separate process the system can start with the app closed, and
-      // everything it writes lands in the App Group container — reachable only from a
+      // everything it writes lands in the App Group container, reachable only from a
       // Mac with the device physically attached, which a cloud build host cannot do.
       // There is no in-app log viewer either. Android is no better placed: the working
       // directory is internal storage, so reading it needs adb or root.
       //
       // Without this, the only diagnosis available on device is whatever reaches
-      // CoreAlert and shows in the UI — which covers a failed start, but not a tunnel
+      // CoreAlert and shows in the UI, which covers a failed start, but not a tunnel
       // that comes up and then quietly routes nothing.
       if (PlatformUtils.isMobile)
         RaynSettingsTile(
@@ -171,8 +159,7 @@ class SettingsPage extends HookConsumerWidget {
           subtitle: t.pages.settings.exportDiagnosticsMsg,
           onTap: () => exportDiagnostics(context, ref, t),
         ),
-      // Was stranded on the settings root under no header at all, left behind when
-      // the Network section was removed. It is a recovery action, so it belongs here.
+      // A recovery action, so it belongs with the other tools for a bad day.
       if (PlatformUtils.isIOS)
         RaynSettingsTile(
           leading: Icons.autorenew_rounded,
@@ -184,108 +171,58 @@ class SettingsPage extends HookConsumerWidget {
     ];
 
     return RaynPageScaffold(
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: RaynSpacing.xl),
-        children: [
-          RaynPageHeader(
-            title: t.pages.settings.title,
-            subtitle: t.pages.settings.subtitle,
-            trailing: const [RaynNotificationBell()],
+      body: Align(
+        alignment: Alignment.topLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),
+            children: [
+              RaynPageHeader(
+                title: t.pages.settings.title,
+                padding: const EdgeInsets.only(top: RaynSpacing.xl),
+                trailing: const [RaynNotificationBell()],
+              ),
+              RaynSectionHeader(t.auth.account),
+              const AccountSection(),
+              RaynSectionHeader(t.pages.settings.general.title),
+              RaynSettingsGroup(children: generalTiles),
+              RaynSectionHeader(t.pages.settings.advanced),
+              RaynSettingsGroup(children: advancedTiles),
+              // Desktop and tablet reach About from the navigation rail.
+              if (isMobile) ...[
+                const SizedBox(height: RaynSpacing.xl),
+                RaynSettingsGroup(
+                  children: [
+                    RaynSettingsTile(
+                      leading: Icons.info_outline_rounded,
+                      title: t.pages.about.title,
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.go(context.namedLocation('about')),
+                    ),
+                  ],
+                ),
+              ],
+              // Account deletion gets its own group, last on the page. App Store
+              // guideline 5.1.1(v) requires it to be reachable in-app; keeping it
+              // apart from the Account block means it is never a mis-tap away from
+              // Copy token or Restore purchases.
+              RaynSectionHeader(t.auth.deleteSection),
+              RaynSettingsGroup(
+                children: [
+                  RaynSettingsTile(
+                    leading: Icons.person_remove_outlined,
+                    title: t.auth.deleteAccountRow,
+                    subtitle: t.auth.deleteAccountRowHint,
+                    accentColor: context.rayn.danger,
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.pushNamed('deleteAccount'),
+                  ),
+                ],
+              ),
+            ],
           ),
-          RaynSectionHeader(t.auth.account),
-          const AccountSection(),
-          const _SectionDivider(),
-          RaynSectionHeader(t.pages.settings.general.title),
-          _TileColumn(children: generalTiles),
-          const _SectionDivider(),
-          RaynSectionHeader(t.pages.settings.troubleshooting),
-          _TileColumn(children: troubleshootingTiles),
-          if (isMobile) ...[
-            const _SectionDivider(),
-            RaynSectionHeader(t.pages.about.title),
-            _Tile(title: t.pages.about.title, icon: Icons.info_rounded, location: context.namedLocation('about')),
-          ],
-          // Account deletion gets its own section, last on the page. App Store
-          // guideline 5.1.1(v) requires it to be reachable in-app; keeping it
-          // apart from the Account block means it is never a mis-tap away from
-          // Copy token or Restore purchases.
-          const _SectionDivider(),
-          RaynSectionHeader(t.auth.deleteSection),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
-            child: RaynSettingsTile(
-              leading: Icons.person_remove_outlined,
-              title: t.auth.deleteAccountRow,
-              subtitle: t.auth.deleteAccountRowHint,
-              accentColor: context.rayn.danger,
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => context.pushNamed('deleteAccount'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A section's tiles, stacked and inset to line up with the section headers.
-///
-/// Deliberately plain: no `RaynPreferenceGroup` wrapper. These tiles used to live
-/// on sub-pages, where a filled, bordered, hairline-separated container set them
-/// apart from the page around them. Inlined onto the settings root that container
-/// read as a foreign element — the Account block above and the About row below are
-/// bare [RaynSettingsTile]s on the page background, so General and Troubleshooting
-/// were the only boxed sections on the screen.
-///
-/// Matches [AccountSection]'s layout exactly (same padding, same bare Column) so
-/// every section on this page shares one treatment.
-class _TileColumn extends StatelessWidget {
-  const _TileColumn({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
-      child: Column(children: children),
-    );
-  }
-}
-
-/// Hairline divider between top-level section groups (Account → General →
-/// Troubleshooting → About on mobile). Indented to align with tile content
-/// rather than running edge-to-edge.
-class _SectionDivider extends StatelessWidget {
-  const _SectionDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, RaynSpacing.md, RaynSpacing.xl, 0),
-      child: Divider(height: 1, thickness: 1, color: context.rayn.glassBorder),
-    );
-  }
-}
-
-class _Tile extends StatelessWidget {
-  const _Tile({required this.title, required this.icon, this.location, this.onTap})
-    : assert(location != null || onTap != null);
-
-  final String title;
-  final IconData icon;
-  final String? location;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.xl),
-      child: RaynSettingsTile(
-        leading: icon,
-        title: title,
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: onTap ?? () => context.go(location!),
+        ),
       ),
     );
   }

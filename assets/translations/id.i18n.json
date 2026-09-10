@@ -91,7 +91,6 @@
     },
     "proxies": {
       "title": "Proxy",
-      "subtitle": "Choose a server to route your traffic through.",
       "sort": "Urutkan proksi",
       "testDelay": "Uji latensi",
       "empty": "Tidak ada proksi yang tersedia",
@@ -168,7 +167,6 @@
     "settings": {
       "title": "Pengaturan",
       "resetTunnel": "Setel ulang profil VPN",
-      "troubleshooting": "Pemecahan masalah",
       "general": {
         "title": "Umum",
         "locale": "Bahasa",

@@ -5,30 +5,9 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/app_theme_mode.dart';
-import 'package:hiddify/core/theme/rayn_palette.dart';
-import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
-/// Right-aligned current-value label used by picker rows.
-class _ValueLabel extends StatelessWidget {
-  const _ValueLabel(this.value);
-  final String value;
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.rayn;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 180),
-      child: Text(
-        value,
-        textAlign: TextAlign.end,
-        overflow: TextOverflow.ellipsis,
-        style: RaynTypography.body.copyWith(color: palette.textMuted),
-      ),
-    );
-  }
-}
 
 class LocalePrefTile extends ConsumerWidget {
   const LocalePrefTile({super.key});
@@ -40,7 +19,7 @@ class LocalePrefTile extends ConsumerWidget {
     return RaynSettingsTile(
       leading: Icons.translate_rounded,
       title: t.pages.settings.general.locale,
-      trailing: _ValueLabel(locale.localeName),
+      trailing: RaynSettingsValue(locale.localeName),
       onTap: () async {
         final selectedLocale = await ref
             .read(dialogNotifierProvider.notifier)
@@ -74,7 +53,7 @@ class ThemeModePrefTile extends ConsumerWidget {
         AppThemeMode.black => Icons.contrast_rounded,
       },
       title: t.pages.settings.general.themeMode,
-      trailing: _ValueLabel(themeMode.present(t)),
+      trailing: RaynSettingsValue(themeMode.present(t)),
       onTap: () async {
         final selectedThemeMode = await ref
             .read(dialogNotifierProvider.notifier)
@@ -103,7 +82,7 @@ class ClosingPrefTile extends ConsumerWidget {
     return RaynSettingsTile(
       leading: Icons.logout_rounded,
       title: t.pages.settings.general.actionAtClosing,
-      trailing: _ValueLabel(action.present(t)),
+      trailing: RaynSettingsValue(action.present(t)),
       onTap: () async {
         final selectedAction = await ref.read(dialogNotifierProvider.notifier).showActionAtClosing(selected: action);
         if (selectedAction != null) {

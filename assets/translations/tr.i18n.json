@@ -91,7 +91,6 @@
     },
     "proxies": {
       "title": "Proxy'ler",
-      "subtitle": "Choose a server to route your traffic through.",
       "sort": "Proxy'leri sırala",
       "testDelay": "Gecikmeyi test et",
       "empty": "Kullanılabilir proxy yok",
@@ -168,7 +167,6 @@
     "settings": {
       "title": "Ayarlar",
       "resetTunnel": "VPN profilini sıfırla",
-      "troubleshooting": "Sorun giderme",
       "general": {
         "title": "Genel",
         "locale": "Dil",

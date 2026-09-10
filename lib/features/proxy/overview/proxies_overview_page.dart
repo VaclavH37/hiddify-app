@@ -8,6 +8,7 @@ import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/widget/rayn_notification_bell.dart';
 import 'package:hiddify/core/widget/rayn_page_header.dart';
 import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
+import 'package:hiddify/core/widget/sub_page_back_button.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
@@ -15,7 +16,6 @@ import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
 import 'package:hiddify/features/proxy/active/selected_location_notifier.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_notifier.dart';
 import 'package:hiddify/features/proxy/widget/proxy_tile.dart';
-import 'package:hiddify/features/settings/widget/sub_page_back_button.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -59,11 +59,12 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
     }
 
     final trailing = <Widget>[
-      // Re-runs the URL test for the group. The connection page's latency
-      // readout used to be the tap target for this; a readout that is also a
-      // button is easy to miss, so it lives here as a named action instead.
+      // Re-runs the latency test. The connection page's latency readout used
+      // to be the tap target for this; a readout that is also a button is easy
+      // to miss, so it lives here as a named action instead. A plain refresh
+      // glyph: the "network check" one read as a wifi dial to nobody.
       IconButton(
-        icon: Icon(Icons.network_check_rounded, color: palette.textPrimary),
+        icon: Icon(Icons.refresh_rounded, color: palette.textPrimary),
         tooltip: t.pages.proxies.testDelay,
         onPressed: isConnected ? () => ref.read(activeProxyNotifierProvider.notifier).urlTest("") : null,
       ),
@@ -82,12 +83,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
     return RaynPageScaffold(
       body: Column(
         children: [
-          RaynPageHeader(
-            title: t.pages.proxies.title,
-            subtitle: t.pages.proxies.subtitle,
-            leading: const SubPageBackButton(),
-            trailing: trailing,
-          ),
+          RaynPageHeader(title: t.pages.proxies.title, leading: const SubPageBackButton(), trailing: trailing),
           Expanded(
             child: proxies.when(
               data: (group) {

@@ -149,7 +149,7 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                     child: PopScope(
                       canPop: false,
                       onPopInvokedWithResult: (_, _) => context.goNamed('home'),
-                      child: SettingsPage(),
+                      child: const SettingsPage(),
                     ),
                   ),
                   routes: <GoRoute>[
