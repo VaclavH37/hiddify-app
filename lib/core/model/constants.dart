@@ -54,8 +54,14 @@ abstract class Constants {
   /// drops the connection button back to its "connected, no usable delay"
   /// state. See `pinDelayForMarketing`.
   ///
+  /// It also fills the paywall in with placeholder prices when the store
+  /// returns no products — the state App Store Connect leaves you in until
+  /// the subscriptions are at least "Ready to Submit", which is a problem
+  /// because it asks for a screenshot of the paywall before then. See
+  /// `pinOffersForMarketing`.
+  ///
   /// **Never distribute a build with this set.** The latency it reports is
-  /// asserted, not measured.
+  /// asserted, not measured, and so are the prices.
   static const marketingScreenshots =
       bool.fromEnvironment("MARKETING_SCREENSHOTS") || marketingDelayMsOverride > 0;
 

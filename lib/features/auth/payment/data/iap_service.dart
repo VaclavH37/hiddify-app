@@ -5,6 +5,7 @@ import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
+import 'package:hiddify/features/auth/payment/data/marketing_offers.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
@@ -147,18 +148,25 @@ class IapService with InfraLogger implements RaynBillingEvents {
   Stream<IapPurchaseOutcome> get outcomes => _outcomes.stream;
 
   /// Connect to the store. Returns [BillingConnState.unavailable] off-mobile.
-  Future<BillingConnState> connect() =>
-      _supported ? _billing.connect() : Future<BillingConnState>.value(BillingConnState.unavailable);
+  Future<BillingConnState> connect() async =>
+      pinConnStateForMarketing(_supported ? await _billing.connect() : BillingConnState.unavailable);
 
   /// The subscription's offers (base plans + the trial). Empty off-mobile.
-  Future<List<RaynOffer>> loadOffers() =>
-      _supported ? _billing.queryOffers(Constants.iapProductId) : Future<List<RaynOffer>>.value(const []);
+  Future<List<RaynOffer>> loadOffers() async =>
+      pinOffersForMarketing(_supported ? await _billing.queryOffers(Constants.iapProductId) : const []);
 
   /// Launch the store's purchase sheet for [offer], binding it to this account
   /// via the stored `user_id` (Play `obfuscatedAccountId`, Apple
   /// `appAccountToken`). The returned [LaunchResult] only says whether the sheet
   /// opened; the purchase itself arrives via the event stream. Null off-mobile.
   Future<LaunchResult?> buy(RaynOffer offer) async {
+    // A screenshots build shows plans no store has heard of, so there is no
+    // sheet to open. Reported as a cancel rather than a failure so the notifier
+    // returns the card to idle instead of painting an error under it: the
+    // paywall has to keep looking live while it is being photographed.
+    if (isMarketingOffer(offer)) {
+      return LaunchResult(responseCode: _BillingResponse.userCanceled, debugMessage: "screenshots build");
+    }
     if (!_supported) return null;
     final userId = await _sessionStore.readUserId();
     return _billing.launchPurchase(offer.offerToken, userId ?? '');

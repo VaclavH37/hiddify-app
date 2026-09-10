@@ -369,6 +369,25 @@ void main() {
             'file, the core debug flag and box.log on every shipped install.',
       );
     });
+
+    test('the screenshots gate stays opt-in', () {
+      // Pinned for the same reason as diagnosticsBuild above: the name does not
+      // tell you what can turn it on. This one gates an asserted latency AND the
+      // placeholder paywall prices in `pinOffersForMarketing`, so a build where
+      // it can be true by accident quotes a price no store agreed to.
+      //
+      // Note what is NOT in the expression: kDebugMode. diagnosticsBuild admits
+      // it deliberately; this must not, because a fabricated offer is
+      // indistinguishable from a real one on screen.
+      final constants = File('lib/core/model/constants.dart').readAsStringSync();
+      expect(
+        constants.contains('bool.fromEnvironment("MARKETING_SCREENSHOTS") || marketingDelayMsOverride > 0;'),
+        isTrue,
+        reason: 'marketingScreenshots must stay exactly two dart-defines wide: '
+            'MARKETING_SCREENSHOTS, or naming a latency. Anything else can make a '
+            'shipped build show a latency it never measured and a price nobody charges.',
+      );
+    });
   });
 }
 
