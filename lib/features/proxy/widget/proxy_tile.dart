@@ -56,7 +56,7 @@ class ProxyTile extends ConsumerWidget {
                       color: palette.textSecondary,
                     )
                   else
-                    IPCountryFlag(countryCode: proxy.ipinfo.countryCode, size: 28),
+                    IPCountryFlag(countryCode: proxy.ipinfo.countryCode, size: 28, rounded: true),
                   const SizedBox(width: RaynSpacing.lg),
                   Expanded(
                     child: Text(
