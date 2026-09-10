@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/widget/animated_text.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
@@ -17,6 +18,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 // TODO: rewrite
 class ConnectionButton extends HookConsumerWidget {
   const ConnectionButton({super.key});
+
+  /// Diameter of the orb's circle. Public because the home canvas centres on
+  /// the circle rather than on this widget's box, which also holds the label.
+  static const double diameter = 148;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -209,9 +214,6 @@ class _ConnectionButton extends StatelessWidget {
   /// Glow halo intensity. Softer on light to avoid blowing out cream.
   final double glowAlpha;
 
-  /// Diameter of the orb.
-  static const double _diameter = 148;
-
   /// Inset between the orb's edge and the mark's box.
   ///
   /// The artwork carries ~6% transparent margin per side of its own, so the
@@ -223,84 +225,74 @@ class _ConnectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Layout box is the orb itself so callers can center on the circle
-    // itself; the status label below is rendered as an overflow overlay.
+    // The orb and its label stack in flow, so this widget's box is the pair.
+    // The home canvas centres on the circle using [ConnectionButton.diameter]
+    // rather than on this box, which is why the label no longer hangs below as
+    // an overflow overlay: it takes part in layout like everything else.
     return RepaintBoundary(
-      child: SizedBox(
-        width: _diameter,
-        height: _diameter,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(
-              child: Semantics(
-                button: true,
-                enabled: enabled,
-                label: label,
-                child: Container(
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: glowAlpha))],
-                  ),
-                  child: Material(
-                    key: const ValueKey("home_connection_button"),
-                    shape: CircleBorder(side: borderSide),
-                    color: backgroundColor,
-                    child: InkWell(
-                      focusColor: Colors.grey,
-                      onTap: onTap,
-                      child: Padding(
-                        padding: const EdgeInsets.all(_markInset),
-                        child: TweenAnimationBuilder(
-                          tween: ColorTween(end: buttonColor),
-                          duration: const Duration(milliseconds: 600),
-                          builder: (context, value, child) =>
-                              Assets.images.logo.image(color: value, colorBlendMode: BlendMode.srcIn),
-                        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: ConnectionButton.diameter,
+            height: ConnectionButton.diameter,
+            child: Semantics(
+              button: true,
+              enabled: enabled,
+              label: label,
+              child: Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: glowAlpha))],
+                ),
+                child: Material(
+                  key: const ValueKey("home_connection_button"),
+                  shape: CircleBorder(side: borderSide),
+                  color: backgroundColor,
+                  child: InkWell(
+                    focusColor: Colors.grey,
+                    onTap: onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.all(_markInset),
+                      child: TweenAnimationBuilder(
+                        tween: ColorTween(end: buttonColor),
+                        duration: const Duration(milliseconds: 600),
+                        builder: (context, value, child) =>
+                            Assets.images.logo.image(color: value, colorBlendMode: BlendMode.srcIn),
                       ),
                     ),
-                  ).animate(target: enabled ? 0 : 1).blurXY(end: 1),
-                ).animate(target: enabled ? 0 : 1).scaleXY(end: .88, curve: Curves.easeIn),
-              ),
+                  ),
+                ).animate(target: enabled ? 0 : 1).blurXY(end: 1),
+              ).animate(target: enabled ? 0 : 1).scaleXY(end: .88, curve: Curves.easeIn),
             ),
-            Positioned(
-              top: _diameter + 16,
-              left: -100,
-              right: -100,
-              child: Center(
-                child: ExcludeSemantics(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+          ),
+          const SizedBox(height: RaynSpacing.lg),
+          ExcludeSemantics(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedText(label, style: Theme.of(context).textTheme.titleMedium),
+                if (secureLabel.isNotEmpty) ...[
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      AnimatedText(label, style: Theme.of(context).textTheme.titleMedium),
-                      if (secureLabel.isNotEmpty) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              FontAwesomeIcons.shieldHalved,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
-                            const Gap(4),
-                            Text(
-                              secureLabel,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.secondary),
-                            ),
-                          ],
-                        ),
-                      ],
+                      Icon(FontAwesomeIcons.shieldHalved, size: 16, color: Theme.of(context).colorScheme.secondary),
+                      const Gap(4),
+                      Text(
+                        secureLabel,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.secondary),
+                      ),
                     ],
                   ),
-                ),
-              ),
+                ],
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

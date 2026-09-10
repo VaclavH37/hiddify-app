@@ -66,68 +66,65 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
-      child: Semantics(
-        button: true,
-        label: '${t.pages.proxies.activeProxy}: $displayName',
-        child: GlassSurface(
-          padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
-          // Light mode's pale surfaces blend into the pale background — a subtle
-          // drop shadow lifts the card so it reads as a surface above the canvas.
-          boxShadow: Theme.of(context).brightness == Brightness.light
-              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))]
-              : null,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => context.goNamed('proxies'),
-              borderRadius: BorderRadius.circular(RaynRadius.card),
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: () async {
-                      await handleUrlTest();
-                      if (!context.mounted) return;
-                      await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: activeProxy);
-                    },
-                    borderRadius: BorderRadius.circular(RaynRadius.button),
-                    child: Padding(
-                      padding: const EdgeInsets.all(RaynSpacing.xs),
-                      child: IPCountryFlag(
-                        countryCode: activeProxy.ipinfo.countryCode,
-                        organization: activeProxy.ipinfo.org,
-                        size: 40,
-                      ),
+    return Semantics(
+      button: true,
+      label: '${t.pages.proxies.activeProxy}: $displayName',
+      child: GlassSurface(
+        padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
+        // Light mode's pale surfaces blend into the pale background — a subtle
+        // drop shadow lifts the card so it reads as a surface above the canvas.
+        boxShadow: Theme.of(context).brightness == Brightness.light
+            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))]
+            : null,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => context.goNamed('proxies'),
+            borderRadius: BorderRadius.circular(RaynRadius.card),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () async {
+                    await handleUrlTest();
+                    if (!context.mounted) return;
+                    await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: activeProxy);
+                  },
+                  borderRadius: BorderRadius.circular(RaynRadius.button),
+                  child: Padding(
+                    padding: const EdgeInsets.all(RaynSpacing.xs),
+                    child: IPCountryFlag(
+                      countryCode: activeProxy.ipinfo.countryCode,
+                      organization: activeProxy.ipinfo.org,
+                      size: 40,
                     ),
                   ),
-                  const SizedBox(width: RaynSpacing.md),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Semantics(
-                          label: t.pages.proxies.activeProxy,
-                          child: Text(
-                            displayName,
-                            style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                ),
+                const SizedBox(width: RaynSpacing.md),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Semantics(
+                        label: t.pages.proxies.activeProxy,
+                        child: Text(
+                          displayName,
+                          style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Text(modeLabel, style: RaynTypography.caption.copyWith(color: context.rayn.textMuted)),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(modeLabel, style: RaynTypography.caption.copyWith(color: context.rayn.textMuted)),
+                    ],
                   ),
-                  const SizedBox(width: RaynSpacing.sm),
-                  const _SignalBars(),
-                  const SizedBox(width: RaynSpacing.sm),
-                  Icon(Icons.chevron_right_rounded, size: 22, color: context.rayn.textSecondary),
-                ],
-              ),
+                ),
+                const SizedBox(width: RaynSpacing.sm),
+                const _SignalBars(),
+                const SizedBox(width: RaynSpacing.sm),
+                Icon(Icons.chevron_right_rounded, size: 22, color: context.rayn.textSecondary),
+              ],
             ),
           ),
         ),
@@ -284,51 +281,48 @@ class SelectedLocationTile extends ConsumerWidget {
         ? (selected.isAutoSelected ? t.pages.proxies.autoSelected : t.pages.proxies.direct)
         : t.pages.proxies.tapToChoose;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
-      child: Semantics(
-        button: true,
-        label: '$title: $subtitle',
-        child: GlassSurface(
-          padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
-          boxShadow: Theme.of(context).brightness == Brightness.light
-              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))]
-              : null,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => context.goNamed('proxies'),
-              borderRadius: BorderRadius.circular(RaynRadius.card),
-              child: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(RaynSpacing.xs),
-                    child: hasSelection
-                        ? IPCountryFlag(countryCode: selected.countryCode, size: 40)
-                        : Icon(Icons.public_outlined, size: 36, color: palette.textSecondary),
+    return Semantics(
+      button: true,
+      label: '$title: $subtitle',
+      child: GlassSurface(
+        padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.md),
+        boxShadow: Theme.of(context).brightness == Brightness.light
+            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))]
+            : null,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => context.goNamed('proxies'),
+            borderRadius: BorderRadius.circular(RaynRadius.card),
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(RaynSpacing.xs),
+                  child: hasSelection
+                      ? IPCountryFlag(countryCode: selected.countryCode, size: 40)
+                      : Icon(Icons.public_outlined, size: 36, color: palette.textSecondary),
+                ),
+                const SizedBox(width: RaynSpacing.md),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
+                    ],
                   ),
-                  const SizedBox(width: RaynSpacing.md),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          title,
-                          style: RaynTypography.body.copyWith(fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(subtitle, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: RaynSpacing.sm),
-                  Icon(Icons.chevron_right_rounded, size: 22, color: palette.textSecondary),
-                ],
-              ),
+                ),
+                const SizedBox(width: RaynSpacing.sm),
+                Icon(Icons.chevron_right_rounded, size: 22, color: palette.textSecondary),
+              ],
             ),
           ),
         ),
