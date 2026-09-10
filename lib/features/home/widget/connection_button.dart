@@ -163,12 +163,15 @@ class ConnectionButton extends HookConsumerWidget {
       await ref.read(connectionNotifierProvider.notifier).toggleConnection();
     }
 
-    return _Orb(state: state, onTap: onTap);
+    return ConnectionOrb(state: state, onTap: onTap);
   }
 }
 
-class _Orb extends HookWidget {
-  const _Orb({required this.state, required this.onTap});
+/// The orb's visual half: the disc with the tinted mark, the ring while a
+/// transition is in flight, and the status label under it. Public so it can be
+/// laid out in a test without the provider graph behind [ConnectionButton].
+class ConnectionOrb extends HookWidget {
+  const ConnectionOrb({super.key, required this.state, required this.onTap});
 
   final OrbState state;
   final VoidCallback onTap;
@@ -205,7 +208,6 @@ class _Orb extends HookWidget {
     };
 
     const diameter = ConnectionButton.diameter;
-    const ringDiameter = diameter + 2 * (_ringGap + _ringStroke);
 
     final circle = Semantics(
       button: true,
@@ -249,19 +251,25 @@ class _Orb extends HookWidget {
       ),
     );
 
-    // The ring is drawn outside the circle without changing this widget's box,
-    // so the canvas keeps centring on the circle; the few pixels of overflow
-    // stay well inside the gaps the canvas keeps around the orb.
-    final ring = AnimatedSwitcher(
-      duration: reduce ? Duration.zero : RaynMotion.fast,
-      child: state.ring
-          ? OverflowBox(
-              key: const ValueKey('ring'),
-              maxWidth: ringDiameter,
-              maxHeight: ringDiameter,
-              child: SizedBox(
-                width: ringDiameter,
-                height: ringDiameter,
+    // The ring is a positioned child hanging a few pixels outside the circle,
+    // so the Stack still sizes to the circle and the canvas keeps centring on
+    // it; the overflow stays well inside the gaps the canvas keeps around the
+    // orb. (An OverflowBox was tried first. It sizes itself to the largest
+    // size its parent allows, and in the orb's column that is unbounded, so
+    // the first time the ring appeared the whole page failed to lay out.)
+    const ringOverhang = _ringGap + _ringStroke;
+    final ring = Positioned.fill(
+      left: -ringOverhang,
+      top: -ringOverhang,
+      right: -ringOverhang,
+      bottom: -ringOverhang,
+      child: AnimatedSwitcher(
+        duration: reduce ? Duration.zero : RaynMotion.fast,
+        child: state.ring
+            // Expand to the positioned box: left to itself the indicator
+            // takes its 36px minimum and spins inside the mark instead.
+            ? SizedBox.expand(
+                key: const ValueKey('ring'),
                 child: CircularProgressIndicator(
                   // Reduce-motion gets a still, three-quarter arc rather than
                   // a spinning one: still unmistakably "in progress".
@@ -270,9 +278,9 @@ class _Orb extends HookWidget {
                   strokeCap: StrokeCap.round,
                   color: tint.withValues(alpha: 0.6),
                 ),
-              ),
-            )
-          : const SizedBox.shrink(key: ValueKey('no-ring')),
+              )
+            : const SizedBox.shrink(key: ValueKey('no-ring')),
+      ),
     );
 
     return RepaintBoundary(
