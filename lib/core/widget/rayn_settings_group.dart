@@ -25,7 +25,7 @@ class RaynSettingsGroup extends StatelessWidget {
       padding: EdgeInsets.zero,
       // The separator is inset to the rows' content edge, not the surface
       // edge: a full-bleed line would cut the group into separate cards.
-      child: EqualHeightColumn(rows: children, separatorColor: palette.glassBorder, separatorIndent: RaynSpacing.lg),
+      child: EqualHeightColumn(rows: children, separatorColor: palette.hairline, separatorIndent: RaynSpacing.lg),
     );
   }
 }

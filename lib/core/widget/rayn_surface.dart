@@ -56,7 +56,7 @@ class RaynSurface extends StatelessWidget {
         decoration: BoxDecoration(
           color: fillColor ?? palette.groupFill,
           borderRadius: borderRadius,
-          border: border ?? (isLight ? Border.all(color: palette.glassBorder) : null),
+          border: border ?? (isLight ? Border.all(color: palette.hairline) : null),
           boxShadow: elevated ? [BoxShadow(color: palette.shadow, blurRadius: 20, offset: const Offset(0, 6))] : null,
         ),
         padding: padding,

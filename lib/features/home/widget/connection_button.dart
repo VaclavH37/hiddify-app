@@ -225,7 +225,7 @@ class ConnectionOrb extends HookWidget {
           key: const ValueKey("home_connection_button"),
           color: palette.orbFill,
           // On cream the white disc needs an edge to read as a disc at all.
-          shape: CircleBorder(side: isLight ? BorderSide(color: palette.glassBorder) : BorderSide.none),
+          shape: CircleBorder(side: isLight ? BorderSide(color: palette.hairline) : BorderSide.none),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             customBorder: const CircleBorder(),

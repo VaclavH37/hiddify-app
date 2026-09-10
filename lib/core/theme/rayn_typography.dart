@@ -24,4 +24,14 @@ class RaynTypography {
   static const TextStyle label = TextStyle(fontFamily: _family, fontSize: 13, fontWeight: FontWeight.w500);
 
   static const TextStyle caption = TextStyle(fontFamily: _family, fontSize: 12, fontWeight: FontWeight.w400);
+
+  /// Running copy at the 14px step Material's bodyMedium uses: a disclosure
+  /// section, a notice, a consequence line. The only token with a line
+  /// height, because paragraphs wrap.
+  static const TextStyle paragraph = TextStyle(
+    fontFamily: _family,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+  );
 }

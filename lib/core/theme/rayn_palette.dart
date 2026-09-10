@@ -14,7 +14,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
-    required this.glassBorder,
+    required this.hairline,
     required this.shadow,
     required this.success,
     required this.warning,
@@ -59,7 +59,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
   final Color textMuted;
 
   /// Hairline: the border on a light-mode surface, and inset dividers.
-  final Color glassBorder;
+  final Color hairline;
 
   /// Card drop shadow.
   final Color shadow;
@@ -139,7 +139,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     textPrimary: Color(0xFFFFFFFF),
     textSecondary: Color(0xB3FFFFFF),
     textMuted: Color(0x80FFFFFF),
-    glassBorder: Color(0x1FFFFFFF),
+    hairline: Color(0x1FFFFFFF),
     shadow: Color(0x66000000),
     success: Color(0xFF3DD68C),
     warning: Color(0xFFE8C547),
@@ -169,7 +169,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     textPrimary: Color(0xFF2A241F),
     textSecondary: Color(0xFF6D5A4F),
     textMuted: Color(0xFF766559),
-    glassBorder: Color(0xFFEFE6D9),
+    hairline: Color(0xFFEFE6D9),
     shadow: Color(0x142B1E12),
     success: Color(0xFF137A3A),
     warning: Color(0xFF9A5B06),
@@ -194,7 +194,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
-    Color? glassBorder,
+    Color? hairline,
     Color? shadow,
     Color? success,
     Color? warning,
@@ -217,7 +217,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textMuted: textMuted ?? this.textMuted,
-      glassBorder: glassBorder ?? this.glassBorder,
+      hairline: hairline ?? this.hairline,
       shadow: shadow ?? this.shadow,
       success: success ?? this.success,
       warning: warning ?? this.warning,
@@ -245,7 +245,7 @@ class RaynPalette extends ThemeExtension<RaynPalette> {
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
-      glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
+      hairline: Color.lerp(hairline, other.hairline, t)!,
       shadow: Color.lerp(shadow, other.shadow, t)!,
       success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,

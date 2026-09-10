@@ -7,6 +7,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/widget/rayn_dialog_action.dart';
 import 'package:hiddify/core/widget/rayn_settings_group.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
 import 'package:hiddify/features/auth/model/payment_provider.dart';
@@ -195,11 +196,12 @@ class AccountSection extends ConsumerWidget {
         title: Text(t.auth.logoutConfirmTitle),
         content: Text(t.auth.logoutConfirmBody),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(t.auth.logoutCancel)),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: ctx.rayn.danger),
+          raynDialogAction(ctx, label: t.auth.logoutCancel, onPressed: () => Navigator.of(ctx).pop(false)),
+          raynDialogAction(
+            ctx,
+            label: t.auth.logoutConfirmAction,
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(t.auth.logoutConfirmAction),
+            destructive: true,
           ),
         ],
       ),

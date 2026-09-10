@@ -139,7 +139,7 @@ class RaynShell extends HookConsumerWidget {
       child: DecoratedBox(
         position: DecorationPosition.foreground,
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: palette.glassBorder)),
+          border: Border(top: BorderSide(color: palette.hairline)),
         ),
         child: NavigationBar(
           selectedIndex: selectedIndex,

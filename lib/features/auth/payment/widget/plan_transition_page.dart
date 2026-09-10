@@ -395,7 +395,7 @@ class _ExplainerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.groupFill,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.glassBorder),
+        border: Border.all(color: palette.hairline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +426,7 @@ class _Banner extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.groupFill,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.glassBorder),
+        border: Border.all(color: palette.hairline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

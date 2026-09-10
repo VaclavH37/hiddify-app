@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hiddify/core/theme/app_theme_mode.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
 
 class AppTheme {
@@ -40,6 +41,24 @@ class AppTheme {
     final cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(RaynRadius.card));
     Color? whenSelected(Set<WidgetState> states, Color color) => states.contains(WidgetState.selected) ? color : null;
 
+    final buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(RaynRadius.button));
+    const buttonMinSize = Size(64, 48);
+    const buttonPadding = EdgeInsets.symmetric(horizontal: RaynSpacing.xl);
+    final buttonTextStyle = RaynTypography.body.copyWith(fontWeight: FontWeight.w600);
+
+    OutlineInputBorder fieldBorder(Color color, {double width = 1}) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(RaynRadius.button),
+      borderSide: BorderSide(color: color, width: width),
+    );
+    // A field's label and icons: danger while invalid, the text-safe amber
+    // while focused, muted while disabled, secondary otherwise.
+    Color fieldForeground(Set<WidgetState> states) {
+      if (states.contains(WidgetState.error)) return palette.danger;
+      if (states.contains(WidgetState.disabled)) return palette.textMuted;
+      if (states.contains(WidgetState.focused)) return palette.accentText;
+      return palette.textSecondary;
+    }
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
@@ -59,24 +78,104 @@ class AppTheme {
           TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
         },
       ),
-      // The roles Material widgets and the auth pages read, on the app's own
-      // scale. Body and label sizes stay at Material's defaults: they are the
-      // sizes buttons and fields were designed around.
+      // Every role Material widgets read, on the app's own scale, so a page
+      // that mixes RaynTypography with textTheme roles shows one body size.
+      // The 14px roles map to `paragraph`. labelSmall stays at 12 rather than
+      // Material's 11: 12 is the floor the palette's contrast was tuned for.
       textTheme: TextTheme(
+        displayLarge: RaynTypography.display,
+        displayMedium: RaynTypography.display,
         displaySmall: RaynTypography.display,
+        headlineLarge: RaynTypography.display,
+        headlineMedium: RaynTypography.display,
         headlineSmall: RaynTypography.title,
         titleLarge: RaynTypography.title,
         titleMedium: RaynTypography.body,
+        titleSmall: RaynTypography.paragraph.copyWith(fontWeight: FontWeight.w600),
         bodyLarge: RaynTypography.body.copyWith(fontWeight: FontWeight.w400),
+        bodyMedium: RaynTypography.paragraph,
+        bodySmall: RaynTypography.caption,
+        labelLarge: RaynTypography.paragraph.copyWith(fontWeight: FontWeight.w500),
+        labelMedium: RaynTypography.label,
+        labelSmall: RaynTypography.caption.copyWith(fontWeight: FontWeight.w500),
       ).apply(bodyColor: palette.textPrimary, displayColor: palette.textPrimary),
       appBarTheme: AppBarTheme(
         backgroundColor: palette.bgSurface,
         surfaceTintColor: Colors.transparent,
         foregroundColor: palette.textPrimary,
       ),
-      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: palette.accentText)),
+      // Buttons: one shape and one height for all three families, so the
+      // pre-auth forms, the dialogs and the settings sub-pages agree. Filled
+      // keeps its colours from the scheme (amber, charcoal text) so a call
+      // site can still override the background; outlined carries a muted
+      // edge; a text button is the same type one weight lighter. Elevation
+      // stays at zero: nothing lifts on hover.
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: buttonShape,
+          minimumSize: buttonMinSize,
+          padding: buttonPadding,
+          textStyle: buttonTextStyle,
+          iconSize: 20,
+          elevation: 0,
+        ),
+      ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(foregroundColor: palette.accentText),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: palette.accentText,
+          side: BorderSide(color: palette.textMuted),
+          shape: buttonShape,
+          minimumSize: buttonMinSize,
+          padding: buttonPadding,
+          textStyle: buttonTextStyle,
+          iconSize: 20,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: palette.accentText,
+          shape: buttonShape,
+          minimumSize: const Size(48, 48),
+          padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md),
+          textStyle: RaynTypography.body,
+          iconSize: 20,
+        ),
+      ),
+      // Fields: an opaque fill one tone above the page with a hairline edge
+      // in both themes (a control needs a boundary even when its fill is a
+      // tone up), the text-safe amber as the focus ring (the brand amber is
+      // about 2:1 on cream, under the 3:1 a ring needs), danger for errors.
+      inputDecorationTheme: InputDecorationThemeData(
+        filled: true,
+        fillColor: WidgetStateColor.resolveWith(
+          (states) =>
+              states.contains(WidgetState.disabled) ? palette.groupFill.withValues(alpha: 0.5) : palette.groupFill,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg, vertical: RaynSpacing.md),
+        border: fieldBorder(palette.hairline),
+        enabledBorder: fieldBorder(palette.hairline),
+        disabledBorder: fieldBorder(palette.hairline.withValues(alpha: 0.5)),
+        focusedBorder: fieldBorder(palette.accentText, width: 1.5),
+        errorBorder: fieldBorder(palette.danger),
+        focusedErrorBorder: fieldBorder(palette.danger, width: 1.5),
+        labelStyle: WidgetStateTextStyle.resolveWith(
+          (states) => RaynTypography.body.copyWith(fontWeight: FontWeight.w400, color: fieldForeground(states)),
+        ),
+        floatingLabelStyle: WidgetStateTextStyle.resolveWith(
+          (states) => RaynTypography.label.copyWith(color: fieldForeground(states)),
+        ),
+        hintStyle: RaynTypography.body.copyWith(fontWeight: FontWeight.w400, color: palette.textMuted),
+        helperStyle: RaynTypography.caption.copyWith(color: palette.textMuted),
+        helperMaxLines: 2,
+        errorStyle: RaynTypography.caption.copyWith(color: palette.danger),
+        errorMaxLines: 2,
+        prefixIconColor: WidgetStateColor.resolveWith(fieldForeground),
+        suffixIconColor: WidgetStateColor.resolveWith(fieldForeground),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: palette.accentText,
+        selectionColor: palette.accent.withValues(alpha: 0.3),
+        selectionHandleColor: palette.accentText,
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: palette.groupFill,
@@ -99,7 +198,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RaynRadius.group)),
         textStyle: RaynTypography.body.copyWith(color: palette.textPrimary),
       ),
-      dividerTheme: DividerThemeData(color: palette.glassBorder, thickness: 1, space: 1),
+      dividerTheme: DividerThemeData(color: palette.hairline, thickness: 1, space: 1),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) => whenSelected(states, Colors.white)),
         trackColor: WidgetStateProperty.resolveWith((states) => whenSelected(states, palette.accent)),

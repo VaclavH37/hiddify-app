@@ -44,7 +44,7 @@ class RaynNavigationRail extends StatelessWidget {
       width: extended ? extendedWidth : collapsedWidth,
       decoration: BoxDecoration(
         color: palette.bgSurface,
-        border: Border(right: BorderSide(color: palette.glassBorder)),
+        border: Border(right: BorderSide(color: palette.hairline)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {

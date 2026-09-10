@@ -93,7 +93,7 @@ class SidebarStatusView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Divider(height: 1, thickness: 1, color: palette.glassBorder),
+          Divider(height: 1, thickness: 1, color: palette.hairline),
           const SizedBox(height: RaynSpacing.md),
           Row(
             children: [

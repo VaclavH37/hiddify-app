@@ -6,6 +6,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/widget/rayn_dialog_action.dart';
 import 'package:hiddify/features/auth/delete/model/delete_account_state.dart';
 import 'package:hiddify/features/auth/delete/notifier/delete_account_notifier.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
@@ -86,11 +87,12 @@ class DeleteAccountPage extends HookConsumerWidget {
           title: Text(t.auth.deleteAccount.confirmTitle),
           content: Text(t.auth.deleteAccount.confirmBody),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(t.auth.deleteAccount.cancel)),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: ctx.rayn.danger),
+            raynDialogAction(ctx, label: t.auth.deleteAccount.cancel, onPressed: () => Navigator.of(ctx).pop(false)),
+            raynDialogAction(
+              ctx,
+              label: t.auth.deleteAccount.confirmProceed,
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(t.auth.deleteAccount.confirmProceed),
+              destructive: true,
             ),
           ],
         ),

@@ -114,7 +114,7 @@ class PlanCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: highlighted ? theme.colorScheme.primary : palette.glassBorder,
+                color: highlighted ? theme.colorScheme.primary : palette.hairline,
                 width: highlighted ? 1.5 : 1,
               ),
             ),

@@ -105,5 +105,51 @@ void main() {
         expect(data.textTheme.titleLarge!.fontFamily, 'Geist');
       }
     });
+
+    test('every role is on the Rayn scale, with 12 as the smallest step', () {
+      final theme = AppTheme(AppThemeMode.system, 'Geist');
+      for (final data in [theme.lightTheme(), theme.darkTheme()]) {
+        final text = data.textTheme;
+        expect(text.displayLarge!.fontSize, 32);
+        expect(text.headlineMedium!.fontSize, 32);
+        expect(text.titleSmall!.fontSize, 14);
+        expect(text.bodyMedium!.fontSize, 14);
+        expect(text.bodySmall!.fontSize, 12);
+        expect(text.labelLarge!.fontSize, 14);
+        expect(text.labelMedium!.fontSize, 13);
+        expect(text.labelSmall!.fontSize, 12);
+        for (final style in [text.bodyMedium!, text.labelSmall!, text.titleSmall!]) {
+          expect(style.fontFamily, 'Geist');
+        }
+      }
+    });
+  });
+
+  group('component themes', () {
+    test('the three button families share the 12px shape and a 48px height', () {
+      final theme = AppTheme(AppThemeMode.system, 'Geist');
+      for (final data in [theme.lightTheme(), theme.darkTheme()]) {
+        final styles = [data.filledButtonTheme.style!, data.outlinedButtonTheme.style!, data.textButtonTheme.style!];
+        for (final style in styles) {
+          final shape = style.shape!.resolve(const {})! as RoundedRectangleBorder;
+          expect(shape.borderRadius, BorderRadius.circular(12));
+          expect(style.minimumSize!.resolve(const {})!.height, 48);
+        }
+      }
+    });
+
+    test('fields are filled with the group tone and edged at 12px in both themes', () {
+      final theme = AppTheme(AppThemeMode.system, 'Geist');
+      for (final (palette, data) in [(RaynPalette.light, theme.lightTheme()), (RaynPalette.dark, theme.darkTheme())]) {
+        final input = data.inputDecorationTheme;
+        expect(input.filled, isTrue);
+        expect(WidgetStateProperty.resolveAs<Color>(input.fillColor!, const {}), palette.groupFill);
+        final border = input.enabledBorder! as OutlineInputBorder;
+        expect(border.borderRadius, BorderRadius.circular(12));
+        expect(border.borderSide.color, palette.hairline);
+        final focused = input.focusedBorder! as OutlineInputBorder;
+        expect(focused.borderSide.color, palette.accentText);
+      }
+    });
   });
 }
