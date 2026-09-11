@@ -236,7 +236,6 @@
     }
   },
   "auth": {
-    "subtitle": "Collez votre lien Rayn, scannez votre code QR ou connectez-vous avec votre e-mail pour commencer.",
     "scanQr": "Scanner un code QR",
     "paste": "Coller depuis le presse-papiers",
     "pasteEmpty": "Le presse-papiers est vide",
@@ -290,7 +289,6 @@
     },
     "login": {
       "signInWithEmail": "Se connecter par e-mail",
-      "subtitle": "Saisissez l'e-mail et le mot de passe de votre compte pour récupérer automatiquement votre jeton.",
       "emailLabel": "E-mail",
       "passwordLabel": "Mot de passe",
       "emailEmpty": "Saisissez votre e-mail",
@@ -309,7 +307,6 @@
     },
     "register": {
       "createAccount": "Créer un compte",
-      "subtitle": "Saisissez vos informations pour créer un compte Rayn.",
       "emailLabel": "E-mail",
       "passwordLabel": "Mot de passe",
       "displayNameLabel": "Nom affiché",

@@ -236,7 +236,6 @@
     }
   },
   "auth": {
-    "subtitle": "貼上您的 Rayn 連結、掃描 QR 碼或使用電子郵件登入即可開始。",
     "scanQr": "掃描 QR 碼",
     "paste": "從剪貼簿貼上",
     "pasteEmpty": "剪貼簿是空的",
@@ -290,7 +289,6 @@
     },
     "login": {
       "signInWithEmail": "使用電子郵件登入",
-      "subtitle": "輸入您的帳戶電子郵件和密碼以自動取得您的權杖。",
       "emailLabel": "電子郵件",
       "passwordLabel": "密碼",
       "emailEmpty": "請輸入您的電子郵件",
@@ -309,7 +307,6 @@
     },
     "register": {
       "createAccount": "建立帳戶",
-      "subtitle": "輸入您的資料以建立 Rayn 帳戶。",
       "emailLabel": "電子郵件",
       "passwordLabel": "密碼",
       "displayNameLabel": "顯示名稱",

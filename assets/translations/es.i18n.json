@@ -236,7 +236,6 @@
     }
   },
   "auth": {
-    "subtitle": "Pega tu enlace Rayn, escanea tu código QR o inicia sesión con tu correo para empezar.",
     "scanQr": "Escanear código QR",
     "paste": "Pegar desde el portapapeles",
     "pasteEmpty": "El portapapeles está vacío",
@@ -290,7 +289,6 @@
     },
     "login": {
       "signInWithEmail": "Iniciar sesión con correo",
-      "subtitle": "Introduce el correo y la contraseña de tu cuenta para obtener tu token automáticamente.",
       "emailLabel": "Correo electrónico",
       "passwordLabel": "Contraseña",
       "emailEmpty": "Introduce tu correo",
@@ -309,7 +307,6 @@
     },
     "register": {
       "createAccount": "Crear una cuenta",
-      "subtitle": "Introduce tus datos para crear una cuenta de Rayn.",
       "emailLabel": "Correo electrónico",
       "passwordLabel": "Contraseña",
       "displayNameLabel": "Nombre visible",

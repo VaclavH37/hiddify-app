@@ -5,9 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
-import 'package:hiddify/core/widget/rayn_wordmark.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
+import 'package:hiddify/core/widget/sub_page_back_button.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
 import 'package:hiddify/features/auth/login/notifier/login_notifier.dart';
+import 'package:hiddify/features/auth/widget/auth_layout.dart';
 import 'package:hiddify/features/auth/widget/auth_unreachable_help.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hiddify/utils/uri_utils.dart';
@@ -22,7 +25,6 @@ class LoginPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-    final theme = Theme.of(context);
     final palette = context.rayn;
 
     final loginState = ref.watch(loginNotifierProvider);
@@ -69,111 +71,70 @@ class LoginPage extends HookConsumerWidget {
     });
 
     final outcomeMessage = _outcomeMessage(t, loginState.outcome);
+    final errorStyle = RaynTypography.paragraph.copyWith(color: palette.danger);
 
-    return Scaffold(
-      // Match the auth screen canvas (palette.bgPrimary); transparent app bar
-      // keeps the back button without a title — the wordmark is the header.
-      backgroundColor: palette.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Gap(24),
-                    // Same wordmark hero (size / stylization / position) as the
-                    // initial auth screen.
-                    const RaynWordmarkHero(),
-                    const Gap(36),
-                    Text(t.auth.login.subtitle, style: theme.textTheme.bodyLarge, textAlign: TextAlign.center),
-                    const Gap(24),
-                    TextField(
-                      controller: emailCtrl,
-                      enabled: !isSubmitting,
-                      keyboardType: TextInputType.emailAddress,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: t.auth.login.emailLabel,
-                        prefixIcon: const Icon(Icons.alternate_email),
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    const Gap(12),
-                    TextField(
-                      controller: passwordCtrl,
-                      enabled: !isSubmitting,
-                      obscureText: obscure.value,
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => submit(),
-                      decoration: InputDecoration(
-                        labelText: t.auth.login.passwordLabel,
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(obscure.value ? Icons.visibility_off : Icons.visibility),
-                          onPressed: () => obscure.value = !obscure.value,
-                        ),
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    if (fieldError.value != null) ...[
-                      const Gap(8),
-                      Text(fieldError.value!, style: TextStyle(color: theme.colorScheme.error)),
-                    ],
-                    // When the host is unreachable (e.g. packet-filtered) the
-                    // failure is never silent: show retry / token / support help.
-                    if (loginState.outcome == LoginOutcome.unreachable) ...[
-                      const Gap(8),
-                      AuthUnreachableHelp(t: t),
-                    ] else if (outcomeMessage != null) ...[
-                      const Gap(8),
-                      Text(outcomeMessage, style: TextStyle(color: theme.colorScheme.error)),
-                      if (_showWebsiteLink(loginState.outcome)) ...[
-                        const Gap(4),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
-                            icon: const Icon(Icons.open_in_new, size: 18),
-                            label: Text(t.auth.login.openWebsite),
-                          ),
-                        ),
-                      ],
-                    ],
-                    const Gap(24),
-                    SizedBox(
-                      height: 52,
-                      child: FilledButton(
-                        onPressed: isSubmitting ? null : submit,
-                        child: isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : Text(t.auth.login.signInButton),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    return AuthLayout(
+      leading: const SubPageBackButton(fallback: 'auth'),
+      title: t.auth.login.signInWithEmail,
+      children: [
+        TextField(
+          controller: emailCtrl,
+          enabled: !isSubmitting,
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(
+            labelText: t.auth.login.emailLabel,
+            prefixIcon: const Icon(Icons.alternate_email_rounded),
+          ),
+        ),
+        const Gap(RaynSpacing.md),
+        TextField(
+          controller: passwordCtrl,
+          enabled: !isSubmitting,
+          obscureText: obscure.value,
+          autocorrect: false,
+          enableSuggestions: false,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => submit(),
+          decoration: InputDecoration(
+            labelText: t.auth.login.passwordLabel,
+            prefixIcon: const Icon(Icons.lock_outline_rounded),
+            suffixIcon: IconButton(
+              icon: Icon(obscure.value ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+              onPressed: () => obscure.value = !obscure.value,
             ),
           ),
         ),
-      ),
+        if (fieldError.value != null) ...[const Gap(RaynSpacing.sm), Text(fieldError.value!, style: errorStyle)],
+        // When the host is unreachable (e.g. packet-filtered) the failure is
+        // never silent: show retry / token / support help.
+        if (loginState.outcome == LoginOutcome.unreachable) ...[
+          const Gap(RaynSpacing.md),
+          AuthUnreachableHelp(t: t),
+        ] else if (outcomeMessage != null) ...[
+          const Gap(RaynSpacing.sm),
+          Text(outcomeMessage, style: errorStyle),
+          if (_showWebsiteLink(loginState.outcome)) ...[
+            const Gap(RaynSpacing.xs),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: Text(t.auth.login.openWebsite),
+              ),
+            ),
+          ],
+        ],
+        const Gap(RaynSpacing.xl),
+        FilledButton(
+          onPressed: isSubmitting ? null : submit,
+          child: isSubmitting
+              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(t.auth.login.signInButton),
+        ),
+      ],
     );
   }
 

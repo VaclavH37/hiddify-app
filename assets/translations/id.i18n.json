@@ -236,7 +236,6 @@
     }
   },
   "auth": {
-    "subtitle": "Tempel tautan Rayn Anda, pindai kode QR Anda, atau masuk dengan email untuk memulai.",
     "scanQr": "Pindai kode QR",
     "paste": "Tempel dari papan klip",
     "pasteEmpty": "Papan klip kosong",
@@ -290,7 +289,6 @@
     },
     "login": {
       "signInWithEmail": "Masuk dengan email",
-      "subtitle": "Masukkan email dan kata sandi akun Anda untuk mengambil token secara otomatis.",
       "emailLabel": "Email",
       "passwordLabel": "Kata sandi",
       "emailEmpty": "Masukkan email Anda",
@@ -309,7 +307,6 @@
     },
     "register": {
       "createAccount": "Buat akun",
-      "subtitle": "Masukkan data Anda untuk membuat akun Rayn.",
       "emailLabel": "Email",
       "passwordLabel": "Kata sandi",
       "displayNameLabel": "Nama tampilan",

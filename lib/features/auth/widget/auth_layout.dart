@@ -11,20 +11,20 @@ import 'package:hiddify/core/widget/rayn_wordmark.dart';
 /// app bar on some, none on others, a centred tagline under the hero, three
 /// different button heights). This is that stack once:
 ///
-/// - a 48px row for [leading], always reserved, so the wordmark sits at the
-///   same height on every screen whether or not there is a back button;
-/// - the brand wordmark as a hero at [heroWidthFactor] of the screen width;
-/// - an optional centred [title] on the title scale;
-/// - [children], stretched, in a scroll view that only scrolls when the
-///   content is taller than the viewport, and that brings a focused field
-///   above the keyboard;
+/// - the wordmark hero at [heroWidthFactor] of the screen width, an optional
+///   centred [title] on the title scale, and [children], stretched, as one
+///   group. When the group is shorter than the screen it sits a little above
+///   the middle, the way a sign-in card does; when it is taller it starts
+///   under the leading row and scrolls, and a focused field is brought above
+///   the keyboard;
+/// - [leading] (a back or close icon button) fixed at the top start, outside
+///   the scroll region, with its row's height always reserved above the
+///   group so the hero can never slide under it;
 /// - an optional [footer] pinned below the scroll region, for the disclosure
 ///   actions that must stay reachable without scrolling.
 ///
 /// Content is capped at [maxWidth], centred on wide windows. There is no
-/// app bar: nothing tints on scroll, and a back or close action is just an
-/// icon button in the leading slot (`SubPageBackButton(fallback: 'auth')`
-/// for the sub-screens).
+/// app bar: nothing tints on scroll.
 ///
 /// [canPop] is passed to a [PopScope]; the disclosures set it false because
 /// leaving them must never count as consent.
@@ -49,47 +49,50 @@ class AuthLayout extends StatelessWidget {
   static const double maxWidth = 480;
   static const double leadingRowHeight = 48;
 
+  /// Where a group shorter than the screen sits: 40% of the free space above
+  /// it, 60% below. Dead centre reads as low; this is the optical centre.
+  static const Alignment groupAlignment = Alignment(0, -0.2);
+
   @override
   Widget build(BuildContext context) {
     final palette = context.rayn;
 
-    // A scroll view whose content is at least the viewport tall: a short
-    // page sits still, a long one scrolls, and a focused field is brought
-    // above the keyboard. (Not a SliverFillRemaining: that asks every child
-    // for an intrinsic height, which the hero's LayoutBuilder cannot give.)
+    final group = Padding(
+      padding: EdgeInsets.fromLTRB(
+        RaynSpacing.xl,
+        RaynSpacing.sm + leadingRowHeight,
+        RaynSpacing.xl,
+        footer == null ? RaynSpacing.xl : RaynSpacing.lg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          RaynWordmarkHero(widthFactor: heroWidthFactor),
+          const SizedBox(height: RaynSpacing.xxl),
+          if (title != null) ...[
+            Text(
+              title!,
+              style: RaynTypography.title.copyWith(color: palette.textPrimary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: RaynSpacing.lg),
+          ],
+          ...children,
+        ],
+      ),
+    );
+
+    // A scroll view whose content is at least the viewport tall. Inside it
+    // the group is aligned within that height, so a short group is placed
+    // and a tall one simply fills and scrolls. (Not a SliverFillRemaining or
+    // an IntrinsicHeight: both ask every child for an intrinsic height,
+    // which the hero's LayoutBuilder cannot give.)
     final body = LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              RaynSpacing.xl,
-              RaynSpacing.sm,
-              RaynSpacing.xl,
-              footer == null ? RaynSpacing.xl : RaynSpacing.lg,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  height: leadingRowHeight,
-                  child: Align(alignment: AlignmentDirectional.centerStart, child: leading),
-                ),
-                const SizedBox(height: RaynSpacing.sm),
-                RaynWordmarkHero(widthFactor: heroWidthFactor),
-                const SizedBox(height: RaynSpacing.xxl),
-                if (title != null) ...[
-                  Text(
-                    title!,
-                    style: RaynTypography.title.copyWith(color: palette.textPrimary),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: RaynSpacing.lg),
-                ],
-                ...children,
-              ],
-            ),
-          ),
+          child: Align(alignment: groupAlignment, child: group),
         ),
       ),
     );
@@ -104,7 +107,15 @@ class AuthLayout extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: maxWidth),
               child: Column(
                 children: [
-                  Expanded(child: body),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        body,
+                        if (leading != null)
+                          PositionedDirectional(top: RaynSpacing.sm, start: RaynSpacing.xl, child: leading!),
+                      ],
+                    ),
+                  ),
                   if (footer != null)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),

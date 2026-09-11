@@ -77,6 +77,18 @@ void main() {
     expect(footer.top, greaterThanOrEqualTo(scroll.bottom));
   });
 
+  testWidgets('a short group sits above the middle; a tall one starts under the leading row', (tester) async {
+    await resize(tester, const Size(400, 800));
+    await tester.pumpWidget(host(const AuthLayout(children: [SizedBox(height: 10)])));
+    final hero = tester.getRect(find.byType(RaynWordmarkHero));
+    // Well below the reserved row, and with more room below than above.
+    expect(hero.top, greaterThan(AuthLayout.leadingRowHeight + 100));
+    expect(hero.top, lessThan(800 / 2));
+
+    await tester.pumpWidget(host(const AuthLayout(children: [SizedBox(height: 2000)])));
+    expect(tester.getRect(find.byType(RaynWordmarkHero)).top, 8 + AuthLayout.leadingRowHeight);
+  });
+
   testWidgets('a short body does not scroll; a tall one does', (tester) async {
     await resize(tester, const Size(400, 800));
     await tester.pumpWidget(host(const AuthLayout(children: [SizedBox(key: Key('short'), height: 10)])));

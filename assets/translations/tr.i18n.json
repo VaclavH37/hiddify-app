@@ -236,7 +236,6 @@
     }
   },
   "auth": {
-    "subtitle": "Başlamak için Rayn bağlantınızı yapıştırın, QR kodunuzu tarayın veya e-posta ile oturum açın.",
     "scanQr": "QR kodu tara",
     "paste": "Panodan yapıştır",
     "pasteEmpty": "Pano boş",
@@ -290,7 +289,6 @@
     },
     "login": {
       "signInWithEmail": "E-posta ile oturum aç",
-      "subtitle": "Jetonunuzu otomatik olarak almak için hesap e-postanızı ve parolanızı girin.",
       "emailLabel": "E-posta",
       "passwordLabel": "Parola",
       "emailEmpty": "E-postanızı girin",
@@ -309,7 +307,6 @@
     },
     "register": {
       "createAccount": "Hesap oluştur",
-      "subtitle": "Rayn hesabı oluşturmak için bilgilerinizi girin.",
       "emailLabel": "E-posta",
       "passwordLabel": "Parola",
       "displayNameLabel": "Görünen ad",

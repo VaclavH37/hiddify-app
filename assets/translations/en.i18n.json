@@ -48,7 +48,6 @@
     "decline": "Decline"
   },
   "auth": {
-    "subtitle": "Paste your Rayn link, scan your QR code, or sign in with email to get started.",
     "scanQr": "Scan QR code",
     "paste": "Paste from clipboard",
     "pasteEmpty": "Clipboard is empty",
@@ -102,7 +101,6 @@
     },
     "login": {
       "signInWithEmail": "Sign in with email",
-      "subtitle": "Enter your account email and password to authenticate.",
       "emailLabel": "Email",
       "passwordLabel": "Password",
       "emailEmpty": "Enter your email",
@@ -121,7 +119,6 @@
     },
     "register": {
       "createAccount": "Create an account",
-      "subtitle": "Enter your details to create a Rayn account.",
       "emailLabel": "Email",
       "passwordLabel": "Password",
       "displayNameLabel": "Display name",

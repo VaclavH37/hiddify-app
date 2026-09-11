@@ -236,7 +236,6 @@
     }
   },
   "auth": {
-    "subtitle": "粘贴您的 Rayn 链接、扫描二维码或使用电子邮件登录即可开始。",
     "scanQr": "扫描二维码",
     "paste": "从剪贴板粘贴",
     "pasteEmpty": "剪贴板为空",
@@ -290,7 +289,6 @@
     },
     "login": {
       "signInWithEmail": "使用邮箱登录",
-      "subtitle": "输入您的账户邮箱和密码以自动获取您的令牌。",
       "emailLabel": "邮箱",
       "passwordLabel": "密码",
       "emailEmpty": "请输入您的邮箱",
@@ -309,7 +307,6 @@
     },
     "register": {
       "createAccount": "创建账户",
-      "subtitle": "输入您的信息以创建 Rayn 账户。",
       "emailLabel": "电子邮件",
       "passwordLabel": "密码",
       "displayNameLabel": "显示名称",

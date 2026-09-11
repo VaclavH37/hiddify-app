@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
+import 'package:hiddify/core/widget/rayn_notice.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hiddify/utils/uri_utils.dart';
 
@@ -18,32 +18,23 @@ class AuthUnreachableHelp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          // The account page is an external way to pay, so iOS gets neither the
-          // link below nor prose pointing at it — guideline 3.1.1.
-          PlatformUtils.isIOS ? t.auth.unreachable.bodyApple : t.auth.unreachable.body,
-          style: TextStyle(color: theme.colorScheme.error),
-        ),
-        const Gap(4),
-        Wrap(
-          spacing: 8,
-          children: [
-            if (!PlatformUtils.isIOS)
-              TextButton.icon(
-                onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
-                icon: const Icon(Icons.open_in_new, size: 18),
-                label: Text(t.auth.unreachable.openAccount),
-              ),
-            TextButton.icon(
-              onPressed: () => UriUtils.tryLaunch(Uri(scheme: 'mailto', path: Constants.supportEmail)),
-              icon: const Icon(Icons.mail_outline, size: 18),
-              label: Text(t.auth.unreachable.contactSupport),
-            ),
-          ],
+    return RaynNotice(
+      tone: RaynNoticeTone.danger,
+      icon: Icons.cloud_off_rounded,
+      // The account page is an external way to pay, so iOS gets neither the
+      // link below nor prose pointing at it — guideline 3.1.1.
+      message: PlatformUtils.isIOS ? t.auth.unreachable.bodyApple : t.auth.unreachable.body,
+      actions: [
+        if (!PlatformUtils.isIOS)
+          TextButton.icon(
+            onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
+            icon: const Icon(Icons.open_in_new_rounded),
+            label: Text(t.auth.unreachable.openAccount),
+          ),
+        TextButton.icon(
+          onPressed: () => UriUtils.tryLaunch(Uri(scheme: 'mailto', path: Constants.supportEmail)),
+          icon: const Icon(Icons.mail_outline_rounded),
+          label: Text(t.auth.unreachable.contactSupport),
         ),
       ],
     );

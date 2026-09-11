@@ -236,7 +236,6 @@
     }
   },
   "auth": {
-    "subtitle": "Cole seu link Rayn, leia seu código QR ou entre com seu e-mail para começar.",
     "scanQr": "Ler código QR",
     "paste": "Colar da área de transferência",
     "pasteEmpty": "A área de transferência está vazia",
@@ -290,7 +289,6 @@
     },
     "login": {
       "signInWithEmail": "Entrar com e-mail",
-      "subtitle": "Digite o e-mail e a senha da sua conta para obter seu token automaticamente.",
       "emailLabel": "E-mail",
       "passwordLabel": "Senha",
       "emailEmpty": "Digite seu e-mail",
@@ -309,7 +307,6 @@
     },
     "register": {
       "createAccount": "Criar uma conta",
-      "subtitle": "Informe seus dados para criar uma conta Rayn.",
       "emailLabel": "E-mail",
       "passwordLabel": "Senha",
       "displayNameLabel": "Nome de exibição",
