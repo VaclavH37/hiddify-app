@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
+import 'package:hiddify/features/proxy/model/node_name.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/init_signal.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -81,8 +82,7 @@ class ProxySnapshot {
   final String selectedTag;
   final List<SnapshotItem> items;
 
-  String encode() =>
-      jsonEncode({'g': groupTag, 's': selectedTag, 'i': items.map((e) => e.toJson()).toList()});
+  String encode() => jsonEncode({'g': groupTag, 's': selectedTag, 'i': items.map((e) => e.toJson()).toList()});
 
   static ProxySnapshot? tryDecode(String? raw) {
     if (raw == null) return null;
@@ -93,11 +93,7 @@ class ProxySnapshot {
           .whereType<SnapshotItem>()
           .toList();
       if (items.isEmpty) return null;
-      return ProxySnapshot(
-        groupTag: (m['g'] as String?) ?? '',
-        selectedTag: (m['s'] as String?) ?? '',
-        items: items,
-      );
+      return ProxySnapshot(groupTag: (m['g'] as String?) ?? '', selectedTag: (m['s'] as String?) ?? '', items: items);
     } catch (_) {
       return null;
     }
@@ -167,7 +163,7 @@ class ProxySnapshotNotifier extends _$ProxySnapshotNotifier {
               type: it.type,
               isGroup: it.isGroup,
               groupSelectedTagDisplay: it.groupSelectedTagDisplay,
-              countryCode: it.ipinfo.countryCode,
+              countryCode: flagCountryCode(it),
               city: it.ipinfo.city,
               region: it.ipinfo.region,
               org: it.ipinfo.org,

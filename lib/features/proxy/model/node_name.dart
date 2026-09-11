@@ -50,11 +50,58 @@ const String _exitTagPrefix = 'EXIT-';
 /// This is the ONLY processing the client applies to a node tag: the human-
 /// readable name after the prefix is authored by the MW API and shown as-is (the
 /// internal tag schema is intentionally NOT parsed here). The flag is dropped
-/// because it is rendered separately as the leading icon (from geo-IP); keeping
-/// it in the text would render two flags.
+/// because it is rendered separately as the leading icon, decoded from that
+/// same flag by [countryCodeFromTag]; keeping it in the text would render two.
 String displayNodeTag(String tag) {
   final withoutPrefix = tag.startsWith(_exitTagPrefix) ? tag.substring(_exitTagPrefix.length) : tag;
   return stripTrailingFlag(withoutPrefix);
+}
+
+/// The ISO 3166 country code encoded by the trailing flag emoji of [tag] (the
+/// last pair of Regional Indicator Symbols), or null when there is none:
+/// "EXIT-Tokyo, JP🇯🇵" -> "JP".
+///
+/// The MW API appends the flag to every exit's tag, so this is the flag's
+/// source of truth. The connection probe's geolocation, which the flag used to
+/// come from, is a guess about the address the probe happened to exit from:
+/// empty until a node has been probed (a globe), and wrong whenever the probe
+/// exits elsewhere or the geolocation database misplaces the range.
+String? countryCodeFromTag(String tag) {
+  final runes = tag.trimRight().runes.toList();
+  if (runes.length < 2) return null;
+  final a = runes[runes.length - 2];
+  final b = runes[runes.length - 1];
+  const first = 0x1F1E6;
+  const last = 0x1F1FF;
+  if (a < first || a > last || b < first || b > last) return null;
+  return String.fromCharCodes([a - first + 0x41, b - first + 0x41]);
+}
+
+/// The flag to draw for an outbound: the trailing flag of its tag, or of the
+/// member a group has resolved to, and only failing both the probe's
+/// geolocation (empty when there is none, which draws the globe).
+///
+/// The raw tag is tried before the display tag because the flag can sit on
+/// either side of a "§" section the core trims for display.
+String flagCountryCode(OutboundInfo proxy) {
+  if (proxy.isGroup) {
+    final member = proxy.groupSelectedTag.split('§').first;
+    return countryCodeFromTag(member) ?? countryCodeFromTag(proxy.groupSelectedTagDisplay) ?? proxy.ipinfo.countryCode;
+  }
+  return countryCodeFromTag(proxy.tag) ?? countryCodeFromTag(proxy.tagDisplay) ?? proxy.ipinfo.countryCode;
+}
+
+/// The picker's alphabetical order: by country code, then by display name
+/// within a country, so the list reads as countries with their cities under
+/// them. A node with no country (no flag and no probe) sorts last. Case is
+/// ignored in the name so "amsterdam" and "Amsterdam" sit together.
+int compareByCountryThenName(OutboundInfo a, OutboundInfo b) {
+  final countryA = flagCountryCode(a);
+  final countryB = flagCountryCode(b);
+  if (countryA.isEmpty != countryB.isEmpty) return countryA.isEmpty ? 1 : -1;
+  final byCountry = countryA.compareTo(countryB);
+  if (byCountry != 0) return byCountry;
+  return displayNodeTag(a.tag).toLowerCase().compareTo(displayNodeTag(b.tag).toLowerCase());
 }
 
 /// Derives the user-facing label and flag country code for an active outbound,
@@ -75,7 +122,7 @@ String displayNodeTag(String tag) {
     ProxyType.balancer => ExitMode.rotate,
     _ => ExitMode.chosen,
   };
-  final countryCode = proxy.ipinfo.countryCode;
+  final countryCode = flagCountryCode(proxy);
 
   // Balancer: the core doesn't populate `groupSelectedTagDisplay`, so derive the
   // resolved exit from its IP geo ("Tokyo, JP"). Without a city there's no real

@@ -68,7 +68,7 @@ class ActiveProxyFooter extends ConsumerWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(RaynSpacing.xs),
-                  child: IPCountryFlag(countryCode: activeProxy.ipinfo.countryCode, size: ActiveProxyFooter.flagSize),
+                  child: IPCountryFlag(countryCode: flagCountryCode(activeProxy), size: ActiveProxyFooter.flagSize),
                 ),
                 const SizedBox(width: RaynSpacing.md),
                 Expanded(
