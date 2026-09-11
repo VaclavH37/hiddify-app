@@ -121,7 +121,7 @@ class AuthPage extends HookConsumerWidget {
         if (Constants.diagnosticsBuild && PlatformUtils.isMobile) ...[
           const Gap(RaynSpacing.md),
           TextButton.icon(
-            onPressed: () => exportDiagnostics(context, ref, t),
+            onPressed: () => exportDiagnostics(ref, t),
             icon: const Icon(Icons.share_rounded),
             label: Text(t.pages.settings.exportDiagnostics),
           ),

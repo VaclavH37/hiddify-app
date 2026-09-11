@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
@@ -139,12 +140,17 @@ class SettingsPage extends HookConsumerWidget {
       // Without this, the only diagnosis available on device is whatever reaches
       // CoreAlert and shows in the UI, which covers a failed start, but not a tunnel
       // that comes up and then quietly routes nothing.
-      if (PlatformUtils.isMobile)
+      //
+      // Gated on the same single switch as the log files themselves
+      // (`Constants.diagnosticsBuild`: debug builds and the RAYN_DIAGNOSTICS
+      // release), like the copy on the landing screen. A production build
+      // writes no logs, so a row there offered to share nothing.
+      if (Constants.diagnosticsBuild && PlatformUtils.isMobile)
         RaynSettingsTile(
           leading: Icons.share_rounded,
           title: t.pages.settings.exportDiagnostics,
           subtitle: t.pages.settings.exportDiagnosticsMsg,
-          onTap: () => exportDiagnostics(context, ref, t),
+          onTap: () => exportDiagnostics(ref, t),
         ),
       // A recovery action, so it belongs with the other tools for a bad day.
       if (PlatformUtils.isIOS)
