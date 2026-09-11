@@ -20,6 +20,17 @@ class AppTheme {
   /// amber does not read.
   static const Color onBrandAccent = Color(0xFF2A241F);
 
+  /// One step up from the standard button, for the landing's four
+  /// authentication actions: 60px tall, an 18px label and a 24px icon. They
+  /// are the whole screen, so they carry more weight than a form's submit.
+  /// Merged over the theme's button style, so shape, padding and colours
+  /// stay the theme's.
+  static final ButtonStyle largeButton = ButtonStyle(
+    minimumSize: const WidgetStatePropertyAll(Size(64, 60)),
+    textStyle: WidgetStatePropertyAll(RaynTypography.body.copyWith(fontSize: 18, fontWeight: FontWeight.w600)),
+    iconSize: const WidgetStatePropertyAll(24),
+  );
+
   ThemeData lightTheme() => _themed(RaynPalette.light, Brightness.light);
 
   ThemeData darkTheme() => _themed(RaynPalette.dark, Brightness.dark);

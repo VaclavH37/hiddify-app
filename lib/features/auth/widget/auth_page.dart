@@ -7,6 +7,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
+import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
 import 'package:hiddify/features/auth/widget/auth_layout.dart';
@@ -68,31 +69,35 @@ class AuthPage extends HookConsumerWidget {
       children: [
         // Primary path: paste the `rayn://import/<token>` link.
         FilledButton.icon(
+          style: AppTheme.largeButton,
           onPressed: isLoading ? null : paste,
           icon: const Icon(Icons.content_paste_rounded),
           label: Text(t.auth.paste),
         ),
         if (!PlatformUtils.isDesktop) ...[
-          const Gap(RaynSpacing.md),
+          const Gap(RaynSpacing.lg),
           OutlinedButton.icon(
+            style: AppTheme.largeButton,
             onPressed: isLoading ? null : scan,
             icon: const Icon(Icons.qr_code_scanner_rounded),
             label: Text(t.auth.scanQr),
           ),
         ],
-        const Gap(RaynSpacing.md),
+        const Gap(RaynSpacing.lg),
         // Secondary path: fetch the token via email/password sign-in. Token
         // import (above) stays primary — it works even when the account API
         // host is unreachable.
         OutlinedButton.icon(
+          style: AppTheme.largeButton,
           onPressed: isLoading ? null : () => context.push('/auth/login'),
           icon: const Icon(Icons.alternate_email_rounded),
           label: Text(t.auth.login.signInWithEmail),
         ),
-        const Gap(RaynSpacing.md),
+        const Gap(RaynSpacing.lg),
         // Create a new account (email verification + payment finish on the
         // website; the app owns creation only).
         OutlinedButton.icon(
+          style: AppTheme.largeButton,
           onPressed: isLoading ? null : () => context.push('/auth/register'),
           icon: const Icon(Icons.person_add_alt_1_rounded),
           label: Text(t.auth.register.createAccount),
