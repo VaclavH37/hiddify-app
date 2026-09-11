@@ -86,7 +86,7 @@
       "update": "更新設定檔",
       "msg": {
         "save": {
-          "success": "設定檔儲存成功"
+          "success": "訂閱已連結"
         },
         "invalidUrl": "無效的 URL",
         "updateRequired": "此連結需要較新版本的 Rayn。請更新應用程式。",
@@ -94,7 +94,7 @@
           "failure": "新增設定檔失敗"
         },
         "update": {
-          "success": "設定檔更新成功",
+          "success": "訂閱資訊已重新整理",
           "failure": "更新設定檔失敗",
           "failureNamed": "更新「${name}」失敗"
         }

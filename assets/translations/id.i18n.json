@@ -86,7 +86,7 @@
       "update": "Perbarui profil",
       "msg": {
         "save": {
-          "success": "Profil berhasil disimpan"
+          "success": "Langganan tertaut"
         },
         "invalidUrl": "URL tidak valid",
         "updateRequired": "Tautan ini memerlukan versi Rayn yang lebih baru. Perbarui aplikasi.",
@@ -94,7 +94,7 @@
           "failure": "Gagal menambahkan profil"
         },
         "update": {
-          "success": "Profil berhasil diperbarui",
+          "success": "Langganan diperbarui",
           "failure": "Gagal memperbarui profil",
           "failureNamed": "Gagal memperbarui \"${name}\""
         }

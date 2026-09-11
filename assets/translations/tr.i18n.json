@@ -86,7 +86,7 @@
       "update": "Profili güncelle",
       "msg": {
         "save": {
-          "success": "Profil başarıyla kaydedildi"
+          "success": "Abonelik bağlandı"
         },
         "invalidUrl": "Geçersiz URL",
         "updateRequired": "Bu bağlantı için Rayn'ın daha yeni bir sürümü gerekiyor. Lütfen uygulamayı güncelleyin.",
@@ -94,7 +94,7 @@
           "failure": "Profil eklenemedi"
         },
         "update": {
-          "success": "Profil başarıyla güncellendi",
+          "success": "Abonelik güncellendi",
           "failure": "Profil güncellenemedi",
           "failureNamed": "\"${name}\" güncellenemedi"
         }

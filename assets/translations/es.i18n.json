@@ -86,7 +86,7 @@
       "update": "Actualizar perfil",
       "msg": {
         "save": {
-          "success": "Perfil guardado con éxito"
+          "success": "Suscripción vinculada"
         },
         "invalidUrl": "URL no válida",
         "updateRequired": "Este enlace necesita una versión más reciente de Rayn. Actualiza la app.",
@@ -94,7 +94,7 @@
           "failure": "Error al añadir el perfil"
         },
         "update": {
-          "success": "Perfil actualizado con éxito",
+          "success": "Suscripción actualizada",
           "failure": "Error al actualizar el perfil",
           "failureNamed": "Error al actualizar \"${name}\""
         }

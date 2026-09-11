@@ -86,7 +86,7 @@
       "update": "更新配置文件",
       "msg": {
         "save": {
-          "success": "配置文件保存成功"
+          "success": "订阅已关联"
         },
         "invalidUrl": "无效的 URL",
         "updateRequired": "此链接需要更新版本的 Rayn。请更新应用。",
@@ -94,7 +94,7 @@
           "failure": "添加配置文件失败"
         },
         "update": {
-          "success": "配置文件更新成功",
+          "success": "订阅信息已刷新",
           "failure": "更新配置文件失败",
           "failureNamed": "更新 \"${name}\" 失败"
         }

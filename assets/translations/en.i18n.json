@@ -240,7 +240,7 @@
       "update": "Update profile",
       "msg": {
         "save": {
-          "success": "Subscription updated"
+          "success": "Subscription linked"
         },
         "invalidUrl": "Invalid URL",
         "updateRequired": "This link needs a newer version of Rayn. Please update the app.",
@@ -248,7 +248,7 @@
           "failure": "Failed to add profile"
         },
         "update": {
-          "success": "Subscription updated",
+          "success": "Subscription refreshed",
           "failure": "Failed to update profile",
           "failureNamed": "Failed to update \"${name}\""
         }
