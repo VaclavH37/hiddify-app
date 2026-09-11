@@ -6,12 +6,19 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/rayn_dialog_action.dart';
+import 'package:hiddify/core/widget/rayn_page_header.dart';
+import 'package:hiddify/core/widget/rayn_page_scaffold.dart';
+import 'package:hiddify/core/widget/rayn_surface.dart';
+import 'package:hiddify/core/widget/sub_page_back_button.dart';
 import 'package:hiddify/features/auth/delete/model/delete_account_state.dart';
 import 'package:hiddify/features/auth/delete/notifier/delete_account_notifier.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
 import 'package:hiddify/features/auth/login/notifier/login_notifier.dart';
+import 'package:hiddify/features/auth/widget/auth_layout.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/utils/uri_utils.dart';
@@ -32,13 +39,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 ///    ([LoginNotifier.login] with `importProfile: false`, the same call the
 ///    plan-transition screen uses), then deletes with the password just typed.
 ///    The user types their password once either way.
+///
+/// It is a settings sub-page (the same shape as About), not a pre-auth
+/// screen: the user is signed in and got here from Settings → Account. The
+/// commit button is red as an outline, not a fill, so amber stays the app's
+/// only filled colour; the confirm dialog is the real commit point.
 class DeleteAccountPage extends HookConsumerWidget {
   const DeleteAccountPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-    final theme = Theme.of(context);
     final palette = context.rayn;
 
     final deleteState = ref.watch(deleteAccountNotifierProvider);
@@ -128,99 +139,115 @@ class DeleteAccountPage extends HookConsumerWidget {
     });
 
     final outcomeMessage = _outcomeMessage(t, deleteState.outcome);
+    final errorStyle = RaynTypography.paragraph.copyWith(color: palette.danger);
+    final consequences = [
+      t.auth.deleteAccount.consequencePermanent,
+      t.auth.deleteAccount.consequenceDevice,
+      t.auth.deleteAccount.consequenceStore,
+    ];
 
-    return Scaffold(
-      appBar: AppBar(title: Text(t.auth.deleteAccount.title)),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(t.auth.deleteAccount.subtitle, style: theme.textTheme.bodyLarge),
-                  const Gap(20),
-                  _ConsequenceCard(t: t, palette: palette, theme: theme),
-                  const Gap(20),
-                  if (needsEmail) ...[
-                    Text(
-                      t.auth.deleteAccount.needsSignIn,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    const Gap(12),
-                    TextField(
-                      controller: emailCtrl,
-                      enabled: !busy,
-                      keyboardType: TextInputType.emailAddress,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: t.auth.login.emailLabel,
-                        prefixIcon: const Icon(Icons.alternate_email),
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    const Gap(12),
-                  ],
-                  TextField(
-                    controller: passwordCtrl,
-                    enabled: !busy,
-                    obscureText: obscure.value,
-                    autocorrect: false,
-                    enableSuggestions: false,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => submit(),
-                    decoration: InputDecoration(
-                      labelText: t.auth.deleteAccount.passwordLabel,
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(obscure.value ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => obscure.value = !obscure.value,
-                      ),
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  if (fieldError.value != null) ...[
-                    const Gap(8),
-                    Text(fieldError.value!, style: TextStyle(color: theme.colorScheme.error)),
-                  ],
-                  if (outcomeMessage != null) ...[
-                    const Gap(8),
-                    Text(outcomeMessage, style: TextStyle(color: theme.colorScheme.error)),
-                  ],
-                  const Gap(24),
-                  SizedBox(
-                    height: 52,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: palette.danger),
-                      onPressed: busy ? null : submit,
-                      child: busy
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(t.auth.deleteAccount.confirmAction),
-                    ),
-                  ),
-                  const Gap(8),
-                  TextButton(onPressed: busy ? null : () => context.pop(), child: Text(t.auth.deleteAccount.cancel)),
-                  const Gap(16),
-                  // Escape hatch for an account that cannot sign in — a token
-                  // issued without credentials, or a forgotten password. The
-                  // in-app path above is what 5.1.1(v) requires; this is for the
-                  // cases it cannot serve.
-                  Text(
-                    t.auth.deleteAccount.supportHint,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    textAlign: TextAlign.center,
-                  ),
-                  const Gap(4),
-                  TextButton(
-                    onPressed: () => UriUtils.tryLaunch(Uri.parse('mailto:${Constants.supportEmail}')),
-                    child: const Text(Constants.supportEmail),
-                  ),
-                ],
+    return RaynPageScaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AuthLayout.maxWidth),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(RaynSpacing.xl, 0, RaynSpacing.xl, RaynSpacing.xl),
+            children: [
+              RaynPageHeader(
+                title: t.auth.deleteAccount.title,
+                padding: const EdgeInsets.only(top: RaynSpacing.xl, bottom: RaynSpacing.lg),
+                leading: const SubPageBackButton(fallback: 'settings'),
               ),
-            ),
+              Text(
+                t.auth.deleteAccount.subtitle,
+                style: RaynTypography.body.copyWith(fontWeight: FontWeight.w400, color: palette.textSecondary),
+              ),
+              const Gap(RaynSpacing.lg),
+              // What deletion actually does, stated before the user commits:
+              // three sentences on one card, no icons, no red tint.
+              RaynSurface(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final (i, line) in consequences.indexed) ...[
+                      if (i > 0) const Divider(indent: RaynSpacing.lg, endIndent: RaynSpacing.lg),
+                      Padding(
+                        padding: const EdgeInsets.all(RaynSpacing.lg),
+                        child: Text(line, style: RaynTypography.paragraph.copyWith(color: palette.textPrimary)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Gap(RaynSpacing.xl),
+              if (needsEmail) ...[
+                Text(
+                  t.auth.deleteAccount.needsSignIn,
+                  style: RaynTypography.paragraph.copyWith(color: palette.textSecondary),
+                ),
+                const Gap(RaynSpacing.md),
+                TextField(
+                  controller: emailCtrl,
+                  enabled: !busy,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: t.auth.login.emailLabel,
+                    prefixIcon: const Icon(Icons.alternate_email_rounded),
+                  ),
+                ),
+                const Gap(RaynSpacing.md),
+              ],
+              TextField(
+                controller: passwordCtrl,
+                enabled: !busy,
+                obscureText: obscure.value,
+                autocorrect: false,
+                enableSuggestions: false,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => submit(),
+                decoration: InputDecoration(
+                  labelText: t.auth.deleteAccount.passwordLabel,
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscure.value ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+                    onPressed: () => obscure.value = !obscure.value,
+                  ),
+                ),
+              ),
+              if (fieldError.value != null) ...[const Gap(RaynSpacing.sm), Text(fieldError.value!, style: errorStyle)],
+              if (outcomeMessage != null) ...[const Gap(RaynSpacing.sm), Text(outcomeMessage, style: errorStyle)],
+              const Gap(RaynSpacing.xl),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: palette.danger,
+                  side: BorderSide(color: palette.danger),
+                ),
+                onPressed: busy ? null : submit,
+                child: busy
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text(t.auth.deleteAccount.confirmAction),
+              ),
+              const Gap(RaynSpacing.sm),
+              TextButton(onPressed: busy ? null : () => context.pop(), child: Text(t.auth.deleteAccount.cancel)),
+              const Gap(RaynSpacing.lg),
+              // Escape hatch for an account that cannot sign in — a token
+              // issued without credentials, or a forgotten password. The
+              // in-app path above is what 5.1.1(v) requires; this is for the
+              // cases it cannot serve.
+              Text(
+                t.auth.deleteAccount.supportHint,
+                style: RaynTypography.caption.copyWith(color: palette.textMuted),
+                textAlign: TextAlign.center,
+              ),
+              const Gap(RaynSpacing.xs),
+              TextButton(
+                onPressed: () => UriUtils.tryLaunch(Uri.parse('mailto:${Constants.supportEmail}')),
+                child: const Text(Constants.supportEmail),
+              ),
+            ],
           ),
         ),
       ),
@@ -246,47 +273,5 @@ class DeleteAccountPage extends HookConsumerWidget {
       case null:
         return null;
     }
-  }
-}
-
-/// What deletion actually does, stated before the user commits.
-class _ConsequenceCard extends StatelessWidget {
-  const _ConsequenceCard({required this.t, required this.palette, required this.theme});
-
-  final Translations t;
-  final RaynPalette palette;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      t.auth.deleteAccount.consequencePermanent,
-      t.auth.deleteAccount.consequenceDevice,
-      t.auth.deleteAccount.consequenceStore,
-    ];
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: palette.danger.withValues(alpha: 0.08),
-        border: Border.all(color: palette.danger.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final (i, line) in items.indexed) ...[
-            if (i > 0) const Gap(10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.warning_amber_rounded, size: 18, color: palette.danger),
-                const Gap(10),
-                Expanded(child: Text(line, style: theme.textTheme.bodyMedium)),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
   }
 }
