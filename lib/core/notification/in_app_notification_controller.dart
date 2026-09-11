@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:hiddify/core/notification/rayn_toast.dart';
+import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:toastification/toastification.dart';
+
+export 'package:hiddify/core/notification/rayn_toast.dart' show NotificationType;
 
 part 'in_app_notification_controller.g.dart';
 
@@ -11,8 +15,9 @@ InAppNotificationController inAppNotificationController(Ref ref) {
   return InAppNotificationController();
 }
 
-enum NotificationType { info, error, success }
-
+/// Shows one toast at a time as a [RaynToast]. The library keeps the queue,
+/// the auto-close timer, the overlay and swipe-to-dismiss; the widget, the
+/// position and the motion come from `rayn_toast.dart`.
 class InAppNotificationController with AppLogger {
   ToastificationItem _show(
     String message, {
@@ -20,17 +25,17 @@ class InAppNotificationController with AppLogger {
     Duration duration = const Duration(seconds: 3),
   }) {
     toastification.dismissAll();
-    return toastification.show(
-      title: Text(message),
-      type: type._toastificationType,
-      alignment: AlignmentDirectional.bottomStart,
+    return toastification.showCustom(
+      // The app navigator's context resolves the theme, the text direction
+      // and the toast configuration published above it in app.dart.
+      context: rootNavKey.currentContext,
       autoCloseDuration: duration,
-      style: ToastificationStyle.fillColored,
-      pauseOnHover: true,
-      showProgressBar: false,
-      dragToClose: true,
-      closeOnClick: true,
-      closeButtonShowType: CloseButtonShowType.onHover,
+      dismissDirection: DismissDirection.horizontal,
+      builder: (context, holder) => MouseRegion(
+        onEnter: (_) => holder.pause(),
+        onExit: (_) => holder.start(),
+        child: RaynToast(type: type, message: message, onClose: () => toastification.dismiss(holder)),
+      ),
     );
   }
 
@@ -41,12 +46,4 @@ class InAppNotificationController with AppLogger {
 
   ToastificationItem? showInfoToast(String message, {Duration duration = const Duration(seconds: 3)}) =>
       _show(message, duration: duration);
-}
-
-extension NotificationTypeX on NotificationType {
-  ToastificationType get _toastificationType => switch (this) {
-    NotificationType.success => ToastificationType.success,
-    NotificationType.error => ToastificationType.error,
-    NotificationType.info => ToastificationType.info,
-  };
 }

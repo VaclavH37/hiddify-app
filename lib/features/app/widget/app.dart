@@ -8,6 +8,7 @@ import 'package:hiddify/core/localization/locale_extensions.dart';
 import 'package:hiddify/core/localization/locale_preferences.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
+import 'package:hiddify/core/notification/rayn_toast.dart';
 import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/theme/app_theme.dart';
@@ -112,6 +113,9 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     return WindowWrapper(
       ShortcutWrapper(
         ToastificationWrapper(
+          // Fallback for a toast raised before the app navigator has a
+          // context; the sized configuration is published inside the builder.
+          config: raynToastConfig(itemWidth: 360),
           child: ConnectionWrapper(
             MaterialApp.router(
               routerConfig: router,
@@ -133,7 +137,14 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
                 // parameter reassignment this replaces tripped
                 // parameter_assignments, and rebinding a parameter makes the
                 // wrapping order harder to follow than it needs to be.
-                final Widget content = SplashGate(child: child ?? const SizedBox());
+                //
+                // The toast configuration lives here too, because its width
+                // depends on the window and the library reads it from above
+                // the navigator whose context a toast is shown with.
+                final Widget content = ToastificationConfigProvider(
+                  config: raynToastConfig(itemWidth: raynToastWidth(context)),
+                  child: SplashGate(child: child ?? const SizedBox()),
+                );
                 if (kDebugMode && _debugAccessibility) {
                   return AccessibilityTools(checkFontOverflows: true, child: content);
                 }
