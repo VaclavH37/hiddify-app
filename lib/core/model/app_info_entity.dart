@@ -25,7 +25,11 @@ class AppInfoEntity with _$AppInfoEntity {
   /// User-Agent sent on subscription API requests: `Rayn/<version>`.
   String get subscriptionUserAgent => "Rayn/$version";
 
-  String get presentVersion => environment == Environment.prod ? version : "$version ${environment.name}";
+  /// The version as About shows it. Just the version: a dev build used to
+  /// append the environment name, so a phone read "1.5.2 dev" while desktop
+  /// read "1.5.2". The environment is still in [format], which the About
+  /// menu copies to the clipboard for a support thread.
+  String get presentVersion => version;
 
   /// formats app info for sharing
   String format() =>
