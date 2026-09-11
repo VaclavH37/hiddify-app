@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_radius.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
 import 'package:intl/intl.dart';
 
@@ -68,6 +70,11 @@ String? perMonthEquivalent(RaynOffer offer) {
 /// A single live, tappable pricing tier. Shared by the sign-up payment screen and
 /// the web→store plan-transition screen; the latter passes a [footnote]
 /// (e.g. the projected next-renewal date).
+///
+/// The card is the standard surface: opaque, a hairline in light mode only.
+/// The one card being purchased carries an amber outline while the store is
+/// working; nothing is outlined or "recommended" at rest. "Best value" and
+/// "Free trial" are a line of amber text under the plan name, not a chip.
 class PlanCard extends StatelessWidget {
   const PlanCard({
     super.key,
@@ -90,96 +97,63 @@ class PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final palette = context.rayn;
-    // Highlight the border only for the card the user is actively purchasing —
-    // no static default on annual/trial. The "Best value"/"Free trial" badges
-    // (below) are independent of this border state.
-    final highlighted = busy;
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final badge = offer.isTrial
         ? t.auth.payment.freeTrial
         : (offer.basePlanId == 'annual' ? t.auth.payment.bestValue : null);
     final equiv = perMonthEquivalent(offer);
+    final side = busy
+        ? BorderSide(color: palette.accentText, width: 1.5)
+        : (isLight ? BorderSide(color: palette.hairline) : BorderSide.none);
+    final captionMuted = RaynTypography.caption.copyWith(color: palette.textMuted);
 
     return Opacity(
-      opacity: enabled || busy ? 1 : 0.6,
+      opacity: enabled || busy ? 1 : 0.4,
       child: Material(
         color: palette.groupFill,
-        borderRadius: BorderRadius.circular(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RaynRadius.card), side: side),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
           onTap: enabled ? onTap : null,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: highlighted ? theme.colorScheme.primary : palette.hairline,
-                width: highlighted ? 1.5 : 1,
-              ),
-            ),
+          child: Padding(
+            padding: const EdgeInsets.all(RaynSpacing.lg),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            planName(t, offer.basePlanId),
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          if (badge != null) ...[
-                            const Gap(8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                badge,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        planName(t, offer.basePlanId),
+                        style: RaynTypography.body.copyWith(color: palette.textPrimary),
                       ),
+                      if (badge != null) ...[
+                        const SizedBox(height: RaynSpacing.xs),
+                        Text(badge, style: RaynTypography.label.copyWith(color: palette.accentText)),
+                      ],
                       if (equiv != null) ...[
-                        const Gap(4),
-                        Text(
-                          t.auth.payment.perMonthEquiv(price: equiv),
-                          style: theme.textTheme.bodySmall?.copyWith(color: palette.textMuted),
-                        ),
+                        const SizedBox(height: RaynSpacing.xs),
+                        Text(t.auth.payment.perMonthEquiv(price: equiv), style: captionMuted),
                       ],
                       if (footnote != null) ...[
-                        const Gap(4),
-                        Text(
-                          footnote!,
-                          style: theme.textTheme.bodySmall?.copyWith(color: palette.textMuted),
-                        ),
+                        const SizedBox(height: RaynSpacing.xs),
+                        Text(footnote!, style: captionMuted),
                       ],
                     ],
                   ),
                 ),
-                const Gap(12),
+                const SizedBox(width: RaynSpacing.md),
                 if (busy)
                   const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
                 else
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        offer.formattedPrice,
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                      ),
+                      Text(offer.formattedPrice, style: RaynTypography.metric.copyWith(color: palette.textPrimary)),
                       Text(
                         periodLabel(t, offer.basePlanId),
-                        style: theme.textTheme.bodySmall?.copyWith(color: palette.textSecondary),
+                        style: RaynTypography.caption.copyWith(color: palette.textSecondary),
                       ),
                     ],
                   ),

@@ -339,7 +339,6 @@
     },
     "payment": {
       "title": "Pilih paket Anda",
-      "subtitle": "Aktifkan langganan untuk mulai menggunakan Rayn VPN.",
       "expiredTitle": "Langganan kedaluwarsa",
       "expiredNotice": "Langganan Anda telah kedaluwarsa. Pilih paket di bawah untuk memperbarui dan terus menggunakan Rayn VPN.",
       "monthly": "Bulanan",

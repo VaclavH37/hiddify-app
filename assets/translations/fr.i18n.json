@@ -339,7 +339,6 @@
     },
     "payment": {
       "title": "Choisissez votre formule",
-      "subtitle": "Activez un abonnement pour commencer à utiliser Rayn VPN.",
       "expiredTitle": "Abonnement expiré",
       "expiredNotice": "Votre abonnement a expiré. Choisissez une formule ci-dessous pour le renouveler et continuer à utiliser Rayn VPN.",
       "monthly": "Mensuel",

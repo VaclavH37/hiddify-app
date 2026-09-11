@@ -339,7 +339,6 @@
     },
     "payment": {
       "title": "Elige tu plan",
-      "subtitle": "Activa una suscripción para empezar a usar Rayn VPN.",
       "expiredTitle": "Suscripción caducada",
       "expiredNotice": "Tu suscripción ha caducado. Elige un plan abajo para renovarla y seguir usando Rayn VPN.",
       "monthly": "Mensual",

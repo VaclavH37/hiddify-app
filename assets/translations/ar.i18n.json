@@ -339,7 +339,6 @@
     },
     "payment": {
       "title": "اختر خطتك",
-      "subtitle": "فعّل اشتراكًا لبدء استخدام Rayn VPN.",
       "expiredTitle": "انتهى الاشتراك",
       "expiredNotice": "انتهى اشتراكك. اختر خطة أدناه للتجديد ومواصلة استخدام Rayn VPN.",
       "monthly": "شهري",

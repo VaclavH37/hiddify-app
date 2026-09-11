@@ -339,7 +339,6 @@
     },
     "payment": {
       "title": "選擇方案",
-      "subtitle": "啟用訂閱即可開始使用 Rayn VPN。",
       "expiredTitle": "訂閱已到期",
       "expiredNotice": "您的訂閱已到期。請在下方選擇方案續訂，繼續使用 Rayn VPN。",
       "monthly": "月繳",

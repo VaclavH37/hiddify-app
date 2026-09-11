@@ -339,7 +339,6 @@
     },
     "payment": {
       "title": "Planınızı seçin",
-      "subtitle": "Rayn VPN'i kullanmaya başlamak için bir abonelik etkinleştirin.",
       "expiredTitle": "Abonelik sona erdi",
       "expiredNotice": "Aboneliğiniz sona erdi. Yenilemek ve Rayn VPN'i kullanmaya devam etmek için aşağıdan bir plan seçin.",
       "monthly": "Aylık",

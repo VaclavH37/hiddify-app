@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
-import 'package:hiddify/core/widget/rayn_wordmark.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
+import 'package:hiddify/core/widget/rayn_notice.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/login_state.dart';
 import 'package:hiddify/features/auth/login/notifier/login_notifier.dart';
@@ -16,7 +18,9 @@ import 'package:hiddify/features/auth/payment/notifier/purchase_notifier.dart';
 import 'package:hiddify/features/auth/payment/widget/iap_outcome_message.dart';
 import 'package:hiddify/features/auth/payment/widget/legal_links.dart';
 import 'package:hiddify/features/auth/payment/widget/plan_card.dart';
+import 'package:hiddify/features/auth/payment/widget/purchase_progress.dart';
 import 'package:hiddify/features/auth/payment/widget/purchase_unavailable_notice.dart';
+import 'package:hiddify/features/auth/widget/auth_layout.dart';
 import 'package:hiddify/features/auth/widget/auth_unreachable_help.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -46,7 +50,6 @@ class PlanTransitionPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
-    final theme = Theme.of(context);
     final palette = context.rayn;
 
     final sessionStore = ref.read(sessionTokenStoreProvider);
@@ -92,65 +95,32 @@ class PlanTransitionPage extends HookConsumerWidget {
       }
     });
 
-    return Scaffold(
-      backgroundColor: palette.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: t.auth.planTransition.close,
-          onPressed: close,
-        ),
+    return AuthLayout(
+      leading: IconButton(
+        icon: Icon(Icons.close_rounded, color: palette.textPrimary),
+        tooltip: t.auth.planTransition.close,
+        onPressed: close,
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Gap(8),
-                    const RaynWordmarkHero(),
-                    const Gap(32),
-                    Text(
-                      t.auth.planTransition.title,
-                      style: theme.textTheme.headlineSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const Gap(16),
-                    if (authed.value == null)
-                      const _CenteredSpinner()
-                    else if (authed.value == false)
-                      _ReauthPanel(
-                        t: t,
-                        // Guard: the credentials must own the subscription active
-                        // on this device, or re-auth is rejected (no account switch).
-                        expectedSubscriptionUrl: remote?.url,
-                        onAuthed: () => authed.value = true,
-                      )
-                    else
-                      ..._plans(context, t, theme, palette, state, notifier, remainingDays),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      title: t.auth.planTransition.title,
+      children: [
+        if (authed.value == null)
+          const PurchaseProgress()
+        else if (authed.value == false)
+          _ReauthPanel(
+            t: t,
+            // Guard: the credentials must own the subscription active on this
+            // device, or re-auth is rejected (no account switch).
+            expectedSubscriptionUrl: remote?.url,
+            onAuthed: () => authed.value = true,
+          )
+        else
+          ..._plans(t, palette, state, notifier, remainingDays),
+      ],
     );
   }
 
   List<Widget> _plans(
-    BuildContext context,
     Translations t,
-    ThemeData theme,
     RaynPalette palette,
     PurchaseState state,
     PurchaseNotifier notifier,
@@ -158,21 +128,13 @@ class PlanTransitionPage extends HookConsumerWidget {
   ) {
     switch (state.status) {
       case PurchaseStatus.loading:
-        return [_CenteredSpinner(label: t.auth.payment.loading)];
+        return [PurchaseProgress(label: t.auth.payment.loading)];
       case PurchaseStatus.unavailable:
         return [PurchaseUnavailableNotice(t: t)];
       case PurchaseStatus.success:
-        return [_CenteredSpinner(label: t.auth.payment.activating)];
+        return [PurchaseProgress(label: t.auth.payment.activating)];
       case PurchaseStatus.activating:
-        return [
-          _CenteredSpinner(label: t.auth.payment.activatingAccount),
-          const Gap(6),
-          Text(
-            t.auth.payment.activatingHint,
-            style: theme.textTheme.bodySmall?.copyWith(color: palette.textMuted),
-            textAlign: TextAlign.center,
-          ),
-        ];
+        return [PurchaseProgress(label: t.auth.payment.activatingAccount, hint: t.auth.payment.activatingHint)];
       case PurchaseStatus.ready:
       case PurchaseStatus.busy:
       case PurchaseStatus.processing:
@@ -184,18 +146,19 @@ class PlanTransitionPage extends HookConsumerWidget {
           // data allowance (no carry-over) before the store takes over
           // auto-renewal.
           if (remainingDays != null && remainingDays > 0) ...[
-            _ExplainerCard(
+            RaynNotice(
+              icon: Icons.schedule_rounded,
               message: PlatformUtils.isIOS ? t.auth.planTransition.explainerApple : t.auth.planTransition.explainer,
             ),
-            const Gap(16),
+            const Gap(RaynSpacing.lg),
           ],
           if (state.status == PurchaseStatus.processing) ...[
-            _Banner(message: t.auth.payment.processing, palette: palette),
-            const Gap(16),
+            RaynNotice(icon: Icons.hourglass_top_rounded, message: t.auth.payment.processing),
+            const Gap(RaynSpacing.lg),
           ],
           if (state.status == PurchaseStatus.error) ...[
-            Text(iapOutcomeMessage(t, state.outcome), style: TextStyle(color: theme.colorScheme.error)),
-            const Gap(16),
+            Text(iapOutcomeMessage(t, state.outcome), style: RaynTypography.paragraph.copyWith(color: palette.danger)),
+            const Gap(RaynSpacing.lg),
           ],
           for (final offer in state.offers) ...[
             PlanCard(
@@ -206,25 +169,22 @@ class PlanTransitionPage extends HookConsumerWidget {
               onTap: () => notifier.buy(offer),
               footnote: _nextRenewalLabel(t, offer, remainingDays),
             ),
-            const Gap(12),
+            const Gap(RaynSpacing.md),
           ],
-          const Gap(8),
+          const Gap(RaynSpacing.sm),
           // Auto-renewal disclosure. This screen completes a real purchase, so
           // guideline 2.3.10 applies exactly as it does on PaymentPage: the
           // wording must not name the other platform. It reads "Google Play" to
           // an iPhone user without this branch.
           Text(
             PlatformUtils.isIOS ? t.auth.payment.autoRenewApple : t.auth.payment.autoRenew,
-            style: theme.textTheme.bodySmall?.copyWith(color: palette.textMuted),
+            style: RaynTypography.caption.copyWith(color: palette.textMuted),
             textAlign: TextAlign.center,
           ),
           // Terms and Privacy, required by guideline 3.1.2 on the surface where
           // the purchase happens — not only on the sign-up paywall.
           LegalLinks(t: t),
-          TextButton(
-            onPressed: state.isBusy ? null : notifier.restore,
-            child: Text(t.auth.payment.restore),
-          ),
+          TextButton(onPressed: state.isBusy ? null : notifier.restore, child: Text(t.auth.payment.restore)),
         ];
     }
   }
@@ -255,7 +215,7 @@ class _ReauthPanel extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    final palette = context.rayn;
 
     final loginState = ref.watch(loginNotifierProvider);
     final isSubmitting = loginState.isSubmitting;
@@ -280,27 +240,22 @@ class _ReauthPanel extends HookConsumerWidget {
       // Re-auth only: persist a fresh session for verify — don't re-import the
       // profile (the user already has one; the guard would reject it). The
       // account must own the active subscription, or login reports accountMismatch.
-      await ref.read(loginNotifierProvider.notifier).login(
-            email,
-            password,
-            importProfile: false,
-            expectedSubscriptionUrl: expectedSubscriptionUrl,
-          );
+      await ref
+          .read(loginNotifierProvider.notifier)
+          .login(email, password, importProfile: false, expectedSubscriptionUrl: expectedSubscriptionUrl);
     }
 
     ref.listen(loginNotifierProvider, (_, next) {
       if (next.phase == LoginPhase.success) onAuthed();
     });
 
+    final errorStyle = RaynTypography.paragraph.copyWith(color: palette.danger);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          t.auth.planTransition.needsSignIn,
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          textAlign: TextAlign.center,
-        ),
-        const Gap(20),
+        Text(t.auth.planTransition.needsSignIn, style: RaynTypography.paragraph.copyWith(color: palette.textSecondary)),
+        const Gap(RaynSpacing.lg),
         TextField(
           controller: emailCtrl,
           enabled: !isSubmitting,
@@ -309,11 +264,10 @@ class _ReauthPanel extends HookConsumerWidget {
           textInputAction: TextInputAction.next,
           decoration: InputDecoration(
             labelText: t.auth.login.emailLabel,
-            prefixIcon: const Icon(Icons.alternate_email),
-            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.alternate_email_rounded),
           ),
         ),
-        const Gap(12),
+        const Gap(RaynSpacing.md),
         TextField(
           controller: passwordCtrl,
           enabled: !isSubmitting,
@@ -324,34 +278,27 @@ class _ReauthPanel extends HookConsumerWidget {
           onSubmitted: (_) => submit(),
           decoration: InputDecoration(
             labelText: t.auth.login.passwordLabel,
-            prefixIcon: const Icon(Icons.lock_outline),
+            prefixIcon: const Icon(Icons.lock_outline_rounded),
             suffixIcon: IconButton(
-              icon: Icon(obscure.value ? Icons.visibility_off : Icons.visibility),
+              icon: Icon(obscure.value ? Icons.visibility_off_rounded : Icons.visibility_rounded),
               onPressed: () => obscure.value = !obscure.value,
             ),
-            border: const OutlineInputBorder(),
           ),
         ),
-        if (fieldError.value != null) ...[
-          const Gap(8),
-          Text(fieldError.value!, style: TextStyle(color: theme.colorScheme.error)),
-        ],
+        if (fieldError.value != null) ...[const Gap(RaynSpacing.sm), Text(fieldError.value!, style: errorStyle)],
         if (loginState.outcome == LoginOutcome.unreachable) ...[
-          const Gap(8),
+          const Gap(RaynSpacing.md),
           AuthUnreachableHelp(t: t),
         ] else if (_outcomeMessage(t, loginState.outcome) case final message?) ...[
-          const Gap(8),
-          Text(message, style: TextStyle(color: theme.colorScheme.error)),
+          const Gap(RaynSpacing.sm),
+          Text(message, style: errorStyle),
         ],
-        const Gap(24),
-        SizedBox(
-          height: 52,
-          child: FilledButton(
-            onPressed: isSubmitting ? null : submit,
-            child: isSubmitting
-                ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(t.auth.login.signInButton),
-          ),
+        const Gap(RaynSpacing.xl),
+        FilledButton(
+          onPressed: isSubmitting ? null : submit,
+          child: isSubmitting
+              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(t.auth.login.signInButton),
         ),
       ],
     );
@@ -377,91 +324,5 @@ class _ReauthPanel extends HookConsumerWidget {
       default:
         return t.auth.login.generic;
     }
-  }
-}
-
-/// Remaining-time explainer card at the top of the plan list.
-class _ExplainerCard extends StatelessWidget {
-  const _ExplainerCard({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.rayn;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: palette.groupFill,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.hairline),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.schedule, size: 20, color: theme.colorScheme.primary),
-          const Gap(10),
-          Expanded(
-            child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: palette.textPrimary)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Info banner (e.g. "payment processing").
-class _Banner extends StatelessWidget {
-  const _Banner({required this.message, required this.palette});
-
-  final String message;
-  final RaynPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: palette.groupFill,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.hairline),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.hourglass_top, size: 20, color: theme.colorScheme.primary),
-          const Gap(10),
-          Expanded(
-            child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: palette.textPrimary)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Centered spinner with an optional label (loading / activating states).
-class _CenteredSpinner extends StatelessWidget {
-  const _CenteredSpinner({this.label});
-
-  final String? label;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.rayn;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Column(
-        children: [
-          const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2.5)),
-          if (label != null) ...[
-            const Gap(16),
-            Text(label!, style: TextStyle(color: palette.textMuted), textAlign: TextAlign.center),
-          ],
-        ],
-      ),
-    );
   }
 }
