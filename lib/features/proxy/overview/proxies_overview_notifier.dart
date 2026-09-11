@@ -9,6 +9,7 @@ import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
+import 'package:hiddify/features/proxy/model/node_name.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/init_signal.dart';
 import 'package:hiddify/utils/riverpod_utils.dart';
@@ -86,10 +87,13 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
     if (proxies == null) return null;
 
     final sortedItems = switch (sortBy) {
+      // "Alphabetically" is by country code, then by name within a country;
+      // the raw tag used to be the key, which ordered by city and scattered
+      // one country's exits through the list.
       ProxiesSort.name => proxies.items.sortedWith((a, b) {
         if (a.isGroup && !b.isGroup) return -1;
         if (!a.isGroup && b.isGroup) return 1;
-        return a.tag.compareTo(b.tag);
+        return compareByCountryThenName(a, b);
       }),
       ProxiesSort.delay => proxies.items.sortedWith((a, b) {
         if (a.isGroup && !b.isGroup) return -1;
