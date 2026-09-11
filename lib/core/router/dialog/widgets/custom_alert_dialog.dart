@@ -15,10 +15,14 @@ class CustomAlertDialog extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
+    // The same cap as the desktop picker dialog; the text follows the app's
+    // direction like every other dialog (it used to be pinned left-to-right,
+    // which broke the Arabic and Persian layouts).
     return AlertDialog(
       title: title != null ? Text(title!) : null,
-      content: SingleChildScrollView(
-        child: SizedBox(width: 468, child: Text(message, textDirection: TextDirection.ltr)),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: SingleChildScrollView(child: Text(message)),
       ),
       actions: [
         TextButton(
