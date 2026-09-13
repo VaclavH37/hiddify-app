@@ -41,9 +41,17 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
     /// the App Store models three products in one subscription group, so the
     /// group id we are handed is expanded into `<group>_<basePlanId>`.
     ///
-    /// If App Store Connect ever diverges from that convention,
-    /// `Product.products(for:)` returns fewer products than asked for and the
-    /// paywall shows its "unavailable" state — a loud failure, not a silent one.
+    /// If App Store Connect diverges from that convention, or a product is not
+    /// yet "Ready to Submit" (which keeps it out of the answer just the same),
+    /// `Product.products(for:)` returns fewer products than asked for and
+    /// nothing here reports it. Only when *none* come back does the paywall show
+    /// its "unavailable" state. A partial answer is silent: the missing plans
+    /// simply have no card and there is no error, so a misnamed product id looks
+    /// exactly like a plan that was never offered.
+    ///
+    /// Check for this in a normal build. A `MARKETING_SCREENSHOTS` build fills
+    /// every missing plan with a placeholder price (marketing_offers.dart), which
+    /// hides the gap entirely.
     private static let basePlanIds = ["monthly", "quarter", "annual"]
 
     public static func register(with registrar: FlutterPluginRegistrar) {
