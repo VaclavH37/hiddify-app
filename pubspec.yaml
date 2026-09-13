@@ -219,7 +219,9 @@ flutter_launcher_icons:
   # tool/logo_pipeline.py now writes it, as the single 1024 entry in
   # ios/Runner/Assets.xcassets/AppIcon.appiconset/ — square, full-bleed, and RGB
   # with NO alpha channel, because Apple rejects an icon that carries one. Xcode
-  # derives every other size at build time.
+  # derives every other size at build time. Unlike every other icon it is not
+  # rendered from the template: it comes from its own artwork,
+  # Logo/rayn_vpn_logo_1024_charcoal.png.
   ios: false
   image_path: "assets/images/source/logo_black_1024.png"
   adaptive_icon_background: "#000000"

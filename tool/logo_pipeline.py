@@ -17,6 +17,11 @@ Pure stdlib — no PIL. Run from the repo root:
     python tool/logo_pipeline.py --check    # verify template, write nothing
 
 Idempotent: re-running produces byte-identical output.
+
+One asset is the exception to all of the above: the iOS app icon. It is
+finished artwork supplied at 1024 (IOS_ICON_SOURCE) — two colours and a
+wordmark, so not derivable from an alpha channel — and this script only
+validates it and strips its alpha channel.
 """
 from __future__ import annotations
 
@@ -29,6 +34,12 @@ import zlib
 from array import array
 
 TEMPLATE = "Logo/rayn_frog_centered_v2_white_transparent.png"
+
+# iOS alone ships its own artwork: the mark on a charcoal ground with the
+# RAYN VPN wordmark beneath it. It is a second source, not a render, and every
+# other platform — Android, Windows, macOS, Linux, web — still comes from
+# TEMPLATE. See step 3.
+IOS_ICON_SOURCE = "Logo/rayn_vpn_logo_1024_charcoal.png"
 
 # Windows and macOS are the two platforms that mask nothing, so what ships is
 # exactly what the user sees. Both get the bare amber mark on transparency,
@@ -254,8 +265,9 @@ def main():
     ap.add_argument("--check", action="store_true", help="verify only")
     args = ap.parse_args()
 
-    if not os.path.exists(TEMPLATE):
-        raise SystemExit(f"template missing: {TEMPLATE}")
+    for source in (TEMPLATE, IOS_ICON_SOURCE):
+        if not os.path.exists(source):
+            raise SystemExit(f"source missing: {source}")
 
     print(f"decoding {TEMPLATE} ...", flush=True)
     w, h, px = decode_rgba(TEMPLATE)
@@ -279,6 +291,24 @@ def main():
     print("  building summed-area table ...", flush=True)
     ii = integral(w, h, a)
 
+    # Validated before --check returns, so a check run covers both sources.
+    #
+    # Apple rejects an App Store icon that carries an alpha channel at all
+    # (ITMS-90717), even one where every pixel is opaque — which is how design
+    # tools export by default. Dropping the channel is only lossless if the
+    # artwork really is opaque, so that is checked rather than assumed: a
+    # transparent pixel would otherwise ship as whatever RGB sat under it.
+    print(f"decoding {IOS_ICON_SOURCE} ...", flush=True)
+    iw, ih, ipx = decode_rgba(IOS_ICON_SOURCE)
+    if (iw, ih) != (1024, 1024):
+        raise SystemExit(f"{IOS_ICON_SOURCE}: need 1024x1024, got {iw}x{ih}")
+    if min(ipx[3::4]) < 255:
+        raise SystemExit(f"{IOS_ICON_SOURCE}: has non-opaque pixels. Flatten it "
+                         "onto its background before it can become an iOS icon.")
+    ios_rgb = bytearray(iw * ih * 3)
+    ios_rgb[0::3], ios_rgb[1::3], ios_rgb[2::3] = ipx[0::4], ipx[1::4], ipx[2::4]
+    print(f"  {iw}x{ih}  fully opaque", flush=True)
+
     if args.check:
         print("\ncheck only — nothing written")
         return
@@ -296,7 +326,7 @@ def main():
 
     # ---- 2. masters -------------------------------------------------------
     # Opaque, amber on black: legacy launcher icons + both splash screens.
-    # 80% framing so the iOS squircle has margin to bite into.
+    # 80% framing so a launcher mask has margin to bite into.
     al80 = flat(1024, AMBER, frac=0.80)
     _write("assets/images/source/logo_black_1024.png",
            encode_png(1024, 1024, rgb_over_bg(al80, AMBER, BLACK), 2))
@@ -307,8 +337,11 @@ def main():
            encode_png(1024, 1024, rgba_from_alpha(alnat, AMBER), 6))
 
     # ---- 3. iOS app icon: 1024, RGB, NO alpha (Apple rejects alpha) -------
+    # From IOS_ICON_SOURCE, validated and flattened above — not the template.
+    # The single universal 1024 entry is all the asset catalog holds; Xcode
+    # derives every smaller size at build time.
     _write("ios/Runner/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
-           encode_png(1024, 1024, rgb_over_bg(al80, AMBER, BLACK), 2))
+           encode_png(1024, 1024, bytes(ios_rgb), 2))
 
     # ---- 4. macOS: the bare mark, filling the canvas --------------------
     # macOS masks nothing, so this ships as drawn. No tile and no Apple-grid
