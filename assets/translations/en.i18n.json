@@ -355,6 +355,11 @@
       "title": "Subscription expired",
       "body": "Your subscription has expired. Renew to reconnect.",
       "action": "Renew"
+    },
+    "unavailable": {
+      "title": "Account unavailable",
+      "body": "Your account can't be used right now. Open for details.",
+      "action": "View details"
     }
   },
   "dialogs": {

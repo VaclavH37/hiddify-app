@@ -34,8 +34,22 @@ NotificationCopy notificationCopy(AppNotification n, Translations t) {
         icon: Icons.warning_amber_rounded,
         severity: NotificationSeverity.danger,
       );
+    case NotificationKind.accountUnavailable:
+      return (
+        title: t.notifications.unavailable.title,
+        body: t.notifications.unavailable.body,
+        icon: Icons.error_outline_rounded,
+        severity: NotificationSeverity.danger,
+      );
   }
 }
+
+/// The label on the banner's action for an account verdict: "Renew" for a
+/// lapsed plan, "View details" for an account that cannot be renewed.
+String notificationActionLabel(AppNotification n, Translations t) => switch (n.kind) {
+  NotificationKind.accountUnavailable => t.notifications.unavailable.action,
+  _ => t.notifications.expired.action,
+};
 
 /// The icon colour for a notification's severity.
 Color notificationTint(NotificationCopy copy, RaynPalette palette) => switch (copy.severity) {

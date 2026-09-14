@@ -21,9 +21,22 @@ enum NotificationKind {
   /// heads-up the day before the renewal date, in place of the expiry countdown.
   renewalReminder,
 
-  /// Subscription token is fully expired with no renewal available — raised by
-  /// the refresh loop when the API returns `4010` with no `new-url`.
+  /// The account has lapsed with no renewal available — raised by the refresh
+  /// loop on the middleware's expired verdict (a `4010` with no `new-url`, or
+  /// a `4011`). The banner's action and the inbox row open the renewal screen.
   subscriptionExpired,
+
+  /// The account is suspended, closed, deleted, pending or unknown — the
+  /// middleware's `4012`. Not renewable; the renewal screen shows the reason
+  /// and support instead. One row at a time with [subscriptionExpired]: the
+  /// refresh loop swaps them when the verdict changes kind.
+  accountUnavailable,
+}
+
+extension NotificationKindX on NotificationKind {
+  /// Whether this notification is an account verdict, whose banner action and
+  /// inbox row open the renewal screen.
+  bool get opensRenewal => this == NotificationKind.subscriptionExpired || this == NotificationKind.accountUnavailable;
 }
 
 @freezed

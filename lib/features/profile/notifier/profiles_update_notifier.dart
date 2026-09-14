@@ -212,7 +212,11 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
                 // `new-url` for a lapsed token.
                 loggy.info("profile [${profile.id}] account verdict: ${l.runtimeType}");
                 await ref.read(accountStateNotifierProvider.notifier).recordFailure(l);
-                await _raiseSubscriptionExpired();
+                await _raiseAccountVerdict(
+                  l is ProfileSubscriptionExpiredFailure
+                      ? NotificationKind.subscriptionExpired
+                      : NotificationKind.accountUnavailable,
+                );
                 state = AsyncData((name: profile.name, success: false));
               } else {
                 loggy.debug("error updating profile [${profile.id}]", l);
@@ -241,7 +245,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
               // A good config returned — the account is serving again; clear
               // the verdict and any standing "expired" prompt.
               await ref.read(accountStateNotifierProvider.notifier).recordActive();
-              await _clearSubscriptionExpired();
+              await _clearAccountVerdicts();
               ref.read(inAppNotificationControllerProvider).showSuccessToast(t.pages.profiles.msg.update.success);
               state = AsyncData((name: profile.name, success: true));
             },
@@ -614,21 +618,25 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     }
   }
 
-  /// Raise a single persistent "subscription expired" notification, deduped so
-  /// repeated polls while lapsed don't spam the inbox.
-  Future<void> _raiseSubscriptionExpired() async {
+  static const _verdictKinds = [NotificationKind.subscriptionExpired, NotificationKind.accountUnavailable];
+
+  /// One persistent notification per account verdict, deduped so repeated
+  /// polls while blocked don't spam the inbox, and swapped when the verdict
+  /// changes kind (an expired account that is then suspended, or the reverse)
+  /// so the inbox never shows both.
+  Future<void> _raiseAccountVerdict(NotificationKind kind) async {
     final dao = ref.read(notificationDataSourceProvider);
-    if (await dao.hasAnyOfKind(NotificationKind.subscriptionExpired)) return;
-    await dao.insert(
-      AppNotificationsCompanion.insert(
-        id: const Uuid().v4(),
-        kind: NotificationKind.subscriptionExpired,
-        createdAt: DateTime.now(),
-      ),
-    );
+    for (final other in _verdictKinds) {
+      if (other != kind) await dao.deleteByKind(other);
+    }
+    if (await dao.hasAnyOfKind(kind)) return;
+    await dao.insert(AppNotificationsCompanion.insert(id: const Uuid().v4(), kind: kind, createdAt: DateTime.now()));
   }
 
-  Future<void> _clearSubscriptionExpired() async {
-    await ref.read(notificationDataSourceProvider).deleteByKind(NotificationKind.subscriptionExpired);
+  Future<void> _clearAccountVerdicts() async {
+    final dao = ref.read(notificationDataSourceProvider);
+    for (final kind in _verdictKinds) {
+      await dao.deleteByKind(kind);
+    }
   }
 }

@@ -51,9 +51,9 @@ class NotificationBanner extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(copy.body, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
-                    // The lapsed-plan banner is the one that asks for something;
+                    // An account verdict is the one banner that asks for something;
                     // the action opens the same screen the orb and Settings do.
-                    if (notification.kind == NotificationKind.subscriptionExpired) ...[
+                    if (notification.kind.opensRenewal) ...[
                       const SizedBox(height: RaynSpacing.xs),
                       Align(
                         alignment: AlignmentDirectional.centerStart,
@@ -64,7 +64,7 @@ class NotificationBanner extends ConsumerWidget {
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           onPressed: () => context.pushNamed('renew'),
-                          child: Text(t.notifications.expired.action),
+                          child: Text(notificationActionLabel(notification, t)),
                         ),
                       ),
                     ],

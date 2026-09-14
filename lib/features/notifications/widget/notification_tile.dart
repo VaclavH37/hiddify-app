@@ -20,8 +20,8 @@ class NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final copy = notificationCopy(notification, t);
     final palette = context.rayn;
-    // The lapsed-plan row opens the renewal screen; the others are records.
-    final renewable = notification.kind == NotificationKind.subscriptionExpired;
+    // An account verdict's row opens the renewal screen; the others are records.
+    final renewable = notification.kind.opensRenewal;
 
     final surface = RaynSurface(
       child: Row(
