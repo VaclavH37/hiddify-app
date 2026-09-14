@@ -38,10 +38,20 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
 
   // The MW's `4012`: suspended, closed, deleted, pending, or a code this build
   // has never heard of. Never renewable, so it must not read as "please renew".
-  // `SUBSCRIPTION_UNAVAILABLE` is the one transient code; callers treat it as
-  // a failed refresh (AccountEnvelope.isTransientCode).
+  // [retryAfter] marks the temporary ones (see [isTransientVerdict]).
   @With<ExpectedFailure>()
-  const factory ProfileFailure.accountUnavailable(String code) = ProfileAccountUnavailableFailure;
+  const factory ProfileFailure.accountUnavailable(String code, [Duration? retryAfter]) =
+      ProfileAccountUnavailableFailure;
+
+  /// A 4012 the middleware marks retryable with `retry_after` — or the one
+  /// code its first handover named as such, kept as the pre-deploy fallback.
+  /// A temporary state, not a verdict: the refresh loop backs off and records
+  /// nothing, and the stored config keeps serving.
+  bool get isTransientVerdict => switch (this) {
+    ProfileAccountUnavailableFailure(:final code, :final retryAfter) =>
+      retryAfter != null || AccountEnvelope.isTransientCode(code),
+    _ => false,
+  };
 
   // The cryptolink's version byte is one this build has no handler for. The user
   // needs a newer APP, not a newer link — never collapse this into invalidUrl,

@@ -170,10 +170,52 @@ void main() {
       expect(unavailable('{"success":false,"error_code":4012}').code, AccountEnvelopeUnavailable.unknownCode);
     });
 
-    test('SUBSCRIPTION_UNAVAILABLE is the one transient code', () {
-      expect(unavailable('{"success":false,"error_code":4012,"code":"SUBSCRIPTION_UNAVAILABLE"}').transient, isTrue);
-      expect(AccountEnvelope.isTransientCode('SUBSCRIPTION_UNAVAILABLE'), isTrue);
-      expect(AccountEnvelope.isTransientCode('ACCOUNT_PENDING'), isFalse);
+    test('retry_after marks a 4012 transient, whatever its code (the Worker reply, §4.3)', () {
+      final u = unavailable(
+        '{"success":false,"error_code":4012,"code":"SUBSCRIPTION_UNAVAILABLE","account_status":"active", '
+        '"account_id":"74550193-125b-48ca-9715-f25bb4c8490f","message":"Subscription unavailable","retry_after":900}',
+      );
+      expect(u.transient, isTrue);
+      expect(u.retryAfter, const Duration(minutes: 15));
+      expect(u.accountId, '74550193-125b-48ca-9715-f25bb4c8490f');
+      expect(unavailable('{"success":false,"error_code":4012,"code":"ACCOUNT_PENDING","retry_after":300}').transient, isTrue);
+      expect(unavailable('{"success":false,"error_code":4012,"code":"SOMETHING_NEW","retry_after":600}').transient, isTrue);
+    });
+
+    test('the legacy name still counts until every Worker sends retry_after; other codes never', () {
+      final legacy = unavailable('{"success":false,"error_code":4012,"code":"SUBSCRIPTION_UNAVAILABLE"}');
+      expect(legacy.transient, isTrue);
+      expect(legacy.retryAfter, isNull);
+      expect(unavailable('{"success":false,"error_code":4012,"code":"ACCOUNT_SUSPENDED"}').transient, isFalse);
+      expect(unavailable('{"success":false,"error_code":4012,"code":"ACCOUNT_PENDING"}').transient, isFalse);
+    });
+
+    test('retry_after: header fallback, and only 1 s to a day is accepted', () {
+      expect(
+        unavailable('{"success":false,"error_code":4012,"code":"X"}', {'subscription-retry-after': '900'}).retryAfter,
+        const Duration(minutes: 15),
+      );
+      for (final bad in ['0', '-5', '86401', 'abc']) {
+        final u = unavailable('{"success":false,"error_code":4012,"code":"X","retry_after":"$bad"}');
+        expect(u.retryAfter, isNull, reason: bad);
+        expect(u.transient, isFalse, reason: bad);
+      }
+      expect(unavailable('{"success":false,"error_code":4012,"code":"X","retry_after":86400}').retryAfter, const Duration(days: 1));
+    });
+  });
+
+  group('account id', () {
+    test('body first, header fallback, never required', () {
+      const body = '{"success":false,"error_code":4011,"code":"ACCOUNT_EXPIRED","expires_at":1789376400';
+      expect(expired('$body,"account_id":"74550193-125b-48ca-9715-f25bb4c8490f"}').details.accountId, '74550193-125b-48ca-9715-f25bb4c8490f');
+      expect(expired('$body}', {'subscription-account-id': 'from-header'}).details.accountId, 'from-header');
+      expect(expired('$body}').details.accountId, isNull);
+      expect(unavailable('{"success":false,"error_code":4012,"code":"ACCOUNT_SUSPENDED"}', {'subscription-account-id': 'h'}).accountId, 'h');
+    });
+
+    test('is not part of the printable form', () {
+      const e = AccountExpiry(paymentProvider: 'app_store', accountId: '74550193-125b-48ca-9715-f25bb4c8490f');
+      expect(e.toString(), isNot(contains('74550193')));
     });
   });
 
@@ -259,6 +301,7 @@ void main() {
         manageUrl: Uri.parse(
           'https://play.google.com/store/account/subscriptions?sku=rayn_premium_monthly&package=com.raynlabs.app',
         ),
+        accountId: '74550193-125b-48ca-9715-f25bb4c8490f',
       );
       expect(AccountExpiry.fromJson(original.toJson()), original);
     });

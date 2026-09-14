@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:hiddify/core/db/db.dart';
+import 'package:hiddify/features/auth/model/payment_provider.dart';
 import 'package:hiddify/features/notifications/data/notification_data_providers.dart';
 import 'package:hiddify/features/notifications/logic/notification_evaluator.dart';
 import 'package:hiddify/features/notifications/model/notification_dedup_state.dart';
@@ -30,20 +31,25 @@ class NotificationMonitor extends _$NotificationMonitor with AppLogger {
       if (profile is! RemoteProfileEntity) return;
       final subInfo = profile.subInfo;
       if (subInfo == null) return;
-      // MW subscription header — "google_play" routes to the renewal reminder
-      // instead of the expiry countdown (mirrors account_section.dart's _header).
+      // MW subscription headers — a store provider routes to the renewal
+      // reminder instead of the expiry countdown, unless the store's
+      // auto-renew flag says the plan was cancelled (absent = unknown).
       final paymentProvider = profile.populatedHeaders?['subscription-payment-provider']?.toString().trim();
-      _enqueue(profile.id, subInfo, paymentProvider);
+      final autoRenew = autoRenewFromHeader(profile.populatedHeaders?['subscription-auto-renew']?.toString());
+      _enqueue(profile.id, subInfo, paymentProvider, autoRenew);
     });
   }
 
-  void _enqueue(String profileId, SubscriptionInfo subInfo, String? paymentProvider) {
-    _chain = _chain.then((_) => _process(profileId, subInfo, paymentProvider)).catchError((Object e, StackTrace s) {
+  void _enqueue(String profileId, SubscriptionInfo subInfo, String? paymentProvider, bool? autoRenew) {
+    _chain = _chain.then((_) => _process(profileId, subInfo, paymentProvider, autoRenew)).catchError((
+      Object e,
+      StackTrace s,
+    ) {
       loggy.warning("notification evaluation failed", e, s);
     });
   }
 
-  Future<void> _process(String profileId, SubscriptionInfo subInfo, String? paymentProvider) async {
+  Future<void> _process(String profileId, SubscriptionInfo subInfo, String? paymentProvider, bool? autoRenew) async {
     final store = ref.read(notificationDedupStoreProvider);
     var state = store.read();
     // New active profile → discard stale markers so a re-import can't suppress
@@ -57,6 +63,7 @@ class NotificationMonitor extends _$NotificationMonitor with AppLogger {
       state: state,
       now: DateTime.now(),
       paymentProvider: paymentProvider,
+      autoRenew: autoRenew,
     );
 
     if (result.toCreate.isNotEmpty) {

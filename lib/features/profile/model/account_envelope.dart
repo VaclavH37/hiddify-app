@@ -19,11 +19,16 @@ import 'package:meta/meta.dart';
 sealed class AccountEnvelope {
   const AccountEnvelope();
 
-  /// The single code the handover marks transient (§7): the next poll may
-  /// succeed, so it is a failed refresh, not an account verdict.
+  /// The code the first handover named transient. Since the Worker's reply a
+  /// retryable 4012 is keyed on `retry_after` instead (§4.3 there); this name
+  /// match stays as the fallback for a Worker that has not deployed that yet.
   static const transientCode = 'SUBSCRIPTION_UNAVAILABLE';
 
   static bool isTransientCode(String code) => code == transientCode;
+
+  /// `retry_after` is accepted from 1 s to a day, as the Worker itself
+  /// enforces; anything else is treated as absent.
+  static const maxRetryAfter = Duration(days: 1);
 
   /// Parses [body] with [headers] as fallbacks. Null when the body is not an
   /// account-status envelope: a config, a non-JSON body, or an `error_code`
@@ -55,11 +60,11 @@ sealed class AccountEnvelope {
         if (verdict == 'ACCOUNT_EXPIRED') {
           return AccountEnvelopeExpired(details: _expiry(decoded, headers), newUrl: _string(decoded['new_url']));
         }
-        return AccountEnvelopeUnavailable(code: verdict);
+        return _unavailable(verdict, decoded, headers);
       case 4011:
         return AccountEnvelopeExpired(details: _expiry(decoded, headers));
       case 4012:
-        return AccountEnvelopeUnavailable(code: verdict ?? AccountEnvelopeUnavailable.unknownCode);
+        return _unavailable(verdict ?? AccountEnvelopeUnavailable.unknownCode, decoded, headers);
       default:
         return null;
     }
@@ -70,7 +75,27 @@ sealed class AccountEnvelope {
     billingPeriod: _string(body['billing_period']) ?? _header(headers, 'subscription-billing-period'),
     expiresAt: _epoch(_int(body['expires_at']) ?? _int(_header(headers, 'subscription-expire-date'))),
     manageUrl: _https(_string(body['manage_url']) ?? _header(headers, 'subscription-manage-url')),
+    accountId: _accountId(body, headers),
   );
+
+  static AccountEnvelopeUnavailable _unavailable(
+    String code,
+    Map<dynamic, dynamic> body,
+    Map<String, dynamic> headers,
+  ) => AccountEnvelopeUnavailable(
+    code: code,
+    retryAfter: _retryAfter(_int(body['retry_after']) ?? _int(_header(headers, 'subscription-retry-after'))),
+    accountId: _accountId(body, headers),
+  );
+
+  static String? _accountId(Map<dynamic, dynamic> body, Map<String, dynamic> headers) =>
+      _string(body['account_id']) ?? _header(headers, 'subscription-account-id');
+
+  static Duration? _retryAfter(int? seconds) {
+    if (seconds == null || seconds < 1) return null;
+    final value = Duration(seconds: seconds);
+    return value > maxRetryAfter ? null : value;
+  }
 
   static int? _int(Object? value) => switch (value) {
     final int i => i,
@@ -126,22 +151,40 @@ class AccountEnvelopeExpired extends AccountEnvelope {
 /// renewable; an unrecognised [code] is "unavailable", not a client error (§7).
 @immutable
 class AccountEnvelopeUnavailable extends AccountEnvelope {
-  const AccountEnvelopeUnavailable({required this.code});
+  const AccountEnvelopeUnavailable({required this.code, this.retryAfter, this.accountId});
 
   static const unknownCode = 'UNKNOWN';
 
   final String code;
 
-  bool get transient => AccountEnvelope.isTransientCode(code);
+  /// Present when the Worker says this state can clear without the user
+  /// paying (its reply, §4.3): `SUBSCRIPTION_UNAVAILABLE`, `ACCOUNT_PENDING`,
+  /// and any retryable code added later. Never on suspended, closed, deleted
+  /// or unknown accounts.
+  final Duration? retryAfter;
+
+  /// The token's `uid`. Identifies the user across rotations; never logged.
+  final String? accountId;
+
+  /// A temporary state, not a verdict: the refresh loop backs off for
+  /// [retryAfter] and records nothing. Keyed on `retry_after`, with the one
+  /// code the first handover named as the pre-deploy fallback.
+  bool get transient => retryAfter != null || AccountEnvelope.isTransientCode(code);
 }
 
 /// What the renewal screen needs to know about a lapsed plan. Every field is
 /// optional: the legacy 4010 and the panel-only 4011 carry none of them.
 @immutable
 class AccountExpiry {
-  const AccountExpiry({this.paymentProvider, this.billingPeriod, this.expiresAt, this.manageUrl});
+  const AccountExpiry({this.paymentProvider, this.billingPeriod, this.expiresAt, this.manageUrl, this.accountId});
 
   static const none = AccountExpiry();
+
+  /// The token's `uid` (`account_id` / `subscription-account-id`). Compared
+  /// as an exact string to a signed-in account's id once the backend confirms
+  /// login returns the same string; until then read, kept, never enforced.
+  /// Absent means unknown, never a mismatch. Never logged.
+  final String? accountId;
 
   /// `app_store`, `google_play`, `nowpayments`, `guardarian`, `trial`, `admin`
   /// or a value this build has not heard of; only the store pair is matched.
@@ -168,6 +211,7 @@ class AccountExpiry {
     'billingPeriod': billingPeriod,
     'expiresAt': expiresAt == null ? null : expiresAt!.millisecondsSinceEpoch ~/ 1000,
     'manageUrl': manageUrl?.toString(),
+    'accountId': accountId,
   };
 
   factory AccountExpiry.fromJson(Map<String, Object?> json) => AccountExpiry(
@@ -175,6 +219,7 @@ class AccountExpiry {
     billingPeriod: AccountEnvelope._string(json['billingPeriod']),
     expiresAt: AccountEnvelope._epoch(AccountEnvelope._int(json['expiresAt'])),
     manageUrl: AccountEnvelope._https(AccountEnvelope._string(json['manageUrl'])),
+    accountId: AccountEnvelope._string(json['accountId']),
   );
 
   @override
@@ -183,10 +228,13 @@ class AccountExpiry {
       other.paymentProvider == paymentProvider &&
       other.billingPeriod == billingPeriod &&
       other.expiresAt == expiresAt &&
-      other.manageUrl == manageUrl;
+      other.manageUrl == manageUrl &&
+      other.accountId == accountId;
 
   @override
-  int get hashCode => Object.hash(paymentProvider, billingPeriod, expiresAt, manageUrl);
+  int get hashCode => Object.hash(paymentProvider, billingPeriod, expiresAt, manageUrl, accountId);
+
+  // toString deliberately omits accountId: this string reaches the log.
 
   @override
   String toString() =>

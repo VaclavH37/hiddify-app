@@ -103,6 +103,12 @@ class ProfileParser {
     // HubTier.
     'subscription-hub-tier',
     'subscription-hub-tier-until',
+    // Configs only (never on an envelope). `subscription-auto-renew` is the
+    // store's flag, `true`/`false`; ABSENT MEANS UNKNOWN, never false — it is
+    // missing until the backend ships it. `subscription-account-id` is the
+    // token's uid; kept for the account match, never logged.
+    'subscription-auto-renew',
+    'subscription-account-id',
   ];
 
   final Ref _ref;
@@ -248,6 +254,14 @@ class ProfileParser {
           if (CancelToken.isCancel(err as DioException)) {
             throw const ProfileFailure.cancelByUser('HTTP request for getting profile content canceled by user.');
           }
+          // A non-2xx — the covert 404, or an edge error. Status and request
+          // id only: the body says nothing by design, and this is the one
+          // line support has to go on.
+          if (err.response case final response?) {
+            _log.warning(
+              'subscription request answered ${response.statusCode} (cf-ray ${response.headers.value("cf-ray") ?? "-"})',
+            );
+          }
           throw err;
         });
     final content = await expandRemoteLines(
@@ -359,13 +373,24 @@ class ProfileParser {
     }
     // An account verdict, never a config. Logged by kind only: the body can
     // carry a renew link and the plan, and the log is exportable.
+    // `cf-ray` is Cloudflare's request id; the Worker forwards it to the
+    // backend as X-Request-Id, so one value finds a verdict in both logs.
     switch (envelope) {
       case AccountEnvelopeExpired(:final details, :final legacy):
-        _log.warning('subscription expired with no renewal available (${legacy ? "legacy 4010" : "verdict"})');
+        _log.warning(
+          'subscription expired with no renewal available '
+          '(${legacy ? "legacy 4010" : "verdict"}; cf-ray ${rayId(downloaded.headers) ?? "-"})',
+        );
         return TaskEither<ProfileFailure, _ResolvedSubscription>.left(ProfileFailure.subscriptionExpired(details));
-      case AccountEnvelopeUnavailable(:final code):
-        _log.warning('account unavailable ($code)');
-        return TaskEither<ProfileFailure, _ResolvedSubscription>.left(ProfileFailure.accountUnavailable(code));
+      case AccountEnvelopeUnavailable(:final code, :final retryAfter):
+        _log.warning(
+          'account unavailable ($code'
+          '${retryAfter == null ? "" : ", retry after ${retryAfter.inSeconds}s"}; '
+          'cf-ray ${rayId(downloaded.headers) ?? "-"})',
+        );
+        return TaskEither<ProfileFailure, _ResolvedSubscription>.left(
+          ProfileFailure.accountUnavailable(code, retryAfter),
+        );
       case null:
         break;
     }
@@ -446,6 +471,14 @@ class ProfileParser {
     };
     return rotationFromLink(value, header: 'new-url');
   }
+
+  /// Cloudflare's request id from a response's headers, whole (it carries a
+  /// location suffix; support searches by the hex before the dash).
+  static String? rayId(Map<String, dynamic> headers) => switch (headers['cf-ray']) {
+    final String s when s.trim().isNotEmpty => s.trim(),
+    final List l when l.isNotEmpty => l.first?.toString(),
+    _ => null,
+  };
 
   /// Validates one `rayn://import/<token>` link from a rotation source
   /// ([header] names it in the log) and decrypts it. Null when absent or

@@ -23,6 +23,11 @@ EvaluationResult evaluateNotifications({
   // MW `subscription-payment-provider` header (e.g. "google_play"). Null for
   // token-import users / non-Play plans → the standard expiry-reminder path.
   String? paymentProvider,
+  // MW `subscription-auto-renew` config header. `false` = a store plan the
+  // user has cancelled: it will lapse, so it gets the countdown, not the
+  // "renews tomorrow" heads-up. Null = unknown (the header is absent until the
+  // backend ships it) and keeps the store plan on the renewal path.
+  bool? autoRenew,
 }) {
   final toCreate = <PendingNotification>[];
   var next = state;
@@ -39,7 +44,7 @@ EvaluationResult evaluateNotifications({
   final nonExpiring = daysRemaining > 365;
   if (!nonExpiring) {
     final anchorKey = subInfo.expire.toIso8601String();
-    if (isStoreManagedProvider(paymentProvider)) {
+    if (renewsItself(provider: paymentProvider, autoRenew: autoRenew)) {
       // Auto-renewing plans don't "expire" — suppress the countdown and instead
       // give one heads-up the day before the renewal date (on a store plan the
       // `expire` field IS the renewal date). Deduped once per anchor: when the

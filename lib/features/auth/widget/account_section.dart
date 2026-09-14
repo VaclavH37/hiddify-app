@@ -51,6 +51,8 @@ class AccountSection extends ConsumerWidget {
     final provider = subscriptionHeader(remote, 'subscription-payment-provider');
     final billingPeriod = subscriptionHeader(remote, 'subscription-billing-period');
     final manageUrl = subscriptionHeader(remote, 'subscription-manage-url');
+    // Absent means unknown, never "cancelled" (see autoRenewFromHeader).
+    final autoRenew = autoRenewFromHeader(subscriptionHeader(remote, 'subscription-auto-renew'));
     final isStoreManaged = isStoreManagedProvider(provider);
     // Store IAP is a mobile-only surface (the transition purchase, the
     // store-managed subscription centre, Restore). On desktop there is no
@@ -69,7 +71,9 @@ class AccountSection extends ConsumerWidget {
       AccountExpired() => t.auth.renew.ended,
       AccountUnavailable() => t.auth.renew.unavailableTitle,
       AccountActive() =>
-        remote?.subInfo != null ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod) : null,
+        remote?.subInfo != null
+            ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod, autoRenew: autoRenew)
+            : null,
     };
 
     return Column(
@@ -221,27 +225,35 @@ class AccountSection extends ConsumerWidget {
 /// allowance used" line. Both were removed with the quota card: throttling is
 /// meant to be invisible to the subscriber, and a usage figure is how they
 /// would work out that it had happened.
-String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? provider, String? billingPeriod}) {
+String _formatSubInfo(
+  RemoteProfileEntity profile,
+  Translations t, {
+  String? provider,
+  String? billingPeriod,
+  bool? autoRenew,
+}) {
   final sub = profile.subInfo!;
-  final isStoreManaged = isStoreManagedProvider(provider);
+  // A store plan renews itself unless the store's flag says it was cancelled;
+  // an unknown flag (the header is absent until the backend ships it) keeps
+  // the renewing wording.
+  final renewing = renewsItself(provider: provider, autoRenew: autoRenew);
 
   // Line 1: absolute date, or "Never" for the infinite sentinel (mirrors the
-  // > 365-day infinity convention). For an auto-renewing store plan — Google
-  // Play or App Store, see isStoreManagedProvider — this is the *renewal* date,
-  // so relabel accordingly.
+  // > 365-day infinity convention). For a renewing store plan this is the
+  // *renewal* date, so relabel accordingly; a cancelled one ends on it.
   final expiryValue = sub.remaining.inDays > 365
       ? t.components.subscriptionInfo.planExpiryNever
       : sub.expire.formatDate();
-  final line1 = isStoreManaged
+  final line1 = renewing
       ? t.components.subscriptionInfo.renewDate(date: expiryValue)
       : t.components.subscriptionInfo.planExpiry(date: expiryValue);
 
   final lines = [line1];
 
   // Line 2 (when the backend sent a billing period): e.g. "Annual · Auto-renew"
-  // — auto-renew for either store, manual for any other provider.
+  // — auto-renew for a renewing store plan, manual for anything else.
   if (billingPeriod != null) {
-    final renewType = isStoreManaged
+    final renewType = renewing
         ? t.components.subscriptionInfo.autoRenew
         : t.components.subscriptionInfo.manualRenew;
     lines.add('${billingPeriodLabel(t, billingPeriod) ?? billingPeriod} · $renewType');

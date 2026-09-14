@@ -117,19 +117,10 @@ class RenewPage extends HookConsumerWidget {
             icon: const Icon(Icons.mail_outline_rounded),
             label: Text(t.auth.renew.contactSupport),
           ),
-          // Only a pending account can change on its own; the others need a
-          // person, and a "check again" that never succeeds reads as broken.
-          if (code == 'ACCOUNT_PENDING') ...[
-            const Gap(RaynSpacing.md),
-            _CheckAgain(
-              t: t,
-              palette: palette,
-              checking: checking.value,
-              stillBlocked: stillBlocked.value,
-              stillBlockedCopy: t.auth.renew.unavailable.pending,
-              onPressed: checkAgain,
-            ),
-          ],
+          // No "Check again" here: every 4012 that can clear on its own now
+          // carries the Worker's `retry_after` and never becomes a verdict, so
+          // what reaches this mode needs a person, and a check that never
+          // succeeds reads as broken.
           const Gap(RaynSpacing.xl),
           _LogOut(t: t),
         ],

@@ -23,3 +23,22 @@ library;
 /// Deliberately not an enum: the middleware owns this vocabulary, and an
 /// unknown string must degrade to "not store-managed" rather than throw.
 bool isStoreManagedProvider(String? provider) => provider == 'google_play' || provider == 'app_store';
+
+/// The store's auto-renew flag from the `subscription-auto-renew` config
+/// header: `true`, `false`, or null for anything else.
+///
+/// ABSENT MEANS UNKNOWN, never false. The header is missing until the backend
+/// ships the field, and for up to a minute afterwards while the middleware's
+/// cache turns over; reading that as "cancelled" would show every
+/// auto-renewing subscriber an end date and send them lapse warnings. Callers
+/// keep today's behaviour on null.
+bool? autoRenewFromHeader(String? value) => switch (value?.trim().toLowerCase()) {
+  'true' => true,
+  'false' => false,
+  _ => null,
+};
+
+/// Whether the plan will renew itself: store-managed and not switched off.
+/// An unknown flag keeps a store plan on the auto-renewing path.
+bool renewsItself({required String? provider, required bool? autoRenew}) =>
+    isStoreManagedProvider(provider) && autoRenew != false;

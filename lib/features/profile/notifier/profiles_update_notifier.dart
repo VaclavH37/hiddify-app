@@ -14,7 +14,6 @@ import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/notifications/data/notification_data_providers.dart';
 import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
-import 'package:hiddify/features/profile/model/account_envelope.dart';
 import 'package:hiddify/features/profile/model/config_slot.dart';
 import 'package:hiddify/features/profile/model/hub_reachability.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
@@ -33,6 +32,21 @@ import 'package:uuid/uuid.dart';
 part 'profiles_update_notifier.g.dart';
 
 typedef ProfileUpdateStatus = ({String name, bool success});
+
+/// SharedPreferences key: the instant before which an unforced refresh is
+/// skipped, set by a retryable 4012 (the Worker's `retry_after`).
+const accountRetryNotBeforeKey = 'account_retry_not_before';
+
+/// How long a retryable 4012 holds the next poll: what the Worker asked for,
+/// never less than the scheduler's own floor. `retry_after` may lengthen the
+/// wait, never shorten it (the Worker's reply, §4.3).
+Duration refreshHoldFor(Duration? retryAfter) =>
+    retryAfter == null || retryAfter < ForegroundProfilesUpdateNotifier.interval
+    ? ForegroundProfilesUpdateNotifier.interval
+    : retryAfter;
+
+/// Whether an unforced refresh is still inside a hold.
+bool refreshHeldBack(DateTime? notBefore, DateTime now) => notBefore != null && now.isBefore(notBefore);
 
 @Riverpod(keepAlive: true)
 class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifier with AppLogger {
@@ -195,15 +209,29 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
           )
           .first;
 
+      final prefs = ref.read(sharedPreferencesProvider).requireValue;
       await for (final profile in Stream.fromIterable(remoteProfiles)) {
         final updateInterval = profile.options?.updateInterval;
-        if (force || updateInterval != null && updateInterval <= DateTime.now().difference(profile.lastUpdate)) {
+        // A retryable 4012 asked for a longer wait; a forced refresh (the
+        // user's "Check again", the expiry watchdog) is still honoured.
+        final heldBack = !force && refreshHeldBack(DateTime.tryParse(prefs.getString(accountRetryNotBeforeKey) ?? ""), DateTime.now());
+        if (heldBack) {
+          loggy.debug("holding back profile [${profile.id}] refresh until [${prefs.getString(accountRetryNotBeforeKey)}]");
+        } else if (force || updateInterval != null && updateInterval <= DateTime.now().difference(profile.lastUpdate)) {
           final t = ref.read(translationsProvider).requireValue;
           final result = await _refreshCarryingCounters(profile.url);
           await result.fold(
             (l) async {
-              if (l is ProfileSubscriptionExpiredFailure ||
-                  (l is ProfileAccountUnavailableFailure && !AccountEnvelope.isTransientCode(l.code))) {
+              if (l case ProfileAccountUnavailableFailure(:final retryAfter) when l.isTransientVerdict) {
+                // A temporary account state (the Worker's `retry_after`): it
+                // clears without the user paying. No verdict, nothing shown —
+                // the stored config keeps serving — and the reachability
+                // ladder stays out of it, since the hub is not what failed.
+                final hold = refreshHoldFor(retryAfter);
+                loggy.info("profile [${profile.id}] temporary account state; next refresh in ${hold.inMinutes} min");
+                await prefs.setString(accountRetryNotBeforeKey, DateTime.now().add(hold).toIso8601String());
+                state = AsyncData((name: profile.name, success: false));
+              } else if (l is ProfileSubscriptionExpiredFailure || l is ProfileAccountUnavailableFailure) {
                 // An account verdict: record it (the home page, the connect
                 // guard and the renewal screen read it), notify (deduped) and
                 // keep the last config. The backend disables the tunnel
@@ -246,6 +274,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
               // the verdict and any standing "expired" prompt.
               await ref.read(accountStateNotifierProvider.notifier).recordActive();
               await _clearAccountVerdicts();
+              await prefs.remove(accountRetryNotBeforeKey);
               ref.read(inAppNotificationControllerProvider).showSuccessToast(t.pages.profiles.msg.update.success);
               state = AsyncData((name: profile.name, success: true));
             },

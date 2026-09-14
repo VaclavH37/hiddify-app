@@ -122,6 +122,55 @@ void main() {
     });
   });
 
+  group('store auto-renew flag', () {
+    test('a cancelled store plan gets the expiry countdown, not the renewal heads-up', () {
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 7))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'app_store',
+        autoRenew: false,
+      );
+      expect(kinds(r), {NotificationKind.expiryReminder});
+      expect(r.toCreate.single.thresholdValue, 7);
+    });
+
+    test('a cancelled store plan never gets the "renews tomorrow" heads-up', () {
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 1))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'google_play',
+        autoRenew: false,
+      );
+      expect(kinds(r), {NotificationKind.expiryReminder});
+    });
+
+    test('an absent flag is unknown and keeps the renewal path', () {
+      for (final autoRenew in [null, true]) {
+        final r = evaluateNotifications(
+          subInfo: sub(expire: now.add(const Duration(days: 1))),
+          state: const NotificationDedupState(),
+          now: now,
+          paymentProvider: 'google_play',
+          autoRenew: autoRenew,
+        );
+        expect(kinds(r), {NotificationKind.renewalReminder}, reason: '$autoRenew');
+      }
+    });
+
+    test('the flag changes nothing for web billing', () {
+      final r = evaluateNotifications(
+        subInfo: sub(expire: now.add(const Duration(days: 7))),
+        state: const NotificationDedupState(),
+        now: now,
+        paymentProvider: 'nowpayments',
+        autoRenew: true,
+      );
+      expect(kinds(r), {NotificationKind.expiryReminder});
+    });
+  });
+
   group('store renewal reminder', () {
     test('fires the day before renewal (1 day out)', () {
       final expire = now.add(const Duration(days: 1));

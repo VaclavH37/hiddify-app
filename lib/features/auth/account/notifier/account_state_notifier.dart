@@ -50,7 +50,7 @@ class AccountStateNotifier extends _$AccountStateNotifier with AppLogger {
   /// verdict did (rollout, backend briefly unreachable).
   Future<void> recordFailure(ProfileFailure failure) async {
     final profileId = _profileId;
-    if (profileId == null) return;
+    if (profileId == null || failure.isTransientVerdict) return;
     final now = DateTime.now().toUtc();
     final AccountState next;
     switch (failure) {
@@ -61,7 +61,6 @@ class AccountStateNotifier extends _$AccountStateNotifier with AppLogger {
         };
         next = AccountExpired(details: details ?? AccountExpiry.none, detectedAt: since);
       case ProfileAccountUnavailableFailure(:final code):
-        if (AccountEnvelope.isTransientCode(code)) return;
         final since = switch (state) {
           AccountUnavailable(code: final current, :final detectedAt) when current == code => detectedAt,
           _ => now,

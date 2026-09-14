@@ -91,11 +91,6 @@ void main() {
     expect(find.byType(PlanCard), findsNothing);
   });
 
-  testWidgets('a pending account can be checked again', (tester) async {
-    await pumpPage(tester, AccountUnavailable(code: 'ACCOUNT_PENDING', detectedAt: at));
-    expect(find.widgetWithText(OutlinedButton, 'Check again'), findsOneWidget);
-  });
-
   testWidgets('an unknown code reads as unavailable', (tester) async {
     await pumpPage(tester, AccountUnavailable(code: 'ACCOUNT_FROZEN', detectedAt: at));
     expect(find.textContaining("can't be renewed"), findsOneWidget);
