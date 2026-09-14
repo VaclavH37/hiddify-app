@@ -372,6 +372,7 @@
       "invalidUrl": "Invalid URL",
       "canceledByUser": "Canceled by user",
       "subscriptionExpired": "Your subscription has expired. Please renew to continue.",
+      "accountUnavailable": "This account is no longer available. Contact support if you think this is a mistake.",
       "unsupportedLinkVersion": "App update required",
       "configUnreadable": "Your saved configuration couldn't be read. Connect to the internet to refresh it."
     },

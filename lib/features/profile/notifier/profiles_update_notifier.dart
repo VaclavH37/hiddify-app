@@ -8,11 +8,13 @@ import 'package:hiddify/core/http_client/http_client_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
+import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/notifications/data/notification_data_providers.dart';
 import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
+import 'package:hiddify/features/profile/model/account_envelope.dart';
 import 'package:hiddify/features/profile/model/config_slot.dart';
 import 'package:hiddify/features/profile/model/hub_reachability.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
@@ -67,10 +69,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         .read(proxyRepositoryProvider)
         .watchActiveProxies()
         .listen(
-          (event) => event.fold(
-            (_) => _allTimedOutSince = null,
-            _onOutboundDelays,
-          ),
+          (event) => event.fold((_) => _allTimedOutSince = null, _onOutboundDelays),
           onError: (_) => _allTimedOutSince = null,
         );
 
@@ -203,12 +202,16 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
           final result = await _refreshCarryingCounters(profile.url);
           await result.fold(
             (l) async {
-              if (l is ProfileSubscriptionExpiredFailure) {
-                // Lapsed subscription: notify (deduped) and keep the last
-                // config. The backend disables the tunnel server-side at
-                // expiry, so the client does not disconnect. A later renewal
-                // returns a `new-url` and auto-migrates.
-                loggy.info("profile [${profile.id}] subscription expired with no renewal");
+              if (l is ProfileSubscriptionExpiredFailure ||
+                  (l is ProfileAccountUnavailableFailure && !AccountEnvelope.isTransientCode(l.code))) {
+                // An account verdict: record it (the home page, the connect
+                // guard and the renewal screen read it), notify (deduped) and
+                // keep the last config. The backend disables the tunnel
+                // server-side, so the client does not disconnect. Polling
+                // continues: a renewal turns the next poll into a config, or a
+                // `new-url` for a lapsed token.
+                loggy.info("profile [${profile.id}] account verdict: ${l.runtimeType}");
+                await ref.read(accountStateNotifierProvider.notifier).recordFailure(l);
                 await _raiseSubscriptionExpired();
                 state = AsyncData((name: profile.name, success: false));
               } else {
@@ -235,11 +238,11 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
               // cache to fail over to.
               await _refreshStandbyCacheIfDue(profile);
               await _checkHubReachability(profile);
-              // A good config returned — clear any standing "expired" prompt.
+              // A good config returned — the account is serving again; clear
+              // the verdict and any standing "expired" prompt.
+              await ref.read(accountStateNotifierProvider.notifier).recordActive();
               await _clearSubscriptionExpired();
-              ref
-                  .read(inAppNotificationControllerProvider)
-                  .showSuccessToast(t.pages.profiles.msg.update.success);
+              ref.read(inAppNotificationControllerProvider).showSuccessToast(t.pages.profiles.msg.update.success);
               state = AsyncData((name: profile.name, success: true));
             },
           );
@@ -450,10 +453,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // detection produces, and charging them for it would let four such toggles
     // suppress genuine failover for a day while the log claimed four flips the
     // client never made.
-    await prefs.setStringList(hubFlipsKey, [
-      ...flips.map((at) => at.toIso8601String()),
-      now.toIso8601String(),
-    ]);
+    await prefs.setStringList(hubFlipsKey, [...flips.map((at) => at.toIso8601String()), now.toIso8601String()]);
 
     if (await _tunnelCarriesTraffic(profile.url)) {
       loggy.warning("the standby hub carries traffic; the primary hub was the problem");
@@ -606,11 +606,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     try {
       await ref
           .read(httpClientProvider)
-          .getText(
-            url,
-            proxyOnly: true,
-            userAgent: ref.read(appInfoProvider).requireValue.subscriptionUserAgent,
-          );
+          .getText(url, proxyOnly: true, userAgent: ref.read(appInfoProvider).requireValue.subscriptionUserAgent);
       return true;
     } catch (err) {
       loggy.debug("tunnelled probe failed (${err.runtimeType})");

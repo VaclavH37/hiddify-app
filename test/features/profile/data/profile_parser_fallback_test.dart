@@ -27,10 +27,7 @@ void main() {
   group('extractFallback', () {
     test('returns null when `fallback-url` header is absent', () {
       expect(ProfileParser.extractFallback(const {}), isNull);
-      expect(
-        ProfileParser.extractFallback(const {'content-type': 'application/json'}),
-        isNull,
-      );
+      expect(ProfileParser.extractFallback(const {'content-type': 'application/json'}), isNull);
     });
 
     test('returns null on empty / whitespace header', () {
@@ -39,17 +36,11 @@ void main() {
     });
 
     test('returns null when value is non-rayn https URL', () {
-      expect(
-        ProfileParser.extractFallback(const {'fallback-url': 'https://malicious.example.com/sub'}),
-        isNull,
-      );
+      expect(ProfileParser.extractFallback(const {'fallback-url': 'https://malicious.example.com/sub'}), isNull);
     });
 
     test('returns null on rayn:// without /import/ prefix', () {
-      expect(
-        ProfileParser.extractFallback(const {'fallback-url': 'rayn://something/abc'}),
-        isNull,
-      );
+      expect(ProfileParser.extractFallback(const {'fallback-url': 'rayn://something/abc'}), isNull);
     });
 
     test('returns null on rayn://import/ with empty token', () {
@@ -57,10 +48,7 @@ void main() {
     });
 
     test('returns null when the rayn://import/<token> ciphertext is garbage', () {
-      expect(
-        ProfileParser.extractFallback(const {'fallback-url': 'rayn://import/not_a_real_token_x'}),
-        isNull,
-      );
+      expect(ProfileParser.extractFallback(const {'fallback-url': 'rayn://import/not_a_real_token_x'}), isNull);
     });
 
     test('returns decrypted url and full rayn:// link when header is valid', () {
@@ -230,9 +218,7 @@ void main() {
       final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      await parser
-          .updateRemote(rp: entity(), signal: HubSignal.unreachable, counters: (checks: 2, failures: 2))
-          .run();
+      await parser.updateRemote(rp: entity(), signal: HubSignal.unreachable, counters: (checks: 2, failures: 2)).run();
 
       expect(fake.sentHeaders.single?[hubSignalHeader], 'unreachable');
       expect(fake.sentHeaders.single?[hubChecksHeader], '2');
@@ -250,7 +236,12 @@ void main() {
     test('the window survives a fallback-host failover and is sent on both attempts', () async {
       // The delivery is only settled on success, so the backlog must still be
       // attached when the primary middleware host fails and we try the backup.
-      final fake = _FakeHttpClient(steps: [_FakeStep.networkError(), _FakeStep.ok(headers: {})]);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.networkError(),
+          _FakeStep.ok(headers: {}),
+        ],
+      );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
       await parser
@@ -305,7 +296,9 @@ void main() {
       // The opposite of the `unreachable` signal: this is routine cache
       // maintenance on a healthy link, not an escape from a dead one.
       final fake = _FakeHttpClient(
-        steps: [_FakeStep.ok(headers: {'subscription-hub-tier': 'standby'})],
+        steps: [
+          _FakeStep.ok(headers: {'subscription-hub-tier': 'standby'}),
+        ],
       );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
@@ -332,7 +325,9 @@ void main() {
     });
 
     test('REJECTS a response with no tier header — an older middleware', () async {
-      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {}, body: 'primary-config')]);
+      final fake = _FakeHttpClient(
+        steps: [_FakeStep.ok(headers: {}, body: 'primary-config')],
+      );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
       final result = await parser.fetchStandbyConfig(rp: entity()).run();
@@ -373,9 +368,7 @@ void main() {
 
     setUp(() async {
       tempDir = Directory.systemTemp.createTempSync('fallback_test_');
-      container = ProviderContainer(
-        overrides: [appInfoProvider.overrideWith(_FakeAppInfo.new)],
-      );
+      container = ProviderContainer(overrides: [appInfoProvider.overrideWith(_FakeAppInfo.new)]);
       ref = container.read(_dummyRefProvider);
       // `_downloadProfile` reads `appInfoProvider.requireValue` synchronously
       // for the User-Agent header; resolve it first so the read succeeds.
@@ -407,9 +400,7 @@ void main() {
       final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser
-          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'))
-          .run();
+      final result = await parser.updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub')).run();
 
       expect(result.isRight(), isTrue);
       expect(fake.callCount, 1);
@@ -417,12 +408,15 @@ void main() {
     });
 
     test('primary fails → fallback succeeds', () async {
-      final fake = _FakeHttpClient(steps: [_FakeStep.networkError(), _FakeStep.ok(headers: {})]);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.networkError(),
+          _FakeStep.ok(headers: {}),
+        ],
+      );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser
-          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'))
-          .run();
+      final result = await parser.updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub')).run();
 
       expect(result.isRight(), isTrue);
       expect(fake.callCount, 2);
@@ -433,18 +427,13 @@ void main() {
       final fake = _FakeHttpClient(steps: [_FakeStep.networkError(), _FakeStep.networkError()]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser
-          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'))
-          .run();
+      final result = await parser.updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub')).run();
 
       expect(result.isLeft(), isTrue);
       expect(fake.callCount, 2);
       // Original primary failure surfaces — not the fallback's. Both are
       // ProfileUnexpectedFailure here, so we just confirm the type.
-      result.fold(
-        (l) => expect(l, isA<ProfileFailure>()),
-        (_) => fail('expected Left'),
-      );
+      result.fold((l) => expect(l, isA<ProfileFailure>()), (_) => fail('expected Left'));
     });
 
     test('primary fails → no fallback configured → primary failure surfaces', () async {
@@ -461,16 +450,11 @@ void main() {
       final fake = _FakeHttpClient(steps: [_FakeStep.cancelled()]);
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser
-          .updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'))
-          .run();
+      final result = await parser.updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub')).run();
 
       expect(result.isLeft(), isTrue);
       expect(fake.callCount, 1);
-      result.fold(
-        (l) => expect(l, isA<ProfileCancelByUserFailure>()),
-        (_) => fail('expected Left'),
-      );
+      result.fold((l) => expect(l, isA<ProfileCancelByUserFailure>()), (_) => fail('expected Left'));
     });
 
     test('header absence preserves existing fallback', () async {
@@ -481,36 +465,34 @@ void main() {
 
       final result = await parser
           .updateRemote(
-            rp: buildEntity(fallbackUrl: existingFallback, fallbackSourceToken: existingToken)
+            rp: buildEntity(fallbackUrl: existingFallback, fallbackSourceToken: existingToken),
           )
           .run();
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (parsed) {
-          expect(parsed.entry.fallbackUrl.value, existingFallback);
-          expect(parsed.entry.fallbackSourceToken.value, existingToken);
-        },
-      );
+      result.fold((_) => fail('expected Right'), (parsed) {
+        expect(parsed.entry.fallbackUrl.value, existingFallback);
+        expect(parsed.entry.fallbackSourceToken.value, existingToken);
+      });
     });
 
     test('present fallback-url header populates the columns', () async {
       const newFallback = 'https://new-fallback.example.com/sub';
       final newLink = _raynLink(newFallback);
-      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {'fallback-url': newLink})]);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'fallback-url': newLink}),
+        ],
+      );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
       final result = await parser.updateRemote(rp: buildEntity()).run();
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (parsed) {
-          expect(parsed.entry.fallbackUrl.value, newFallback);
-          expect(parsed.entry.fallbackSourceToken.value, newLink);
-        },
-      );
+      result.fold((_) => fail('expected Right'), (parsed) {
+        expect(parsed.entry.fallbackUrl.value, newFallback);
+        expect(parsed.entry.fallbackSourceToken.value, newLink);
+      });
     });
 
     test('a fallback-url for the SAME url does not rewrite the columns (§4)', () async {
@@ -522,7 +504,11 @@ void main() {
       final freshLink = _raynLink(existingFallback);
       expect(freshLink, isNot(storedLink), reason: 'cryptolinks for the same URL are never equal (§4)');
 
-      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {'fallback-url': freshLink})]);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'fallback-url': freshLink}),
+        ],
+      );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
       final result = await parser
@@ -532,37 +518,14 @@ void main() {
           .run();
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (parsed) {
-          expect(parsed.entry.fallbackUrl.value, existingFallback);
-          // The load-bearing assertion: with a raw-string comparison the stored
-          // token would have been overwritten with `freshLink` on this refresh,
-          // and on every refresh thereafter.
-          expect(parsed.entry.fallbackSourceToken.value, storedLink);
-          expect(parsed.entry.fallbackSourceToken.value, isNot(freshLink));
-        },
-      );
-    });
-  });
-
-  group('isExpiredEnvelope', () {
-    test('detects a 4010 envelope (with and without new_url)', () {
-      expect(ProfileParser.isExpiredEnvelope(_expiredEnvelope), isTrue);
-      expect(
-        ProfileParser.isExpiredEnvelope('{"success":false,"error_code":4010,"new_url":"rayn://import/x"}'),
-        isTrue,
-      );
-    });
-
-    test('treats a sing-box config (no error_code) as not expired', () {
-      expect(ProfileParser.isExpiredEnvelope('{"outbounds":[],"dns":{}}'), isFalse);
-    });
-
-    test('treats non-JSON bodies as not expired', () {
-      expect(ProfileParser.isExpiredEnvelope(''), isFalse);
-      expect(ProfileParser.isExpiredEnvelope('vmess://abc'), isFalse);
-      expect(ProfileParser.isExpiredEnvelope('not json at all'), isFalse);
+      result.fold((_) => fail('expected Right'), (parsed) {
+        expect(parsed.entry.fallbackUrl.value, existingFallback);
+        // The load-bearing assertion: with a raw-string comparison the stored
+        // token would have been overwritten with `freshLink` on this refresh,
+        // and on every refresh thereafter.
+        expect(parsed.entry.fallbackSourceToken.value, storedLink);
+        expect(parsed.entry.fallbackSourceToken.value, isNot(freshLink));
+      });
     });
   });
 
@@ -616,19 +579,18 @@ void main() {
           .run();
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (parsed) {
-          expect(parsed.entry.url.value, renewedUrl);
-          expect(parsed.entry.sourceToken.value, renewedLink);
-        },
-      );
+      result.fold((_) => fail('expected Right'), (parsed) {
+        expect(parsed.entry.url.value, renewedUrl);
+        expect(parsed.entry.sourceToken.value, renewedLink);
+      });
       expect(fake.callCount, 2);
       expect(fake.calledUrls, ['https://primary.example.com/sub', renewedUrl]);
     });
 
     test('addRemote surfaces subscriptionExpired on a 4010 with no new-url', () async {
-      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {}, body: _expiredEnvelope)]);
+      final fake = _FakeHttpClient(
+        steps: [_FakeStep.ok(headers: {}, body: _expiredEnvelope)],
+      );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
       final result = await parser
@@ -648,7 +610,9 @@ void main() {
     test('addRemote stops following after the hop cap and reports expired', () async {
       final links = List.generate(5, (i) => _raynLink('https://hop$i.example.com/sub'));
       final fake = _FakeHttpClient(
-        steps: [for (final link in links) _FakeStep.ok(headers: {'new-url': link}, body: _expiredEnvelope)],
+        steps: [
+          for (final link in links) _FakeStep.ok(headers: {'new-url': link}, body: _expiredEnvelope),
+        ],
       );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
@@ -681,29 +645,108 @@ void main() {
       final result = await parser.updateRemote(rp: buildEntity()).run();
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (parsed) {
-          expect(parsed.entry.url.value, renewedUrl);
-          expect(parsed.entry.sourceToken.value, renewedLink);
-        },
-      );
+      result.fold((_) => fail('expected Right'), (parsed) {
+        expect(parsed.entry.url.value, renewedUrl);
+        expect(parsed.entry.sourceToken.value, renewedLink);
+      });
       expect(fake.callCount, 2);
     });
 
     test('updateRemote does not failover when the primary is expired', () async {
-      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {}, body: _expiredEnvelope)]);
+      final fake = _FakeHttpClient(
+        steps: [_FakeStep.ok(headers: {}, body: _expiredEnvelope)],
+      );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser
-          .updateRemote(
-            rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub'),
-          )
-          .run();
+      final result = await parser.updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub')).run();
 
       expect(result.isLeft(), isTrue);
       result.fold((l) => expect(l, isA<ProfileSubscriptionExpiredFailure>()), (_) => fail('expected Left'));
       expect(fake.callCount, 1);
+    });
+
+    test('updateRemote surfaces the renewal details on a 4011 and does not failover', () async {
+      const body =
+          '{"success":false,"error_code":4011,"code":"ACCOUNT_EXPIRED","account_status":"expired", '
+          '"message":"Subscription expired","expires_at":1791968400,"billing_period":"monthly", '
+          '"payment_provider":"app_store","manage_url":"https://apps.apple.com/account/subscriptions"}';
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'subscription-account-code': 'ACCOUNT_EXPIRED'}, body: body),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub')).run();
+
+      expect(result.isLeft(), isTrue);
+      result.fold((l) {
+        expect(l, isA<ProfileSubscriptionExpiredFailure>());
+        final details = (l as ProfileSubscriptionExpiredFailure).details;
+        expect(details?.paymentProvider, 'app_store');
+        expect(details?.billingPeriod, 'monthly');
+        expect(details?.manageUrl, Uri.parse('https://apps.apple.com/account/subscriptions'));
+        expect(details?.expiresAt, DateTime.fromMillisecondsSinceEpoch(1791968400 * 1000, isUtc: true));
+      }, (_) => fail('expected Left'));
+      expect(fake.callCount, 1, reason: 'an account verdict is never retried on the fallback host');
+    });
+
+    test('updateRemote surfaces accountUnavailable on a 4012 and does not failover', () async {
+      const body =
+          '{"success":false,"error_code":4012,"code":"ACCOUNT_SUSPENDED","account_status":"suspended", '
+          '"message":"Subscription unavailable"}';
+      final fake = _FakeHttpClient(
+        steps: [_FakeStep.ok(headers: {}, body: body)],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub')).run();
+
+      expect(result.isLeft(), isTrue);
+      result.fold((l) {
+        expect(l, isA<ProfileAccountUnavailableFailure>());
+        expect((l as ProfileAccountUnavailableFailure).code, 'ACCOUNT_SUSPENDED');
+      }, (_) => fail('expected Left'));
+      expect(fake.callCount, 1);
+    });
+
+    test('a renewed 4010 whose new_url is only in the body is followed', () async {
+      const renewedUrl = 'https://renewed.example.com/sub';
+      final renewedLink = _raynLink(renewedUrl);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(
+            headers: {},
+            body: '{"success":false,"error_code":4010,"message":"Subscription token expired","new_url":"$renewedLink"}',
+          ),
+          _FakeStep.ok(headers: {}),
+        ],
+      );
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.updateRemote(rp: buildEntity()).run();
+
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('expected Right'), (parsed) {
+        expect(parsed.entry.url.value, renewedUrl);
+        expect(parsed.entry.sourceToken.value, renewedLink);
+      });
+      expect(fake.calledUrls, ['https://primary.example.com/sub', renewedUrl]);
+    });
+
+    test('an HTTP 404 is a failed refresh, never an expired account (§8)', () async {
+      const covert = '{"success":false,"error_code":404,"message":"Resource not found"}';
+      final fake = _FakeHttpClient(steps: [_FakeStep.status(404, covert), _FakeStep.status(404, covert)]);
+      final parser = ProfileParser(ref: ref, httpClient: fake);
+
+      final result = await parser.updateRemote(rp: buildEntity(fallbackUrl: 'https://fallback.example.com/sub')).run();
+
+      expect(result.isLeft(), isTrue);
+      result.fold((l) {
+        expect(l, isA<ProfileUnexpectedFailure>());
+        expect(l, isNot(isA<ProfileSubscriptionExpiredFailure>()));
+      }, (_) => fail('expected Left'));
+      expect(fake.callCount, 2, reason: 'a host failure is retried on the fallback host');
     });
 
     test('a new-url pointing at the CURRENT url is not followed (§4)', () async {
@@ -715,12 +758,14 @@ void main() {
       final echoedLink = _raynLink(currentUrl);
       expect(echoedLink, isNot(storedLink), reason: 'cryptolinks for the same URL are never equal (§4)');
 
-      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {'new-url': echoedLink})]);
+      final fake = _FakeHttpClient(
+        steps: [
+          _FakeStep.ok(headers: {'new-url': echoedLink}),
+        ],
+      );
       final parser = ProfileParser(ref: ref, httpClient: fake);
 
-      final result = await parser
-          .updateRemote(rp: buildEntity(sourceToken: storedLink))
-          .run();
+      final result = await parser.updateRemote(rp: buildEntity(sourceToken: storedLink)).run();
 
       expect(result.isRight(), isTrue);
       expect(fake.callCount, 1, reason: 'the rotation must not be followed — exactly one download');
@@ -754,13 +799,10 @@ void main() {
       final result = await parser.updateRemote(rp: buildEntity()).run();
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (parsed) {
-          expect(parsed.entry.url.value, migratedUrl);
-          expect(parsed.entry.sourceToken.value, migratedLink);
-        },
-      );
+      result.fold((_) => fail('expected Right'), (parsed) {
+        expect(parsed.entry.url.value, migratedUrl);
+        expect(parsed.entry.sourceToken.value, migratedLink);
+      });
       expect(fake.callCount, 2);
     });
   });
@@ -788,6 +830,10 @@ class _FakeStep {
   factory _FakeStep.networkError() => _FakeStep._(error: _NetworkErrorMarker());
   factory _FakeStep.cancelled() => _FakeStep._(error: _CancelMarker());
 
+  /// A non-2xx answer, which dio raises as a bad-response exception before
+  /// the parser ever sees the body — the middleware's covert 404.
+  factory _FakeStep.status(int statusCode, String body) => _FakeStep._(error: _StatusMarker(statusCode), body: body);
+
   final Map<String, dynamic>? headers;
   final Object? error;
   final String body;
@@ -797,9 +843,13 @@ class _NetworkErrorMarker {}
 
 class _CancelMarker {}
 
+class _StatusMarker {
+  _StatusMarker(this.statusCode);
+  final int statusCode;
+}
+
 class _FakeHttpClient extends DioHttpClient {
-  _FakeHttpClient({required this.steps})
-    : super(timeout: const Duration(seconds: 1), userAgent: 'test', debug: false);
+  _FakeHttpClient({required this.steps}) : super(timeout: const Duration(seconds: 1), userAgent: 'test', debug: false);
 
   final List<_FakeStep> steps;
   int callCount = 0;
@@ -834,6 +884,14 @@ class _FakeHttpClient extends DioHttpClient {
         throw DioException.requestCancelled(
           requestOptions: RequestOptions(path: url),
           reason: 'cancelled',
+        );
+      }
+      if (step.error case final _StatusMarker status) {
+        final options = RequestOptions(path: url);
+        throw DioException.badResponse(
+          statusCode: status.statusCode,
+          requestOptions: options,
+          response: Response<String>(requestOptions: options, statusCode: status.statusCode, data: step.body),
         );
       }
       throw DioException(

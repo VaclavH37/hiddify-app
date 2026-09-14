@@ -7,6 +7,7 @@ import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/db/db.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/features/profile/data/profile_data_mapper.dart';
+import 'package:hiddify/features/profile/model/account_envelope.dart';
 import 'package:hiddify/features/profile/model/hub_reachability.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
@@ -120,23 +121,22 @@ class ProfileParser {
           (_, _) => const ProfileFailure.unexpected(),
         )
         .flatMap(
-          (expanded) => TaskEither.fromEither(
-            populateHeaders(content: expanded).map((h) => (headers: h, content: expanded)),
-          ),
+          (expanded) =>
+              TaskEither.fromEither(populateHeaders(content: expanded).map((h) => (headers: h, content: expanded))),
         )
         .flatMap(
           (resolved) => TaskEither.fromEither(
             parse(
-              content: resolved.content,
-              profile: ProfileEntity.local(
-                id: id,
-                active: true,
-                name: '',
-                lastUpdate: DateTime.now(),
-                userOverride: userOverride,
-                populatedHeaders: resolved.headers,
-              ),
-            )
+                  content: resolved.content,
+                  profile: ProfileEntity.local(
+                    id: id,
+                    active: true,
+                    name: '',
+                    lastUpdate: DateTime.now(),
+                    userOverride: userOverride,
+                    populatedHeaders: resolved.headers,
+                  ),
+                )
                 .flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected))
                 .map((entry) => (entry: entry, content: resolved.content)),
           ),
@@ -154,27 +154,25 @@ class ProfileParser {
     if (fallback != null) {
       _log.info('capturing fallback URL on import (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
     }
-    return TaskEither.fromEither(
-      populateHeaders(content: resolved.content, remoteHeaders: resolved.headers),
-    ).flatMap(
+    return TaskEither.fromEither(populateHeaders(content: resolved.content, remoteHeaders: resolved.headers)).flatMap(
       (populatedHeaders) => TaskEither.fromEither(
         parse(
-          content: resolved.content,
-          profile: ProfileEntity.remote(
-            id: id,
-            active: true,
-            name: '',
-            // `_resolveDownload` already followed any `new-url`, so these are
-            // the renewed token's url/source when a rotation occurred.
-            url: resolved.url,
-            lastUpdate: DateTime.now(),
-            userOverride: userOverride,
-            populatedHeaders: populatedHeaders,
-            sourceToken: resolved.sourceToken,
-            fallbackUrl: fallback?.url,
-            fallbackSourceToken: fallback?.sourceToken,
-          ),
-        )
+              content: resolved.content,
+              profile: ProfileEntity.remote(
+                id: id,
+                active: true,
+                name: '',
+                // `_resolveDownload` already followed any `new-url`, so these are
+                // the renewed token's url/source when a rotation occurred.
+                url: resolved.url,
+                lastUpdate: DateTime.now(),
+                userOverride: userOverride,
+                populatedHeaders: populatedHeaders,
+                sourceToken: resolved.sourceToken,
+                fallbackUrl: fallback?.url,
+                fallbackSourceToken: fallback?.sourceToken,
+              ),
+            )
             .flatMap((profEntity) => Either.tryCatch(() => profEntity.toInsertEntry(), ProfileFailure.unexpected))
             .map((entry) => (entry: entry, content: resolved.content)),
       ),
@@ -201,30 +199,26 @@ class ProfileParser {
       _log.info('updating fallback URL on refresh (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
       rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.sourceToken);
     }
-    return TaskEither.fromEither(
-      populateHeaders(content: resolved.content, remoteHeaders: resolved.headers),
-    ).flatMap(
+    return TaskEither.fromEither(populateHeaders(content: resolved.content, remoteHeaders: resolved.headers)).flatMap(
       (populatedHeaders) => TaskEither.fromEither(
         parse(
-          content: resolved.content,
-          profile: rotated.copyWith(populatedHeaders: populatedHeaders),
-        )
+              content: resolved.content,
+              profile: rotated.copyWith(populatedHeaders: populatedHeaders),
+            )
             .flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected))
             .map((entry) => (entry: entry, content: resolved.content)),
       ),
     );
   });
 
-  Either<ProfileFailure, ParsedProfile> offlineUpdate({
-    required ProfileEntity profile,
-    required String content,
-  }) => profile
-      .map(
-        remote: (rp) => parse(profile: rp, content: content),
-        local: (lp) => parse(content: content, profile: lp),
-      )
-      .flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected))
-      .map((entry) => (entry: entry, content: content));
+  Either<ProfileFailure, ParsedProfile> offlineUpdate({required ProfileEntity profile, required String content}) =>
+      profile
+          .map(
+            remote: (rp) => parse(profile: rp, content: content),
+            local: (lp) => parse(content: content, profile: lp),
+          )
+          .flatMap((profEntity) => Either.tryCatch(() => profEntity.toUpdateEntry(), ProfileFailure.unexpected))
+          .map((entry) => (entry: entry, content: content));
 
   /// [signal], when present, rides along as the `x-rayn-hub-signal` request
   /// header and forces the DIRECT leg.
@@ -276,11 +270,7 @@ class ProfileParser {
   /// ordinary refresh is byte-for-byte the request it has always been — every
   /// header the client adds is one more thing that distinguishes this app's
   /// traffic from anything else's.
-  static Map<String, String>? _requestHeaders({
-    HubSignal? signal,
-    HubTier? requestTier,
-    HubCounters? counters,
-  }) {
+  static Map<String, String>? _requestHeaders({HubSignal? signal, HubTier? requestTier, HubCounters? counters}) {
     final headers = <String, String>{
       if (signal != null) hubSignalHeader: signal.wireValue,
       if (requestTier != null) hubTierRequestHeader: requestTier.name,
@@ -312,19 +302,17 @@ class ProfileParser {
   /// the standby slot would be worse than having no cache at all: failover
   /// would swap primary for primary, restart the core, and change nothing,
   /// while looking like it had worked.
-  TaskEither<ProfileFailure, String> fetchStandbyConfig({
-    required RemoteProfileEntity rp,
-    CancelToken? cancelToken,
-  }) => _downloadWithFailover(rp, cancelToken, requestTier: HubTier.standby).flatMap((resolved) {
-    final served = hubTierOf(resolved.headers['subscription-hub-tier']?.toString());
-    if (served != HubTier.standby) {
-      _log.warning('standby fetch answered with the [${served.name}] tier; discarding it');
-      return TaskEither<ProfileFailure, String>.left(
-        const ProfileFailure.invalidConfig('the middleware did not serve the standby hub'),
-      );
-    }
-    return TaskEither<ProfileFailure, String>.right(resolved.content);
-  });
+  TaskEither<ProfileFailure, String> fetchStandbyConfig({required RemoteProfileEntity rp, CancelToken? cancelToken}) =>
+      _downloadWithFailover(rp, cancelToken, requestTier: HubTier.standby).flatMap((resolved) {
+        final served = hubTierOf(resolved.headers['subscription-hub-tier']?.toString());
+        if (served != HubTier.standby) {
+          _log.warning('standby fetch answered with the [${served.name}] tier; discarding it');
+          return TaskEither<ProfileFailure, String>.left(
+            const ProfileFailure.invalidConfig('the middleware did not serve the standby hub'),
+          );
+        }
+        return TaskEither<ProfileFailure, String>.right(resolved.content);
+      });
 
   /// One subscription request that follows `new-url` token rotation to the
   /// terminal response (see [Confirmed decisions] in the plan). Returns the
@@ -340,14 +328,18 @@ class ProfileParser {
     HubSignal? signal,
     HubTier? requestTier,
     HubCounters? counters,
-  }) => _downloadProfile(
-        url,
-        cancelToken,
-        signal: signal,
-        requestTier: requestTier,
-        counters: counters,
-      ).flatMap((downloaded) {
-    final rotation = extractRotation(downloaded.headers);
+  }) => _downloadProfile(url, cancelToken, signal: signal, requestTier: requestTier, counters: counters).flatMap((
+    downloaded,
+  ) {
+    final envelope = AccountEnvelope.parse(downloaded.content, downloaded.headers);
+    // The header is the contract; the body's `new_url` is the same link and is
+    // only consulted when the header is missing.
+    final rotation =
+        extractRotation(downloaded.headers) ??
+        switch (envelope) {
+          AccountEnvelopeExpired(:final newUrl?) => rotationFromLink(newUrl, header: 'new_url'),
+          _ => null,
+        };
     // Compare the DECRYPTED url, not the cryptolink: the envelope is randomised,
     // so the same URL re-encrypts to a different string on every response and a
     // string comparison would follow a "rotation" on every single refresh (§4).
@@ -365,9 +357,17 @@ class ProfileParser {
         counters: counters,
       );
     }
-    if (isExpiredEnvelope(downloaded.content)) {
-      _log.warning('subscription token expired with no renewal available');
-      return TaskEither<ProfileFailure, _ResolvedSubscription>.left(const ProfileFailure.subscriptionExpired());
+    // An account verdict, never a config. Logged by kind only: the body can
+    // carry a renew link and the plan, and the log is exportable.
+    switch (envelope) {
+      case AccountEnvelopeExpired(:final details, :final legacy):
+        _log.warning('subscription expired with no renewal available (${legacy ? "legacy 4010" : "verdict"})');
+        return TaskEither<ProfileFailure, _ResolvedSubscription>.left(ProfileFailure.subscriptionExpired(details));
+      case AccountEnvelopeUnavailable(:final code):
+        _log.warning('account unavailable ($code)');
+        return TaskEither<ProfileFailure, _ResolvedSubscription>.left(ProfileFailure.accountUnavailable(code));
+      case null:
+        break;
     }
     return TaskEither.right((
       headers: downloaded.headers,
@@ -381,9 +381,10 @@ class ProfileParser {
   /// [updateRemote] only — initial imports have no stored fallback yet.
   ///
   /// Failover triggers on any [ProfileFailure] from the primary except
-  /// [ProfileCancelByUserFailure] (user intent) and
-  /// [ProfileSubscriptionExpiredFailure] (an account state — the fallback host
-  /// would return the same `4010`, so we surface the lapse instead).
+  /// [ProfileCancelByUserFailure] (user intent) and the two account verdicts,
+  /// [ProfileSubscriptionExpiredFailure] and [ProfileAccountUnavailableFailure]
+  /// (the fallback host asks the same backend and would answer the same, so we
+  /// surface the verdict instead).
   TaskEither<ProfileFailure, _ResolvedSubscription> _downloadWithFailover(
     RemoteProfileEntity rp,
     CancelToken? cancelToken, {
@@ -403,6 +404,7 @@ class ProfileParser {
     if (primaryFailure == null) return primary;
     if (primaryFailure is ProfileCancelByUserFailure) return primary;
     if (primaryFailure is ProfileSubscriptionExpiredFailure) return primary;
+    if (primaryFailure is ProfileAccountUnavailableFailure) return primary;
     final fallback = rp.fallbackUrl;
     if (fallback == null || fallback.isEmpty) return primary;
     _log.info(
@@ -442,6 +444,14 @@ class ProfileParser {
       final List l when l.isNotEmpty => l.first?.toString(),
       _ => null,
     };
+    return rotationFromLink(value, header: 'new-url');
+  }
+
+  /// Validates one `rayn://import/<token>` link from a rotation source
+  /// ([header] names it in the log) and decrypts it. Null when absent or
+  /// unusable for any reason — callers keep the current URL/token.
+  @visibleForTesting
+  static SubscriptionRotation? rotationFromLink(String? value, {required String header}) {
     if (value == null || value.trim().isEmpty) return null;
     final trimmed = value.trim();
     switch (LinkParser.parse(trimmed)) {
@@ -450,12 +460,10 @@ class ProfileParser {
       case RaynLinkUnsupportedVersion(:final version):
         // Loud: the backend has moved past what this build can read, so we will
         // silently stop following rotations until the app is updated.
-        _log.error(
-          '`new-url` uses cryptolink version 0x${version.toRadixString(16)} — app update required',
-        );
+        _log.error('`$header` uses cryptolink version 0x${version.toRadixString(16)} — app update required');
         return null;
       case RaynLinkInvalid(:final reason):
-        _log.warning('rotation header `new-url` rejected ($reason)');
+        _log.warning('rotation `$header` rejected ($reason)');
         return null;
     }
   }
@@ -481,30 +489,11 @@ class ProfileParser {
       case RaynLinkOk(:final url):
         return (url: url, sourceToken: trimmed);
       case RaynLinkUnsupportedVersion(:final version):
-        _log.error(
-          '`fallback-url` uses cryptolink version 0x${version.toRadixString(16)} — app update required',
-        );
+        _log.error('`fallback-url` uses cryptolink version 0x${version.toRadixString(16)} — app update required');
         return null;
       case RaynLinkInvalid(:final reason):
         _log.warning('fallback header `fallback-url` rejected ($reason)');
         return null;
-    }
-  }
-
-  /// True when [body] is a token-expired envelope — the JSON
-  /// `{"success":false,"error_code":4010,…}` the MW subscription API returns
-  /// (HTTP 200) for an expired token. A normal sing-box config is JSON without
-  /// `error_code`; non-JSON bodies are configs of other formats → false.
-  /// Only meaningful on the terminal response: a `4010` carrying a `new-url`
-  /// is followed before this check (see [_resolveDownload]).
-  static bool isExpiredEnvelope(String body) {
-    try {
-      final decoded = jsonDecode(body.trim());
-      if (decoded is! Map) return false;
-      final code = decoded['error_code'];
-      return code == 4010 || code == '4010';
-    } catch (_) {
-      return false;
     }
   }
 
