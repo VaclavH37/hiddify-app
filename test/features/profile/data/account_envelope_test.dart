@@ -292,6 +292,60 @@ void main() {
     });
   });
 
+  group('backend-pending fields (the Worker reply, §5)', () {
+    test('an App Store refund: store_status, ended_at in the past, expires_at still in the future', () {
+      final e = expired(
+        '{"success":false,"error_code":4011,"code":"ACCOUNT_EXPIRED","account_status":"expired", '
+        '"store_status":"revoked","account_id":"74550193-125b-48ca-9715-f25bb4c8490f", '
+        '"message":"Subscription expired","expires_at":1791968400,"ended_at":1789041600, '
+        '"billing_period":"monthly","payment_provider":"app_store", '
+        '"manage_url":"https://apps.apple.com/account/subscriptions"}',
+      );
+      expect(e.details.storeStatus, AccountExpiry.storeRevoked);
+      expect(e.details.endedAt, utc(1789041600));
+      expect(e.details.expiresAt, utc(1791968400));
+      expect(e.details.endedBefore(utc(1789041601)), isFalse, reason: 'endedBefore reads expires_at only');
+      expect(e.details.renewUrl, isNull);
+    });
+
+    test('web billing lapsed: renew_url, no manage_url', () {
+      final e = expired(
+        '{"success":false,"error_code":4010,"code":"ACCOUNT_EXPIRED","account_status":"expired", '
+        '"account_id":"74550193-125b-48ca-9715-f25bb4c8490f","message":"Subscription token expired", '
+        '"expires_at":1789376400,"billing_period":"monthly","payment_provider":"nowpayments", '
+        '"renew_url":"https://checkout.example.invalid/renew/7f3c9a2e"}',
+      );
+      expect(e.details.renewUrl, Uri.parse('https://checkout.example.invalid/renew/7f3c9a2e'));
+      expect(e.details.manageUrl, isNull);
+      expect(e.details.storeStatus, isNull);
+      expect(e.details.endedAt, isNull);
+    });
+
+    test('header fallbacks; renew_url must be https', () {
+      final e = expired('{"success":false,"error_code":4011,"code":"ACCOUNT_EXPIRED"}', {
+        'subscription-store-status': 'billing_retry',
+        'subscription-ended-at': '1789041600',
+        'subscription-renew-url': 'https://checkout.example.invalid/r/1',
+      });
+      expect(e.details.storeStatus, AccountExpiry.storeBillingRetry);
+      expect(e.details.endedAt, utc(1789041600));
+      expect(e.details.renewUrl, Uri.parse('https://checkout.example.invalid/r/1'));
+      expect(
+        expired('{"success":false,"error_code":4011,"renew_url":"http://checkout.example.invalid/r/1"}').details.renewUrl,
+        isNull,
+      );
+    });
+
+    test('an unrecognised store_status is kept as sent; the screen shows generic copy for it', () {
+      expect(expired('{"success":false,"error_code":4011,"store_status":"grace"}').details.storeStatus, 'grace');
+    });
+
+    test('renew_url is not part of the printable form', () {
+      final e = AccountExpiry(renewUrl: Uri.parse('https://checkout.example.invalid/renew/7f3c9a2e'));
+      expect(e.toString(), isNot(contains('7f3c9a2e')));
+    });
+  });
+
   group('AccountExpiry json', () {
     test('round-trips every field', () {
       final original = AccountExpiry(
@@ -302,6 +356,9 @@ void main() {
           'https://play.google.com/store/account/subscriptions?sku=rayn_premium_monthly&package=com.raynlabs.app',
         ),
         accountId: '74550193-125b-48ca-9715-f25bb4c8490f',
+        storeStatus: AccountExpiry.storeRevoked,
+        endedAt: utc(1789041600),
+        renewUrl: Uri.parse('https://checkout.example.invalid/renew/7f3c9a2e'),
       );
       expect(AccountExpiry.fromJson(original.toJson()), original);
     });

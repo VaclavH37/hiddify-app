@@ -65,6 +65,11 @@ class AccountSection extends ConsumerWidget {
     final account = ref.watch(accountStateNotifierProvider);
     final blocked = account.blocksConnect;
     final subInfoLine = switch (account) {
+      // A refund ends access before the paid period does; that day is the one
+      // to show, never the future expiry.
+      AccountExpired(:final details) when details.endedAt != null => t.auth.renew.endedOnNoPlan(
+        date: details.endedAt!.formatDate(),
+      ),
       AccountExpired(:final details) when details.endedBefore(DateTime.now()) => t.auth.renew.endedOnNoPlan(
         date: details.expiresAt!.formatDate(),
       ),

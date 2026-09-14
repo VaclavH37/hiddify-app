@@ -79,6 +79,45 @@ void main() {
     expect(find.textContaining('ended on'), findsNothing);
   });
 
+  testWidgets('a refund says so, with the day access ended, never the future expiry', (tester) async {
+    await pumpPage(
+      tester,
+      AccountExpired(
+        details: AccountExpiry(
+          paymentProvider: 'app_store',
+          storeStatus: AccountExpiry.storeRevoked,
+          endedAt: DateTime.utc(2026, 9, 10, 12),
+          expiresAt: DateTime.now().add(const Duration(days: 20)),
+        ),
+        detectedAt: at,
+      ),
+    );
+    expect(find.textContaining('refunded'), findsOneWidget);
+    expect(find.textContaining('ended on'), findsOneWidget);
+  });
+
+  testWidgets('a failed store payment asks for the payment method', (tester) async {
+    await pumpPage(
+      tester,
+      AccountExpired(
+        details: const AccountExpiry(paymentProvider: 'google_play', storeStatus: AccountExpiry.storeBillingRetry),
+        detectedAt: at,
+      ),
+    );
+    expect(find.textContaining("didn't go through"), findsOneWidget);
+  });
+
+  testWidgets('an early end without a store reason reads as such', (tester) async {
+    await pumpPage(
+      tester,
+      AccountExpired(
+        details: AccountExpiry(paymentProvider: 'nowpayments', endedAt: DateTime.utc(2026, 9, 10)),
+        detectedAt: at,
+      ),
+    );
+    expect(find.textContaining('ended early on'), findsOneWidget);
+  });
+
   testWidgets('unavailable: the reason, support and log out — never a renew action', (tester) async {
     await pumpPage(tester, AccountUnavailable(code: 'ACCOUNT_SUSPENDED', detectedAt: at));
 

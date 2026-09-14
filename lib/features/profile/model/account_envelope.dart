@@ -76,6 +76,9 @@ sealed class AccountEnvelope {
     expiresAt: _epoch(_int(body['expires_at']) ?? _int(_header(headers, 'subscription-expire-date'))),
     manageUrl: _https(_string(body['manage_url']) ?? _header(headers, 'subscription-manage-url')),
     accountId: _accountId(body, headers),
+    storeStatus: _string(body['store_status']) ?? _header(headers, 'subscription-store-status'),
+    endedAt: _epoch(_int(body['ended_at']) ?? _int(_header(headers, 'subscription-ended-at'))),
+    renewUrl: _https(_string(body['renew_url']) ?? _header(headers, 'subscription-renew-url')),
   );
 
   static AccountEnvelopeUnavailable _unavailable(
@@ -176,9 +179,39 @@ class AccountEnvelopeUnavailable extends AccountEnvelope {
 /// optional: the legacy 4010 and the panel-only 4011 carry none of them.
 @immutable
 class AccountExpiry {
-  const AccountExpiry({this.paymentProvider, this.billingPeriod, this.expiresAt, this.manageUrl, this.accountId});
+  const AccountExpiry({
+    this.paymentProvider,
+    this.billingPeriod,
+    this.expiresAt,
+    this.manageUrl,
+    this.accountId,
+    this.storeStatus,
+    this.endedAt,
+    this.renewUrl,
+  });
 
   static const none = AccountExpiry();
+
+  /// `store_status` values the Worker passes through from the backend
+  /// (its reply, §5.3).
+  static const storeBillingRetry = 'billing_retry';
+  static const storeExpired = 'expired';
+  static const storeRevoked = 'revoked';
+
+  /// Why a store-billed plan ended: [storeBillingRetry], [storeExpired] or
+  /// [storeRevoked]. Absent for web billing and trials, and until the backend
+  /// ships it; anything unrecognised gets the generic copy.
+  final String? storeStatus;
+
+  /// When access ended, if earlier than [expiresAt] (`ended_at`): a refund or
+  /// a revocation. Always in the past, so it can be rendered.
+  final DateTime? endedAt;
+
+  /// A per-user web checkout (`renew_url`), https only; web billing and trials,
+  /// never store billing. Opened on desktop instead of the generic account
+  /// page. Short-lived and a credential: never logged, never kept beyond the
+  /// verdict it came with.
+  final Uri? renewUrl;
 
   /// The token's `uid` (`account_id` / `subscription-account-id`). Compared
   /// as an exact string to a signed-in account's id once the backend confirms
@@ -212,6 +245,9 @@ class AccountExpiry {
     'expiresAt': expiresAt == null ? null : expiresAt!.millisecondsSinceEpoch ~/ 1000,
     'manageUrl': manageUrl?.toString(),
     'accountId': accountId,
+    'storeStatus': storeStatus,
+    'endedAt': endedAt == null ? null : endedAt!.millisecondsSinceEpoch ~/ 1000,
+    'renewUrl': renewUrl?.toString(),
   };
 
   factory AccountExpiry.fromJson(Map<String, Object?> json) => AccountExpiry(
@@ -220,6 +256,9 @@ class AccountExpiry {
     expiresAt: AccountEnvelope._epoch(AccountEnvelope._int(json['expiresAt'])),
     manageUrl: AccountEnvelope._https(AccountEnvelope._string(json['manageUrl'])),
     accountId: AccountEnvelope._string(json['accountId']),
+    storeStatus: AccountEnvelope._string(json['storeStatus']),
+    endedAt: AccountEnvelope._epoch(AccountEnvelope._int(json['endedAt'])),
+    renewUrl: AccountEnvelope._https(AccountEnvelope._string(json['renewUrl'])),
   );
 
   @override
@@ -229,12 +268,17 @@ class AccountExpiry {
       other.billingPeriod == billingPeriod &&
       other.expiresAt == expiresAt &&
       other.manageUrl == manageUrl &&
-      other.accountId == accountId;
+      other.accountId == accountId &&
+      other.storeStatus == storeStatus &&
+      other.endedAt == endedAt &&
+      other.renewUrl == renewUrl;
 
   @override
-  int get hashCode => Object.hash(paymentProvider, billingPeriod, expiresAt, manageUrl, accountId);
+  int get hashCode =>
+      Object.hash(paymentProvider, billingPeriod, expiresAt, manageUrl, accountId, storeStatus, endedAt, renewUrl);
 
-  // toString deliberately omits accountId: this string reaches the log.
+  // toString deliberately omits accountId and renewUrl: this string reaches
+  // the log, and both identify or act for the user.
 
   @override
   String toString() =>

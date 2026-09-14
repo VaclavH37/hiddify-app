@@ -94,7 +94,7 @@ class RenewPage extends HookConsumerWidget {
           _EndedNotice(t: t, details: details),
           const Gap(RaynSpacing.lg),
           if (PlatformUtils.isDesktop)
-            _WebRenewal(t: t, palette: palette)
+            _WebRenewal(t: t, palette: palette, details: details)
           else
             _StoreRenewal(t: t, palette: palette, details: details),
           const Gap(RaynSpacing.md),
@@ -154,27 +154,40 @@ class _EndedNotice extends StatelessWidget {
   final AccountExpiry details;
 
   @override
-  Widget build(BuildContext context) {
-    final String message;
-    if (details.endedBefore(DateTime.now())) {
-      final date = details.expiresAt!.formatDate();
-      final plan = billingPeriodLabel(t, details.billingPeriod);
-      message = plan == null
-          ? t.auth.renew.endedOnNoPlan(date: date)
-          : t.auth.renew.endedOn(plan: plan.toLowerCase(), date: date);
-    } else {
-      message = t.auth.renew.ended;
-    }
-    return RaynNotice(tone: RaynNoticeTone.warning, message: message);
-  }
+  Widget build(BuildContext context) =>
+      RaynNotice(tone: RaynNoticeTone.warning, message: endedCopy(t, details, DateTime.now()));
 }
 
-/// Desktop has no billing host: the website is the checkout.
+/// The one line that says what happened, most specific first: a refund, a
+/// failed store payment, an early end, the plan's own end date — or just
+/// "ended" when no date is known or it lies in the future (a 4011 can carry
+/// one, and it is never shown as a countdown).
+@visibleForTesting
+String endedCopy(Translations t, AccountExpiry details, DateTime now) {
+  final endedAt = details.endedAt;
+  if (details.storeStatus == AccountExpiry.storeRevoked) {
+    return endedAt == null ? t.auth.renew.refunded : t.auth.renew.refundedOn(date: endedAt.formatDate());
+  }
+  if (details.storeStatus == AccountExpiry.storeBillingRetry) return t.auth.renew.billingRetry;
+  if (endedAt != null) return t.auth.renew.endedEarlyOn(date: endedAt.formatDate());
+  if (details.endedBefore(now)) {
+    final date = details.expiresAt!.formatDate();
+    final plan = billingPeriodLabel(t, details.billingPeriod);
+    return plan == null
+        ? t.auth.renew.endedOnNoPlan(date: date)
+        : t.auth.renew.endedOn(plan: plan.toLowerCase(), date: date);
+  }
+  return t.auth.renew.ended;
+}
+
+/// Desktop has no billing host: the website is the checkout — the per-user
+/// link when the verdict carried one, else the generic account page.
 class _WebRenewal extends StatelessWidget {
-  const _WebRenewal({required this.t, required this.palette});
+  const _WebRenewal({required this.t, required this.palette, required this.details});
 
   final Translations t;
   final RaynPalette palette;
+  final AccountExpiry details;
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +197,7 @@ class _WebRenewal extends StatelessWidget {
         Text(t.auth.renew.renewHintWeb, style: RaynTypography.paragraph.copyWith(color: palette.textSecondary)),
         const Gap(RaynSpacing.lg),
         FilledButton.icon(
-          onPressed: () => UriUtils.tryLaunch(Uri.parse(Constants.accountUrl)),
+          onPressed: () => UriUtils.tryLaunch(details.renewUrl ?? Uri.parse(Constants.accountUrl)),
           icon: const Icon(Icons.open_in_new_rounded),
           label: Text(t.auth.renew.renewOnWebsite),
         ),
@@ -236,17 +249,23 @@ class _StoreRenewal extends HookConsumerWidget {
       }
     });
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (details.isStoreManaged && details.manageUrl != null) ...[
-          OutlinedButton.icon(
+    // The store's subscription centre, for a store-billed plan. First when the
+    // fix is there — a failed payment, or no reason known — and after the
+    // plans when the store itself says the plan simply expired, where
+    // resubscribing is the answer (the Worker's reply, §5.3).
+    final manage = details.isStoreManaged && details.manageUrl != null
+        ? OutlinedButton.icon(
             onPressed: () => UriUtils.tryLaunch(details.manageUrl!),
             icon: const Icon(Icons.open_in_new_rounded),
             label: Text(t.auth.manageSubscription),
-          ),
-          const Gap(RaynSpacing.lg),
-        ],
+          )
+        : null;
+    final manageLast = details.storeStatus == AccountExpiry.storeExpired;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (manage != null && !manageLast) ...[manage, const Gap(RaynSpacing.lg)],
         if (authed.value == null)
           const PurchaseProgress()
         else if (authed.value == false)
@@ -268,6 +287,7 @@ class _StoreRenewal extends HookConsumerWidget {
           ],
           ..._plans(state, notifier),
         ],
+        if (manage != null && manageLast) ...[const Gap(RaynSpacing.lg), manage],
       ],
     );
   }
