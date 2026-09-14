@@ -95,7 +95,6 @@
         },
         "update": {
           "success": "Abonnement actualisé",
-          "failure": "Échec de la mise à jour du profil",
           "failureNamed": "Échec de la mise à jour de \"${name}\""
         }
       }
@@ -173,7 +172,13 @@
     },
     "expired": {
       "title": "Abonnement expiré",
-      "body": "Votre abonnement a expiré. Renouvelez-le pour vous reconnecter."
+      "body": "Votre abonnement a expiré. Renouvelez-le pour vous reconnecter.",
+      "action": "Renouveler"
+    },
+    "unavailable": {
+      "title": "Compte indisponible",
+      "body": "Votre compte ne peut pas être utilisé pour le moment. Ouvrez pour plus de détails.",
+      "action": "Voir les détails"
     }
   },
   "dialogs": {
@@ -200,7 +205,9 @@
     "reconnect": "Reconnecter",
     "reconnectMsg": "Reconnexion pour prendre en compte les changements...",
     "protected": "Protégé",
-    "unprotected": "Non protégé"
+    "unprotected": "Non protégé",
+    "subscriptionExpired": "Abonnement expiré",
+    "accountUnavailable": "Compte indisponible"
   },
   "errors": {
     "unexpected": "Erreur inattendue",
@@ -218,6 +225,7 @@
       "invalidUrl": "URL invalide",
       "canceledByUser": "Annulé par l'utilisateur",
       "subscriptionExpired": "Votre abonnement a expiré. Renouvelez-le pour continuer.",
+      "accountUnavailable": "Ce compte n'est plus disponible. Contactez l'assistance si vous pensez qu'il s'agit d'une erreur.",
       "unsupportedLinkVersion": "Mise à jour de l'application requise",
       "configUnreadable": "Impossible de lire votre configuration enregistrée. Connectez-vous à internet pour l'actualiser."
     },
@@ -387,6 +395,32 @@
       "accountMismatch": "Ces identifiants correspondent à un autre compte. Déconnectez-vous pour changer de compte.",
       "success": "Votre formule se renouvelle désormais automatiquement.",
       "close": "Fermer"
+    },
+    "renew": {
+      "title": "Abonnement expiré",
+      "unavailableTitle": "Compte indisponible",
+      "settingsRow": "Renouveler l'abonnement",
+      "endedOn": "Votre forfait ${plan} a pris fin le ${date}.",
+      "endedOnNoPlan": "Votre abonnement a pris fin le ${date}.",
+      "ended": "Votre abonnement a pris fin.",
+      "renewHint": "Choisissez un forfait pour renouveler et continuer à utiliser Rayn VPN.",
+      "renewHintWeb": "Renouvelez depuis votre page de compte, puis revenez vérifier à nouveau.",
+      "renewOnWebsite": "Renouveler sur le site web",
+      "needsSignIn": "Connectez-vous à votre compte pour renouveler votre forfait.",
+      "signedInAs": "Renouvellement du forfait de ${email}",
+      "checkAgain": "Vérifier à nouveau",
+      "checking": "Vérification de votre abonnement…",
+      "stillExpired": "Toujours expiré. Si vous venez de renouveler, patientez une minute et réessayez.",
+      "success": "Votre abonnement est de nouveau actif.",
+      "activeNotice": "Votre abonnement est actif.",
+      "contactSupport": "Contacter l'assistance",
+      "unavailable": {
+        "body": "Ce compte ne peut pas être renouvelé. Si vous pensez qu'il s'agit d'une erreur, contactez-nous et nous vérifierons.",
+        "suspended": "Ce compte a été suspendu. Contactez-nous et nous vérifierons.",
+        "deactivated": "Ce compte a été fermé et ne peut pas être renouvelé.",
+        "deleted": "Ce compte a été supprimé.",
+        "pending": "Ce compte n'est pas encore actif. Vérifiez à nouveau dans quelques minutes."
+      }
     }
   }
 }

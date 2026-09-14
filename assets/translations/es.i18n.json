@@ -95,7 +95,6 @@
         },
         "update": {
           "success": "Suscripción actualizada",
-          "failure": "Error al actualizar el perfil",
           "failureNamed": "Error al actualizar \"${name}\""
         }
       }
@@ -173,7 +172,13 @@
     },
     "expired": {
       "title": "Suscripción caducada",
-      "body": "Tu suscripción ha caducado. Renuévala para volver a conectarte."
+      "body": "Tu suscripción ha caducado. Renuévala para volver a conectarte.",
+      "action": "Renovar"
+    },
+    "unavailable": {
+      "title": "Cuenta no disponible",
+      "body": "Tu cuenta no se puede usar ahora mismo. Ábrela para ver los detalles.",
+      "action": "Ver detalles"
     }
   },
   "dialogs": {
@@ -200,7 +205,9 @@
     "reconnect": "Reconectar",
     "reconnectMsg": "Reconectando para aplicar los cambios...",
     "protected": "Protegido",
-    "unprotected": "Sin protección"
+    "unprotected": "Sin protección",
+    "subscriptionExpired": "Suscripción caducada",
+    "accountUnavailable": "Cuenta no disponible"
   },
   "errors": {
     "unexpected": "Error inesperado",
@@ -218,6 +225,7 @@
       "invalidUrl": "URL no válida",
       "canceledByUser": "Cancelado por el usuario",
       "subscriptionExpired": "Tu suscripción ha caducado. Renuévala para continuar.",
+      "accountUnavailable": "Esta cuenta ya no está disponible. Contacta con soporte si crees que es un error.",
       "unsupportedLinkVersion": "Se requiere actualizar la app",
       "configUnreadable": "No se pudo leer tu configuración guardada. Conéctate a internet para actualizarla."
     },
@@ -387,6 +395,32 @@
       "accountMismatch": "Estas credenciales son de otra cuenta. Cierra sesión para cambiar de cuenta.",
       "success": "Tu plan ahora se renueva automáticamente.",
       "close": "Cerrar"
+    },
+    "renew": {
+      "title": "Suscripción caducada",
+      "unavailableTitle": "Cuenta no disponible",
+      "settingsRow": "Renovar suscripción",
+      "endedOn": "Tu plan ${plan} terminó el ${date}.",
+      "endedOnNoPlan": "Tu suscripción terminó el ${date}.",
+      "ended": "Tu suscripción ha terminado.",
+      "renewHint": "Elige un plan para renovar y seguir usando Rayn VPN.",
+      "renewHintWeb": "Renueva desde tu página de cuenta y luego vuelve y comprueba de nuevo.",
+      "renewOnWebsite": "Renovar en el sitio web",
+      "needsSignIn": "Inicia sesión en tu cuenta para renovar tu plan.",
+      "signedInAs": "Renovando el plan de ${email}",
+      "checkAgain": "Comprobar de nuevo",
+      "checking": "Comprobando tu suscripción…",
+      "stillExpired": "Sigue caducada. Si acabas de renovar, espera un minuto y vuelve a intentarlo.",
+      "success": "Tu suscripción vuelve a estar activa.",
+      "activeNotice": "Tu suscripción está activa.",
+      "contactSupport": "Contactar con soporte",
+      "unavailable": {
+        "body": "Esta cuenta no se puede renovar. Si crees que es un error, contáctanos y lo revisaremos.",
+        "suspended": "Esta cuenta ha sido suspendida. Contáctanos y lo revisaremos.",
+        "deactivated": "Esta cuenta ha sido cerrada y no se puede renovar.",
+        "deleted": "Esta cuenta ha sido eliminada.",
+        "pending": "Esta cuenta aún no está activa. Comprueba de nuevo en unos minutos."
+      }
     }
   }
 }

@@ -95,7 +95,6 @@
         },
         "update": {
           "success": "訂閱資訊已重新整理",
-          "failure": "更新設定檔失敗",
           "failureNamed": "更新「${name}」失敗"
         }
       }
@@ -173,7 +172,13 @@
     },
     "expired": {
       "title": "訂閱已到期",
-      "body": "您的訂閱已到期。請續訂以重新連線。"
+      "body": "您的訂閱已到期。請續訂以重新連線。",
+      "action": "續訂"
+    },
+    "unavailable": {
+      "title": "帳戶不可用",
+      "body": "您的帳戶目前無法使用。打開查看詳情。",
+      "action": "查看詳情"
     }
   },
   "dialogs": {
@@ -200,7 +205,9 @@
     "reconnect": "重新連線",
     "reconnectMsg": "正在重新連線以套用變更...",
     "protected": "已保護",
-    "unprotected": "未保護"
+    "unprotected": "未保護",
+    "subscriptionExpired": "訂閱已到期",
+    "accountUnavailable": "帳戶不可用"
   },
   "errors": {
     "unexpected": "意外錯誤",
@@ -218,6 +225,7 @@
       "invalidUrl": "URL 無效",
       "canceledByUser": "使用者已取消",
       "subscriptionExpired": "您的訂閱已到期，請續訂以繼續使用。",
+      "accountUnavailable": "此帳戶已不可用。如果您認為這是誤判，請聯絡支援。",
       "unsupportedLinkVersion": "需要更新應用程式",
       "configUnreadable": "無法讀取已儲存的設定。請連線至網際網路以重新整理。"
     },
@@ -387,6 +395,32 @@
       "accountMismatch": "這些憑證屬於另一個帳戶。請登出以切換帳戶。",
       "success": "您的方案現在會自動續訂。",
       "close": "關閉"
+    },
+    "renew": {
+      "title": "訂閱已到期",
+      "unavailableTitle": "帳戶不可用",
+      "settingsRow": "續訂",
+      "endedOn": "您的${plan}方案已於 ${date} 結束。",
+      "endedOnNoPlan": "您的訂閱已於 ${date} 結束。",
+      "ended": "您的訂閱已結束。",
+      "renewHint": "選擇一個方案續訂，繼續使用 Rayn VPN。",
+      "renewHintWeb": "請在帳戶頁面續訂，然後回到這裡再次檢查。",
+      "renewOnWebsite": "在網站上續訂",
+      "needsSignIn": "登入帳戶以續訂方案。",
+      "signedInAs": "正在為 ${email} 續訂方案",
+      "checkAgain": "再次檢查",
+      "checking": "正在檢查您的訂閱…",
+      "stillExpired": "訂閱仍已到期。如果您剛剛續訂，請稍等一分鐘再試。",
+      "success": "您的訂閱已重新啟用。",
+      "activeNotice": "您的訂閱處於啟用狀態。",
+      "contactSupport": "聯絡支援",
+      "unavailable": {
+        "body": "此帳戶無法續訂。如果您認為這是誤判，請聯絡我們，我們會查核。",
+        "suspended": "此帳戶已被停權。請聯絡我們，我們會查核。",
+        "deactivated": "此帳戶已關閉，無法續訂。",
+        "deleted": "此帳戶已刪除。",
+        "pending": "此帳戶尚未啟用。請幾分鐘後再次檢查。"
+      }
     }
   }
 }

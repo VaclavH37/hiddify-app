@@ -2,15 +2,12 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_repository.dart';
-import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/utils/riverpod_utils.dart';
@@ -100,56 +97,6 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
             },
             (_) {
               loggy.info("successfully added profile");
-              return unit;
-            },
-          )
-          .run();
-    });
-  }
-}
-
-@riverpod
-class UpdateProfileNotifier extends _$UpdateProfileNotifier with AppLogger {
-  @override
-  AsyncValue<Unit?> build(String id) {
-    ref.disposeDelay(const Duration(minutes: 1));
-    listenSelf((previous, next) {
-      final t = ref.read(translationsProvider).requireValue;
-      final notification = ref.read(inAppNotificationControllerProvider);
-      switch (next) {
-        case AsyncData(value: final _?):
-          notification.showSuccessToast(t.pages.profiles.msg.update.success);
-        case AsyncError(:final error):
-          ref
-              .read(dialogNotifierProvider.notifier)
-              .showCustomAlertFromErr(t.presentError(error, action: t.pages.profiles.msg.update.failure));
-      }
-    });
-    return const AsyncData(null);
-  }
-
-  ProfileRepository get _profilesRepo => ref.read(profileRepositoryProvider).requireValue;
-
-  Future<void> updateProfile(RemoteProfileEntity profile) async {
-    if (state.isLoading) return;
-    state = const AsyncLoading();
-    await ref.read(hapticServiceProvider.notifier).lightImpact();
-    state = await AsyncValue.guard(() async {
-      return await _profilesRepo
-          .upsertRemote(profile.url)
-          .match(
-            (err) {
-              loggy.warning("failed to update profile", err);
-              throw err;
-            },
-            (_) async {
-              loggy.info('successfully updated profile');
-
-              await ref.read(activeProfileProvider.future).then((active) async {
-                if (active != null && active.id == profile.id) {
-                  await ref.read(connectionNotifierProvider.notifier).reconnect(profile);
-                }
-              });
               return unit;
             },
           )

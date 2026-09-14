@@ -95,7 +95,6 @@
         },
         "update": {
           "success": "Assinatura atualizada",
-          "failure": "Falha ao atualizar perfil",
           "failureNamed": "Falha ao atualizar \"${name}\""
         }
       }
@@ -173,7 +172,13 @@
     },
     "expired": {
       "title": "Assinatura expirada",
-      "body": "Sua assinatura expirou. Renove para reconectar."
+      "body": "Sua assinatura expirou. Renove para reconectar.",
+      "action": "Renovar"
+    },
+    "unavailable": {
+      "title": "Conta indisponível",
+      "body": "Sua conta não pode ser usada no momento. Abra para ver os detalhes.",
+      "action": "Ver detalhes"
     }
   },
   "dialogs": {
@@ -200,7 +205,9 @@
     "reconnect": "Reconectar",
     "reconnectMsg": "Reconectando para aplicar as alterações...",
     "protected": "Protegido",
-    "unprotected": "Sem proteção"
+    "unprotected": "Sem proteção",
+    "subscriptionExpired": "Assinatura expirada",
+    "accountUnavailable": "Conta indisponível"
   },
   "errors": {
     "unexpected": "Erro inesperado",
@@ -218,6 +225,7 @@
       "invalidUrl": "URL inválida",
       "canceledByUser": "Cancelado pelo usuário",
       "subscriptionExpired": "Sua assinatura expirou. Renove para continuar.",
+      "accountUnavailable": "Esta conta não está mais disponível. Fale com o suporte se achar que isso é um engano.",
       "unsupportedLinkVersion": "Atualização do app necessária",
       "configUnreadable": "Não foi possível ler sua configuração salva. Conecte-se à internet para atualizá-la."
     },
@@ -387,6 +395,32 @@
       "accountMismatch": "Essas credenciais são de outra conta. Saia para trocar de conta.",
       "success": "Seu plano agora é renovado automaticamente.",
       "close": "Fechar"
+    },
+    "renew": {
+      "title": "Assinatura expirada",
+      "unavailableTitle": "Conta indisponível",
+      "settingsRow": "Renovar assinatura",
+      "endedOn": "Seu plano ${plan} terminou em ${date}.",
+      "endedOnNoPlan": "Sua assinatura terminou em ${date}.",
+      "ended": "Sua assinatura terminou.",
+      "renewHint": "Escolha um plano para renovar e continuar usando o Rayn VPN.",
+      "renewHintWeb": "Renove pela página da sua conta e depois volte aqui e verifique novamente.",
+      "renewOnWebsite": "Renovar no site",
+      "needsSignIn": "Entre na sua conta para renovar seu plano.",
+      "signedInAs": "Renovando o plano de ${email}",
+      "checkAgain": "Verificar novamente",
+      "checking": "Verificando sua assinatura…",
+      "stillExpired": "Ainda expirada. Se você acabou de renovar, aguarde um minuto e tente de novo.",
+      "success": "Sua assinatura está ativa novamente.",
+      "activeNotice": "Sua assinatura está ativa.",
+      "contactSupport": "Falar com o suporte",
+      "unavailable": {
+        "body": "Esta conta não pode ser renovada. Se achar que isso é um engano, fale conosco e vamos verificar.",
+        "suspended": "Esta conta foi suspensa. Fale conosco e vamos verificar.",
+        "deactivated": "Esta conta foi encerrada e não pode ser renovada.",
+        "deleted": "Esta conta foi excluída.",
+        "pending": "Esta conta ainda não está ativa. Verifique novamente em alguns minutos."
+      }
     }
   }
 }

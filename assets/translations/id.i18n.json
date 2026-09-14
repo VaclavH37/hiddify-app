@@ -95,7 +95,6 @@
         },
         "update": {
           "success": "Langganan diperbarui",
-          "failure": "Gagal memperbarui profil",
           "failureNamed": "Gagal memperbarui \"${name}\""
         }
       }
@@ -173,7 +172,13 @@
     },
     "expired": {
       "title": "Langganan kedaluwarsa",
-      "body": "Langganan Anda telah kedaluwarsa. Perbarui untuk menyambung kembali."
+      "body": "Langganan Anda telah kedaluwarsa. Perbarui untuk menyambung kembali.",
+      "action": "Perbarui"
+    },
+    "unavailable": {
+      "title": "Akun tidak tersedia",
+      "body": "Akun Anda tidak dapat digunakan saat ini. Buka untuk melihat detailnya.",
+      "action": "Lihat detail"
     }
   },
   "dialogs": {
@@ -200,7 +205,9 @@
     "reconnect": "Sambungkan kembali",
     "reconnectMsg": "Menyambungkan kembali untuk menerapkan perubahan...",
     "protected": "Terlindungi",
-    "unprotected": "Tidak terlindungi"
+    "unprotected": "Tidak terlindungi",
+    "subscriptionExpired": "Langganan kedaluwarsa",
+    "accountUnavailable": "Akun tidak tersedia"
   },
   "errors": {
     "unexpected": "Kesalahan tak terduga",
@@ -218,6 +225,7 @@
       "invalidUrl": "URL tidak valid",
       "canceledByUser": "Dibatalkan oleh pengguna",
       "subscriptionExpired": "Langganan Anda telah kedaluwarsa. Perbarui untuk melanjutkan.",
+      "accountUnavailable": "Akun ini sudah tidak tersedia. Hubungi dukungan jika menurut Anda ini keliru.",
       "unsupportedLinkVersion": "Pembaruan aplikasi diperlukan",
       "configUnreadable": "Konfigurasi tersimpan Anda tidak dapat dibaca. Sambungkan ke internet untuk memperbaruinya."
     },
@@ -387,6 +395,32 @@
       "accountMismatch": "Kredensial ini milik akun lain. Keluar untuk berganti akun.",
       "success": "Paket Anda kini diperpanjang otomatis.",
       "close": "Tutup"
+    },
+    "renew": {
+      "title": "Langganan kedaluwarsa",
+      "unavailableTitle": "Akun tidak tersedia",
+      "settingsRow": "Perbarui langganan",
+      "endedOn": "Paket ${plan} Anda berakhir pada ${date}.",
+      "endedOnNoPlan": "Langganan Anda berakhir pada ${date}.",
+      "ended": "Langganan Anda telah berakhir.",
+      "renewHint": "Pilih paket untuk memperbarui dan terus menggunakan Rayn VPN.",
+      "renewHintWeb": "Perbarui dari halaman akun Anda, lalu kembali ke sini dan periksa lagi.",
+      "renewOnWebsite": "Perbarui di situs web",
+      "needsSignIn": "Masuk ke akun Anda untuk memperbarui paket.",
+      "signedInAs": "Memperbarui paket untuk ${email}",
+      "checkAgain": "Periksa lagi",
+      "checking": "Memeriksa langganan Anda…",
+      "stillExpired": "Masih kedaluwarsa. Jika baru saja memperbarui, tunggu satu menit lalu coba lagi.",
+      "success": "Langganan Anda aktif kembali.",
+      "activeNotice": "Langganan Anda aktif.",
+      "contactSupport": "Hubungi dukungan",
+      "unavailable": {
+        "body": "Akun ini tidak dapat diperbarui. Jika menurut Anda ini keliru, hubungi kami dan kami akan memeriksanya.",
+        "suspended": "Akun ini telah ditangguhkan. Hubungi kami dan kami akan memeriksanya.",
+        "deactivated": "Akun ini telah ditutup dan tidak dapat diperbarui.",
+        "deleted": "Akun ini telah dihapus.",
+        "pending": "Akun ini belum aktif. Periksa lagi dalam beberapa menit."
+      }
     }
   }
 }

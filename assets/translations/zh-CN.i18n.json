@@ -95,7 +95,6 @@
         },
         "update": {
           "success": "订阅信息已刷新",
-          "failure": "更新配置文件失败",
           "failureNamed": "更新 \"${name}\" 失败"
         }
       }
@@ -173,7 +172,13 @@
     },
     "expired": {
       "title": "订阅已到期",
-      "body": "您的订阅已到期。请续订以重新连接。"
+      "body": "您的订阅已到期。请续订以重新连接。",
+      "action": "续订"
+    },
+    "unavailable": {
+      "title": "账户不可用",
+      "body": "您的账户目前无法使用。打开查看详情。",
+      "action": "查看详情"
     }
   },
   "dialogs": {
@@ -200,7 +205,9 @@
     "reconnect": "重新连接",
     "reconnectMsg": "正在重新连接以应用更改...",
     "protected": "已保护",
-    "unprotected": "未保护"
+    "unprotected": "未保护",
+    "subscriptionExpired": "订阅已到期",
+    "accountUnavailable": "账户不可用"
   },
   "errors": {
     "unexpected": "意外错误",
@@ -218,6 +225,7 @@
       "invalidUrl": "URL 无效",
       "canceledByUser": "用户已取消",
       "subscriptionExpired": "您的订阅已到期，请续订以继续使用。",
+      "accountUnavailable": "此账户已不可用。如果您认为这是误判，请联系支持。",
       "unsupportedLinkVersion": "需要更新应用",
       "configUnreadable": "无法读取已保存的配置。请连接互联网以刷新。"
     },
@@ -387,6 +395,32 @@
       "accountMismatch": "这些凭据属于另一个账户。请退出登录以切换账户。",
       "success": "您的套餐现已自动续订。",
       "close": "关闭"
+    },
+    "renew": {
+      "title": "订阅已到期",
+      "unavailableTitle": "账户不可用",
+      "settingsRow": "续订",
+      "endedOn": "您的${plan}套餐已于 ${date} 结束。",
+      "endedOnNoPlan": "您的订阅已于 ${date} 结束。",
+      "ended": "您的订阅已结束。",
+      "renewHint": "选择一个套餐续订，继续使用 Rayn VPN。",
+      "renewHintWeb": "请在账户页面续订，然后回到这里再次检查。",
+      "renewOnWebsite": "在网站上续订",
+      "needsSignIn": "登录账户以续订套餐。",
+      "signedInAs": "正在为 ${email} 续订套餐",
+      "checkAgain": "再次检查",
+      "checking": "正在检查您的订阅…",
+      "stillExpired": "订阅仍已到期。如果您刚刚续订，请稍等一分钟再试。",
+      "success": "您的订阅已重新激活。",
+      "activeNotice": "您的订阅处于激活状态。",
+      "contactSupport": "联系支持",
+      "unavailable": {
+        "body": "此账户无法续订。如果您认为这是误判，请联系我们，我们会核查。",
+        "suspended": "此账户已被暂停。请联系我们，我们会核查。",
+        "deactivated": "此账户已关闭，无法续订。",
+        "deleted": "此账户已删除。",
+        "pending": "此账户尚未激活。请几分钟后再次检查。"
+      }
     }
   }
 }

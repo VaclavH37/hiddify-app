@@ -95,7 +95,6 @@
         },
         "update": {
           "success": "Abonelik güncellendi",
-          "failure": "Profil güncellenemedi",
           "failureNamed": "\"${name}\" güncellenemedi"
         }
       }
@@ -173,7 +172,13 @@
     },
     "expired": {
       "title": "Abonelik sona erdi",
-      "body": "Aboneliğiniz sona erdi. Yeniden bağlanmak için yenileyin."
+      "body": "Aboneliğiniz sona erdi. Yeniden bağlanmak için yenileyin.",
+      "action": "Yenile"
+    },
+    "unavailable": {
+      "title": "Hesap kullanılamıyor",
+      "body": "Hesabınız şu anda kullanılamıyor. Ayrıntılar için açın.",
+      "action": "Ayrıntıları gör"
     }
   },
   "dialogs": {
@@ -200,7 +205,9 @@
     "reconnect": "Yeniden bağlan",
     "reconnectMsg": "Değişiklikleri uygulamak için yeniden bağlanılıyor...",
     "protected": "Korunuyor",
-    "unprotected": "Korunmuyor"
+    "unprotected": "Korunmuyor",
+    "subscriptionExpired": "Abonelik sona erdi",
+    "accountUnavailable": "Hesap kullanılamıyor"
   },
   "errors": {
     "unexpected": "Beklenmeyen hata",
@@ -218,6 +225,7 @@
       "invalidUrl": "Geçersiz URL",
       "canceledByUser": "Kullanıcı tarafından iptal edildi",
       "subscriptionExpired": "Aboneliğiniz sona erdi. Devam etmek için lütfen yenileyin.",
+      "accountUnavailable": "Bu hesap artık kullanılamıyor. Bunun bir hata olduğunu düşünüyorsanız destek ekibiyle iletişime geçin.",
       "unsupportedLinkVersion": "Uygulama güncellemesi gerekli",
       "configUnreadable": "Kaydedilmiş yapılandırmanız okunamadı. Yenilemek için internete bağlanın."
     },
@@ -387,6 +395,32 @@
       "accountMismatch": "Bu kimlik bilgileri farklı bir hesaba ait. Hesap değiştirmek için oturumu kapatın.",
       "success": "Planınız artık otomatik olarak yenileniyor.",
       "close": "Kapat"
+    },
+    "renew": {
+      "title": "Abonelik sona erdi",
+      "unavailableTitle": "Hesap kullanılamıyor",
+      "settingsRow": "Aboneliği yenile",
+      "endedOn": "${plan} planınız ${date} tarihinde sona erdi.",
+      "endedOnNoPlan": "Aboneliğiniz ${date} tarihinde sona erdi.",
+      "ended": "Aboneliğiniz sona erdi.",
+      "renewHint": "Yenilemek ve Rayn VPN'i kullanmaya devam etmek için bir plan seçin.",
+      "renewHintWeb": "Hesap sayfanızdan yenileyin, ardından buraya dönüp tekrar kontrol edin.",
+      "renewOnWebsite": "Web sitesinden yenile",
+      "needsSignIn": "Planınızı yenilemek için hesabınıza giriş yapın.",
+      "signedInAs": "${email} için plan yenileniyor",
+      "checkAgain": "Tekrar kontrol et",
+      "checking": "Aboneliğiniz kontrol ediliyor…",
+      "stillExpired": "Abonelik hâlâ sona ermiş görünüyor. Az önce yenilediyseniz bir dakika bekleyip tekrar deneyin.",
+      "success": "Aboneliğiniz yeniden etkin.",
+      "activeNotice": "Aboneliğiniz etkin.",
+      "contactSupport": "Destekle iletişime geç",
+      "unavailable": {
+        "body": "Bu hesap yenilenemiyor. Bunun bir hata olduğunu düşünüyorsanız bize ulaşın, inceleyelim.",
+        "suspended": "Bu hesap askıya alındı. Bize ulaşın, inceleyelim.",
+        "deactivated": "Bu hesap kapatıldı ve yenilenemiyor.",
+        "deleted": "Bu hesap silindi.",
+        "pending": "Bu hesap henüz etkin değil. Birkaç dakika sonra tekrar kontrol edin."
+      }
     }
   }
 }
