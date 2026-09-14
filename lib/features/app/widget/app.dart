@@ -13,6 +13,8 @@ import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
+import 'package:hiddify/features/auth/account/notifier/account_redirect.dart';
+import 'package:hiddify/features/auth/account/notifier/expiry_watchdog.dart';
 import 'package:hiddify/features/auth/payment/notifier/iap_launch_reverify.dart';
 import 'package:hiddify/features/connection/widget/connection_wrapper.dart';
 import 'package:hiddify/features/notifications/notifier/notification_monitor.dart';
@@ -66,6 +68,11 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
   }
 
   void onResume(WidgetRef ref) {
+    // A timer does not fire while the app is suspended, so the expiry check
+    // runs again here; nothing to do pre-auth.
+    if (ref.read(hasAnyProfileProvider).valueOrNull ?? false) {
+      ref.read(expiryWatchdogProvider.notifier).check();
+    }
     // Rebuild only what [onPause] closed. Without this guard a resume set up the
     // core again even when it had never been released — which, before
     // [onInactive] stopped pausing, was most resumes.
@@ -95,7 +102,13 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     // Start the notification monitor once authenticated — it watches the active
     // profile's subscription to raise quota/expiry alerts. Pre-auth there is no
     // profile to evaluate.
-    if (hasProfile) ref.listen(notificationMonitorProvider, (_, _) {});
+    if (hasProfile) {
+      ref.listen(notificationMonitorProvider, (_, _) {});
+      // Forces a refresh the moment the stored expiry passes, and opens the
+      // renewal screen when a refresh returns an account verdict.
+      ref.listen(expiryWatchdogProvider, (_, _) {});
+      ref.listen(accountRedirectProvider, (_, _) {});
+    }
     // Re-verify any active Google Play purchase once at launch (Android + an
     // account session). Silent, idempotent, self-guarding — recovers an
     // interrupted purchase or a reinstalled / cross-device subscription. Safe

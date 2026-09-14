@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/theme/rayn_motion.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
+import 'package:hiddify/features/auth/account/model/account_state.dart';
+import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -37,6 +40,7 @@ class OrbState {
     required this.enabled,
     this.dimmed = false,
     this.isConnected = false,
+    this.blocked = false,
   });
 
   final OrbTint tint;
@@ -61,6 +65,10 @@ class OrbState {
   /// Reported to assistive technology as the button's toggle state.
   final bool isConnected;
 
+  /// The account verdict on file says a tunnel would come up dead: a tap opens
+  /// the renewal screen instead of connecting.
+  final bool blocked;
+
   @override
   bool operator ==(Object other) =>
       other is OrbState &&
@@ -69,14 +77,15 @@ class OrbState {
       other.ring == ring &&
       other.enabled == enabled &&
       other.dimmed == dimmed &&
-      other.isConnected == isConnected;
+      other.isConnected == isConnected &&
+      other.blocked == blocked;
 
   @override
-  int get hashCode => Object.hash(tint, label, ring, enabled, dimmed, isConnected);
+  int get hashCode => Object.hash(tint, label, ring, enabled, dimmed, isConnected, blocked);
 
   @override
   String toString() =>
-      'OrbState($tint, "$label", ring: $ring, enabled: $enabled, dimmed: $dimmed, connected: $isConnected)';
+      'OrbState($tint, "$label", ring: $ring, enabled: $enabled, dimmed: $dimmed, connected: $isConnected, blocked: $blocked)';
 }
 
 /// The state table. [delay] is the active outbound's URL-test delay, 0 when it
@@ -89,7 +98,31 @@ class OrbState {
 /// finished, just without an answer, so that is "Connected" and the latency
 /// readout says "Timeout" on its own. Before this the orb said "Connecting…"
 /// for as long as the test server stayed unreachable.
-OrbState orbStateFor(AsyncValue<ConnectionStatus> status, int delay, Translations t) {
+///
+/// [account] is the persisted verdict. While it blocks, a tunnel that is not
+/// up reads "Subscription expired" (or "Account unavailable") and its tap
+/// opens the renewal screen. A tunnel that is up, or on its way up or down,
+/// keeps its own picture: the client never tears one down for a verdict — the
+/// backend does — and a transition has to finish before anything else makes
+/// sense.
+OrbState orbStateFor(
+  AsyncValue<ConnectionStatus> status,
+  int delay,
+  Translations t, {
+  AccountState account = const AccountActive(),
+}) {
+  final base = _orbStateForStatus(status, delay, t);
+  if (!account.blocksConnect || base.isConnected || base.ring) return base;
+  return OrbState(
+    tint: OrbTint.error,
+    label: account is AccountUnavailable ? t.connection.accountUnavailable : t.connection.subscriptionExpired,
+    ring: false,
+    enabled: true,
+    blocked: true,
+  );
+}
+
+OrbState _orbStateForStatus(AsyncValue<ConnectionStatus> status, int delay, Translations t) {
   return switch (status) {
     AsyncData(value: Disconnected()) => OrbState(
       tint: OrbTint.disconnected,
@@ -149,10 +182,15 @@ class ConnectionButton extends HookConsumerWidget {
     final delay = ref.watch(activeProxyNotifierProvider.select((value) => value.valueOrNull?.urlTestDelay ?? 0));
     // A timed-out test counts as measured for the state table; see orbStateFor.
     final measuredDelay = delay >= _delayTimeout ? _delayTimeout : delay;
-    final state = orbStateFor(connectionStatus, measuredDelay, t);
+    final account = ref.watch(accountStateNotifierProvider);
+    final state = orbStateFor(connectionStatus, measuredDelay, t, account: account);
 
     Future<void> onTap() async {
       if (!state.enabled) return;
+      if (state.blocked) {
+        context.pushNamed('renew');
+        return;
+      }
       if (!state.isConnected) {
         // Auth gate guarantees a profile exists by the time the home page is
         // reachable; defensive null guard just no-ops.

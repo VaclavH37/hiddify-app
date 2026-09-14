@@ -7,6 +7,7 @@ import 'package:hiddify/core/router/adaptive_layout/rayn_shell.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
 import 'package:hiddify/features/about/widget/about_page.dart';
+import 'package:hiddify/features/auth/account/widget/renew_page.dart';
 import 'package:hiddify/features/auth/delete/widget/delete_account_page.dart';
 import 'package:hiddify/features/auth/login/widget/login_page.dart';
 import 'package:hiddify/features/auth/notifier/auth_gate_providers.dart';
@@ -205,6 +206,15 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
           name: 'planTransition',
           path: '/upgrade',
           builder: (_, _) => const PlanTransitionPage(),
+        ),
+        // Post-auth full-screen: the account has lapsed or is unavailable.
+        // Pushed by AccountRedirect when a refresh returns the verdict, and
+        // opened from the orb, the home banner, the inbox and Settings.
+        // Outside `/auth` for the same reason as /upgrade.
+        GoRoute(
+          name: 'renew',
+          path: '/renew',
+          builder: (_, _) => const RenewPage(),
         ),
         // Post-auth full-screen: permanent account deletion, required by App
         // Store guideline 5.1.1(v). Outside `/auth` for the same reason as

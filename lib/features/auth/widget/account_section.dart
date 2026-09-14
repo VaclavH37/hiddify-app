@@ -7,13 +7,16 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
-import 'package:hiddify/core/widget/rayn_dialog_action.dart';
 import 'package:hiddify/core/widget/rayn_settings_group.dart';
 import 'package:hiddify/core/widget/rayn_settings_tile.dart';
+import 'package:hiddify/features/auth/account/model/account_state.dart';
+import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
+import 'package:hiddify/features/auth/model/billing_period.dart';
 import 'package:hiddify/features/auth/model/payment_provider.dart';
 import 'package:hiddify/features/auth/notifier/logout_notifier.dart';
 import 'package:hiddify/features/auth/payment/data/iap_service.dart';
 import 'package:hiddify/features/auth/payment/widget/iap_outcome_message.dart';
+import 'package:hiddify/features/auth/widget/logout_confirm.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -55,15 +58,36 @@ class AccountSection extends ConsumerWidget {
     // hidden there.
     final showStoreRows = !PlatformUtils.isDesktop;
 
-    final subInfoLine = remote?.subInfo != null
-        ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod)
-        : null;
+    // The persisted account verdict replaces the plan line while it blocks:
+    // "Plan expiry: <date>" beside a lapsed plan would read as still valid.
+    final account = ref.watch(accountStateNotifierProvider);
+    final blocked = account.blocksConnect;
+    final subInfoLine = switch (account) {
+      AccountExpired(:final details) when details.endedBefore(DateTime.now()) => t.auth.renew.endedOnNoPlan(
+        date: details.expiresAt!.formatDate(),
+      ),
+      AccountExpired() => t.auth.renew.ended,
+      AccountUnavailable() => t.auth.renew.unavailableTitle,
+      AccountActive() =>
+        remote?.subInfo != null ? _formatSubInfo(remote!, t, provider: provider, billingPeriod: billingPeriod) : null,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         RaynSettingsGroup(
           children: [
+            // The way back in once the account has lapsed: the same screen the
+            // orb and the home banner open.
+            if (blocked)
+              RaynSettingsTile(
+                leading: Icons.autorenew_rounded,
+                title: account is AccountUnavailable ? t.auth.renew.unavailableTitle : t.auth.renew.settingsRow,
+                accentColor: palette.accentText,
+                enabled: !logoutLoading,
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.pushNamed('renew'),
+              ),
             RaynSettingsTile(
               leading: Icons.account_circle_outlined,
               title: profile.name,
@@ -80,7 +104,7 @@ class AccountSection extends ConsumerWidget {
             // offering a second one there would charge the user twice for the
             // same account, in either direction (Play sub, iOS build, or vice
             // versa), and neither store refunds that on our behalf.
-            if (showStoreRows && remote?.subInfo != null && !isStoreManaged) ...[
+            if (showStoreRows && remote?.subInfo != null && !isStoreManaged && !blocked) ...[
               RaynSettingsTile(
                 leading: Icons.shop_outlined,
                 title: PlatformUtils.isIOS ? t.auth.planTransition.settingsRowApple : t.auth.planTransition.settingsRow,
@@ -134,7 +158,7 @@ class AccountSection extends ConsumerWidget {
               title: t.auth.logout,
               accentColor: palette.danger,
               enabled: !logoutLoading,
-              onTap: () => _confirmLogout(context, ref, t),
+              onTap: () => confirmLogout(context, ref, t),
             ),
           ],
         ),
@@ -188,28 +212,6 @@ class AccountSection extends ConsumerWidget {
       notifications.showErrorToast(iapOutcomeMessage(t, outcomes.isEmpty ? null : outcomes.first));
     }
   }
-
-  Future<void> _confirmLogout(BuildContext context, WidgetRef ref, Translations t) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog.adaptive(
-        title: Text(t.auth.logoutConfirmTitle),
-        content: Text(t.auth.logoutConfirmBody),
-        actions: [
-          raynDialogAction(ctx, label: t.auth.logoutCancel, onPressed: () => Navigator.of(ctx).pop(false)),
-          raynDialogAction(
-            ctx,
-            label: t.auth.logoutConfirmAction,
-            onPressed: () => Navigator.of(ctx).pop(true),
-            destructive: true,
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ref.read(logoutNotifierProvider.notifier).logout();
-    }
-  }
 }
 
 /// The account subtitle: when the plan ends, and how it renews.
@@ -242,23 +244,8 @@ String _formatSubInfo(RemoteProfileEntity profile, Translations t, {String? prov
     final renewType = isStoreManaged
         ? t.components.subscriptionInfo.autoRenew
         : t.components.subscriptionInfo.manualRenew;
-    lines.add('${_billingPeriodLabel(billingPeriod, t)} · $renewType');
+    lines.add('${billingPeriodLabel(t, billingPeriod) ?? billingPeriod} · $renewType');
   }
 
   return lines.join('\n');
-}
-
-/// Maps a `subscription-billing-period` value to a localized label, reusing the
-/// payment screen's plan names. Unknown values pass through unchanged.
-String _billingPeriodLabel(String raw, Translations t) {
-  switch (raw) {
-    case 'monthly':
-      return t.auth.payment.monthly;
-    case 'quarter':
-      return t.auth.payment.quarterly;
-    case 'annual':
-      return t.auth.payment.annual;
-    default:
-      return raw;
-  }
 }

@@ -199,6 +199,32 @@
       "accountMismatch": "These credentials are for a different account. Log out to switch accounts.",
       "success": "Your plan is now set to auto-renew.",
       "close": "Close"
+    },
+    "renew": {
+      "title": "Subscription expired",
+      "unavailableTitle": "Account unavailable",
+      "settingsRow": "Renew subscription",
+      "endedOn": "Your ${plan} plan ended on ${date}.",
+      "endedOnNoPlan": "Your subscription ended on ${date}.",
+      "ended": "Your subscription has ended.",
+      "renewHint": "Choose a plan to renew and keep using Rayn VPN.",
+      "renewHintWeb": "Renew from your account page, then come back and check again.",
+      "renewOnWebsite": "Renew on the website",
+      "needsSignIn": "Sign in to your account to renew your plan.",
+      "signedInAs": "Renewing the plan for ${email}",
+      "checkAgain": "Check again",
+      "checking": "Checking your subscription…",
+      "stillExpired": "Still expired. If you've just renewed, give it a minute and try again.",
+      "success": "Your subscription is active again.",
+      "activeNotice": "Your subscription is active.",
+      "contactSupport": "Contact support",
+      "unavailable": {
+        "body": "This account can't be renewed. If you think this is a mistake, contact us and we'll look into it.",
+        "suspended": "This account has been suspended. Contact us and we'll look into it.",
+        "deactivated": "This account has been closed and can't be renewed.",
+        "deleted": "This account has been deleted.",
+        "pending": "This account isn't active yet. Check again in a few minutes."
+      }
     }
   },
   "pages": {
@@ -327,7 +353,8 @@
     },
     "expired": {
       "title": "Subscription expired",
-      "body": "Your subscription has expired. Renew to reconnect."
+      "body": "Your subscription has expired. Renew to reconnect.",
+      "action": "Renew"
     }
   },
   "dialogs": {
@@ -354,7 +381,9 @@
     "reconnect": "Reconnect",
     "reconnectMsg": "Reconnecting for taking into account the changes...",
     "protected": "Protected",
-    "unprotected": "Not protected"
+    "unprotected": "Not protected",
+    "subscriptionExpired": "Subscription expired",
+    "accountUnavailable": "Account unavailable"
   },
   "errors": {
     "unexpected": "Unexpected error",

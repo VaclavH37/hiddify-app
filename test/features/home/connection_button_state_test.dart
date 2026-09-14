@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hiddify/features/auth/account/model/account_state.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
+import 'package:hiddify/features/profile/model/account_envelope.dart';
 import 'package:hiddify/gen/translations.g.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -85,5 +87,66 @@ void main() {
         expect(orbStateFor(status, delay, t).label, isNotEmpty, reason: '$status at $delay ms');
       }
     }
+  });
+
+  group('account verdict', () {
+    final expired = AccountExpired(details: AccountExpiry.none, detectedAt: DateTime.utc(2026, 9, 14));
+    final unavailable = AccountUnavailable(code: 'ACCOUNT_SUSPENDED', detectedAt: DateTime.utc(2026, 9, 14));
+
+    test('a disconnected orb reads "Subscription expired" and its tap is routed, not a connect', () {
+      expect(
+        orbStateFor(const AsyncData(Disconnected()), 0, t, account: expired),
+        OrbState(
+          tint: OrbTint.error,
+          label: t.connection.subscriptionExpired,
+          ring: false,
+          enabled: true,
+          blocked: true,
+        ),
+      );
+    });
+
+    test('an unavailable account reads "Account unavailable"', () {
+      final state = orbStateFor(const AsyncData(Disconnected()), 0, t, account: unavailable);
+      expect(state.label, t.connection.accountUnavailable);
+      expect(state.blocked, isTrue);
+    });
+
+    test('an error and the initial load are overridden too; the orb is tappable', () {
+      for (final status in [
+        AsyncError<ConnectionStatus>(Exception('x'), StackTrace.empty),
+        const AsyncLoading<ConnectionStatus>(),
+      ]) {
+        final state = orbStateFor(status, 0, t, account: expired);
+        expect(state.blocked, isTrue, reason: '$status');
+        expect(state.enabled, isTrue, reason: '$status');
+        expect(state.dimmed, isFalse, reason: '$status');
+      }
+    });
+
+    test('a tunnel that is up, or in transition, keeps its own picture', () {
+      for (final (status, delay) in [
+        (const AsyncData<ConnectionStatus>(Connected()), 21),
+        (const AsyncData<ConnectionStatus>(Connected()), 0),
+        (const AsyncData<ConnectionStatus>(Connecting()), 0),
+        (const AsyncData<ConnectionStatus>(Disconnecting()), 0),
+      ]) {
+        expect(
+          orbStateFor(status, delay, t, account: expired),
+          orbStateFor(status, delay, t),
+          reason: '$status at $delay ms',
+        );
+      }
+    });
+
+    test('the default is an active account: never blocked', () {
+      for (final status in [
+        const AsyncData<ConnectionStatus>(Disconnected()),
+        const AsyncLoading<ConnectionStatus>(),
+        AsyncError<ConnectionStatus>(Exception('x'), StackTrace.empty),
+      ]) {
+        expect(orbStateFor(status, 0, t).blocked, isFalse, reason: '$status');
+      }
+    });
   });
 }

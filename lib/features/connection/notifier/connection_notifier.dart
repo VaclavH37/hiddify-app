@@ -5,6 +5,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
+import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
 import 'package:hiddify/features/connection/data/connection_data_providers.dart';
 import 'package:hiddify/features/connection/data/connection_repository.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
@@ -90,14 +91,28 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
     }
   }
 
+  /// The account verdict on file says the tunnel would come up dead (the
+  /// backend has cut service). The orb routes its tap to the renewal screen;
+  /// this guard catches every other way in — the tray menu, auto-connect on
+  /// launch, a settings reconnect — and simply does not start. Silent by
+  /// design: the orb already carries the label, and a dialog from a
+  /// programmatic reconnect would be noise.
+  bool _refusedByAccount() {
+    if (!ref.read(accountStateNotifierProvider).blocksConnect) return false;
+    loggy.info("account verdict on file; not connecting");
+    return true;
+  }
+
   Future<void> toggleConnection() async {
     final haptic = ref.read(hapticServiceProvider.notifier);
     if (state case AsyncError()) {
+      if (_refusedByAccount()) return;
       await haptic.lightImpact();
       await _connect();
     } else if (state case AsyncData(:final value)) {
       switch (value) {
         case Disconnected():
+          if (_refusedByAccount()) return;
           await haptic.lightImpact();
           await ref.read(Preferences.startedByUser.notifier).update(true);
           await _retryPrimaryHubIfDue();
@@ -264,6 +279,7 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
       loggy.info("no active profile, not connecting");
       return;
     }
+    if (_refusedByAccount()) return;
     await _recordAppliedTier(activeProfile);
     await _connectionRepo.connect(activeProfile, ref.read(Preferences.disableMemoryLimit)).mapLeft((
       ConnectionFailure err,

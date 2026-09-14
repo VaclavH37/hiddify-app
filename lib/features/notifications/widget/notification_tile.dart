@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
@@ -19,8 +20,10 @@ class NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final copy = notificationCopy(notification, t);
     final palette = context.rayn;
+    // The lapsed-plan row opens the renewal screen; the others are records.
+    final renewable = notification.kind == NotificationKind.subscriptionExpired;
 
-    return RaynSurface(
+    final surface = RaynSurface(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -45,8 +48,15 @@ class NotificationTile extends StatelessWidget {
               ],
             ),
           ),
+          if (renewable) Icon(Icons.chevron_right_rounded, color: palette.textMuted),
         ],
       ),
+    );
+    if (!renewable) return surface;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => context.pushNamed('renew'),
+      child: surface,
     );
   }
 }

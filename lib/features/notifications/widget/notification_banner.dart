@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
 import 'package:hiddify/core/widget/rayn_surface.dart';
 import 'package:hiddify/features/notifications/data/notification_data_providers.dart';
+import 'package:hiddify/features/notifications/model/app_notification.dart';
 import 'package:hiddify/features/notifications/notifier/notifications_list_notifier.dart';
 import 'package:hiddify/features/notifications/widget/notification_copy.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -49,6 +51,23 @@ class NotificationBanner extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(copy.body, style: RaynTypography.caption.copyWith(color: palette.textMuted)),
+                    // The lapsed-plan banner is the one that asks for something;
+                    // the action opens the same screen the orb and Settings do.
+                    if (notification.kind == NotificationKind.subscriptionExpired) ...[
+                      const SizedBox(height: RaynSpacing.xs),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.sm),
+                            minimumSize: const Size(0, 36),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => context.pushNamed('renew'),
+                          child: Text(t.notifications.expired.action),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
