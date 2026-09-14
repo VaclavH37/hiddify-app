@@ -2,12 +2,15 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:hiddify/core/model/constants.dart';
+import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
 import 'package:hiddify/features/auth/login/data/auth_api_client.dart';
 import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
 import 'package:hiddify/features/auth/payment/data/marketing_offers.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
+import 'package:hiddify/features/profile/model/profile_entity.dart';
+import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hiddify/utils/link_parsers.dart';
 import 'package:hiddify/utils/rayn_token.dart';
@@ -332,6 +335,12 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// (not [AddProfileNotifier]) so a transient failure doesn't pop an error
   /// dialog on every retry; on success the persisted profile drives the router
   /// redirect to `/home`.
+  ///
+  /// A device that already has a profile — a renewal, a plan transition, the
+  /// launch re-verify — lands the link on THAT row. A renewed link decrypts to
+  /// a different URL whenever the account's state changed, so keying by URL
+  /// would add a second profile beside the lapsed one. Only the sign-up
+  /// paywall, with no profile yet, adds one.
   Future<IapPurchaseOutcome> _pollImport(String cryptolink) async {
     final RaynLinkOk parsed;
     switch (LinkParser.parse(cryptolink)) {
@@ -345,14 +354,19 @@ class IapService with InfraLogger implements RaynBillingEvents {
     }
 
     final repo = await _ref.read(profileRepositoryProvider.future);
+    final existing = await _ref.read(activeProfileProvider.future);
+    final existingId = existing is RemoteProfileEntity ? existing.id : null;
     for (var attempt = 1; attempt <= _maxActivationAttempts; attempt++) {
-      final result = await repo
-          .upsertRemote(
-            parsed.url,
-            sourceToken: cryptolink,
-          )
-          .run();
-      if (result.isRight()) return IapPurchaseOutcome.imported;
+      final task = existingId == null
+          ? repo.upsertRemote(parsed.url, sourceToken: cryptolink)
+          : repo.renewRemote(id: existingId, url: parsed.url, sourceToken: cryptolink);
+      final result = await task.run();
+      if (result.isRight()) {
+        // A config was persisted: whatever verdict was on file, the account is
+        // serving again.
+        await _ref.read(accountStateNotifierProvider.notifier).recordActive();
+        return IapPurchaseOutcome.imported;
+      }
       loggy.debug("activation import attempt $attempt/$_maxActivationAttempts not ready yet");
       if (attempt < _maxActivationAttempts) await Future<void>.delayed(_activationPollInterval);
     }

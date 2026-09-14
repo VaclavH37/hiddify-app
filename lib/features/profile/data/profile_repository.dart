@@ -43,6 +43,20 @@ abstract interface class ProfileRepository {
     HubSignal? signal,
     HubCounters? counters,
   });
+
+  /// Re-points the profile [id] at a renewed cryptolink and refreshes it in
+  /// place. The row keeps its id, options, overrides and fallback host; only
+  /// `url`/`sourceToken` change, exactly as a `new-url` rotation sets them.
+  ///
+  /// Used after an in-app renewal. A renewed link decrypts to a DIFFERENT
+  /// URL (the token carries the account's state hash), so [upsertRemote]
+  /// would insert a second profile beside the lapsed one instead.
+  TaskEither<ProfileFailure, Unit> renewRemote({
+    required String id,
+    required String url,
+    required String sourceToken,
+    CancelToken? cancelToken,
+  });
   TaskEither<ProfileFailure, Unit> addLocal(String content, {UserOverride? userOverride});
   TaskEither<ProfileFailure, Unit> offlineUpdate(ProfileEntity nProfile, String nContent);
   TaskEither<ProfileFailure, String> generateConfig(String id);
@@ -219,6 +233,30 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
               cancelToken: cancelToken,
             )
             .flatMap((parsed) => _sealAndPersist(id: id, parsed: parsed, isUpdate: false));
+      });
+
+  @override
+  TaskEither<ProfileFailure, Unit> renewRemote({
+    required String id,
+    required String url,
+    required String sourceToken,
+    CancelToken? cancelToken,
+  }) =>
+      TaskEither.tryCatch(
+        () async => await _profileDataSource.getById(id).then((profEntry) => profEntry?.toEntity()),
+        ProfileFailure.unexpected,
+      ).flatMap((profEntity) {
+        if (profEntity is! RemoteProfileEntity) {
+          return TaskEither<ProfileFailure, Unit>.left(const ProfileFailure.notFound());
+        }
+        // Never log the URL — it is the subscription credential. Host only.
+        loggy.info('renewing profile [$id] in place (host: ${Uri.tryParse(url)?.host ?? "?"})');
+        return _profileParser
+            .updateRemote(
+              rp: profEntity.copyWith(url: url, sourceToken: sourceToken),
+              cancelToken: cancelToken,
+            )
+            .flatMap((parsed) => _sealAndPersist(id: id, parsed: parsed, isUpdate: true));
       });
 
   @override
