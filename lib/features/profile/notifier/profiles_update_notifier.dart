@@ -8,6 +8,7 @@ import 'package:hiddify/core/http_client/http_client_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
+import 'package:hiddify/features/auth/account/model/account_state.dart';
 import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
@@ -48,6 +49,25 @@ Duration refreshHoldFor(Duration? retryAfter) =>
 /// Whether an unforced refresh is still inside a hold.
 bool refreshHeldBack(DateTime? notBefore, DateTime now) => notBefore != null && now.isBefore(notBefore);
 
+/// A transient 4012's first re-check happens once, early: at what the Worker
+/// asked for or 30 s, whichever is later (its final handover, §4.3). One early
+/// request is within the rate limit; only the repeats are held to the floor.
+const transientRecheckFloor = Duration(seconds: 30);
+
+Duration transientRecheckDelay(Duration? retryAfter) =>
+    retryAfter == null || retryAfter < transientRecheckFloor ? transientRecheckFloor : retryAfter;
+
+/// SharedPreferences key: when the reachability ladder last asked the
+/// middleware whether the account is still being served.
+const accountVerdictProbeAtKey = 'account_verdict_probe_at';
+
+/// The ladder asks at most once a minute (§2.1 of the Worker's final
+/// handover); inside that window a dead tunnel is the hub failure it looks like.
+const accountVerdictProbeInterval = Duration(seconds: 60);
+
+bool verdictProbeDue(DateTime? lastProbeAt, DateTime now) =>
+    lastProbeAt == null || !now.isBefore(lastProbeAt.add(accountVerdictProbeInterval));
+
 @Riverpod(keepAlive: true)
 class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifier with AppLogger {
   static const prefKey = "profiles_update_check";
@@ -71,6 +91,8 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       _scheduler = null;
       await _urlTestSub?.cancel();
       _urlTestSub = null;
+      _transientTimer?.cancel();
+      _transientTimer = null;
     });
 
     // The fast path. The core URL-tests every exit with a 5 s timeout and
@@ -113,6 +135,12 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   /// core restart plus a slot write — running two concurrently would interleave
   /// the preference writes with the restart they describe.
   bool _failoverInFlight = false;
+
+  /// Whether the last account answer was a transient 4012, and the one early
+  /// re-check it earns. In memory only: after a relaunch the first transient
+  /// counts as first again, which is one early request — within the limit.
+  bool _transientSeen = false;
+  Timer? _transientTimer;
 
   /// Reacts to the core's per-exit URL-test results.
   ///
@@ -157,6 +185,9 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   Future<void> _failOverOnUrlTestFailure() async {
     if (_failoverInFlight) return;
     if (ref.read(connectionNotifierProvider).valueOrNull is! Connected) return;
+    // A verdict on file explains every exit timing out; the hub is not what
+    // failed (§2.1 of the Worker's final handover).
+    if (ref.read(accountStateNotifierProvider).blocksConnect) return;
 
     final prefs = ref.read(sharedPreferencesProvider).requireValue;
     if (configSlotOf(prefs.getString(activeConfigSlotKey)) != ConfigSlot.primary) return;
@@ -223,28 +254,10 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
           await result.fold(
             (l) async {
               if (l case ProfileAccountUnavailableFailure(:final retryAfter) when l.isTransientVerdict) {
-                // A temporary account state (the Worker's `retry_after`): it
-                // clears without the user paying. No verdict, nothing shown —
-                // the stored config keeps serving — and the reachability
-                // ladder stays out of it, since the hub is not what failed.
-                final hold = refreshHoldFor(retryAfter);
-                loggy.info("profile [${profile.id}] temporary account state; next refresh in ${hold.inMinutes} min");
-                await prefs.setString(accountRetryNotBeforeKey, DateTime.now().add(hold).toIso8601String());
+                await _applyTransient(profile, retryAfter);
                 state = AsyncData((name: profile.name, success: false));
               } else if (l is ProfileSubscriptionExpiredFailure || l is ProfileAccountUnavailableFailure) {
-                // An account verdict: record it (the home page, the connect
-                // guard and the renewal screen read it), notify (deduped) and
-                // keep the last config. The backend disables the tunnel
-                // server-side, so the client does not disconnect. Polling
-                // continues: a renewal turns the next poll into a config, or a
-                // `new-url` for a lapsed token.
-                loggy.info("profile [${profile.id}] account verdict: ${l.runtimeType}");
-                await ref.read(accountStateNotifierProvider.notifier).recordFailure(l);
-                await _raiseAccountVerdict(
-                  l is ProfileSubscriptionExpiredFailure
-                      ? NotificationKind.subscriptionExpired
-                      : NotificationKind.accountUnavailable,
-                );
+                await _applyVerdict(profile, l);
                 state = AsyncData((name: profile.name, success: false));
               } else {
                 loggy.debug("error updating profile [${profile.id}]", l);
@@ -269,12 +282,11 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
               // its confirmation delay: a failover is worth nothing without a
               // cache to fail over to.
               await _refreshStandbyCacheIfDue(profile);
+              // A good config returned — the account is serving again. Cleared
+              // BEFORE the ladder runs, so the ladder sees an account it may
+              // act on.
+              await _applyConfig(profile);
               await _checkHubReachability(profile);
-              // A good config returned — the account is serving again; clear
-              // the verdict and any standing "expired" prompt.
-              await ref.read(accountStateNotifierProvider.notifier).recordActive();
-              await _clearAccountVerdicts();
-              await prefs.remove(accountRetryNotBeforeKey);
               ref.read(inAppNotificationControllerProvider).showSuccessToast(t.pages.profiles.msg.update.success);
               state = AsyncData((name: profile.name, success: true));
             },
@@ -346,6 +358,9 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   /// obtained by doing the thing we wanted to do anyway.
   Future<void> _checkHubReachability(RemoteProfileEntity profile) async {
     if (ref.read(connectionNotifierProvider).valueOrNull is! Connected) return;
+    // A verdict on file explains every failure below; nothing here is about
+    // the hub (§2.1 of the Worker's final handover).
+    if (ref.read(accountStateNotifierProvider).blocksConnect) return;
     final prefs = ref.read(sharedPreferencesProvider).requireValue;
 
     if (configSlotOf(prefs.getString(activeConfigSlotKey)) == ConfigSlot.standby) {
@@ -494,12 +509,17 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       return;
     }
 
-    // Neither hub works, so the fault was never the hub. Go back rather than
-    // leave someone parked on the inferior link for a lease they did not earn,
-    // and back off before spending two more core restarts on the same answer.
-    loggy.info("the standby hub does not carry traffic either; the device is offline, reverting");
+    // Neither hub works, so the fault was never the hub: an offline device, or
+    // an account the backend has just disabled on every node — from inside
+    // the tunnel the two are the same. Go back rather than leave someone
+    // parked on the inferior link for a lease they did not earn, back off
+    // before spending two more core restarts on the same answer, and — in the
+    // gap the revert opens while the core is down, the one moment the app's
+    // own request escapes the tun on every platform — ask the middleware
+    // which of the two it was.
+    loggy.info("the standby hub does not carry traffic either; reverting");
     await prefs.setString(hubOfflineBackoffKey, DateTime.now().toIso8601String());
-    await _returnToPrimary(profile);
+    await _returnToPrimary(profile, probeAccount: true);
   }
 
   /// While on a forced standby leg, decides whether to go back.
@@ -537,14 +557,28 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   ///
   /// [restart] is false only when the core is already down, in which case there
   /// is nothing to restart and the next connect will read the cleared slot.
-  Future<void> _returnToPrimary(RemoteProfileEntity profile, {bool restart = true}) async {
+  ///
+  /// [probeAccount] asks the middleware about the account while the core is
+  /// down (see [_accountVerdictExplainsFailure]). A verdict leaves the core
+  /// down — the connect guard holds and the renewal screen is up — instead of
+  /// restarting onto a hub that will not serve; a config, or a host failure,
+  /// restarts the primary as before.
+  Future<void> _returnToPrimary(RemoteProfileEntity profile, {bool restart = true, bool probeAccount = false}) async {
     final prefs = ref.read(sharedPreferencesProvider).requireValue;
     await prefs.remove(activeConfigSlotKey);
     await prefs.remove(hubStandbySinceKey);
     await prefs.remove(hubPrimaryDigestKey);
     await prefs.remove(hubPrimaryTierKey);
     if (!restart) return;
-    if (!await ref.read(connectionNotifierProvider.notifier).restartForSlot(profile)) return;
+    final connection = ref.read(connectionNotifierProvider.notifier);
+    if (!await connection.stopForSlot()) return;
+    if (probeAccount && await _accountVerdictExplainsFailure(profile)) {
+      loggy.info("the account is not being served; leaving the core down");
+      // The backoff was for an offline device, and this was not one.
+      await prefs.remove(hubOfflineBackoffKey);
+      return;
+    }
+    if (!await connection.startForSlot(profile)) return;
     // A verdict about the primary hub like any other, and one of the few this
     // client gets while a block persists: every other check is suppressed on a
     // standby leg.
@@ -645,6 +679,128 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       loggy.debug("tunnelled probe failed (${err.runtimeType})");
       return false;
     }
+  }
+
+  /// Bookkeeping for an account verdict, shared by the poll and the
+  /// reachability probe: record it (the home page, the connect guard and the
+  /// renewal screen read it), notify (deduped) and keep the last config. The
+  /// backend disables the tunnel server-side, so the client does not
+  /// disconnect. Polling continues: a renewal turns the next poll into a
+  /// config, or a `new-url` for a lapsed token.
+  Future<void> _applyVerdict(RemoteProfileEntity profile, ProfileFailure failure) async {
+    loggy.info("profile [${profile.id}] account verdict: ${failure.runtimeType}");
+    _endTransient();
+    await ref.read(accountStateNotifierProvider.notifier).recordFailure(failure);
+    await _raiseAccountVerdict(
+      failure is ProfileSubscriptionExpiredFailure
+          ? NotificationKind.subscriptionExpired
+          : NotificationKind.accountUnavailable,
+    );
+  }
+
+  /// A temporary account state (the Worker's `retry_after`): it clears without
+  /// the user paying. No verdict, nothing shown — the stored config keeps
+  /// serving — and the reachability ladder stays out of it. One early re-check
+  /// at `max(retry_after, 30 s)`; if that comes back unchanged, later polls are
+  /// held to `max(retry_after, 15 min)` (§4.3 of the Worker's final handover).
+  Future<void> _applyTransient(RemoteProfileEntity profile, Duration? retryAfter) async {
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    final first = !_transientSeen;
+    _transientSeen = true;
+    final wait = first ? transientRecheckDelay(retryAfter) : refreshHoldFor(retryAfter);
+    loggy.info(
+      "profile [${profile.id}] temporary account state; ${first ? "re-checking once" : "next refresh"} in ${wait.inSeconds} s",
+    );
+    await prefs.setString(accountRetryNotBeforeKey, DateTime.now().add(wait).toIso8601String());
+    _transientTimer?.cancel();
+    _transientTimer = null;
+    if (first) {
+      _transientTimer = Timer(wait, () {
+        _transientTimer = null;
+        unawaited(trigger());
+      });
+    }
+  }
+
+  void _endTransient() {
+    _transientSeen = false;
+    _transientTimer?.cancel();
+    _transientTimer = null;
+  }
+
+  /// A config was persisted: whatever verdict was on file, the account is
+  /// serving again. A standby leg that began while the account was not served
+  /// was never about the hub, so it is not carried over: the primary is
+  /// re-tested instead of ridden out to its lease (§2.1 of the Worker's final
+  /// handover).
+  Future<void> _applyConfig(RemoteProfileEntity profile) async {
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    final previous = ref.read(accountStateNotifierProvider);
+    _endTransient();
+    await ref.read(accountStateNotifierProvider.notifier).recordActive();
+    await _clearAccountVerdicts();
+    await prefs.remove(accountRetryNotBeforeKey);
+
+    final blockedSince = switch (previous) {
+      AccountExpired(:final detectedAt) => detectedAt,
+      AccountUnavailable(:final detectedAt) => detectedAt,
+      AccountActive() => null,
+    };
+    if (blockedSince == null) return;
+    final standbySince = DateTime.tryParse(prefs.getString(hubStandbySinceKey) ?? "");
+    if (configSlotOf(prefs.getString(activeConfigSlotKey)) == ConfigSlot.standby &&
+        standbySince != null &&
+        !standbySince.toUtc().isBefore(blockedSince.toUtc())) {
+      loggy.info("the standby leg began while the account was not served; re-testing the primary hub");
+      await _returnToPrimary(profile);
+    }
+  }
+
+  /// §2.1 of the Worker's final handover. From inside the tunnel a disabled
+  /// account is indistinguishable from a blocked hub: no exit carries traffic,
+  /// on either hub. So before a dead tunnel is written off as the device being
+  /// offline, the middleware is asked once — at most once a minute — whether
+  /// the account is still being served. A verdict explains the failure: it is
+  /// recorded like any other, the reachability counters gathered meanwhile are
+  /// discarded (they were never about the hub), and the caller neither
+  /// restarts onto a hub that will not serve nor reports one. A config means
+  /// the hub, or the device, really was the problem, and the ladder carries on;
+  /// so does a host failure.
+  ///
+  /// Called with the core stopped: on iOS and desktop the app's own request
+  /// dies with the tunnel, and the revert is the one moment every platform can
+  /// reach the middleware.
+  Future<bool> _accountVerdictExplainsFailure(RemoteProfileEntity profile) async {
+    if (ref.read(accountStateNotifierProvider).blocksConnect) return true;
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
+    final now = DateTime.now();
+    if (!verdictProbeDue(DateTime.tryParse(prefs.getString(accountVerdictProbeAtKey) ?? ""), now)) {
+      loggy.debug("asked the middleware about the account within the last minute; treating this as a hub failure");
+      return false;
+    }
+    await prefs.setString(accountVerdictProbeAtKey, now.toIso8601String());
+    loggy.info("no hub carries traffic; asking the middleware whether the account is still being served");
+    final result = await _refreshCarryingCounters(profile.url);
+    return result.fold<Future<bool>>(
+      (l) async {
+        if (l case ProfileAccountUnavailableFailure(:final retryAfter) when l.isTransientVerdict) {
+          // Not a hub problem either: nothing to switch for.
+          await _applyTransient(profile, retryAfter);
+          return true;
+        }
+        if (l is ProfileSubscriptionExpiredFailure || l is ProfileAccountUnavailableFailure) {
+          await _applyVerdict(profile, l);
+          await prefs.remove(hubChecksKey);
+          await prefs.remove(hubFailuresKey);
+          return true;
+        }
+        return false;
+      },
+      (_) async {
+        await _applyConfig(profile);
+        return false;
+      },
+    );
   }
 
   static const _verdictKinds = [NotificationKind.subscriptionExpired, NotificationKind.accountUnavailable];

@@ -39,11 +39,20 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
   /// or the sign-in is rejected with [LoginOutcome.accountMismatch] and **no**
   /// session is persisted — otherwise a different account's credentials would
   /// silently overwrite the session and bind the purchase to the wrong account.
+  ///
+  /// [expectedAccountId] is the account id the middleware attached to this
+  /// device's subscription (`subscription-account-id`, the token's `uid`). The
+  /// backend confirmed it is byte-for-byte the login's `user_id`, so when set
+  /// the two must match exactly or the sign-in is rejected the same way. The
+  /// renewal screen relies on it: an expired login carries no cryptolink for
+  /// the URL guard to compare. Null (the middleware sent none) means unknown,
+  /// never a mismatch.
   Future<void> login(
     String email,
     String password, {
     bool importProfile = true,
     String? expectedSubscriptionUrl,
+    String? expectedAccountId,
   }) async {
     if (state.isSubmitting) return;
     state = LoginState.submitting;
@@ -64,6 +73,13 @@ class LoginNotifier extends _$LoginNotifier with AppLogger {
         if (expectedSubscriptionUrl != null &&
             expectedSubscriptionUrl.isNotEmpty &&
             !_ownsSubscription(inlineUrl, expectedSubscriptionUrl)) {
+          state = LoginState.fail(LoginOutcome.accountMismatch);
+          return;
+        }
+        // Exact string, as the backend specifies. A login with no user_id
+        // cannot be confirmed either, and this guard rejects what it cannot
+        // verify.
+        if (expectedAccountId != null && expectedAccountId.isNotEmpty && userId != expectedAccountId) {
           state = LoginState.fail(LoginOutcome.accountMismatch);
           return;
         }

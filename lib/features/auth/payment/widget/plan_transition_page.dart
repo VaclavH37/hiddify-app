@@ -20,6 +20,7 @@ import 'package:hiddify/features/auth/payment/widget/plan_card.dart';
 import 'package:hiddify/features/auth/payment/widget/purchase_progress.dart';
 import 'package:hiddify/features/auth/payment/widget/purchase_unavailable_notice.dart';
 import 'package:hiddify/features/auth/widget/auth_layout.dart';
+import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
@@ -108,8 +109,11 @@ class PlanTransitionPage extends HookConsumerWidget {
             t: t,
             needsSignIn: t.auth.planTransition.needsSignIn,
             // Guard: the credentials must own the subscription active on this
-            // device, or re-auth is rejected (no account switch).
+            // device, or re-auth is rejected (no account switch). The account
+            // id the middleware put on the last config is the second, exact
+            // check once it is there.
             expectedSubscriptionUrl: remote?.url,
+            expectedAccountId: subscriptionHeader(remote, 'subscription-account-id'),
             onAuthed: (_) => authed.value = true,
           )
         else

@@ -18,9 +18,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 /// the email that was typed once the session is in place.
 ///
 /// [expectedSubscriptionUrl], when given, is the active profile's URL and the
-/// credentials must own it (plan transition). The renewal screen passes null:
-/// an expired login returns no cryptolink to compare, and by decision any
-/// valid account may renew — the screen shows which one.
+/// credentials must own it (plan transition). The renewal screen cannot use
+/// it — an expired login returns no cryptolink — and passes
+/// [expectedAccountId] instead: the account id the middleware attached to the
+/// verdict, which the login's `user_id` must equal exactly. Either guard
+/// absent means unknown, and the screen shows which account is being renewed.
 class ReauthPanel extends HookConsumerWidget {
   const ReauthPanel({
     super.key,
@@ -28,6 +30,7 @@ class ReauthPanel extends HookConsumerWidget {
     required this.needsSignIn,
     required this.onAuthed,
     this.expectedSubscriptionUrl,
+    this.expectedAccountId,
   });
 
   final Translations t;
@@ -37,6 +40,7 @@ class ReauthPanel extends HookConsumerWidget {
 
   final ValueChanged<String> onAuthed;
   final String? expectedSubscriptionUrl;
+  final String? expectedAccountId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,7 +70,13 @@ class ReauthPanel extends HookConsumerWidget {
       // profile (the user already has one; the guard would reject it).
       await ref
           .read(loginNotifierProvider.notifier)
-          .login(email, password, importProfile: false, expectedSubscriptionUrl: expectedSubscriptionUrl);
+          .login(
+            email,
+            password,
+            importProfile: false,
+            expectedSubscriptionUrl: expectedSubscriptionUrl,
+            expectedAccountId: expectedAccountId,
+          );
     }
 
     ref.listen(loginNotifierProvider, (_, next) {

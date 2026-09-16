@@ -186,8 +186,25 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
   /// slot state needs to know, because a failed start leaves the client
   /// disconnected with a preference claiming otherwise.
   Future<bool> restartForSlot(ProfileEntity profile) async {
+    if (!await stopForSlot()) return false;
+    return startForSlot(profile);
+  }
+
+  /// The two halves of [restartForSlot], for the reachability ladder, which
+  /// needs the gap between them: with the core down the app's own request
+  /// escapes the tun on every platform, and that is when it asks the
+  /// middleware whether the account is still being served.
+  ///
+  /// [stopForSlot] returns false when nothing was running; [startForSlot]
+  /// refuses while an account verdict is on file, like every other way in.
+  Future<bool> stopForSlot() async {
     if (state.valueOrNull is! Connected) return false;
     await _disconnect();
+    return true;
+  }
+
+  Future<bool> startForSlot(ProfileEntity profile) async {
+    if (_refusedByAccount()) return false;
     await _recordAppliedTier(profile);
     final result = await _connectionRepo.connect(profile, ref.read(Preferences.disableMemoryLimit)).run();
     return result.fold((err) {

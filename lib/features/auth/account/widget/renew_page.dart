@@ -272,6 +272,10 @@ class _StoreRenewal extends HookConsumerWidget {
           ReauthPanel(
             t: t,
             needsSignIn: t.auth.renew.needsSignIn,
+            // The verdict's account id (the token's uid) must equal the
+            // login's user_id; absent means unknown, and any valid account may
+            // renew — the caption below says which one.
+            expectedAccountId: details.accountId,
             onAuthed: (email) {
               signedInAs.value = email;
               authed.value = true;
