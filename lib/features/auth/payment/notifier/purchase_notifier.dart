@@ -141,6 +141,9 @@ class PurchaseNotifier extends _$PurchaseNotifier with InfraLogger {
       case IapPurchaseOutcome.pendingPayment:
         state = state.copyWith(status: PurchaseStatus.processing, pendingOfferToken: null);
       case IapPurchaseOutcome.canceled:
+      // Restore found a transaction this device already imported: nothing to
+      // show, back to the plans.
+      case IapPurchaseOutcome.alreadySettled:
         state = state.copyWith(status: PurchaseStatus.ready, pendingOfferToken: null);
       case IapPurchaseOutcome.stillProvisioning:
       case IapPurchaseOutcome.accountMismatch:

@@ -213,7 +213,7 @@ class AccountSection extends ConsumerWidget {
     }
     // A restore can settle more than one purchase; report the best result, and
     // otherwise the first failure with its specific reason.
-    if (outcomes.contains(IapPurchaseOutcome.imported)) {
+    if (outcomes.contains(IapPurchaseOutcome.imported) || outcomes.contains(IapPurchaseOutcome.alreadySettled)) {
       notifications.showSuccessToast(t.auth.restoreDone);
     } else if (outcomes.contains(IapPurchaseOutcome.activating)) {
       notifications.showInfoToast(t.auth.restoreActivating);

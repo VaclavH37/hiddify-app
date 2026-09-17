@@ -80,6 +80,11 @@ enum IapPurchaseOutcome {
   /// within our wait window. The purchase is safe — the link will be ready
   /// shortly, and the launch re-verify / Restore completes it.
   stillProvisioning,
+
+  /// The store redelivered, or Restore found, a transaction this device has
+  /// already verified and imported. Nothing to do: the notifier stays put, and
+  /// a Restore tap reads it as restored.
+  alreadySettled,
 }
 
 /// Which store's backend contract this build talks to.
@@ -122,14 +127,10 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// [store], [billing] and [supported] exist so tests can exercise the Apple
   /// request shape and the finish-after-200 rule on a host where neither
   /// platform check is true. Production always takes the defaults.
-  IapService(
-    this._ref, {
-    IapStore? store,
-    RaynBilling? billing,
-    bool? supported,
-  })  : _store = store ?? (Platform.isIOS ? IapStore.appStore : IapStore.googlePlay),
-        _billing = billing ?? RaynBilling(),
-        _supported = supported ?? (Platform.isAndroid || Platform.isIOS) {
+  IapService(this._ref, {IapStore? store, RaynBilling? billing, bool? supported})
+    : _store = store ?? (Platform.isIOS ? IapStore.appStore : IapStore.googlePlay),
+      _billing = billing ?? RaynBilling(),
+      _supported = supported ?? (Platform.isAndroid || Platform.isIOS) {
     if (_supported) {
       RaynBillingEvents.setUp(this);
     }
@@ -139,6 +140,18 @@ class IapService with InfraLogger implements RaynBillingEvents {
   final IapStore _store;
   final RaynBilling _billing;
   final StreamController<IapPurchaseOutcome> _outcomes = StreamController<IapPurchaseOutcome>.broadcast();
+
+  /// Verify once per transaction (the backend's handover, §5.5–5.6). Several
+  /// paths deliver the same transaction — the purchase result, the store's
+  /// updates stream, a Restore tap, the launch re-verify — and every verify
+  /// spends one of the five requests a minute the whole account shares with
+  /// checkout and password changes; four for one purchase is what produced a
+  /// 429 on staging. So: one verify in flight per transaction id, and a
+  /// transaction verified in this session is never verified again — a
+  /// redelivery only retries an import that has not landed.
+  final Set<String> _inFlight = {};
+  final Map<String, String?> _verified = {};
+  final Map<String, String> _pendingImports = {};
 
   /// Whether a native billing host exists on this platform.
   final bool _supported;
@@ -183,10 +196,28 @@ class IapService with InfraLogger implements RaynBillingEvents {
     if (!_supported) return false;
     final purchases = await _billing.queryActivePurchases();
     final active = purchases.where((p) => p.state == RaynPurchaseState.purchased).toList();
+    final settledHere = await _hasUsableProfile();
     for (final p in active) {
-      _outcomes.add(await _verifyAndActivate(p));
+      // A finished entitlement on a device that already holds a working
+      // profile is settled: the backend granted it and this device imported
+      // it, and verifying it again changes nothing. An unfinished one (a
+      // verify that was interrupted), a device with no profile (reinstall,
+      // new device) or one whose account is blocked (the import never landed)
+      // still verify.
+      if (p.isAcknowledged && settledHere && !_pendingImports.containsKey(p.purchaseToken)) {
+        _outcomes.add(IapPurchaseOutcome.alreadySettled);
+        continue;
+      }
+      final outcome = await _verifyAndActivate(p);
+      if (outcome != null) _outcomes.add(outcome);
     }
     return active.isNotEmpty;
+  }
+
+  /// Whether this device already holds a profile the account is serving.
+  Future<bool> _hasUsableProfile() async {
+    final profile = await _ref.read(activeProfileProvider.future);
+    return profile is RemoteProfileEntity && !_ref.read(accountStateNotifierProvider).blocksConnect;
   }
 
   // ---- RaynBillingEvents (native -> Dart) ----
@@ -228,7 +259,8 @@ class IapService with InfraLogger implements RaynBillingEvents {
       case RaynPurchaseState.unspecified:
         return; // not a real purchase yet — ignore.
       case RaynPurchaseState.purchased:
-        _outcomes.add(await _verifyAndActivate(purchase));
+        final outcome = await _verifyAndActivate(purchase);
+        if (outcome != null) _outcomes.add(outcome);
     }
   }
 
@@ -247,7 +279,46 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// [IapPurchaseOutcome.activating] (drives the "activating your account" screen)
   /// and poll the import until it succeeds ([imported]) or the window elapses
   /// ([stillProvisioning]).
-  Future<IapPurchaseOutcome> _verifyAndActivate(RaynPurchase purchase) async {
+  ///
+  /// Null when this delivery duplicated a verify still in flight for the same
+  /// transaction: that verify's outcome is the one that counts.
+  Future<IapPurchaseOutcome?> _verifyAndActivate(RaynPurchase purchase) async {
+    final id = purchase.purchaseToken;
+    if (!_inFlight.add(id)) {
+      loggy.debug("verify already in flight for this transaction; ignoring the duplicate delivery");
+      return null;
+    }
+    try {
+      if (_verified.containsKey(id)) return await _settleVerified(purchase);
+      return await _verifyOnce(purchase);
+    } finally {
+      _inFlight.remove(id);
+    }
+  }
+
+  /// A transaction the backend accepted earlier this session. The store keeps
+  /// redelivering one only until it is finished, so finish it again
+  /// (idempotent), then retry an import that has not landed — the copy asks
+  /// the user to tap Restore for exactly that — or report it settled.
+  Future<IapPurchaseOutcome> _settleVerified(RaynPurchase purchase) async {
+    await _finish(purchase);
+    final pending = _pendingImports[purchase.purchaseToken];
+    if (pending == null) return IapPurchaseOutcome.alreadySettled;
+    loggy.info("retrying the import for an already-verified transaction");
+    _outcomes.add(IapPurchaseOutcome.activating);
+    return _importFor(purchase.purchaseToken, pending);
+  }
+
+  /// Runs the import poll and remembers the link until it lands, so a
+  /// redelivery retries the import rather than the verify.
+  Future<IapPurchaseOutcome> _importFor(String id, String link) async {
+    _pendingImports[id] = link;
+    final outcome = await _pollImport(link);
+    if (outcome == IapPurchaseOutcome.imported) _pendingImports.remove(id);
+    return outcome;
+  }
+
+  Future<IapPurchaseOutcome> _verifyOnce(RaynPurchase purchase) async {
     final token = await _sessionStore.read();
     if (token == null || token.isEmpty) return IapPurchaseOutcome.needsLogin;
 
@@ -256,13 +327,13 @@ class IapService with InfraLogger implements RaynBillingEvents {
     // `Transaction.id` is a UInt64 and encoding it as a number is a 400.
     final (String path, Map<String, dynamic> body) = switch (_store) {
       IapStore.googlePlay => (
-          '/iap/google/verify',
-          {'purchaseToken': purchase.purchaseToken, 'productId': purchase.productId},
-        ),
+        '/iap/google/verify',
+        {'purchaseToken': purchase.purchaseToken, 'productId': purchase.productId},
+      ),
       IapStore.appStore => (
-          '/iap/apple/verify',
-          {'transactionId': purchase.purchaseToken, 'productId': purchase.productId},
-        ),
+        '/iap/apple/verify',
+        {'transactionId': purchase.purchaseToken, 'productId': purchase.productId},
+      ),
     };
 
     final String? cryptolink;
@@ -278,6 +349,7 @@ class IapService with InfraLogger implements RaynBillingEvents {
     // discards a purchase the backend never recorded; while a transaction is
     // unfinished StoreKit keeps redelivering it, which is exactly the retry we
     // want. A deliberate no-op on Play, where the backend acknowledges.
+    _verified[purchase.purchaseToken] = cryptolink;
     await _finish(purchase);
 
     // Entitlement applied — show the activating screen while provisioning finishes.
@@ -285,7 +357,7 @@ class IapService with InfraLogger implements RaynBillingEvents {
 
     final link = (cryptolink != null && cryptolink.isNotEmpty) ? cryptolink : await _fetchCryptolink(token);
     if (link == null || link.isEmpty) return IapPurchaseOutcome.stillProvisioning;
-    return _pollImport(link);
+    return _importFor(purchase.purchaseToken, link);
   }
 
   /// Settle [purchase] with the store after the backend has accepted it.

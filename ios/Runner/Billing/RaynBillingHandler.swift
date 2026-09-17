@@ -183,10 +183,12 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
             var byId: [UInt64: RaynPurchase] = [:]
             for await result in Transaction.currentEntitlements {
                 guard case .verified(let transaction) = result else { continue }
+                if await RaynBillingHandler.finishIfLocalOnly(transaction) { continue }
                 byId[transaction.id] = RaynBillingHandler.map(transaction, isFinished: true)
             }
             for await result in Transaction.unfinished {
                 guard case .verified(let transaction) = result else { continue }
+                if await RaynBillingHandler.finishIfLocalOnly(transaction) { continue }
                 byId[transaction.id] = RaynBillingHandler.map(transaction, isFinished: false)
             }
 
@@ -241,6 +243,10 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
                 emit([], ResponseCode.error)
                 return
             }
+            if await Self.finishIfLocalOnly(transaction) {
+                emit([], ResponseCode.error)
+                return
+            }
             // Deliberately NOT finished here. Dart finishes it after the backend
             // has recorded the purchase; until then StoreKit keeps redelivering.
             emit([Self.map(transaction, isFinished: false)], ResponseCode.ok)
@@ -277,6 +283,7 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
         updatesTask = Task.detached { [weak self] in
             for await result in Transaction.updates {
                 guard let self, case .verified(let transaction) = result else { continue }
+                if await RaynBillingHandler.finishIfLocalOnly(transaction) { continue }
                 self.emit([RaynBillingHandler.map(transaction, isFinished: false)], ResponseCode.ok)
             }
         }
@@ -316,8 +323,40 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
 
     // MARK: - Mapping
 
+    /// A transaction made under an Xcode StoreKit configuration or on the
+    /// Simulator exists only on this device: Apple's servers have never seen it
+    /// and the backend can never verify it. Left unfinished it is redelivered
+    /// on every launch and fails verify each time (a 500 on staging), so it is
+    /// finished here and never sent. Returns true when it was one.
+    private static func finishIfLocalOnly(_ transaction: Transaction) async -> Bool {
+        guard #available(iOS 16.0, *), transaction.environment == .xcode else { return false }
+        NSLog(
+            "[RaynBilling] transaction %llu (%@) is Xcode-local; finishing it without verify",
+            transaction.id, transaction.productID
+        )
+        await transaction.finish()
+        return true
+    }
+
     private static func map(_ transaction: Transaction, isFinished: Bool) -> RaynPurchase {
-        RaynPurchase(
+        // The one line the backend needs when a verify comes back "not found":
+        // an `Xcode` environment means a StoreKit configuration file or the
+        // Simulator, and such a transaction exists only on this device, never
+        // on Apple's servers. The id is logged in debug builds only — it is
+        // what verify accepts — the environment always.
+        if #available(iOS 16.0, *) {
+            #if DEBUG
+            NSLog(
+                "[RaynBilling] transaction %llu (%@) environment=%@",
+                transaction.id, transaction.productID, transaction.environment.rawValue
+            )
+            #else
+            NSLog("[RaynBilling] transaction (%@) environment=%@", transaction.productID, transaction.environment.rawValue)
+            #endif
+        } else {
+            NSLog("[RaynBilling] transaction (%@) environment=unknown (pre-iOS 16)", transaction.productID)
+        }
+        return RaynPurchase(
             // A JSON string on the wire: Transaction.id is a UInt64, and the
             // backend rejects it encoded as a number.
             purchaseToken: String(transaction.id),
