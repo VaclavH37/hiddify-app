@@ -8,9 +8,6 @@ import 'package:hiddify/features/proxy/model/node_name.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-/// URL-test delays at or above this are the core's "no answer" sentinel.
-const int _delayTimeout = 65000;
-
 /// One row of the location picker: flag, name, its latency when known, and
 /// a check on the current choice. A flat row inside a `RaynSettingsGroup`,
 /// like every other list in the app; it used to be a card of its own with an
@@ -33,8 +30,17 @@ class ProxyTile extends ConsumerWidget {
     final mode = proxy.isGroup ? ExitMode.forGroupTag(proxy.tagDisplay) : null;
     final displayName = proxy.isGroup ? (mode?.caption(t) ?? proxy.tagDisplay) : displayNodeTag(proxy.tagDisplay);
 
+    // A failed probe says so; an unprobed exit says nothing. Both used to
+    // render blank, so the dead exit "Fastest server" kept picking looked like
+    // one that had not been measured yet.
     final delay = proxy.urlTestDelay;
-    final latency = !proxy.isGroup && delay > 0 && delay < _delayTimeout ? '$delay ms' : null;
+    final (String? latency, String? semantics, Color? colour) = switch (proxy.isGroup
+        ? DelayClass.untested
+        : delayClassOf(delay)) {
+      DelayClass.untested => (null, null, null),
+      DelayClass.failed => (t.pages.proxies.delay.noResponse, t.pages.proxies.delay.timeout, palette.danger),
+      DelayClass.measured => ('$delay ms', t.pages.proxies.delay.result(delay: delay), palette.textSecondary),
+    };
 
     return Semantics(
       button: true,
@@ -69,9 +75,9 @@ class ProxyTile extends ConsumerWidget {
                     const SizedBox(width: RaynSpacing.md),
                     Text(
                       latency,
-                      semanticsLabel: t.pages.proxies.delay.result(delay: delay),
+                      semanticsLabel: semantics,
                       style: RaynTypography.body.copyWith(
-                        color: palette.textSecondary,
+                        color: colour,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),

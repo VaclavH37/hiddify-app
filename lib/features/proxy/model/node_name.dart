@@ -1,4 +1,5 @@
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/features/profile/model/hub_reachability.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/singbox/model/singbox_proxy_type.dart';
 
@@ -102,6 +103,30 @@ int compareByCountryThenName(OutboundInfo a, OutboundInfo b) {
   final byCountry = countryA.compareTo(countryB);
   if (byCountry != 0) return byCountry;
   return displayNodeTag(a.tag).toLowerCase().compareTo(displayNodeTag(b.tag).toLowerCase());
+}
+
+/// What a probe result means. The core reports an exit it has not probed as
+/// 0 and an exit whose probe failed as the 65535 sentinel; neither is a
+/// measurement, and the picker must not read either as one. The order of the
+/// values is the "by latency" order.
+enum DelayClass { measured, untested, failed }
+
+DelayClass delayClassOf(int delay) => switch (delay) {
+  <= 0 => DelayClass.untested,
+  >= hubUrlTestTimeout => DelayClass.failed,
+  _ => DelayClass.measured,
+};
+
+/// The picker's "by latency" order: measured exits fastest first, then the
+/// exits the core has not probed, then the exits whose probe failed. Two
+/// exits of the same unmeasured class compare equal; the comparator this
+/// replaces returned -1 for two zeros, so their order depended on the input.
+int compareByDelay(OutboundInfo a, OutboundInfo b) {
+  final classA = delayClassOf(a.urlTestDelay);
+  final classB = delayClassOf(b.urlTestDelay);
+  if (classA != classB) return classA.index.compareTo(classB.index);
+  if (classA != DelayClass.measured) return 0;
+  return a.urlTestDelay.compareTo(b.urlTestDelay);
 }
 
 /// Derives the user-facing label and flag country code for an active outbound,

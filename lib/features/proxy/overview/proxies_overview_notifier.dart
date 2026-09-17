@@ -98,13 +98,7 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
       ProxiesSort.delay => proxies.items.sortedWith((a, b) {
         if (a.isGroup && !b.isGroup) return -1;
         if (!a.isGroup && b.isGroup) return 1;
-
-        final ai = a.urlTestDelay;
-        final bi = b.urlTestDelay;
-        if (ai == 0 && bi == 0) return -1;
-        if (ai == 0 && bi > 0) return 1;
-        if (ai > 0 && bi == 0) return -1;
-        return ai.compareTo(bi);
+        return compareByDelay(a, b);
       }),
       ProxiesSort.unsorted => proxies.items,
       ProxiesSort.usage => proxies.items.sortedWith((a, b) {
