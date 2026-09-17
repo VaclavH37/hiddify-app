@@ -394,6 +394,9 @@ class ProfileParser {
       case null:
         break;
     }
+    // A config, with the same request id the verdicts carry: a fetch that came
+    // back fine and then failed locally can still be matched to the Worker's log.
+    _log.info('subscription answered with a config (cf-ray ${rayId(downloaded.headers) ?? "-"})');
     return TaskEither.right((
       headers: downloaded.headers,
       url: url,

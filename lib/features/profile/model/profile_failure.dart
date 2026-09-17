@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/failures.dart';
@@ -53,6 +54,30 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
     _ => false,
   };
 
+  /// One line for the log: the kind, plus the single detail that says which
+  /// step failed. Never the subscription URL (the credential), a token or a
+  /// response body — the refresh loop and the post-purchase import report
+  /// failures by reason, and a diagnostics build's log reaches a share sheet.
+  String get logSummary => switch (this) {
+    ProfileUnexpectedFailure(:final error) => switch (error) {
+      DioException(:final response?) => 'HTTP ${response.statusCode ?? "?"}',
+      DioException(:final type) => 'transport ${type.name}',
+      null => 'unexpected',
+      _ => 'unexpected ${error.runtimeType}',
+    },
+    ProfileNotFoundFailure() => 'profile row not found',
+    ProfileInvalidUrlFailure() => 'invalid url',
+    ProfileAlreadyAuthenticatedFailure() => 'already signed in',
+    ProfileInvalidConfigFailure(:final message, :final configOptionFailure) =>
+      'config rejected: ${_clip(message ?? configOptionFailure?.runtimeType.toString() ?? "no reason given")}',
+    ProfileCancelByUserFailure() => 'cancelled',
+    ProfileSubscriptionExpiredFailure() => 'subscription expired verdict',
+    ProfileAccountUnavailableFailure(:final code, :final retryAfter) =>
+      'account unavailable ($code${retryAfter == null ? "" : ", retry after ${retryAfter.inSeconds}s"})',
+    ProfileUnsupportedLinkVersionFailure() => 'unsupported link version',
+    ProfileConfigUnreadableFailure() => 'sealed config unreadable',
+  };
+
   // The cryptolink's version byte is one this build has no handler for. The user
   // needs a newer APP, not a newer link — never collapse this into invalidUrl,
   // which would tell them to re-copy a link that is already correct. See
@@ -85,3 +110,7 @@ sealed class ProfileFailure with _$ProfileFailure, Failure {
     };
   }
 }
+
+/// The core's parse message names a field path, not a value, but it is
+/// unbounded; a log line is not.
+String _clip(String message, {int max = 160}) => message.length <= max ? message : '${message.substring(0, max)}…';

@@ -439,7 +439,12 @@ class IapService with InfraLogger implements RaynBillingEvents {
         await _ref.read(accountStateNotifierProvider.notifier).recordActive();
         return IapPurchaseOutcome.imported;
       }
-      loggy.debug("activation import attempt $attempt/$_maxActivationAttempts not ready yet");
+      // By reason, never by value. On a release build this is the one line
+      // that says which step refused the link when a purchase ends in "tap
+      // Restore to finish": the middleware's answer, the local core, or the
+      // sealed store.
+      final reason = result.fold((failure) => failure.logSummary, (_) => "");
+      loggy.warning("activation import attempt $attempt/$_maxActivationAttempts failed: $reason");
       if (attempt < _maxActivationAttempts) await Future<void>.delayed(_activationPollInterval);
     }
     return IapPurchaseOutcome.stillProvisioning;
