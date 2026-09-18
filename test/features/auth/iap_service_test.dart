@@ -128,7 +128,9 @@ Future<_VerifyTrace> _trace({
       authApiClientProvider.overrideWithValue(client),
       // `supported: true` is what lets a Windows/Linux test host exercise the
       // native path at all; production derives it from the platform.
-      iapServiceProvider.overrideWith((ref) => IapService(ref, store: store, billing: billing, supported: true)),
+      iapServiceProvider.overrideWith(
+        (ref) => IapService(ref, store: store, billing: billing, supported: true, backoff: const []),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -160,7 +162,7 @@ Future<List<IapPurchaseOutcome>> _outcomes({
     overrides: [
       sessionTokenStoreProvider.overrideWithValue(_FakeStore(token)),
       authApiClientProvider.overrideWithValue(_FakeClient(error: verifyError, response: verifyResponse)),
-      iapServiceProvider.overrideWith((ref) => IapService(ref, store: store)),
+      iapServiceProvider.overrideWith((ref) => IapService(ref, store: store, backoff: const [])),
     ],
   );
   addTearDown(container.dispose);
@@ -322,21 +324,31 @@ void main() {
   });
 
   // Finishing a transaction tells StoreKit to stop redelivering it. Doing that
-  // before the backend has recorded the purchase destroys it: the user is
-  // charged, the entitlement is never granted, and nothing ever replays. These
-  // are the tests that keep that from happening.
-  group('finishPurchase timing', () {
-    test('called exactly once, with the transaction id, after a verify 200', () async {
+  // before the backend has answered destroys the purchase: the user is
+  // charged, the entitlement is never granted, and nothing ever replays. A
+  // terminal refusal is an answer too — retrying can never help, and left
+  // unfinished the transaction came back at every launch and was verified
+  // every time. These are the tests that keep both rules.
+  group('finishSubscription timing', () {
+    test('called exactly once, with the subscription id, after a verify 200', () async {
       final t = await _trace(store: IapStore.appStore);
       expect(t.finished, ['orig-123'], reason: 'the whole subscription is finished, by its original id');
     });
 
     for (final (label, error) in const <(String, AuthApiException)>[
-      ('401', AuthApiException(status: 401, message: '')),
       ('403 ACCOUNT_MISMATCH', AuthApiException(status: 403, code: 'ACCOUNT_MISMATCH', message: '')),
       ('403 FAMILY_SHARED', AuthApiException(status: 403, code: 'FAMILY_SHARED', message: '')),
       ('404 TRANSACTION_NOT_FOUND', AuthApiException(status: 404, code: 'TRANSACTION_NOT_FOUND', message: '')),
       ('409 TOKEN_IN_USE', AuthApiException(status: 409, code: 'TOKEN_IN_USE', message: '')),
+    ]) {
+      test('called on $label — a terminal refusal is finished so it stops coming back', () async {
+        final t = await _trace(store: IapStore.appStore, verifyError: error);
+        expect(t.finished, ['orig-123']);
+      });
+    }
+
+    for (final (label, error) in const <(String, AuthApiException)>[
+      ('401', AuthApiException(status: 401, message: '')),
       ('429', AuthApiException(status: 429, message: '')),
       ('500', AuthApiException(status: 500, message: '')),
       ('transport failure', AuthApiException(status: 0, message: 'no route')),

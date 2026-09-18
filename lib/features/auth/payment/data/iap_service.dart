@@ -127,10 +127,11 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// [store], [billing] and [supported] exist so tests can exercise the Apple
   /// request shape and the finish-after-200 rule on a host where neither
   /// platform check is true. Production always takes the defaults.
-  IapService(this._ref, {IapStore? store, RaynBilling? billing, bool? supported})
+  IapService(this._ref, {IapStore? store, RaynBilling? billing, bool? supported, List<Duration>? backoff})
     : _store = store ?? (Platform.isIOS ? IapStore.appStore : IapStore.googlePlay),
       _billing = billing ?? RaynBilling(),
-      _supported = supported ?? (Platform.isAndroid || Platform.isIOS) {
+      _supported = supported ?? (Platform.isAndroid || Platform.isIOS),
+      _backoff = backoff ?? defaultBackoff {
     if (_supported) {
       RaynBillingEvents.setUp(this);
     }
@@ -141,17 +142,35 @@ class IapService with InfraLogger implements RaynBillingEvents {
   final RaynBilling _billing;
   final StreamController<IapPurchaseOutcome> _outcomes = StreamController<IapPurchaseOutcome>.broadcast();
 
-  /// Verify once per transaction (the backend's handover, §5.5–5.6). Several
-  /// paths deliver the same transaction — the purchase result, the store's
-  /// updates stream, a Restore tap, the launch re-verify — and every verify
-  /// spends one of the five requests a minute the whole account shares with
-  /// checkout and password changes; four for one purchase is what produced a
-  /// 429 on staging. So: one verify in flight per transaction id, and a
-  /// transaction verified in this session is never verified again — a
-  /// redelivery only retries an import that has not landed.
+  /// Verify once per subscription (the backend's recommendations, §1–2).
+  /// Several paths deliver the same purchase — the purchase result, the store's
+  /// updates stream, a Restore tap, the launch replay — and every verify spends
+  /// one of the five requests a minute the whole account shares with checkout
+  /// and password changes; four for one purchase is what produced a 429 on
+  /// staging. So: one verify in flight per subscription ([subscriptionKey]), a
+  /// transaction verified in this session is never verified again (a redelivery
+  /// only retries an import that has not landed), and a subscription the
+  /// backend refused for good is answered from memory for the session.
   final Set<String> _inFlight = {};
   final Map<String, String?> _verified = {};
   final Map<String, String> _pendingImports = {};
+  final Map<String, IapPurchaseOutcome> _terminal = {};
+
+  /// The wait before each verify retry on a 429, a 5xx or a transport failure
+  /// (their §2, the guide's §5.5). A `Retry-After` longer than the rung wins.
+  /// After the last rung the transaction stays unfinished and the next launch
+  /// replays it. Tests inject a shorter ladder.
+  final List<Duration> _backoff;
+
+  static const List<Duration> defaultBackoff = [
+    Duration(seconds: 2),
+    Duration(seconds: 5),
+    Duration(seconds: 15),
+    Duration(seconds: 60),
+  ];
+
+  /// The longest a `Retry-After` may hold one verify attempt.
+  static const _retryAfterCap = Duration(minutes: 5);
 
   /// Whether a native billing host exists on this platform.
   final bool _supported;
@@ -188,39 +207,29 @@ class IapService with InfraLogger implements RaynBillingEvents {
     return _billing.launchPurchase(offer.offerToken, userId ?? '');
   }
 
-  /// Re-discover active store purchases and re-verify each (idempotent
-  /// server-side). Covers acknowledgement-on-interrupted-verify, restore on
-  /// reinstall, and login on a new device. Returns whether any active purchase
-  /// was found (each pushes its result on [outcomes]).
-  Future<bool> restore() async {
+  /// Restore Purchases: every subscription the store holds, settled or not,
+  /// one verify per subscription. Covers a reinstall and a new device. Returns
+  /// whether any purchase was found (each pushes its result on [outcomes]).
+  Future<bool> restore() => replay(includeSettled: true);
+
+  /// Re-verify what the store still holds, one transaction per subscription.
+  ///
+  /// Without [includeSettled] this is the launch replay: only purchases whose
+  /// verify never got its answer. With it, Restore: the settled ones too. The
+  /// launch replay used to ask for the union, behind a guard that let a settled
+  /// entitlement through whenever the account was expired or the profile was
+  /// missing — which is how an ended subscription got verified on a fresh
+  /// install. The backend already has every settled purchase; the only reason
+  /// to send one again is a user asking for a restore.
+  Future<bool> replay({required bool includeSettled}) async {
     if (!_supported) return false;
-    // The settled purchases too: this is still the union Restore and the
-    // launch replay both used. The launch replay stops asking for them in the
-    // coordinator change that follows this contract change.
-    final purchases = await _billing.queryActivePurchases(true);
-    final active = purchases.where((p) => p.state == RaynPurchaseState.purchased).toList();
-    final settledHere = await _hasUsableProfile();
-    for (final p in active) {
-      // A finished entitlement on a device that already holds a working
-      // profile is settled: the backend granted it and this device imported
-      // it, and verifying it again changes nothing. An unfinished one (a
-      // verify that was interrupted), a device with no profile (reinstall,
-      // new device) or one whose account is blocked (the import never landed)
-      // still verify.
-      if (p.isAcknowledged && settledHere && !_pendingImports.containsKey(p.purchaseToken)) {
-        _outcomes.add(IapPurchaseOutcome.alreadySettled);
-        continue;
-      }
+    final purchases = await _billing.queryActivePurchases(includeSettled);
+    final newest = newestPerSubscription(purchases.where((p) => p.state == RaynPurchaseState.purchased));
+    for (final p in newest) {
       final outcome = await _verifyAndActivate(p);
       if (outcome != null) _outcomes.add(outcome);
     }
-    return active.isNotEmpty;
-  }
-
-  /// Whether this device already holds a profile the account is serving.
-  Future<bool> _hasUsableProfile() async {
-    final profile = await _ref.read(activeProfileProvider.future);
-    return profile is RemoteProfileEntity && !_ref.read(accountStateNotifierProvider).blocksConnect;
+    return newest.isNotEmpty;
   }
 
   // ---- RaynBillingEvents (native -> Dart) ----
@@ -246,7 +255,9 @@ class IapService with InfraLogger implements RaynBillingEvents {
         await restore();
         return;
       case _BillingResponse.ok:
-        for (final p in purchases) {
+        // One update can carry several transactions of one subscription (a
+        // batch of unfinished renewals); one verify covers them all.
+        for (final p in newestPerSubscription(purchases)) {
           await _settle(p);
         }
       default:
@@ -284,18 +295,22 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// ([stillProvisioning]).
   ///
   /// Null when this delivery duplicated a verify still in flight for the same
-  /// transaction: that verify's outcome is the one that counts.
+  /// subscription: that verify's outcome is the one that counts.
   Future<IapPurchaseOutcome?> _verifyAndActivate(RaynPurchase purchase) async {
-    final id = purchase.purchaseToken;
-    if (!_inFlight.add(id)) {
-      loggy.debug("verify already in flight for this transaction; ignoring the duplicate delivery");
+    final subscription = subscriptionKey(purchase);
+    if (_terminal[subscription] case final refused?) {
+      loggy.debug("the backend refused this subscription for good this session; answering from memory");
+      return refused;
+    }
+    if (!_inFlight.add(subscription)) {
+      loggy.debug("a verify is already in flight for this subscription; ignoring the duplicate delivery");
       return null;
     }
     try {
-      if (_verified.containsKey(id)) return await _settleVerified(purchase);
+      if (_verified.containsKey(purchase.purchaseToken)) return await _settleVerified(purchase);
       return await _verifyOnce(purchase);
     } finally {
-      _inFlight.remove(id);
+      _inFlight.remove(subscription);
     }
   }
 
@@ -339,13 +354,13 @@ class IapService with InfraLogger implements RaynBillingEvents {
       ),
     };
 
-    final String? cryptolink;
+    final Map<String, dynamic> resp;
     try {
-      final resp = await _client.post(path, body, bearer: token);
-      cryptolink = resp['subscription_url'] as String?;
+      resp = await _postWithBackoff(path, body, token);
     } on AuthApiException catch (e) {
-      return _mapVerifyError(e);
+      return _settleRefusal(purchase, e);
     }
+    final cryptolink = resp['subscription_url'] as String?;
 
     // 200 means the backend applied the entitlement, and this is the ONLY place
     // the store may be told the purchase was delivered. Finishing any earlier
@@ -377,6 +392,51 @@ class IapService with InfraLogger implements RaynBillingEvents {
       loggy.warning("finishSubscription failed: ${e.runtimeType}");
     }
   }
+
+  /// One verify request, retried on a 429, a 5xx or a transport failure along
+  /// [_backoff]. Anything else is the backend's answer and is thrown at once.
+  Future<Map<String, dynamic>> _postWithBackoff(String path, Map<String, dynamic> body, String token) async {
+    for (var attempt = 0; ; attempt++) {
+      try {
+        return await _client.post(path, body, bearer: token);
+      } on AuthApiException catch (e) {
+        if (!_retryable(e) || attempt >= _backoff.length) rethrow;
+        final wait = _waitBefore(e, attempt);
+        loggy.info(
+          "verify ${e.isUnreachable ? "unreachable" : "answered ${e.status}"}; "
+          "retrying in ${wait.inSeconds}s (${attempt + 1}/${_backoff.length})",
+        );
+        await Future<void>.delayed(wait);
+      }
+    }
+  }
+
+  static bool _retryable(AuthApiException e) => e.isUnreachable || e.status == 429 || e.status >= 500;
+
+  Duration _waitBefore(AuthApiException e, int attempt) {
+    final rung = _backoff[attempt];
+    final after = e.retryAfter;
+    if (after == null || after <= rung) return rung;
+    return after > _retryAfterCap ? _retryAfterCap : after;
+  }
+
+  /// The backend's final word on a purchase this session. A terminal refusal
+  /// (403, 404, 409: another account's purchase, a family-shared one, a
+  /// transaction Apple never saw, a token another account already uses) is
+  /// finished too, so the store stops redelivering it and re-verifying it at
+  /// every launch; Restore still reaches it through the entitlements once the
+  /// user has fixed the cause. 401 and the retryable statuses stay unfinished,
+  /// which is the retry the guide wants.
+  Future<IapPurchaseOutcome> _settleRefusal(RaynPurchase purchase, AuthApiException e) async {
+    final outcome = _mapVerifyError(e);
+    if (_isTerminal(e)) {
+      await _finish(purchase);
+      _terminal[subscriptionKey(purchase)] = outcome;
+    }
+    return outcome;
+  }
+
+  static bool _isTerminal(AuthApiException e) => e.status == 403 || e.status == 404 || e.status == 409;
 
   IapPurchaseOutcome _mapVerifyError(AuthApiException e) {
     if (e.isUnreachable) return IapPurchaseOutcome.unreachable;
@@ -471,4 +531,22 @@ class IapService with InfraLogger implements RaynBillingEvents {
     }
     unawaited(_outcomes.close());
   }
+}
+
+/// The subscription a purchase belongs to: its original id, or the transaction
+/// id when the store gave none (the synthesised pending purchase).
+String subscriptionKey(RaynPurchase purchase) =>
+    purchase.originalId.isEmpty ? purchase.purchaseToken : purchase.originalId;
+
+/// One purchase per subscription, the newest by purchase date, in first-seen
+/// order. The backend fetches the whole subscription's state whichever
+/// transaction it is sent, so siblings are duplicates.
+List<RaynPurchase> newestPerSubscription(Iterable<RaynPurchase> purchases) {
+  final newest = <String, RaynPurchase>{};
+  for (final p in purchases) {
+    final key = subscriptionKey(p);
+    final seen = newest[key];
+    if (seen == null || p.purchaseDateMs > seen.purchaseDateMs) newest[key] = p;
+  }
+  return newest.values.toList();
 }
