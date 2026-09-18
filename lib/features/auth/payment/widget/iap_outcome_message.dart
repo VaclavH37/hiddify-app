@@ -45,6 +45,8 @@ String iapOutcomeMessage(Translations t, IapPurchaseOutcome? outcome) {
       return t.auth.renew.refunded;
     case IapPurchaseOutcome.accountUnavailable:
       return t.errors.profiles.accountUnavailable;
+    case IapPurchaseOutcome.accountPending:
+      return t.auth.renew.unavailable.pending;
     default:
       return t.auth.payment.errorGeneric;
   }

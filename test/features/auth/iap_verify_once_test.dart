@@ -202,6 +202,21 @@ void main() {
       expect(h.outcomes, [IapPurchaseOutcome.failed, IapPurchaseOutcome.failed]);
     });
 
+    test('a pre-release Sandbox miss is terminal: one request, finished, never the ladder', () async {
+      // It used to arrive as a 500 and cost five requests over 82 seconds.
+      final h = harness(
+        profile: _remote(),
+        script: [const AuthApiException(status: 404, code: 'SANDBOX_TRANSACTION_NOT_FOUND', message: '')],
+        backoff: const [Duration(milliseconds: 1), Duration(milliseconds: 1)],
+      );
+      h.service.onPurchasesUpdated([_purchase()], 0);
+      await settle();
+
+      expect(h.client.verifies, 1);
+      expect(h.billing.finished, ['orig-123']);
+      expect(h.outcomes, [IapPurchaseOutcome.failed]);
+    });
+
     test('a 429 walks the ladder, then leaves the transaction unfinished', () async {
       final h = harness(
         profile: _remote(),
@@ -319,6 +334,24 @@ void main() {
       );
     }
 
+    for (final (status, want) in const [
+      ('pending_activation', IapPurchaseOutcome.accountPending),
+      ('pending_verification', IapPurchaseOutcome.ineligible),
+      ('pending_payment', IapPurchaseOutcome.ended),
+    ]) {
+      test('$status granted nothing: no activating, no fallback fetch, finished', () async {
+        final h = harness(profile: _remote(), verifyResponse: {'status': 'ok', 'account_status': status});
+        h.service.onPurchasesUpdated([_purchase()], 0);
+        await settle();
+
+        expect(h.outcomes, [want]);
+        expect(h.client.gets, 0, reason: 'the link fetch would 403 and read as "activating… tap Restore"');
+        expect(h.billing.finished, ['orig-123']);
+        expect(h.account.cleared, 0);
+        expect(h.account.recorded, isEmpty);
+      });
+    }
+
     test('another state records the account as unavailable and finishes', () async {
       final h = harness(profile: _remote(), verifyResponse: {'status': 'ok', 'account_status': 'suspended'});
       h.service.onPurchasesUpdated([_purchase()], 0);
@@ -384,6 +417,13 @@ class _CountingClient extends AuthApiClient {
   final List<AuthApiException?> script;
   final List<String> sent = [];
   int verifies = 0;
+  int gets = 0;
+
+  @override
+  Future<Map<String, dynamic>> get(String path, {String? bearer}) async {
+    gets++;
+    return const {};
+  }
 
   @override
   Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body, {String? bearer}) async {

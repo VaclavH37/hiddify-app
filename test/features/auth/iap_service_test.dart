@@ -339,7 +339,14 @@ void main() {
       ('403 ACCOUNT_MISMATCH', AuthApiException(status: 403, code: 'ACCOUNT_MISMATCH', message: '')),
       ('403 FAMILY_SHARED', AuthApiException(status: 403, code: 'FAMILY_SHARED', message: '')),
       ('404 TRANSACTION_NOT_FOUND', AuthApiException(status: 404, code: 'TRANSACTION_NOT_FOUND', message: '')),
+      (
+        '404 SANDBOX_TRANSACTION_NOT_FOUND',
+        AuthApiException(status: 404, code: 'SANDBOX_TRANSACTION_NOT_FOUND', message: ''),
+      ),
       ('409 TOKEN_IN_USE', AuthApiException(status: 409, code: 'TOKEN_IN_USE', message: '')),
+      // The terminal rule is by status, not by code: a code this build has
+      // never heard of is still finished.
+      ('403 with an unknown code', AuthApiException(status: 403, code: 'SOMETHING_NEW', message: '')),
     ]) {
       test('called on $label — a terminal refusal is finished so it stops coming back', () async {
         final t = await _trace(store: IapStore.appStore, verifyError: error);

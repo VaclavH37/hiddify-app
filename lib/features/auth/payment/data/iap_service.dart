@@ -99,6 +99,11 @@ enum IapPurchaseOutcome {
   /// A verify 200 with another `account_status` (suspended, deactivated, …):
   /// the account cannot receive access, whatever was bought.
   accountUnavailable,
+
+  /// A verify 200 with `account_status: "pending_activation"`: the verified
+  /// subscription had ended, and the account is waiting on a web payment to
+  /// settle. Nothing was granted; never "activating".
+  accountPending,
 }
 
 /// Which store's backend contract this build talks to.
@@ -415,6 +420,14 @@ class IapService with InfraLogger implements RaynBillingEvents {
         _ended[purchase.purchaseToken] = outcome;
         loggy.info("verify: the subscription has ended (${storeStatus.name})");
         return outcome;
+      case VerifyNotEligible():
+        _ended[purchase.purchaseToken] = IapPurchaseOutcome.ineligible;
+        loggy.info("verify: nothing granted; the account's email is not verified");
+        return IapPurchaseOutcome.ineligible;
+      case VerifyPending():
+        _ended[purchase.purchaseToken] = IapPurchaseOutcome.accountPending;
+        loggy.info("verify: nothing granted; the account is still being activated");
+        return IapPurchaseOutcome.accountPending;
       case VerifyUnavailable(:final code):
         _ended[purchase.purchaseToken] = IapPurchaseOutcome.accountUnavailable;
         loggy.warning("verify: the account cannot receive access ($code)");
@@ -511,10 +524,13 @@ class IapService with InfraLogger implements RaynBillingEvents {
     }
     if (e.status == 401) return IapPurchaseOutcome.needsLogin;
     if (e.status == 429) return IapPurchaseOutcome.rateLimited;
-    // SANDBOX_NOT_ALLOWED, BUNDLE_MISMATCH and 404 TRANSACTION_NOT_FOUND are
-    // configuration bugs — the wrong backend for this build, or a local
-    // .storekit file Apple has never heard of — not user errors. Generic copy,
-    // but the log line above makes them diagnosable from a TestFlight report.
+    // SANDBOX_NOT_ALLOWED, BUNDLE_MISMATCH, 404 TRANSACTION_NOT_FOUND and 404
+    // SANDBOX_TRANSACTION_NOT_FOUND are configuration bugs — the wrong backend
+    // for this build, or a local .storekit file Apple has never heard of — not
+    // user errors. Generic copy, but the log line above carries the code, which
+    // is how the backend tells "Apple said no" from "only Sandbox could be
+    // asked, and Sandbox said no" (their pre-release mode; after the first App
+    // Store release that case is a 500 again and walks the ladder).
     return IapPurchaseOutcome.failed;
   }
 

@@ -162,6 +162,7 @@ class PurchaseNotifier extends _$PurchaseNotifier with InfraLogger {
       case IapPurchaseOutcome.endedBillingRetry:
       case IapPurchaseOutcome.endedRevoked:
       case IapPurchaseOutcome.accountUnavailable:
+      case IapPurchaseOutcome.accountPending:
         state = state.copyWith(status: PurchaseStatus.error, outcome: outcome, pendingOfferToken: null);
     }
   }

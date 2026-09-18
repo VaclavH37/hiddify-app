@@ -22,15 +22,20 @@ sealed class VerifyVerdict {
       final String s => s.trim().toLowerCase(),
       _ => '',
     };
-    if (status.isEmpty || status.startsWith('pending')) {
-      // No status, or an account the backend is still moving along
-      // (activation outbox, unverified email): the link, or the fallback
-      // fetch, decides — the one case where "activating" is honest.
-      return VerifyUnknown(link);
-    }
+    // Absent: the link could not be built in time, and the purchase may well
+    // be active. The one case where "activating" is honest.
+    if (status.isEmpty) return VerifyUnknown(link);
     return switch (status) {
       'active' => VerifyActive(link),
-      'expired' => VerifyEnded(StoreStatus.parse(body['store_status'])),
+      // Everything below means nothing was granted. The backend confirmed
+      // (2026-09-18) that a live purchase only ever answers `active` or no
+      // field at all; any other stored state is reported only when the
+      // verified subscription has ALREADY ENDED. So none of these may reach
+      // the fallback link fetch — it would 403 and land the user on
+      // "activating… tap Restore" for a purchase that granted nothing.
+      'expired' || 'pending_payment' => VerifyEnded(StoreStatus.parse(body['store_status'])),
+      'pending_verification' => const VerifyNotEligible(),
+      'pending_activation' => const VerifyPending(),
       _ => VerifyUnavailable(_middlewareCode(status)),
     };
   }
@@ -70,8 +75,20 @@ final class VerifyUnavailable extends VerifyVerdict {
   final String code;
 }
 
-/// The backend did not say: a build from before the field shipped, an
-/// account still being activated, or a link that was not ready in time.
+/// Nothing was granted, and the account's email is not verified yet. (A live
+/// purchase on such an account is a `403 INELIGIBLE`, never a 200.)
+final class VerifyNotEligible extends VerifyVerdict {
+  const VerifyNotEligible();
+}
+
+/// Nothing was granted, and the account is waiting on a web payment to
+/// settle. No store purchase passes through that window.
+final class VerifyPending extends VerifyVerdict {
+  const VerifyPending();
+}
+
+/// The backend did not say: a build from before the field shipped, or a link
+/// that was not ready in time.
 final class VerifyUnknown extends VerifyVerdict {
   const VerifyUnknown(this.link);
 
