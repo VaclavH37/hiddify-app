@@ -156,6 +156,12 @@ class PurchaseNotifier extends _$PurchaseNotifier with InfraLogger {
       case IapPurchaseOutcome.unreachable:
       case IapPurchaseOutcome.updateRequired:
       case IapPurchaseOutcome.failed:
+      // The backend's answer to a purchase that granted nothing: the plans
+      // stay on screen with the reason above them, never "activating".
+      case IapPurchaseOutcome.ended:
+      case IapPurchaseOutcome.endedBillingRetry:
+      case IapPurchaseOutcome.endedRevoked:
+      case IapPurchaseOutcome.accountUnavailable:
         state = state.copyWith(status: PurchaseStatus.error, outcome: outcome, pendingOfferToken: null);
     }
   }

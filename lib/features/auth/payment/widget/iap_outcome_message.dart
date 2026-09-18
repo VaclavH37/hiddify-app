@@ -35,6 +35,16 @@ String iapOutcomeMessage(Translations t, IapPurchaseOutcome? outcome) {
       return t.auth.payment.errorUnreachable;
     case IapPurchaseOutcome.updateRequired:
       return t.auth.payment.errorUpdateRequired;
+    // A verify 200 that granted nothing. The renewal screen's own words, so
+    // the paywall and the Restore toast say the same thing it does.
+    case IapPurchaseOutcome.ended:
+      return t.auth.renew.ended;
+    case IapPurchaseOutcome.endedBillingRetry:
+      return t.auth.renew.billingRetry;
+    case IapPurchaseOutcome.endedRevoked:
+      return t.auth.renew.refunded;
+    case IapPurchaseOutcome.accountUnavailable:
+      return t.errors.profiles.accountUnavailable;
     default:
       return t.auth.payment.errorGeneric;
   }

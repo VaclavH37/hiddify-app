@@ -34,16 +34,28 @@ void main() {
 
   final renewedLink = mintRaynLink('https://sub.example.com/s/renewed-state');
 
-  ({IapService service, _CountingClient client, List<IapPurchaseOutcome> outcomes, _FakeBilling billing}) harness({
+  ({
+    IapService service,
+    _CountingClient client,
+    List<IapPurchaseOutcome> outcomes,
+    _FakeBilling billing,
+    _FixedAccountState account,
+  })
+  harness({
     ProfileEntity? profile,
     AccountState account = const AccountActive(),
     List<RaynPurchase> active = const [],
     String? link,
     List<AuthApiException?> script = const [],
     List<Duration> backoff = const [],
+    Map<String, dynamic>? verifyResponse,
   }) {
-    final client = _CountingClient({'status': 'ok', 'subscription_url': link ?? renewedLink}, script: script);
+    final client = _CountingClient(
+      verifyResponse ?? {'status': 'ok', 'subscription_url': link ?? renewedLink},
+      script: script,
+    );
     final billing = _FakeBilling(active);
+    final accountState = _FixedAccountState(account);
     final container = ProviderContainer(
       overrides: [
         sessionTokenStoreProvider.overrideWithValue(_FakeStore('tok-123')),
@@ -53,7 +65,7 @@ void main() {
         ),
         profileRepositoryProvider.overrideWith((ref) => _FakeRepo()),
         activeProfileProvider.overrideWith(() => _FixedActiveProfile(profile)),
-        accountStateNotifierProvider.overrideWith(() => _FixedAccountState(account)),
+        accountStateNotifierProvider.overrideWith(() => accountState),
       ],
     );
     addTearDown(container.dispose);
@@ -61,7 +73,7 @@ void main() {
     final outcomes = <IapPurchaseOutcome>[];
     final sub = service.outcomes.listen(outcomes.add);
     addTearDown(sub.cancel);
-    return (service: service, client: client, outcomes: outcomes, billing: billing);
+    return (service: service, client: client, outcomes: outcomes, billing: billing, account: accountState);
   }
 
   Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 50));
@@ -236,6 +248,89 @@ void main() {
     });
   });
 
+  group('account_status on the verify 200', () {
+    const unreadable = 'rayn://import/not-a-real-token';
+
+    test('active clears the stored verdict at once, before the import lands', () async {
+      final h = harness(
+        profile: _remote(),
+        verifyResponse: {'status': 'ok', 'account_status': 'active', 'subscription_url': unreadable},
+      );
+      h.service.onPurchasesUpdated([_purchase()], 0);
+      await settle();
+
+      expect(h.outcomes, [IapPurchaseOutcome.activating, IapPurchaseOutcome.failed]);
+      expect(
+        h.account.cleared,
+        1,
+        reason: 'the backend granted access; the verdict is stale even though the import failed',
+      );
+      expect(h.billing.finished, ['orig-123']);
+    });
+
+    test('active with the link: cleared on the verify and again on the import', () async {
+      final h = harness(
+        profile: _remote(),
+        verifyResponse: {'status': 'ok', 'account_status': 'active', 'subscription_url': renewedLink},
+      );
+      h.service.onPurchasesUpdated([_purchase()], 0);
+      await settle();
+
+      expect(h.outcomes, [IapPurchaseOutcome.activating, IapPurchaseOutcome.imported]);
+      expect(h.account.cleared, 2);
+    });
+
+    test('without account_status the verdict clears only when the import lands', () async {
+      final h = harness(profile: _remote());
+      h.service.onPurchasesUpdated([_purchase()], 0);
+      await settle();
+
+      expect(h.outcomes, [IapPurchaseOutcome.activating, IapPurchaseOutcome.imported]);
+      expect(h.account.cleared, 1);
+    });
+
+    for (final (storeStatus, want) in const [
+      (null, IapPurchaseOutcome.ended),
+      ('expired', IapPurchaseOutcome.ended),
+      ('billing_retry', IapPurchaseOutcome.endedBillingRetry),
+      ('revoked', IapPurchaseOutcome.endedRevoked),
+    ]) {
+      test(
+        'expired (${storeStatus ?? "no store_status"}) says the plan ended, never activating, and finishes',
+        () async {
+          final h = harness(
+            profile: _remote(),
+            verifyResponse: {
+              'status': 'ok',
+              'account_status': 'expired',
+              if (storeStatus != null) 'store_status': storeStatus,
+            },
+          );
+          h.service.onPurchasesUpdated([_purchase()], 0);
+          await settle();
+          h.service.onPurchasesUpdated([_purchase()], 0);
+          await settle();
+
+          expect(h.outcomes, [want, want], reason: 'a redelivery is answered from memory');
+          expect(h.client.verifies, 1);
+          expect(h.billing.finished, ['orig-123', 'orig-123']);
+          expect(h.account.cleared, 0);
+        },
+      );
+    }
+
+    test('another state records the account as unavailable and finishes', () async {
+      final h = harness(profile: _remote(), verifyResponse: {'status': 'ok', 'account_status': 'suspended'});
+      h.service.onPurchasesUpdated([_purchase()], 0);
+      await settle();
+
+      expect(h.outcomes, [IapPurchaseOutcome.accountUnavailable]);
+      expect(h.account.recorded.map((f) => f.logSummary), ['account unavailable (ACCOUNT_SUSPENDED)']);
+      expect(h.account.cleared, 0);
+      expect(h.billing.finished, ['orig-123']);
+    });
+  });
+
   group('newestPerSubscription', () {
     test('keeps the newest transaction of each subscription, in first-seen order', () {
       final picked = newestPerSubscription([
@@ -374,10 +469,15 @@ class _FixedAccountState extends AccountStateNotifier {
   _FixedAccountState(this.initial);
 
   final AccountState initial;
+  final List<ProfileFailure> recorded = [];
+  int cleared = 0;
 
   @override
   AccountState build() => initial;
 
   @override
-  Future<void> recordActive() async {}
+  Future<void> recordActive() async => cleared++;
+
+  @override
+  Future<void> recordFailure(ProfileFailure failure) async => recorded.add(failure);
 }

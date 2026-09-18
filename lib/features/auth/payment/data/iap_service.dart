@@ -8,8 +8,10 @@ import 'package:hiddify/features/auth/login/data/session_token_store.dart';
 import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
 import 'package:hiddify/features/auth/payment/data/marketing_offers.dart';
 import 'package:hiddify/features/auth/payment/data/rayn_billing.g.dart';
+import 'package:hiddify/features/auth/payment/model/verify_verdict.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
+import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hiddify/utils/link_parsers.dart';
@@ -85,6 +87,18 @@ enum IapPurchaseOutcome {
   /// already verified and imported. Nothing to do: the notifier stays put, and
   /// a Restore tap reads it as restored.
   alreadySettled,
+
+  /// A verify 200 with `account_status: "expired"`: the subscription has ended
+  /// and nothing was granted. Never "activating". The two variants carry the
+  /// store's reason when it gave one, so the copy can say what to do — update
+  /// the payment method, or nothing after a refund.
+  ended,
+  endedBillingRetry,
+  endedRevoked,
+
+  /// A verify 200 with another `account_status` (suspended, deactivated, …):
+  /// the account cannot receive access, whatever was bought.
+  accountUnavailable,
 }
 
 /// Which store's backend contract this build talks to.
@@ -155,6 +169,10 @@ class IapService with InfraLogger implements RaynBillingEvents {
   final Map<String, String?> _verified = {};
   final Map<String, String> _pendingImports = {};
   final Map<String, IapPurchaseOutcome> _terminal = {};
+
+  /// Transactions whose 200 granted nothing (the subscription had ended, the
+  /// account cannot receive access), so a redelivery answers the same.
+  final Map<String, IapPurchaseOutcome> _ended = {};
 
   /// The wait before each verify retry on a 429, a 5xx or a transport failure
   /// (their §2, the guide's §5.5). A `Retry-After` longer than the rung wins.
@@ -320,6 +338,7 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// the user to tap Restore for exactly that — or report it settled.
   Future<IapPurchaseOutcome> _settleVerified(RaynPurchase purchase) async {
     await _finish(purchase);
+    if (_ended[purchase.purchaseToken] case final ended?) return ended;
     final pending = _pendingImports[purchase.purchaseToken];
     if (pending == null) return IapPurchaseOutcome.alreadySettled;
     loggy.info("retrying the import for an already-verified transaction");
@@ -360,20 +379,57 @@ class IapService with InfraLogger implements RaynBillingEvents {
     } on AuthApiException catch (e) {
       return _settleRefusal(purchase, e);
     }
-    final cryptolink = resp['subscription_url'] as String?;
+    final verdict = VerifyVerdict.parse(resp);
 
-    // 200 means the backend applied the entitlement, and this is the ONLY place
-    // the store may be told the purchase was delivered. Finishing any earlier
-    // discards a purchase the backend never recorded; while a transaction is
-    // unfinished StoreKit keeps redelivering it, which is exactly the retry we
-    // want. A deliberate no-op on Play, where the backend acknowledges.
-    _verified[purchase.purchaseToken] = cryptolink;
+    // 200 means the store answered and the backend applied that answer —
+    // access granted, or "this subscription has ended" — and this is the ONLY
+    // place the store may be told the purchase was delivered. Finishing any
+    // earlier discards a purchase the backend never recorded; while a
+    // transaction is unfinished StoreKit keeps redelivering it, which is
+    // exactly the retry we want. A deliberate no-op on Play, where the backend
+    // acknowledges.
+    _verified[purchase.purchaseToken] = switch (verdict) {
+      VerifyActive(:final link) || VerifyUnknown(:final link) => link,
+      _ => null,
+    };
     await _finish(purchase);
 
-    // Entitlement applied — show the activating screen while provisioning finishes.
-    _outcomes.add(IapPurchaseOutcome.activating);
+    switch (verdict) {
+      case VerifyActive(:final link):
+        // Their §4: access is back the moment the backend says so. The stored
+        // verdict is stale by definition, and waiting for the import to land
+        // kept the expired screen up for a purchase Apple had completed.
+        await _ref.read(accountStateNotifierProvider.notifier).recordActive();
+        return _activate(purchase, link, token);
+      case VerifyUnknown(:final link):
+        // A backend from before `account_status` shipped, or a link that was
+        // not ready in time: the one case where "activating… tap Restore" is
+        // the honest thing to say.
+        return _activate(purchase, link, token);
+      case VerifyEnded(:final storeStatus):
+        final outcome = switch (storeStatus) {
+          StoreStatus.billingRetry => IapPurchaseOutcome.endedBillingRetry,
+          StoreStatus.revoked => IapPurchaseOutcome.endedRevoked,
+          StoreStatus.expired || StoreStatus.unknown => IapPurchaseOutcome.ended,
+        };
+        _ended[purchase.purchaseToken] = outcome;
+        loggy.info("verify: the subscription has ended (${storeStatus.name})");
+        return outcome;
+      case VerifyUnavailable(:final code):
+        _ended[purchase.purchaseToken] = IapPurchaseOutcome.accountUnavailable;
+        loggy.warning("verify: the account cannot receive access ($code)");
+        // The same signal a poll would bring: the post-auth screens switch to
+        // the unavailable mode they already have. Ignored without a profile.
+        await _ref.read(accountStateNotifierProvider.notifier).recordFailure(ProfileFailure.accountUnavailable(code));
+        return IapPurchaseOutcome.accountUnavailable;
+    }
+  }
 
-    final link = (cryptolink != null && cryptolink.isNotEmpty) ? cryptolink : await _fetchCryptolink(token);
+  /// Show the activating screen, then land the link. The fallback fetch
+  /// covers a verify that answered before the link was ready.
+  Future<IapPurchaseOutcome> _activate(RaynPurchase purchase, String? inline, String token) async {
+    _outcomes.add(IapPurchaseOutcome.activating);
+    final link = inline ?? await _fetchCryptolink(token);
     if (link == null || link.isEmpty) return IapPurchaseOutcome.stillProvisioning;
     return _importFor(purchase.purchaseToken, link);
   }
