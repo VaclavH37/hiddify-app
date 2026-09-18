@@ -173,18 +173,22 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
         return LaunchResult(responseCode: ResponseCode.ok)
     }
 
-    func queryActivePurchases(completion: @escaping (Result<[RaynPurchase], Error>) -> Void) {
+    func queryActivePurchases(includeSettled: Bool, completion: @escaping (Result<[RaynPurchase], Error>) -> Void) {
         Task {
-            // `currentEntitlements` covers reinstall and a new device;
-            // `unfinished` covers a verify that was interrupted after payment.
-            // Dart needs both. An entitlement is assumed settled unless it also
-            // turns up unfinished, in which case the second pass corrects it —
-            // and adds anything unfinished that is no longer an entitlement.
+            // `unfinished` covers a verify that was interrupted after payment
+            // and is what every launch replays. `currentEntitlements` covers a
+            // reinstall or a new device and is asked for by Restore only: it
+            // lists transactions the backend already has, and replaying it at
+            // launch was one verify per launch per subscription. An
+            // entitlement is assumed settled unless it also turns up
+            // unfinished, in which case the second pass corrects it.
             var byId: [UInt64: RaynPurchase] = [:]
-            for await result in Transaction.currentEntitlements {
-                guard case .verified(let transaction) = result else { continue }
-                if await RaynBillingHandler.finishIfLocalOnly(transaction) { continue }
-                byId[transaction.id] = RaynBillingHandler.map(transaction, isFinished: true)
+            if includeSettled {
+                for await result in Transaction.currentEntitlements {
+                    guard case .verified(let transaction) = result else { continue }
+                    if await RaynBillingHandler.finishIfLocalOnly(transaction) { continue }
+                    byId[transaction.id] = RaynBillingHandler.map(transaction, isFinished: true)
+                }
             }
             for await result in Transaction.unfinished {
                 guard case .verified(let transaction) = result else { continue }
@@ -197,17 +201,25 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
         }
     }
 
-    func finishPurchase(purchaseToken: String) throws {
-        guard let id = UInt64(purchaseToken) else {
-            NSLog("[RaynBilling] finishPurchase: id is not a transaction id")
+    /// Finishes every unfinished transaction of one subscription. A renewal is
+    /// a new transaction under the same original id, so finishing only the id
+    /// the backend was sent left its older siblings to be redelivered, and
+    /// re-verified, at the next launch. Completes once StoreKit has been told.
+    func finishSubscription(originalId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let id = UInt64(originalId) else {
+            NSLog("[RaynBilling] finishSubscription: not an original transaction id")
+            onMain { completion(.success(())) }
             return
         }
         Task {
+            var finished = 0
             for await result in Transaction.unfinished {
-                guard case .verified(let transaction) = result, transaction.id == id else { continue }
+                guard case .verified(let transaction) = result, transaction.originalID == id else { continue }
                 await transaction.finish()
-                return
+                finished += 1
             }
+            NSLog("[RaynBilling] finished %d transaction(s) of one subscription", finished)
+            self.onMain { completion(.success(())) }
         }
     }
 
@@ -261,7 +273,9 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
                         purchaseToken: "",
                         productId: product.id,
                         state: .pending,
-                        isAcknowledged: false
+                        isAcknowledged: false,
+                        originalId: "",
+                        purchaseDateMs: 0
                     )
                 ],
                 ResponseCode.ok
@@ -366,7 +380,10 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
             state: .purchased,
             // On Apple this means "already settled": we finish a transaction
             // only after a backend 200, so a finished one is already bound.
-            isAcknowledged: isFinished
+            isAcknowledged: isFinished,
+            // The subscription, stable across renewals; also a UInt64.
+            originalId: String(transaction.originalID),
+            purchaseDateMs: Int64(transaction.purchaseDate.timeIntervalSince1970 * 1000)
         )
     }
 

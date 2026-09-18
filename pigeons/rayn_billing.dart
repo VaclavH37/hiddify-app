@@ -14,10 +14,10 @@
 //     @FlutterApi = native pushes the store's purchase events up to Dart.
 //   * There is deliberately NO acknowledge method — the BACKEND acknowledges
 //     during verify. Omitting it makes "client never acknowledges" structural.
-//     `finishPurchase` is not an exception: on Apple, StoreKit redelivers an
-//     unfinished transaction forever, so finishing it is how the client says
-//     "delivered", not "entitled". Dart calls it only after the backend has
-//     returned 200, and the Play implementation is a no-op.
+//     `finishSubscription` is not an exception: on Apple, StoreKit redelivers
+//     an unfinished transaction forever, so finishing it is how the client says
+//     "delivered", not "entitled". Dart calls it only once the backend has
+//     answered, and the Play implementation is a no-op.
 import 'package:pigeon/pigeon.dart';
 
 @ConfigurePigeon(
@@ -101,6 +101,8 @@ class RaynPurchase {
     required this.productId,
     required this.state,
     required this.isAcknowledged,
+    required this.originalId,
+    required this.purchaseDateMs,
   });
 
   /// The store's opaque identifier for this purchase, sent to the backend's
@@ -121,6 +123,18 @@ class RaynPurchase {
   /// a backend 200 — so the meaning carries. Lets the re-verify loop skip
   /// purchases that are already bound.
   final bool isAcknowledged;
+
+  /// The subscription this purchase belongs to, stable across renewals. Apple:
+  /// `String(Transaction.originalID)` — every renewal is a new transaction with
+  /// the same original id, and the backend keys on it. Play: the purchase
+  /// token itself, which a renewal keeps. Dart verifies one transaction per
+  /// subscription and finishes the whole subscription at once.
+  final String originalId;
+
+  /// When the store recorded the purchase, unix milliseconds. Apple:
+  /// `Transaction.purchaseDate`; Play: `Purchase.getPurchaseTime()`. Lets Dart
+  /// pick the newest transaction of a subscription when several are waiting.
+  final int purchaseDateMs;
 }
 
 /// Synchronous result of `launchBillingFlow` — only reports whether the sheet
@@ -160,22 +174,31 @@ abstract class RaynBilling {
   /// comes back through [RaynBillingEvents].
   LaunchResult launchPurchase(String offerToken, String obfuscatedAccountId);
 
-  /// Active subscription purchases — drives re-verify-on-launch and
-  /// restore-on-reinstall. Play: `queryPurchasesAsync`. Apple: the union of
-  /// `Transaction.currentEntitlements` and `Transaction.unfinished`, so an
-  /// interrupted verify is replayed as well as a reinstall.
+  /// Subscription purchases the backend may not have yet, and with
+  /// [includeSettled] the ones it already has.
+  ///
+  /// Without: the purchases whose verify never got its answer — Apple
+  /// `Transaction.unfinished`, Play the purchases the backend has not
+  /// acknowledged. This is the launch replay. With: also the settled ones —
+  /// Apple `Transaction.currentEntitlements`, Play every purchase — which is
+  /// Restore Purchases, and covers a reinstall or a new device. The settled
+  /// set is never replayed at launch: the backend already has those, and each
+  /// replay was one more verify against a 5-per-minute limit.
   @async
-  List<RaynPurchase> queryActivePurchases();
+  List<RaynPurchase> queryActivePurchases(bool includeSettled);
 
-  /// Tell the store this purchase has been delivered.
+  /// Tell the store every unfinished transaction of a subscription has been
+  /// delivered.
   ///
   /// Apple-only in effect. StoreKit redelivers an unfinished transaction
-  /// forever, so it has to be finished once the BACKEND has confirmed it —
-  /// this is delivery confirmation, NOT acknowledgement, and entitlement still
-  /// follows the backend. Dart calls it from exactly one place: immediately
-  /// after `verify` returns 200. Play never acknowledges locally, so its
+  /// forever, so it has to be finished once the BACKEND has answered — this is
+  /// delivery confirmation, NOT acknowledgement, and entitlement still follows
+  /// the backend. Finishing by [RaynPurchase.originalId] rather than one
+  /// transaction id is what stops older renewals of the same subscription
+  /// coming back at the next launch. Play never acknowledges locally, so its
   /// implementation is a deliberate no-op.
-  void finishPurchase(String purchaseToken);
+  @async
+  void finishSubscription(String originalId);
 
   /// Tear down the store connection (e.g. on logout / app dispose).
   void endConnection();

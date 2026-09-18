@@ -235,6 +235,16 @@ struct RaynPurchase: Hashable {
   /// a backend 200 — so the meaning carries. Lets the re-verify loop skip
   /// purchases that are already bound.
   var isAcknowledged: Bool
+  /// The subscription this purchase belongs to, stable across renewals. Apple:
+  /// `String(Transaction.originalID)` — every renewal is a new transaction with
+  /// the same original id, and the backend keys on it. Play: the purchase
+  /// token itself, which a renewal keeps. Dart verifies one transaction per
+  /// subscription and finishes the whole subscription at once.
+  var originalId: String
+  /// When the store recorded the purchase, unix milliseconds. Apple:
+  /// `Transaction.purchaseDate`; Play: `Purchase.getPurchaseTime()`. Lets Dart
+  /// pick the newest transaction of a subscription when several are waiting.
+  var purchaseDateMs: Int64
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -243,12 +253,16 @@ struct RaynPurchase: Hashable {
     let productId = pigeonVar_list[1] as! String
     let state = pigeonVar_list[2] as! RaynPurchaseState
     let isAcknowledged = pigeonVar_list[3] as! Bool
+    let originalId = pigeonVar_list[4] as! String
+    let purchaseDateMs = pigeonVar_list[5] as! Int64
 
     return RaynPurchase(
       purchaseToken: purchaseToken,
       productId: productId,
       state: state,
-      isAcknowledged: isAcknowledged
+      isAcknowledged: isAcknowledged,
+      originalId: originalId,
+      purchaseDateMs: purchaseDateMs
     )
   }
   func toList() -> [Any?] {
@@ -257,6 +271,8 @@ struct RaynPurchase: Hashable {
       productId,
       state,
       isAcknowledged,
+      originalId,
+      purchaseDateMs,
     ]
   }
   static func == (lhs: RaynPurchase, rhs: RaynPurchase) -> Bool {
@@ -386,20 +402,28 @@ protocol RaynBilling {
   /// fabricated value. Not @async — it returns immediately; the purchase
   /// comes back through [RaynBillingEvents].
   func launchPurchase(offerToken: String, obfuscatedAccountId: String) throws -> LaunchResult
-  /// Active subscription purchases — drives re-verify-on-launch and
-  /// restore-on-reinstall. Play: `queryPurchasesAsync`. Apple: the union of
-  /// `Transaction.currentEntitlements` and `Transaction.unfinished`, so an
-  /// interrupted verify is replayed as well as a reinstall.
-  func queryActivePurchases(completion: @escaping (Result<[RaynPurchase], Error>) -> Void)
-  /// Tell the store this purchase has been delivered.
+  /// Subscription purchases the backend may not have yet, and with
+  /// [includeSettled] the ones it already has.
+  ///
+  /// Without: the purchases whose verify never got its answer — Apple
+  /// `Transaction.unfinished`, Play the purchases the backend has not
+  /// acknowledged. This is the launch replay. With: also the settled ones —
+  /// Apple `Transaction.currentEntitlements`, Play every purchase — which is
+  /// Restore Purchases, and covers a reinstall or a new device. The settled
+  /// set is never replayed at launch: the backend already has those, and each
+  /// replay was one more verify against a 5-per-minute limit.
+  func queryActivePurchases(includeSettled: Bool, completion: @escaping (Result<[RaynPurchase], Error>) -> Void)
+  /// Tell the store every unfinished transaction of a subscription has been
+  /// delivered.
   ///
   /// Apple-only in effect. StoreKit redelivers an unfinished transaction
-  /// forever, so it has to be finished once the BACKEND has confirmed it —
-  /// this is delivery confirmation, NOT acknowledgement, and entitlement still
-  /// follows the backend. Dart calls it from exactly one place: immediately
-  /// after `verify` returns 200. Play never acknowledges locally, so its
+  /// forever, so it has to be finished once the BACKEND has answered — this is
+  /// delivery confirmation, NOT acknowledgement, and entitlement still follows
+  /// the backend. Finishing by [RaynPurchase.originalId] rather than one
+  /// transaction id is what stops older renewals of the same subscription
+  /// coming back at the next launch. Play never acknowledges locally, so its
   /// implementation is a deliberate no-op.
-  func finishPurchase(purchaseToken: String) throws
+  func finishSubscription(originalId: String, completion: @escaping (Result<Void, Error>) -> Void)
   /// Tear down the store connection (e.g. on logout / app dispose).
   func endConnection() throws
 }
@@ -471,14 +495,22 @@ class RaynBillingSetup {
     } else {
       launchPurchaseChannel.setMessageHandler(nil)
     }
-    /// Active subscription purchases — drives re-verify-on-launch and
-    /// restore-on-reinstall. Play: `queryPurchasesAsync`. Apple: the union of
-    /// `Transaction.currentEntitlements` and `Transaction.unfinished`, so an
-    /// interrupted verify is replayed as well as a reinstall.
+    /// Subscription purchases the backend may not have yet, and with
+    /// [includeSettled] the ones it already has.
+    ///
+    /// Without: the purchases whose verify never got its answer — Apple
+    /// `Transaction.unfinished`, Play the purchases the backend has not
+    /// acknowledged. This is the launch replay. With: also the settled ones —
+    /// Apple `Transaction.currentEntitlements`, Play every purchase — which is
+    /// Restore Purchases, and covers a reinstall or a new device. The settled
+    /// set is never replayed at launch: the backend already has those, and each
+    /// replay was one more verify against a 5-per-minute limit.
     let queryActivePurchasesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.queryActivePurchases\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      queryActivePurchasesChannel.setMessageHandler { _, reply in
-        api.queryActivePurchases { result in
+      queryActivePurchasesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let includeSettledArg = args[0] as! Bool
+        api.queryActivePurchases(includeSettled: includeSettledArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -490,28 +522,32 @@ class RaynBillingSetup {
     } else {
       queryActivePurchasesChannel.setMessageHandler(nil)
     }
-    /// Tell the store this purchase has been delivered.
+    /// Tell the store every unfinished transaction of a subscription has been
+    /// delivered.
     ///
     /// Apple-only in effect. StoreKit redelivers an unfinished transaction
-    /// forever, so it has to be finished once the BACKEND has confirmed it —
-    /// this is delivery confirmation, NOT acknowledgement, and entitlement still
-    /// follows the backend. Dart calls it from exactly one place: immediately
-    /// after `verify` returns 200. Play never acknowledges locally, so its
+    /// forever, so it has to be finished once the BACKEND has answered — this is
+    /// delivery confirmation, NOT acknowledgement, and entitlement still follows
+    /// the backend. Finishing by [RaynPurchase.originalId] rather than one
+    /// transaction id is what stops older renewals of the same subscription
+    /// coming back at the next launch. Play never acknowledges locally, so its
     /// implementation is a deliberate no-op.
-    let finishPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.finishPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    let finishSubscriptionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.finishSubscription\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      finishPurchaseChannel.setMessageHandler { message, reply in
+      finishSubscriptionChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
-        let purchaseTokenArg = args[0] as! String
-        do {
-          try api.finishPurchase(purchaseToken: purchaseTokenArg)
-          reply(wrapResult(nil))
-        } catch {
-          reply(wrapError(error))
+        let originalIdArg = args[0] as! String
+        api.finishSubscription(originalId: originalIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
         }
       }
     } else {
-      finishPurchaseChannel.setMessageHandler(nil)
+      finishSubscriptionChannel.setMessageHandler(nil)
     }
     /// Tear down the store connection (e.g. on logout / app dispose).
     let endConnectionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.rayn.RaynBilling.endConnection\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)

@@ -90,6 +90,8 @@ RaynPurchase _purchase() => RaynPurchase(
   productId: 'rayn_premium',
   state: RaynPurchaseState.purchased,
   isAcknowledged: false,
+  originalId: 'orig-123',
+  purchaseDateMs: 1758000000000,
 );
 
 /// Records the two persistence calls the import poll can make and answers

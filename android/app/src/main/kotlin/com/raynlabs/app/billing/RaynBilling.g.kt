@@ -209,7 +209,21 @@ data class RaynPurchase (
    * a backend 200 — so the meaning carries. Lets the re-verify loop skip
    * purchases that are already bound.
    */
-  val isAcknowledged: Boolean
+  val isAcknowledged: Boolean,
+  /**
+   * The subscription this purchase belongs to, stable across renewals. Apple:
+   * `String(Transaction.originalID)` — every renewal is a new transaction with
+   * the same original id, and the backend keys on it. Play: the purchase
+   * token itself, which a renewal keeps. Dart verifies one transaction per
+   * subscription and finishes the whole subscription at once.
+   */
+  val originalId: String,
+  /**
+   * When the store recorded the purchase, unix milliseconds. Apple:
+   * `Transaction.purchaseDate`; Play: `Purchase.getPurchaseTime()`. Lets Dart
+   * pick the newest transaction of a subscription when several are waiting.
+   */
+  val purchaseDateMs: Long
 )
  {
   companion object {
@@ -218,7 +232,9 @@ data class RaynPurchase (
       val productId = pigeonVar_list[1] as String
       val state = pigeonVar_list[2] as RaynPurchaseState
       val isAcknowledged = pigeonVar_list[3] as Boolean
-      return RaynPurchase(purchaseToken, productId, state, isAcknowledged)
+      val originalId = pigeonVar_list[4] as String
+      val purchaseDateMs = pigeonVar_list[5] as Long
+      return RaynPurchase(purchaseToken, productId, state, isAcknowledged, originalId, purchaseDateMs)
     }
   }
   fun toList(): List<Any?> {
@@ -227,6 +243,8 @@ data class RaynPurchase (
       productId,
       state,
       isAcknowledged,
+      originalId,
+      purchaseDateMs,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -367,23 +385,31 @@ interface RaynBilling {
    */
   fun launchPurchase(offerToken: String, obfuscatedAccountId: String): LaunchResult
   /**
-   * Active subscription purchases — drives re-verify-on-launch and
-   * restore-on-reinstall. Play: `queryPurchasesAsync`. Apple: the union of
-   * `Transaction.currentEntitlements` and `Transaction.unfinished`, so an
-   * interrupted verify is replayed as well as a reinstall.
+   * Subscription purchases the backend may not have yet, and with
+   * [includeSettled] the ones it already has.
+   *
+   * Without: the purchases whose verify never got its answer — Apple
+   * `Transaction.unfinished`, Play the purchases the backend has not
+   * acknowledged. This is the launch replay. With: also the settled ones —
+   * Apple `Transaction.currentEntitlements`, Play every purchase — which is
+   * Restore Purchases, and covers a reinstall or a new device. The settled
+   * set is never replayed at launch: the backend already has those, and each
+   * replay was one more verify against a 5-per-minute limit.
    */
-  fun queryActivePurchases(callback: (Result<List<RaynPurchase>>) -> Unit)
+  fun queryActivePurchases(includeSettled: Boolean, callback: (Result<List<RaynPurchase>>) -> Unit)
   /**
-   * Tell the store this purchase has been delivered.
+   * Tell the store every unfinished transaction of a subscription has been
+   * delivered.
    *
    * Apple-only in effect. StoreKit redelivers an unfinished transaction
-   * forever, so it has to be finished once the BACKEND has confirmed it —
-   * this is delivery confirmation, NOT acknowledgement, and entitlement still
-   * follows the backend. Dart calls it from exactly one place: immediately
-   * after `verify` returns 200. Play never acknowledges locally, so its
+   * forever, so it has to be finished once the BACKEND has answered — this is
+   * delivery confirmation, NOT acknowledgement, and entitlement still follows
+   * the backend. Finishing by [RaynPurchase.originalId] rather than one
+   * transaction id is what stops older renewals of the same subscription
+   * coming back at the next launch. Play never acknowledges locally, so its
    * implementation is a deliberate no-op.
    */
-  fun finishPurchase(purchaseToken: String)
+  fun finishSubscription(originalId: String, callback: (Result<Unit>) -> Unit)
   /** Tear down the store connection (e.g. on logout / app dispose). */
   fun endConnection()
 
@@ -455,8 +481,10 @@ interface RaynBilling {
       run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.queryActivePurchases$separatedMessageChannelSuffix", codec)
         if (api != null) {
-          channel.setMessageHandler { _, reply ->
-            api.queryActivePurchases{ result: Result<List<RaynPurchase>> ->
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val includeSettledArg = args[0] as Boolean
+            api.queryActivePurchases(includeSettledArg) { result: Result<List<RaynPurchase>> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(RaynBillingPigeonUtils.wrapError(error))
@@ -471,18 +499,19 @@ interface RaynBilling {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.finishPurchase$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.rayn.RaynBilling.finishSubscription$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
-            val purchaseTokenArg = args[0] as String
-            val wrapped: List<Any?> = try {
-              api.finishPurchase(purchaseTokenArg)
-              listOf(null)
-            } catch (exception: Throwable) {
-              RaynBillingPigeonUtils.wrapError(exception)
+            val originalIdArg = args[0] as String
+            api.finishSubscription(originalIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(RaynBillingPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(RaynBillingPigeonUtils.wrapResult(null))
+              }
             }
-            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)

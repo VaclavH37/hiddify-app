@@ -117,7 +117,7 @@ IapService iapService(Ref ref) {
 /// listens for purchases by implementing [RaynBillingEvents]. The backend
 /// acknowledges during verify, so this layer never acknowledges or grants access
 /// off the local receipt — entitlement always follows the backend account state.
-/// Apple adds one step, [RaynBilling.finishPurchase]: it tells StoreKit to stop
+/// Apple adds one step, [RaynBilling.finishSubscription]: it tells StoreKit to stop
 /// redelivering a transaction the backend has already accepted. That is delivery
 /// confirmation, not entitlement, and it happens only after a verify 200.
 ///
@@ -194,7 +194,10 @@ class IapService with InfraLogger implements RaynBillingEvents {
   /// was found (each pushes its result on [outcomes]).
   Future<bool> restore() async {
     if (!_supported) return false;
-    final purchases = await _billing.queryActivePurchases();
+    // The settled purchases too: this is still the union Restore and the
+    // launch replay both used. The launch replay stops asking for them in the
+    // coordinator change that follows this contract change.
+    final purchases = await _billing.queryActivePurchases(true);
     final active = purchases.where((p) => p.state == RaynPurchaseState.purchased).toList();
     final settledHere = await _hasUsableProfile();
     for (final p in active) {
@@ -369,9 +372,9 @@ class IapService with InfraLogger implements RaynBillingEvents {
   Future<void> _finish(RaynPurchase purchase) async {
     if (!_supported) return;
     try {
-      await _billing.finishPurchase(purchase.purchaseToken);
+      await _billing.finishSubscription(purchase.originalId);
     } catch (e) {
-      loggy.warning("finishPurchase failed: ${e.runtimeType}");
+      loggy.warning("finishSubscription failed: ${e.runtimeType}");
     }
   }
 

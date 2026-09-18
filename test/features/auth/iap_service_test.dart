@@ -59,7 +59,7 @@ class _FakeBilling implements RaynBilling {
   final String pigeonVar_messageChannelSuffix = '';
 
   @override
-  Future<void> finishPurchase(String purchaseToken) async => finished.add(purchaseToken);
+  Future<void> finishSubscription(String originalId) async => finished.add(originalId);
 
   @override
   Future<BillingConnState> connect() async => BillingConnState.connected;
@@ -72,18 +72,20 @@ class _FakeBilling implements RaynBilling {
       LaunchResult(responseCode: 0);
 
   @override
-  Future<List<RaynPurchase>> queryActivePurchases() async => const [];
+  Future<List<RaynPurchase>> queryActivePurchases(bool includeSettled) async => const [];
 
   @override
   Future<void> endConnection() async {}
 }
 
 RaynPurchase _purchase({RaynPurchaseState state = RaynPurchaseState.purchased}) => RaynPurchase(
-      purchaseToken: 'pt-123',
-      productId: 'rayn_premium',
-      state: state,
-      isAcknowledged: false,
-    );
+  purchaseToken: 'pt-123',
+  productId: 'rayn_premium',
+  state: state,
+  isAcknowledged: false,
+  originalId: 'orig-123',
+  purchaseDateMs: 1758000000000,
+);
 
 /// Drive one `onPurchasesUpdated` through a real [IapService] (with fakes) and
 /// return the first outcome it emits.
@@ -326,7 +328,7 @@ void main() {
   group('finishPurchase timing', () {
     test('called exactly once, with the transaction id, after a verify 200', () async {
       final t = await _trace(store: IapStore.appStore);
-      expect(t.finished, ['pt-123']);
+      expect(t.finished, ['orig-123'], reason: 'the whole subscription is finished, by its original id');
     });
 
     for (final (label, error) in const <(String, AuthApiException)>[

@@ -190,7 +190,7 @@ class RaynBillingHandler : FlutterPlugin, RaynBilling {
         return LaunchResult(result.responseCode.toLong(), result.debugMessage)
     }
 
-    override fun queryActivePurchases(callback: (Result<List<RaynPurchase>>) -> Unit) {
+    override fun queryActivePurchases(includeSettled: Boolean, callback: (Result<List<RaynPurchase>>) -> Unit) {
         val client = billingClient
         if (client == null || !client.isReady) {
             main.post { callback(Result.success(emptyList())) }
@@ -201,7 +201,11 @@ class RaynBillingHandler : FlutterPlugin, RaynBilling {
             .build()
         client.queryPurchasesAsync(params) { result, purchases ->
             val mapped = if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                purchases.map { it.toRayn() }
+                // Settled on Play means acknowledged, which only the backend
+                // does, during verify. Without includeSettled this is the
+                // launch replay: purchases whose verify never got its answer,
+                // which Google refunds after three days if nobody acknowledges.
+                purchases.filter { includeSettled || !it.isAcknowledged }.map { it.toRayn() }
             } else {
                 Log.w(TAG, "queryActivePurchases failed: ${result.responseCode}")
                 emptyList()
@@ -220,7 +224,9 @@ class RaynBillingHandler : FlutterPlugin, RaynBilling {
      * verify. Acknowledging from the client would double-acknowledge, so this
      * stays empty on purpose — see the invariant in pigeons/rayn_billing.dart.
      */
-    override fun finishPurchase(purchaseToken: String) = Unit
+    override fun finishSubscription(originalId: String, callback: (Result<Unit>) -> Unit) {
+        callback(Result.success(Unit))
+    }
 
     override fun endConnection() {
         billingClient?.endConnection()
@@ -237,5 +243,9 @@ class RaynBillingHandler : FlutterPlugin, RaynBilling {
             else -> RaynPurchaseState.UNSPECIFIED
         },
         isAcknowledged = isAcknowledged,
+        // A Play subscription keeps its token across renewals, so the token is
+        // the subscription id too.
+        originalId = purchaseToken,
+        purchaseDateMs = purchaseTime,
     )
 }

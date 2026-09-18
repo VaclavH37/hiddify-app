@@ -71,7 +71,10 @@ void main() {
 
     expect(h.client.verifies, 1);
     expect(h.outcomes, [IapPurchaseOutcome.activating, IapPurchaseOutcome.imported, IapPurchaseOutcome.alreadySettled]);
-    expect(h.billing.finished, ['pt-123', 'pt-123'], reason: 'finishing is idempotent and repeated on a redelivery');
+    expect(h.billing.finished, [
+      'orig-123',
+      'orig-123',
+    ], reason: 'finishing is idempotent and repeated on a redelivery');
   });
 
   test('two deliveries in the same instant produce one verify and one outcome', () async {
@@ -155,6 +158,8 @@ RaynPurchase _purchase({bool acknowledged = false}) => RaynPurchase(
   productId: 'rayn_premium',
   state: RaynPurchaseState.purchased,
   isAcknowledged: acknowledged,
+  originalId: 'orig-123',
+  purchaseDateMs: 1758000000000,
 );
 
 class _CountingClient extends AuthApiClient {
@@ -194,7 +199,7 @@ class _FakeBilling implements RaynBilling {
   final String pigeonVar_messageChannelSuffix = '';
 
   @override
-  Future<void> finishPurchase(String purchaseToken) async => finished.add(purchaseToken);
+  Future<void> finishSubscription(String originalId) async => finished.add(originalId);
 
   @override
   Future<BillingConnState> connect() async => BillingConnState.connected;
@@ -207,7 +212,7 @@ class _FakeBilling implements RaynBilling {
       LaunchResult(responseCode: 0);
 
   @override
-  Future<List<RaynPurchase>> queryActivePurchases() async => active;
+  Future<List<RaynPurchase>> queryActivePurchases(bool includeSettled) async => active;
 
   @override
   Future<void> endConnection() async {}
