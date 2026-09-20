@@ -67,17 +67,24 @@ class _WindowClosingDialogState extends ConsumerState<WindowClosingDialog> {
             // A list tile rather than a bare checkbox beside a label: the whole
             // row is the target, Space toggles it, and a screen reader hears
             // one checkbox with its label.
-            CheckboxListTile(
-              value: _remember,
-              onChanged: (value) => setState(() => _remember = value ?? _remember),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
+            //
+            // The gap comes from a ListTileTheme, not from the tile's own
+            // `horizontalTitleGap`: CheckboxListTile only gained that parameter
+            // in a later Flutter than the iOS build machine runs, and the
+            // theme has carried it since long before either.
+            ListTileTheme.merge(
               horizontalTitleGap: RaynSpacing.sm,
-              visualDensity: VisualDensity.compact,
-              dense: true,
-              title: Text(
-                t.dialogs.windowClosing.remember,
-                style: RaynTypography.body.copyWith(fontWeight: FontWeight.w400, color: palette.textSecondary),
+              child: CheckboxListTile(
+                value: _remember,
+                onChanged: (value) => setState(() => _remember = value ?? _remember),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                dense: true,
+                title: Text(
+                  t.dialogs.windowClosing.remember,
+                  style: RaynTypography.body.copyWith(fontWeight: FontWeight.w400, color: palette.textSecondary),
+                ),
               ),
             ),
           ],
