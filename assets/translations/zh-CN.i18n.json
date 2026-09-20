@@ -10,7 +10,6 @@
     "addToClipboard": "添加到剪贴板",
     "quit": "退出",
     "notSet": "未设置",
-    "hide": "隐藏",
     "exit": "退出",
     "reset": "重置",
     "unknown": "未知",
@@ -190,7 +189,12 @@
     },
     "windowClosing": {
       "askEachTime": "每次询问",
-      "alertMessage": "隐藏还是退出应用程序？",
+      "title": "让 Rayn VPN 继续运行吗？",
+      "connectedTray": "它会在系统托盘中保持连接。退出将断开连接并关闭应用。",
+      "connectedMenuBar": "它会在菜单栏中保持连接。退出将断开连接并关闭应用。",
+      "idleTray": "它会留在系统托盘中。退出将完全关闭应用。",
+      "idleMenuBar": "它会留在菜单栏中。退出将完全关闭应用。",
+      "keepRunning": "继续运行",
       "remember": "记住我的选择"
     }
   },

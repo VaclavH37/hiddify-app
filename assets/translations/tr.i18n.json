@@ -10,7 +10,6 @@
     "addToClipboard": "Panoya ekle",
     "quit": "Çık",
     "notSet": "Ayarlanmadı",
-    "hide": "Gizle",
     "exit": "Çıkış",
     "reset": "Sıfırla",
     "unknown": "Bilinmeyen",
@@ -190,7 +189,12 @@
     },
     "windowClosing": {
       "askEachTime": "Her seferinde sor",
-      "alertMessage": "Uygulama gizlensin mi, kapatılsın mı?",
+      "title": "Rayn VPN çalışmaya devam etsin mi?",
+      "connectedTray": "Sistem tepsisinde bağlı kalır. Çıkış, bağlantıyı keser ve uygulamayı kapatır.",
+      "connectedMenuBar": "Menü çubuğunda bağlı kalır. Çıkış, bağlantıyı keser ve uygulamayı kapatır.",
+      "idleTray": "Sistem tepsisinde kalır. Çıkış, uygulamayı tamamen kapatır.",
+      "idleMenuBar": "Menü çubuğunda kalır. Çıkış, uygulamayı tamamen kapatır.",
+      "keepRunning": "Çalışmaya devam et",
       "remember": "Seçimimi hatırla"
     }
   },

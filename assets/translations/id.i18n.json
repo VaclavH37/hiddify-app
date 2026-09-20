@@ -10,7 +10,6 @@
     "addToClipboard": "Tambah ke papan klip",
     "quit": "Keluar",
     "notSet": "Belum diatur",
-    "hide": "Sembunyikan",
     "exit": "Keluar",
     "reset": "Setel ulang",
     "unknown": "Tidak dikenal",
@@ -190,7 +189,12 @@
     },
     "windowClosing": {
       "askEachTime": "Tanyakan setiap kali",
-      "alertMessage": "Sembunyikan atau keluar dari aplikasi?",
+      "title": "Biarkan Rayn VPN tetap berjalan?",
+      "connectedTray": "Rayn VPN tetap terhubung di baki sistem. Keluar akan memutus koneksi dan menutupnya.",
+      "connectedMenuBar": "Rayn VPN tetap terhubung di bilah menu. Keluar akan memutus koneksi dan menutupnya.",
+      "idleTray": "Rayn VPN tetap ada di baki sistem. Keluar akan menutupnya sepenuhnya.",
+      "idleMenuBar": "Rayn VPN tetap ada di bilah menu. Keluar akan menutupnya sepenuhnya.",
+      "keepRunning": "Tetap berjalan",
       "remember": "Ingat pilihan saya"
     }
   },

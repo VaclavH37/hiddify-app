@@ -1,11 +1,27 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/actions_at_closing.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
+import 'package:hiddify/core/theme/rayn_palette.dart';
+import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/theme/rayn_typography.dart';
+import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+/// Asked when the desktop window is closed and no choice is remembered.
+///
+/// The question is about the VPN, not the window. Staying in the tray leaves
+/// the tunnel exactly as it is; exiting disconnects. The dialog this replaces
+/// ("Hide or exit the application?") named neither consequence, and its text
+/// button read "Close" while it quit the app and dropped the connection.
+///
+/// One sentence says what each choice does, worded for the connection state
+/// and for where the platform keeps a background app. Keeping the app running
+/// is the amber primary and takes Enter; Escape or a click outside cancels the
+/// close. The surface, corners and type come from the dialog theme.
 class WindowClosingDialog extends ConsumerStatefulWidget {
   const WindowClosingDialog({super.key});
 
@@ -14,54 +30,75 @@ class WindowClosingDialog extends ConsumerStatefulWidget {
 }
 
 class _WindowClosingDialogState extends ConsumerState<WindowClosingDialog> {
-  bool remember = false;
+  bool _remember = false;
+
+  Future<void> _settle(ActionsAtClosing choice) async {
+    if (_remember) {
+      await ref.read(Preferences.actionAtClose.notifier).update(choice);
+    }
+    final window = ref.read(windowNotifierProvider.notifier);
+    if (choice == ActionsAtClosing.exit) {
+      await window.exit();
+      return;
+    }
+    if (mounted) Navigator.of(context).pop();
+    await window.hide();
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = ref.watch(translationsProvider).requireValue;
+    final palette = context.rayn;
+    final connected = ref.watch(connectionNotifierProvider.select((v) => v.valueOrNull?.isConnected ?? false));
 
     return AlertDialog(
-      title: Text(t.dialogs.windowClosing.alertMessage),
-      content: GestureDetector(
-        onTap: () => setState(() {
-          remember = !remember;
-        }),
-        behavior: HitTestBehavior.translucent,
-        child: Row(
+      titlePadding: const EdgeInsets.fromLTRB(RaynSpacing.xl, RaynSpacing.xl, RaynSpacing.xl, 0),
+      contentPadding: const EdgeInsets.fromLTRB(RaynSpacing.xl, RaynSpacing.md, RaynSpacing.xl, 0),
+      actionsPadding: const EdgeInsets.fromLTRB(RaynSpacing.lg, RaynSpacing.sm, RaynSpacing.lg, RaynSpacing.lg),
+      title: Text(t.dialogs.windowClosing.title),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Checkbox(
-              value: remember,
-              onChanged: (v) {
-                remember = v ?? remember;
-                setState(() {});
-              },
+            Text(windowClosingBody(t, connected: connected, menuBar: Platform.isMacOS)),
+            const SizedBox(height: RaynSpacing.sm),
+            // A list tile rather than a bare checkbox beside a label: the whole
+            // row is the target, Space toggles it, and a screen reader hears
+            // one checkbox with its label.
+            CheckboxListTile(
+              value: _remember,
+              onChanged: (value) => setState(() => _remember = value ?? _remember),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              horizontalTitleGap: RaynSpacing.sm,
+              visualDensity: VisualDensity.compact,
+              dense: true,
+              title: Text(
+                t.dialogs.windowClosing.remember,
+                style: RaynTypography.body.copyWith(fontWeight: FontWeight.w400, color: palette.textSecondary),
+              ),
             ),
-            const SizedBox(width: 16),
-            Text(t.dialogs.windowClosing.remember, style: const TextStyle(fontSize: 16)),
           ],
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () {
-            if (remember) {
-              ref.read(Preferences.actionAtClose.notifier).update(ActionsAtClosing.exit);
-            }
-            ref.read(windowNotifierProvider.notifier).exit();
-          },
-          child: Text(t.common.close),
-        ),
+        TextButton(onPressed: () => _settle(ActionsAtClosing.exit), child: Text(t.common.exit)),
         FilledButton(
-          onPressed: () async {
-            if (remember) {
-              ref.read(Preferences.actionAtClose.notifier).update(ActionsAtClosing.hide);
-            }
-            context.pop(false);
-            await ref.read(windowNotifierProvider.notifier).hide();
-          },
-          child: Text(t.common.hide),
+          autofocus: true,
+          onPressed: () => _settle(ActionsAtClosing.hide),
+          child: Text(t.dialogs.windowClosing.keepRunning),
         ),
       ],
     );
   }
+}
+
+/// What each choice does, in one sentence pair. [menuBar] is macOS, where a
+/// background app lives in the menu bar; everywhere else it is the system tray.
+String windowClosingBody(Translations t, {required bool connected, required bool menuBar}) {
+  final copy = t.dialogs.windowClosing;
+  if (connected) return menuBar ? copy.connectedMenuBar : copy.connectedTray;
+  return menuBar ? copy.idleMenuBar : copy.idleTray;
 }

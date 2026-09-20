@@ -5,9 +5,11 @@ enum ActionsAtClosing {
   hide,
   exit;
 
+  /// The same words the closing dialog uses, so a remembered choice reads in
+  /// Settings the way it read when it was made.
   String present(TranslationsEn t) => switch (this) {
     ask => t.dialogs.windowClosing.askEachTime,
-    hide => t.common.hide,
+    hide => t.dialogs.windowClosing.keepRunning,
     exit => t.common.exit,
   };
 }

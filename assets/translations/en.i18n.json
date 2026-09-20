@@ -10,7 +10,6 @@
     "addToClipboard": "Add to clipboard",
     "quit": "Quit",
     "notSet": "Not set",
-    "hide": "Hide",
     "exit": "Exit",
     "reset": "Reset",
     "unknown": "Unknown",
@@ -374,7 +373,12 @@
     },
     "windowClosing": {
       "askEachTime": "Ask each time",
-      "alertMessage": "Hide or exit the application?",
+      "title": "Keep Rayn VPN running?",
+      "connectedTray": "It stays connected in the system tray. Exit disconnects and closes it.",
+      "connectedMenuBar": "It stays connected in the menu bar. Exit disconnects and closes it.",
+      "idleTray": "It stays in the system tray. Exit closes it completely.",
+      "idleMenuBar": "It stays in the menu bar. Exit closes it completely.",
+      "keepRunning": "Keep running",
       "remember": "Remember my choice"
     }
   },

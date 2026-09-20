@@ -10,7 +10,6 @@
     "addToClipboard": "Adicionar à área de transferência",
     "quit": "Sair",
     "notSet": "Não definido",
-    "hide": "Ocultar",
     "exit": "Sair",
     "reset": "Redefinir",
     "unknown": "Desconhecido",
@@ -190,7 +189,12 @@
     },
     "windowClosing": {
       "askEachTime": "Perguntar sempre",
-      "alertMessage": "Ocultar ou sair do aplicativo?",
+      "title": "Manter o Rayn VPN em execução?",
+      "connectedTray": "Ele continua conectado na bandeja do sistema. Sair desconecta e fecha o app.",
+      "connectedMenuBar": "Ele continua conectado na barra de menus. Sair desconecta e fecha o app.",
+      "idleTray": "Ele continua na bandeja do sistema. Sair fecha o app por completo.",
+      "idleMenuBar": "Ele continua na barra de menus. Sair fecha o app por completo.",
+      "keepRunning": "Manter em execução",
       "remember": "Lembrar minha escolha"
     }
   },

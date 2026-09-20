@@ -10,7 +10,6 @@
     "addToClipboard": "Añadir al portapapeles",
     "quit": "Salir",
     "notSet": "No establecido",
-    "hide": "Ocultar",
     "exit": "Salir",
     "reset": "Restablecer",
     "unknown": "Desconocido",
@@ -190,7 +189,12 @@
     },
     "windowClosing": {
       "askEachTime": "Preguntar cada vez",
-      "alertMessage": "¿Ocultar o salir de la aplicación?",
+      "title": "¿Mantener Rayn VPN en ejecución?",
+      "connectedTray": "Seguirá conectado en la bandeja del sistema. Salir lo desconecta y lo cierra.",
+      "connectedMenuBar": "Seguirá conectado en la barra de menús. Salir lo desconecta y lo cierra.",
+      "idleTray": "Seguirá en la bandeja del sistema. Salir lo cierra por completo.",
+      "idleMenuBar": "Seguirá en la barra de menús. Salir lo cierra por completo.",
+      "keepRunning": "Mantener en ejecución",
       "remember": "Recordar mi elección"
     }
   },

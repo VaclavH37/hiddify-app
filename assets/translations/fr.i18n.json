@@ -10,7 +10,6 @@
     "addToClipboard": "Ajouter au presse-papiers",
     "quit": "Quitter",
     "notSet": "Non défini",
-    "hide": "Masquer",
     "exit": "Quitter",
     "reset": "Réinitialiser",
     "unknown": "Inconnu",
@@ -190,7 +189,12 @@
     },
     "windowClosing": {
       "askEachTime": "Demander à chaque fois",
-      "alertMessage": "Masquer ou quitter l'application ?",
+      "title": "Laisser Rayn VPN actif ?",
+      "connectedTray": "Il reste connecté dans la zone de notification. Quitter le déconnecte et le ferme.",
+      "connectedMenuBar": "Il reste connecté dans la barre des menus. Quitter le déconnecte et le ferme.",
+      "idleTray": "Il reste dans la zone de notification. Quitter le ferme complètement.",
+      "idleMenuBar": "Il reste dans la barre des menus. Quitter le ferme complètement.",
+      "keepRunning": "Laisser actif",
       "remember": "Mémoriser mon choix"
     }
   },
