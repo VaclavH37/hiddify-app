@@ -245,6 +245,12 @@ abstract class ConfigOptions {
       // legitimate reason to turn it off, and the tile carried no warning that doing
       // so opened a leak. Read by the core only when the tun inbound is built.
       strictRoute: true,
+      // Test builds only: keeps the listed prefixes out of the tunnel so a remote
+      // test Mac keeps its screen-sharing session when the tunnel comes up. A
+      // shipped build always sends an empty list, and the key is not in
+      // ProfileParser.allowedOverrideConfigs, so no subscription can set it
+      // either. See TestRouteExcludeAddress in hiddify_option.go.
+      testRouteExcludeAddress: Constants.diagnosticsBuild ? Constants.testRouteExcludeAddress : const [],
       connectionTestUrl: ref.watch(connectionTestUrl),
       urlTestInterval: ref.watch(urlTestInterval),
       enableClashApi: true,

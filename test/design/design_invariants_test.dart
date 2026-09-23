@@ -370,6 +370,20 @@ void main() {
       });
     });
 
+    test('the test-only tunnel exclusion is gated on a diagnostics build', () {
+      // RAYN_TEST_ROUTE_EXCLUDE punches a hole in the tunnel so a remote test
+      // Mac keeps its screen-sharing session. A shipped build must never send
+      // it, whatever the define says, so the gate lives in the provider and is
+      // pinned here like the log file below.
+      expect(
+        source.contains(
+          'testRouteExcludeAddress: Constants.diagnosticsBuild ? Constants.testRouteExcludeAddress : const []',
+        ),
+        isTrue,
+        reason: 'testRouteExcludeAddress must be empty unless Constants.diagnosticsBuild.',
+      );
+    });
+
     test('log level is compiled down to warn in release builds', () {
       // Both halves are load-bearing. Hiding the picker alone would leave a
       // previously-stored `trace` flowing to the core forever, since the level is

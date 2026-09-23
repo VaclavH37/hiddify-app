@@ -35,6 +35,9 @@ class SingboxConfigOption with _$SingboxConfigOption {
     required TunImplementation tunImplementation,
     required int mtu,
     required bool strictRoute,
+    /// Prefixes kept out of the tun. Test builds only, and empty in every
+    /// shipped build; see `Constants.testRouteExcludeAddress`.
+    required List<String> testRouteExcludeAddress,
     required String connectionTestUrl,
     @IntervalInSecondsConverter() required Duration urlTestInterval,
     required bool enableClashApi,

@@ -74,6 +74,7 @@ FF_ARTIFACT_NAME := RaynVPN-{{build_name}}+{{build_number}}-{{platform}}.{{ext}}
 BINDIR=hiddify-core$(SEP)bin
 ANDROID_OUT=android$(SEP)app$(SEP)libs
 IOS_OUT=ios$(SEP)Frameworks
+MACOS_OUT=macos$(SEP)Frameworks
 DESKTOP_OUT=hiddify-core$(SEP)bin
 GEO_ASSETS_DIR=assets$(SEP)core
 
@@ -811,8 +812,18 @@ build-windows-libs:
 build-linux-libs:
 	make -C hiddify-core -f Makefile linux-amd64 EXTRA_TAGS="$(EXTRA_TAGS)"
 
+# macOS gets its own RaynCore.xcframework (one universal slice), separate from
+# the iOS one, so macOS work never rebuilds the tested iOS core. Scratch is
+# cleared first for the same reason as build-ios-libs below: gomobile refuses to
+# overwrite headers an interrupted bind left behind, and a bind that fails after
+# writing the framework must not leave a stale one for the mv to ship. Scoped to
+# build/macos* so an iOS or Android bind's staging is left alone.
 build-macos-libs:
+	rm -rf $(MACOS_OUT)/RaynCore.xcframework
+	rm -rf hiddify-core$(SEP)build$(SEP)macos* $(BINDIR)/macos
 	make -C hiddify-core -f Makefile macos EXTRA_TAGS="$(EXTRA_TAGS)"
+	mkdir -p $(MACOS_OUT)
+	mv $(BINDIR)/macos/RaynCore.xcframework $(MACOS_OUT)/RaynCore.xcframework
 
 # gomobile will not overwrite the Objective-C headers it generates: an
 # interrupted bind leaves hiddify-core/build/ios-arm64/Libbox/Libbox.objc.h on

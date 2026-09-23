@@ -25,6 +25,26 @@ abstract class Constants {
   /// bootstrap.
   static const diagnosticsBuild = kDebugMode || bool.fromEnvironment("RAYN_DIAGNOSTICS");
 
+  /// Prefixes a test build keeps out of the tunnel, from a comma-separated
+  /// dart-define:
+  ///
+  ///   --dart-define=RAYN_DIAGNOSTICS=true
+  ///   --dart-define=RAYN_TEST_ROUTE_EXCLUDE=203.0.113.7/32
+  ///
+  /// It exists for one job: bringing the tunnel up on a REMOTE test Mac without
+  /// cutting the screen-sharing session used to watch it. Once the tunnel claims
+  /// the default route, the replies to that session go into the tunnel and the
+  /// session drops, taking the tester's only view of the machine with it.
+  ///
+  /// Read only behind [diagnosticsBuild] (see `singboxConfigOptions`), so a
+  /// shipped build sends an empty list whatever this define says. The core
+  /// rejects a malformed prefix rather than dropping it.
+  static List<String> get testRouteExcludeAddress => const String.fromEnvironment("RAYN_TEST_ROUTE_EXCLUDE")
+      .split(',')
+      .map((prefix) => prefix.trim())
+      .where((prefix) => prefix.isNotEmpty)
+      .toList();
+
   /// Latency a screenshots build reports, in milliseconds, when the build
   /// names one:
   ///
