@@ -5,6 +5,14 @@
 
 import Foundation
 import Combine
+// Explicit, not left to the bridging header: iOS reaches Flutter through
+// Runner-Bridging-Header.h, but the macOS target compiles this file too and has
+// no bridging header.
+#if os(macOS)
+import FlutterMacOS
+#else
+import Flutter
+#endif
 
 public class AlertsEventHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     static let name = "\(Bundle.main.serviceIdentifier)/service.alerts"
@@ -15,7 +23,7 @@ public class AlertsEventHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let instance = AlertsEventHandler()
-        instance.channel = FlutterEventChannel(name: Self.name, binaryMessenger: registrar.messenger(), codec: FlutterJSONMethodCodec())
+        instance.channel = FlutterEventChannel(name: Self.name, binaryMessenger: registrar.raynMessenger, codec: FlutterJSONMethodCodec())
         instance.channel?.setStreamHandler(instance)
     }
     

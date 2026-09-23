@@ -3,7 +3,13 @@
 //  Runner
 //
 
+// Shared with the macOS target, which compiles this file in place (macos/
+// references ios/). The FlutterMacOS module has the same API under another name.
+#if os(macOS)
+import FlutterMacOS
+#else
 import Flutter
+#endif
 import Combine
 import RaynCore
 
@@ -14,7 +20,7 @@ public class MethodHandler: NSObject, FlutterPlugin {
     public static let name = "\(Bundle.main.serviceIdentifier)/method"
     
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: Self.name, binaryMessenger: registrar.messenger())
+        let channel = FlutterMethodChannel(name: Self.name, binaryMessenger: registrar.raynMessenger)
         let instance = MethodHandler()
         registrar.addMethodCallDelegate(instance, channel: channel)
         instance.channel = channel
@@ -147,7 +153,12 @@ public class MethodHandler: NSObject, FlutterPlugin {
                         return
                     }
                     do {
-                        try await VPNManager.shared.setup()
+                        // Loads the VPN configuration; on iOS also creates it if
+                        // missing, which is what shows the system's "Add VPN
+                        // Configurations" prompt. macOS defers creation to the first
+                        // connect (`start` below), so a first launch asks for nothing
+                        // before the user has signed in.
+                        try await VPNManager.shared.setup(createIfMissing: VPNManager.createsConfigurationAtLaunch)
                     } catch {
                         result(FlutterError(code: "SETUP", message: error.localizedDescription, details: nil))
                         return
@@ -250,5 +261,22 @@ public class MethodHandler: NSObject, FlutterPlugin {
                     cancellable?.cancel()
                 })
         }
+    }
+}
+
+// MARK: - Registrar messenger, iOS and macOS
+
+// The binary messenger is a method on the iOS registrar and a property on the
+// macOS one, so every handler shared between the two targets goes through this
+// instead of calling either directly. It lives here rather than in a file of its
+// own because a new file would have to be added to the iOS Xcode project by hand,
+// and every target that compiles a handler already compiles this file.
+extension FlutterPluginRegistrar {
+    var raynMessenger: FlutterBinaryMessenger {
+        #if os(macOS)
+        return messenger
+        #else
+        return messenger()
+        #endif
     }
 }

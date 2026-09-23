@@ -238,28 +238,12 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
     public func usePlatformAutoDetectControl() -> Bool {
         false
     }
+    // There was a macOS branch here, from upstream sing-box-for-apple, that asked
+    // a root helper for the owning process when running as a system extension.
+    // Neither `Variant` nor `RootHelperClient` exists in this repo, so it could
+    // not compile for macOS; the Mac client runs RaynTunnel as an app extension,
+    // and the config never enables find_process.
     public func findConnectionOwner(_ ipProtocol: Int32, sourceAddress: String?, sourcePort: Int32, destinationAddress: String?, destinationPort: Int32) throws -> LibboxConnectionOwner {
-        #if os(macOS)
-            if Variant.useSystemExtension {
-                guard let sourceAddress, let destinationAddress else {
-                    throw NSError(domain: "findConnectionOwner", code: 0, userInfo: [
-                        NSLocalizedDescriptionKey: "Missing source or destination address",
-                    ])
-                }
-                let owner = try RootHelperClient.shared.findConnectionOwner(
-                    ipProtocol: ipProtocol,
-                    sourceAddress: sourceAddress,
-                    sourcePort: sourcePort,
-                    destinationAddress: destinationAddress,
-                    destinationPort: destinationPort
-                )
-                let result = LibboxConnectionOwner()
-                result.userId = owner.userId
-                result.userName = owner.userName
-                result.processPath = owner.processPath
-                return result
-            }
-        #endif
         throw NSError(domain: "ExtensionPlatformInterface", code: 0, userInfo: [NSLocalizedDescriptionKey: String(localized: "Not implemented")])
     }
 
@@ -504,12 +488,9 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
             guard let notification else {
                 return
             }
-            #if os(macOS)
-                if Variant.useSystemExtension {
-                    try UserServiceClient.shared.sendNotification(notification)
-                    return
-                }
-            #endif
+            // A macOS system-extension branch that forwarded to a user service
+            // was removed from here, for the same reason as the one in
+            // findConnectionOwner: `UserServiceClient` does not exist in this repo.
 //            let center = UNUserNotificationCenter.current()
 //            let content = UNMutableNotificationContent()
 //

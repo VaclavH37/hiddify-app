@@ -12,11 +12,36 @@ public enum FilePath {
 }
 
 public extension FilePath {
-    static let groupName = "group.\(packageName)"
+    /// The app group the app and the packet-tunnel extension share: the
+    /// container that holds the working directory, and the keychain access group
+    /// ConfigKey and GrpcSecret store under.
+    ///
+    /// Read from the `RaynAppGroup` Info.plist key when a target sets one, which
+    /// the macOS targets do. macOS names its groups with the team prefix
+    /// (`<TEAMID>.group.com.raynlabs.app`), because that form needs no portal
+    /// registration and is what macOS 12 to 14 expect; iOS uses the
+    /// `group.`-prefixed identifier. iOS sets no key and falls back to exactly
+    /// the value this has always been.
+    static let groupName: String = {
+        if let configured = Bundle.main.infoDictionary?["RaynAppGroup"] as? String, !configured.isEmpty {
+            return configured
+        }
+        return "group.\(packageName)"
+    }()
 
-    private static let defaultSharedDirectory: URL! = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: FilePath.groupName)
-
-    static let sharedDirectory = defaultSharedDirectory!
+    /// Crashes with the group's name rather than a bare force-unwrap: a missing
+    /// container is a signing misconfiguration, not a runtime condition, and the
+    /// crash log should say which entitlement to look at. On iOS a nil here means
+    /// the target lacks `com.apple.security.application-groups` for this group.
+    /// On macOS the system hands back a path even for a group the target is not
+    /// entitled to, so a misconfigured Mac build fails later, at the first write,
+    /// rather than here.
+    static let sharedDirectory: URL = {
+        guard let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupName) else {
+            fatalError("no container for app group \(groupName): the target lacks the com.apple.security.application-groups entitlement for it")
+        }
+        return url
+    }()
 
     private static let libraryDirectory = sharedDirectory
         .appendingPathComponent("Library", isDirectory: true)

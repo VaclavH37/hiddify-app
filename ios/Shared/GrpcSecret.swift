@@ -59,12 +59,22 @@ public enum GrpcSecret {
     private static var accessGroup: String { FilePath.groupName }
 
     private static func baseQuery(_ forAccount: String) -> [String: Any] {
-        [
+        let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: forAccount,
             kSecAttrAccessGroup as String: accessGroup,
         ]
+        // macOS has two keychains, and only the data protection one (the iOS-style
+        // keychain) honours an access group, which is what lets the packet-tunnel
+        // extension read what the app stored. Without the flag a macOS query goes
+        // to the legacy file-based keychain and the access group is ignored. iOS
+        // has only the data protection keychain, so it needs no flag.
+        #if os(macOS)
+        return query.merging([kSecUseDataProtectionKeychain as String: true]) { _, macOS in macOS }
+        #else
+        return query
+        #endif
     }
 
     /// Returns the secret, or nil if it has not been created yet. Never creates.

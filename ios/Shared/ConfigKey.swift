@@ -17,6 +17,11 @@ import os.log
 /// with `<TEAMID>.*`, an app-group identifier is not team-prefixed, so listing it
 /// can never match and signing fails. See the note in Runner.entitlements.
 ///
+/// macOS is the other way round. Its group is team-prefixed (see
+/// FilePath.groupName), which a Mac profile's `<TEAMID>.*` does cover, and it
+/// must be listed in `keychain-access-groups` there, because on macOS the app
+/// group entitlement alone does not make it a keychain access group.
+///
 /// Accessibility is `AfterFirstUnlockThisDeviceOnly`, and that is not
 /// negotiable: the default (`WhenUnlocked`) makes the item unreadable to an
 /// on-demand tunnel start before the first unlock after a reboot, and the
@@ -39,12 +44,22 @@ public enum ConfigKey {
     private static var accessGroup: String { FilePath.groupName }
 
     private static var baseQuery: [String: Any] {
-        [
+        let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecAttrAccessGroup as String: accessGroup,
         ]
+        // macOS has two keychains, and only the data protection one (the iOS-style
+        // keychain) honours an access group, which is what lets the packet-tunnel
+        // extension read what the app stored. Without the flag a macOS query goes
+        // to the legacy file-based keychain and the access group is ignored. iOS
+        // has only the data protection keychain, so it needs no flag.
+        #if os(macOS)
+        return query.merging([kSecUseDataProtectionKeychain as String: true]) { _, macOS in macOS }
+        #else
+        return query
+        #endif
     }
 
     /// Returns the key, or nil if it has not been created yet. Never creates.

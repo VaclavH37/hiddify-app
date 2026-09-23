@@ -3,7 +3,13 @@
 //  Runner
 //
 
+// Shared with the macOS target, which compiles this file in place (macos/
+// references ios/). The FlutterMacOS module has the same API under another name.
+#if os(macOS)
+import FlutterMacOS
+#else
 import Flutter
+#endif
 import Combine
 import RaynCore
 
@@ -12,7 +18,7 @@ public class PlatformMethodHandler: NSObject, FlutterPlugin {
     public static let name = "\(Bundle.main.serviceIdentifier)/platform"
     
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: Self.name, binaryMessenger: registrar.messenger())
+        let channel = FlutterMethodChannel(name: Self.name, binaryMessenger: registrar.raynMessenger)
         let instance = PlatformMethodHandler()
         registrar.addMethodCallDelegate(instance, channel: channel)
         instance.channel = channel

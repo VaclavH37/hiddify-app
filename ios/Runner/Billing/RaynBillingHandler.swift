@@ -21,7 +21,13 @@
 //  Purchase ids are treated as credentials — never logged.
 //
 
+// Shared with the macOS target, which compiles this file in place (macos/
+// references ios/). The FlutterMacOS module has the same API under another name.
+#if os(macOS)
+import FlutterMacOS
+#else
 import Flutter
+#endif
 import Foundation
 import StoreKit
 
@@ -56,8 +62,8 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let instance = RaynBillingHandler()
-        instance.events = RaynBillingEvents(binaryMessenger: registrar.messenger())
-        RaynBillingSetup.setUp(binaryMessenger: registrar.messenger(), api: instance)
+        instance.events = RaynBillingEvents(binaryMessenger: registrar.raynMessenger)
+        RaynBillingSetup.setUp(binaryMessenger: registrar.raynMessenger, api: instance)
         // Started here, at launch, rather than on `connect()`: StoreKit can
         // deliver a renewal or an Ask-to-Buy approval before any Flutter UI
         // exists, and an event delivered with no Dart receiver attached is lost.
@@ -343,7 +349,7 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
     /// on every launch and fails verify each time (a 500 on staging), so it is
     /// finished here and never sent. Returns true when it was one.
     private static func finishIfLocalOnly(_ transaction: Transaction) async -> Bool {
-        guard #available(iOS 16.0, *), transaction.environment == .xcode else { return false }
+        guard #available(iOS 16.0, macOS 13.0, *), transaction.environment == .xcode else { return false }
         NSLog(
             "[RaynBilling] transaction %llu (%@) is Xcode-local; finishing it without verify",
             transaction.id, transaction.productID
@@ -358,7 +364,7 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
         // Simulator, and such a transaction exists only on this device, never
         // on Apple's servers. The id is logged in debug builds only — it is
         // what verify accepts — the environment always.
-        if #available(iOS 16.0, *) {
+        if #available(iOS 16.0, macOS 13.0, *) {
             #if DEBUG
             NSLog(
                 "[RaynBilling] transaction %llu (%@) environment=%@",
@@ -368,7 +374,7 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
             NSLog("[RaynBilling] transaction (%@) environment=%@", transaction.productID, transaction.environment.rawValue)
             #endif
         } else {
-            NSLog("[RaynBilling] transaction (%@) environment=unknown (pre-iOS 16)", transaction.productID)
+            NSLog("[RaynBilling] transaction (%@) environment=unknown (pre-iOS 16 / macOS 13)", transaction.productID)
         }
         return RaynPurchase(
             // A JSON string on the wire: Transaction.id is a UInt64, and the
@@ -407,7 +413,7 @@ public class RaynBillingHandler: NSObject, FlutterPlugin, RaynBilling {
     }
 
     private static func currencyCode(of product: Product) -> String {
-        if #available(iOS 16.0, *) {
+        if #available(iOS 16.0, macOS 13.0, *) {
             return product.priceFormatStyle.currencyCode
         }
         return product.priceFormatStyle.locale.currencyCode ?? "USD"

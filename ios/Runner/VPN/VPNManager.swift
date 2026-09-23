@@ -30,6 +30,17 @@ class VPNManager: ObservableObject {
     private var timer: Timer?
             
     static let shared: VPNManager = VPNManager()
+
+    /// Whether the launch-time `setup` may create the VPN configuration.
+    /// Creating it is what raises the system's "Add VPN Configurations" prompt.
+    /// iOS has always created it at launch. macOS waits for the first connect,
+    /// so a first launch shows no system prompt before the user has signed in;
+    /// `start` passes the default and creates it then.
+    #if os(macOS)
+    static let createsConfigurationAtLaunch = false
+    #else
+    static let createsConfigurationAtLaunch = true
+    #endif
         
     @Published private(set) var state: NEVPNStatus = .invalid
     @Published private(set) var alert: VPNManagerAlert = .init(alert: nil, message: nil)
@@ -78,11 +89,11 @@ class VPNManager: ObservableObject {
         timer?.invalidate()
     }
     
-    func setup() async throws {
+    func setup(createIfMissing: Bool = true) async throws {
         // guard !loaded else { return }
         loaded = true
         do {
-            try await loadVPNPreference()
+            try await loadVPNPreference(createIfMissing: createIfMissing)
         } catch {
             #if DEBUG
             print(error.localizedDescription)
@@ -90,13 +101,16 @@ class VPNManager: ObservableObject {
         }
     }
     
-    private func loadVPNPreference() async throws {
+    private func loadVPNPreference(createIfMissing: Bool = true) async throws {
         do {
             let managers = try await NETunnelProviderManager.loadAllFromPreferences()
             if let manager = managers.first {
                 self.manager = manager
                 return
             }
+            // Nothing saved yet. Leaving `manager` as it is here is safe: the
+            // next `start` calls setup() with the default and creates it.
+            guard createIfMissing else { return }
             let newManager = NETunnelProviderManager()
             let `protocol` = NETunnelProviderProtocol()
             `protocol`.providerBundleIdentifier = Bundle.main.baseBundleIdentifier + ".RaynTunnel"
@@ -115,6 +129,16 @@ class VPNManager: ObservableObject {
     
     private func enableVPNManager() async throws {
         manager.isEnabled = true
+        #if os(macOS)
+        // No on-demand on macOS. The Mac client keeps the Windows client's
+        // lifetime: the tunnel runs while the app does, Exit stops it, and nothing
+        // brings it back at login or on a network change. With an on-demand rule
+        // the system would restart the extension the moment the app stopped it,
+        // so Exit could not disconnect. Also clears a rule left by an earlier
+        // build.
+        manager.onDemandRules = []
+        manager.isOnDemandEnabled = false
+        #else
         let rule = NEOnDemandRuleConnect()
         rule.interfaceTypeMatch = .any
         // No probeURL. It was http://captive.apple.com -- cleartext, and a
@@ -125,6 +149,7 @@ class VPNManager: ObservableObject {
         // network" was meant to say in the first place.
         manager.onDemandRules = [rule]
         manager.isOnDemandEnabled = true
+        #endif
         
         do {
             try await manager.saveToPreferences()
