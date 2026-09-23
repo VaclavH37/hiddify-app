@@ -218,7 +218,13 @@ windows-prepare: common-prepare windows-libs
 ios-prepare: common-prepare
 	cd ios; pod repo update; pod install;echo "done ios prepare"
 	
-macos-prepare: common-prepare macos-libs
+# Deliberately does NOT depend on macos-libs, for the same reason ios-prepare
+# does not depend on ios-libs: that target downloaded upstream Hiddify's prebuilt
+# core straight into the path Xcode bundles, and the build succeeded with it. The
+# macOS core comes from `make build-macos-libs`, which compiles our own fork on a
+# Mac.
+macos-prepare: common-prepare
+	cd macos; pod install; echo "done macos prepare"
 linux-prepare: common-prepare linux-amd64-libs
 
 
@@ -602,8 +608,16 @@ linux-docker-release:
 
 	@$(GREEN)Successful. Output is in 'dist_docker' folder.$(DONE)
 
-macos-release: check-rulesets-fresh rayn-link-key
-	$(FASTFORGE) package --platform macos --targets dmg,pkg $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE)
+# Retired. This packaged a DMG and a PKG for direct download, which is not how
+# the Mac client ships: it goes through the Mac App Store (sandboxed app plus a
+# packet-tunnel extension), and an App Store upload is an Xcode archive, not a
+# fastforge package. It also never forwarded FF_DART_DEFINES, and it signed with
+# nothing. No prerequisites on purpose: `rayn-link-key` writes the production key
+# file, which a target that only fails must not do.
+macos-release:
+	@$(YELLOW)macos-release is retired: the Mac client ships through the Mac App Store, not as a DMG/PKG.$(DONE)
+	@$(YELLOW)The App Store build target is macos-appstore (added with the macOS port).$(DONE)
+	@exit 1
 
 ios-release: check-rulesets-fresh rayn-link-key #not tested
 	$(FASTFORGE) package --platform ios --targets ipa --build-export-options-plist  ios/exportOptions.plist $(DISTRIBUTOR_ARGS) $(FF_OBFUSCATE) $(FF_DART_DEFINES)
@@ -653,9 +667,15 @@ linux-arm64-musl-libs:
 	curl -L $(CORE_URL)/$(CORE_NAME)-linux-arm64-musl.tar.gz | tar xz -C $(DESKTOP_OUT)/
 
 
+# Disabled on purpose, like ios-libs below. This curled $(CORE_NAME)-macos.tar.gz
+# from UPSTREAM HIDDIFY'S RELEASES into hiddify-core/bin/, the exact path the
+# macOS Xcode project bundled the core from, so a build carrying someone else's
+# binary succeeded without a warning. `macos-prepare` depended on it, and so did
+# the CI macOS job.
 macos-libs:
-	mkdir -p  $(DESKTOP_OUT) 
-	curl -L $(CORE_URL)/$(CORE_NAME)-macos.tar.gz | tar xz -C $(DESKTOP_OUT)
+	@$(YELLOW)macos-libs is disabled: it downloads upstream Hiddify's prebuilt core, which must never ship in a Rayn build.$(DONE)
+	@$(YELLOW)Build the core from this fork on macOS with: make build-macos-libs$(DONE)
+	@exit 1
 
 # Disabled on purpose. This used to curl $(CORE_NAME)-ios.tar.gz from
 # github.com/hiddify/hiddify-next-core — UPSTREAM HIDDIFY'S COMPILED CORE —

@@ -216,8 +216,9 @@ This is the layer that hides the `rayn://` key derivation. Note obfuscation does
 separately.
 
 - **Enforced by:** `test/design/design_invariants_test.dart`, group *shipped
-  artifacts are obfuscated* — one case per leaf release target (all nine), plus a
-  check that `FF_OBFUSCATE` still carries both flags.
+  artifacts are obfuscated* — one case per leaf release target (eight; the retired
+  `macos-release` only fails, since the Mac client ships through the Mac App
+  Store), plus a check that `FF_OBFUSCATE` still carries both flags.
 
 ### <a id="never-adopt-prebuilt-core-url"></a>Never adopt upstream changes to the prebuilt-core download URL
 
@@ -229,8 +230,12 @@ Upstream keeps them working and will keep changing `CORE_URL` (it moved from
 `hiddify-next-core` to `hiddify-core` releases in `14654bd0`). Adopting those
 changes has no value here and makes a forbidden path look maintained.
 
-- **Enforced by:** *nothing yet* — a ledger row and this anchor. An assertion
-  that no release target depends on a `*-libs` target would close it.
+- **Enforced by:** for Apple only, `test/design/design_invariants_test.dart`,
+  group *Apple builds cannot fetch upstream prebuilt cores*: `ios-libs` and
+  `macos-libs` download nothing and fail, and `ios-prepare` / `macos-prepare`
+  depend on no `*-libs` target. The Windows, Android and Linux download targets
+  are still live and fenced off only by this anchor and a ledger row; an
+  assertion that no release target depends on a `*-libs` target would close it.
 - **Background:** `CORE_BUILD.md`, `METHODOLOGY.md` (§ Never)
 
 ### <a id="no-upstream-autoupdate"></a>No in-app auto-update

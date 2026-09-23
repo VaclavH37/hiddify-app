@@ -140,7 +140,8 @@ void main() {
       'windows-msix-release',
       'linux-deb-release',
       'linux-appimage-release',
-      'macos-release',
+      // Not macos-release: it is retired and only fails, because the Mac
+      // client ships through the Mac App Store rather than as a DMG/PKG.
       'ios-release',
     ];
 
@@ -169,6 +170,42 @@ void main() {
           recipe,
           contains(r'$(FF_OBFUSCATE)'),
           reason: 'release target "$target" builds without --obfuscate.',
+        );
+      });
+    }
+  });
+
+  group('Apple builds cannot fetch upstream prebuilt cores', () {
+    // ios-libs and macos-libs used to curl Hiddify's compiled core straight into
+    // the path the Xcode project bundles, and ios-prepare / macos-prepare
+    // depended on them, so a routine prepare staged someone else's binary for
+    // shipping and the build succeeded. Both targets now only fail, and the
+    // prepare targets no longer depend on them.
+    // DESIGN-INVARIANTS.md#never-adopt-prebuilt-core-url
+    //
+    // Scoped to Apple: windows-prepare and the android/linux prepares still
+    // depend on their download targets. A Windows build carrying upstream's core
+    // at least fails on the DLL name; a macOS one did not.
+    final recipes = _makeRecipes(File('Makefile').readAsStringSync());
+
+    for (final target in const ['ios-libs', 'macos-libs']) {
+      test('$target downloads nothing and fails', () {
+        final recipe = recipes[target];
+        expect(recipe, isNotNull, reason: 'target "$target" no longer exists in the Makefile');
+        expect(recipe, isNot(contains('curl')), reason: '$target fetches a prebuilt core again.');
+        expect(recipe, contains('exit 1'), reason: '$target no longer fails.');
+      });
+    }
+
+    for (final target in const ['ios-prepare', 'macos-prepare']) {
+      test('$target does not depend on a download target', () {
+        final recipe = recipes[target];
+        expect(recipe, isNotNull, reason: 'target "$target" no longer exists in the Makefile');
+        final prerequisites = recipe!.split('\n').first;
+        expect(
+          prerequisites,
+          isNot(contains('-libs')),
+          reason: '$target depends on a *-libs target again: $prerequisites',
         );
       });
     }

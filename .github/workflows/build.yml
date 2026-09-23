@@ -28,8 +28,6 @@ env:
   TARGET_NAME_exe: "Hiddify-Windows-Setup-x64"
   TARGET_NAME_msix: "Hiddify-Windows-x64"
   TARGET_NAME_zip: "Hiddify-Windows-Portable-x64"
-  TARGET_NAME_dmg: "Hiddify-MacOS"
-  TARGET_NAME_pkg: "Hiddify-MacOS-Installer"
   TARGET_NAME_ipa: "Hiddify-iOS"
   
 
@@ -103,11 +101,11 @@ jobs:
           #   aarch: arm64
           #   targets: deb,gz
             
-          - platform: macos
-            os: macos-15
-            aarch: universal
-            targets: dmg,pkg
-            
+          # No macOS entry. It ran `make macos-prepare`, which downloaded upstream
+          # Hiddify's prebuilt core into the path Xcode bundles, then packaged an
+          # unsigned DMG/PKG. The Mac client ships through the Mac App Store and
+          # is built on the self-hosted Mac, like iOS.
+
           # - platform: ios
           #   os: macos-15
           #   aarch: universal
