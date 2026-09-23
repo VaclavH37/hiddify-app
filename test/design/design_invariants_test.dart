@@ -211,6 +211,85 @@ void main() {
     }
   });
 
+  group('the Mac App Store build', () {
+    // The macOS client is a sandboxed app whose tunnel runs in the RaynTunnel
+    // packet-tunnel app extension. Each property below can be lost by an edit
+    // that still builds, and each loss surfaces late: as an App Review
+    // rejection, a crash on a customer's Mac, or Flutter linked into the
+    // extension. Most of the project is written by
+    // tool/configure_macos_xcodeproj.rb; re-run that rather than hand-editing
+    // project.pbxproj.
+    String read(String path) => File(path).readAsStringSync().replaceAll('\r\n', '\n');
+    String withoutComments(String xml) => xml.replaceAll(RegExp('<!--.*?-->', dotAll: true), '');
+    bool hasTrueKey(String plist, String key) =>
+        RegExp('<key>${RegExp.escape(key)}</key>\\s*<true/>').hasMatch(plist);
+
+    final pbxproj = read('macos/Runner.xcodeproj/project.pbxproj');
+    final tunnelConfigs = _buildConfigurations(pbxproj)
+        .where((b) => b.contains('INFOPLIST_FILE = RaynTunnel/Info.plist;'))
+        .toList();
+
+    test('the shipped entitlements are sandboxed, JIT-free and packet-tunnel only', () {
+      for (final path in ['macos/Runner/Release.entitlements', 'macos/RaynTunnel/RaynTunnel.entitlements']) {
+        final plist = withoutComments(read(path));
+        expect(hasTrueKey(plist, 'com.apple.security.app-sandbox'), isTrue,
+            reason: '$path is not sandboxed. The Mac App Store refuses an unsandboxed app.');
+        expect(plist.contains('com.apple.security.cs.allow-jit'), isFalse,
+            reason: '$path allows JIT. Only DebugProfile.entitlements needs it, for the Dart VM.');
+        expect(plist, contains('<string>packet-tunnel-provider</string>'), reason: path);
+        expect(plist.contains('systemextension'), isFalse,
+            reason: '$path asks for a system-extension provider; the Mac client is an app extension.');
+      }
+    });
+
+    test('the extension exists and never links Flutter or a pod', () {
+      expect(tunnelConfigs, hasLength(3), reason: 'expected Debug, Release and Profile configurations for RaynTunnel');
+      for (final block in tunnelConfigs) {
+        final flags = RegExp('OTHER_LDFLAGS = ([^;]+);').firstMatch(block)?.group(1);
+        expect(
+          flags,
+          '"-lresolv"',
+          reason: 'RaynTunnel OTHER_LDFLAGS is $flags. It must not inherit: the '
+              'project-level configurations include the Pods-Runner settings, so '
+              r'$(inherited) links FlutterMacOS and every plugin into the extension.',
+        );
+      }
+    });
+
+    test('the extension version tracks pubspec', () {
+      // The macOS twin of the iOS check in "one version, not four": a mismatched
+      // extension version fails App Store Connect validation (ITMS-90473).
+      for (final block in tunnelConfigs) {
+        expect(block, contains(r'MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";'));
+        expect(block, contains(r'CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";'));
+      }
+    });
+
+    test('no upstream core or Hiddify name is left in the project', () {
+      expect(pbxproj.contains('hiddify-core.dylib'), isFalse,
+          reason: 'the FFI dylib is retired on macOS; the core is RaynCore.xcframework');
+      for (final path in [
+        'macos/Runner.xcodeproj/project.pbxproj',
+        'macos/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme',
+        'macos/Runner/Base.lproj/MainMenu.xib',
+      ]) {
+        expect(read(path).toLowerCase().contains('hiddify'), isFalse, reason: '$path names Hiddify');
+      }
+    });
+
+    test('macOS 12 is the floor everywhere', () {
+      // Go 1.25, which builds the core, supports macOS 12 and later. A lower
+      // target in the project or the Podfile builds, and then fails at launch.
+      final targets = RegExp('MACOSX_DEPLOYMENT_TARGET = ([0-9.]+);')
+          .allMatches(pbxproj)
+          .map((m) => m.group(1))
+          .toSet();
+      expect(targets, {'12.0'});
+      expect(read('macos/Podfile'), contains("platform :osx, '12.0'"));
+      expect(read('hiddify-core/Makefile'), contains('-macosversion=12.0'));
+    });
+  });
+
   group('the committed rayn:// key is the development one', () {
     // CORE_BUILD.md states the committed key file is generated from a throwaway
     // development secret and marked `kRaynLinkKeyIsDev = true`. It never was:

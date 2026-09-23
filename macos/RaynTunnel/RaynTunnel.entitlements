@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The macOS RaynTunnel packet-tunnel app extension. Its sources are the iOS
+	     ones, compiled in place from ../ios/RaynTunnel and ../ios/Shared; only
+	     this file, Info.plist and RaynTunnel.xcconfig are macOS-specific.
+
+	     An app extension, not a system extension: the Mac App Store build uses
+	     the app-extension packaging, which runs in the user's session and can
+	     read the user's data protection keychain. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- Server, because the background core listens on 127.0.0.1:21979 for the
+	     app's authenticated gRPC channel. Loopback only. -->
+	<key>com.apple.security.network.server</key>
+	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(RAYN_APP_GROUP)</string>
+	</array>
+	<!-- The shared group only: the extension reads the config-sealing key and the
+	     background gRPC secret, which the app stores under it. It has no use for
+	     the app's own keychain group. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(RAYN_APP_GROUP)</string>
+	</array>
+	<key>com.apple.developer.networking.networkextension</key>
+	<array>
+		<string>packet-tunnel-provider</string>
+	</array>
+</dict>
+</plist>

@@ -32,7 +32,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string></string>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>rayn</string>
@@ -41,6 +41,27 @@
 	</array>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<!-- Read by the Swift shared with iOS (ios/Runner/Extensions/Bundle+Properties.swift,
+	     ios/Shared/FilePath.swift). Bundle.serviceIdentifier force-unwraps
+	     SERVICE_IDENTIFIER, so a build without these crashes at launch. -->
+	<key>BASE_BUNDLE_IDENTIFIER</key>
+	<string>$(BASE_BUNDLE_IDENTIFIER)</string>
+	<key>SERVICE_IDENTIFIER</key>
+	<string>$(SERVICE_IDENTIFIER)</string>
+	<!-- The team-prefixed app group shared with RaynTunnel; see Configs/Rayn.xcconfig. -->
+	<key>RaynAppGroup</key>
+	<string>$(RAYN_APP_GROUP)</string>
+	<!-- Required for the Mac App Store. Provisional: it should match the iOS
+	     listing's primary category in App Store Connect, which is not recorded in
+	     the repo. Change it here if that is not Utilities. -->
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<!-- Same statement as ios/Runner/Info.plist, and the same caveat: this is a
+	     declaration to Apple about the app's encryption, made automatically on
+	     upload. For a VPN it needs a compliance decision, not a code default;
+	     IOS_BUILD.md, "Export compliance". -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>ar</string>

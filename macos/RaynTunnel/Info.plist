@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged with the keys Xcode generates (GENERATE_INFOPLIST_FILE = YES):
+	     identifier, versions from MARKETING_VERSION / CURRENT_PROJECT_VERSION,
+	     minimum system version. Mirrors ios/RaynTunnel/Info.plist. -->
+	<key>BASE_BUNDLE_IDENTIFIER</key>
+	<string>$(BASE_BUNDLE_IDENTIFIER)</string>
+	<!-- Read by FilePath.groupName. Without it the shared code falls back to the
+	     iOS form, group.com.raynlabs.app, which this target is not entitled to. -->
+	<key>RaynAppGroup</key>
+	<string>$(RAYN_APP_GROUP)</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.networkextension.packet-tunnel</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).PacketTunnelProvider</string>
+	</dict>
+</dict>
+</plist>

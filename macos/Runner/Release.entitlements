@@ -2,32 +2,45 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- The Mac App Store refuses an app without the sandbox. It is also why the
+	     tunnel lives in the RaynTunnel packet-tunnel extension rather than in this
+	     process: a sandboxed process cannot open a utun device. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
-	<!-- <key>com.apple.security.app-sandbox</key>
-	<true/> -->
-	<key>com.apple.security.app-sandbox</key>
-	<false/>
-	<key>com.apple.security.cs.allow-jit</key>
-	<true/>
+	<!-- Server, because the in-app ("front") core listens on 127.0.0.1:21978 for
+	     the pinned gRPC channel the Dart side talks to. Loopback only. -->
 	<key>com.apple.security.network.server</key>
 	<true/>
-		<!-- <key>com.apple.developer.system-extension.install</key>
-		<true/> -->
-<!-- 				
+	<!-- Shared with RaynTunnel: the working directory (sealed configs, rule-sets,
+	     core state) lives in this group's container. RAYN_APP_GROUP is defined in
+	     Configs/Rayn.xcconfig and is team-prefixed on macOS. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(RAYN_APP_GROUP)</string>
+	</array>
+	<!-- The app's OWN group first: items stored without an explicit access group
+	     (flutter_secure_storage's session token) land in the first entry, and the
+	     extension has no business reading those. The app group second: the
+	     config-sealing key and the gRPC secrets are stored under it so the
+	     extension can read them on a start the app did not make.
+
+	     Unlike iOS, the app group must be listed here: on macOS the group
+	     entitlement alone does not make it a keychain access group. A Mac
+	     profile authorises <TEAMID>.*, which covers both entries. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(DEVELOPMENT_TEAM).$(BASE_BUNDLE_IDENTIFIER)</string>
+		<string>$(RAYN_APP_GROUP)</string>
+	</array>
+	<!-- packet-tunnel-provider only, as on iOS. The containing app needs it too:
+	     it is what lets NETunnelProviderManager manage RaynTunnel's configuration.
+	     No app-proxy, DNS-proxy or content-filter, and no vpn.api (that is for the
+	     built-in IKEv2 client, which this app does not use). -->
 	<key>com.apple.developer.networking.networkextension</key>
 	<array>
-				<string>packet-tunnel-provider-systemextension</string>
-				<string>app-proxy-provider-systemextension</string>
-				<string>content-filter-provider-systemextension</string>
-				<string>dns-proxy-systemextension</string> 
-				<string>dns-settings</string> 
-				<string>dns-proxy</string>
-				<string>app-proxy-provider</string>
-				<string>packet-tunnel-provider</string>
+		<string>packet-tunnel-provider</string>
 	</array>
-	<key>com.apple.developer.networking.vpn.api</key>
-	<string>allow-vpn</string> -->
-
 </dict>
 </plist>

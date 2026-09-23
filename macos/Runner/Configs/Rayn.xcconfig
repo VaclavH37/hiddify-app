@@ -1,0 +1,24 @@
+// Rayn identity for the macOS targets, shared by Runner (through AppInfo.xcconfig)
+// and the RaynTunnel extension (through RaynTunnel/RaynTunnel.xcconfig). The iOS
+// counterpart is ios/Base.xcconfig.
+//
+// Team RPD5KQ8YA7 is Rayn Labs LLC. M7Q8ASP66Z and 3JFTY5BP58, both in this repo's
+// history, are upstream Hiddify's and must never come back.
+
+BASE_BUNDLE_IDENTIFIER = com.raynlabs.app
+SERVICE_IDENTIFIER = com.raynlabs.app
+DEVELOPMENT_TEAM = RPD5KQ8YA7
+
+// The app group the app and the extension share: the container that holds the
+// working directory, and the keychain access group the config-sealing key and
+// the gRPC secrets live under (ios/Shared/FilePath.swift reads it from the
+// RaynAppGroup Info.plist key).
+//
+// Team-prefixed, the native macOS form: it needs no registration in the
+// developer portal, works on macOS 12 to 14, and passes macOS 15's app-group
+// container protection because the prefix matches the signing team. iOS uses
+// group.com.raynlabs.app and sets no RaynAppGroup key.
+//
+// Built from DEVELOPMENT_TEAM rather than $(TeamIdentifierPrefix) so the value
+// never depends on a setting Xcode derives during signing.
+RAYN_APP_GROUP = $(DEVELOPMENT_TEAM).group.$(BASE_BUNDLE_IDENTIFIER)
