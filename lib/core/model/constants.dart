@@ -45,9 +45,11 @@ abstract class Constants {
       .where((prefix) => prefix.isNotEmpty)
       .toList();
 
-  /// Base URL of the rule-set mirror, without a trailing slash. Empty turns
-  /// rule-set updates off, and the bundle shipped with the build is all the
-  /// app uses. Set once the mirror is live.
+  /// Base URL of the rule-set mirror, without a trailing slash: Rayn Labs'
+  /// R2 bucket behind Cloudflare, published weekly by the private
+  /// `rayn-rulesets-mirror` repository. Clients fetch it only through the
+  /// tunnel. Empty turns rule-set updates off, and the bundle shipped with the
+  /// build is all the app uses.
   ///
   /// A diagnostics build may point it somewhere else for a live test:
   ///
@@ -60,7 +62,7 @@ abstract class Constants {
     return diagnosticsBuild && override.isNotEmpty ? override : _rulesetMirrorBase;
   }
 
-  static const _rulesetMirrorBase = "";
+  static const _rulesetMirrorBase = "https://cdn.raynlabs.io";
 
   /// Latency a screenshots build reports, in milliseconds, when the build
   /// names one:
