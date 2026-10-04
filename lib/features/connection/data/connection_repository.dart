@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
+import 'package:hiddify/core/rulesets/ruleset_store.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
+import 'package:hiddify/features/connection/data/ruleset_start_guard.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
@@ -36,7 +38,8 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
     required this.singbox,
     required this.configOptionRepository,
     required this.profilePathResolver,
-  });
+    RulesetStartGuard? rulesetGuard,
+  }) : rulesetGuard = rulesetGuard ?? RulesetStartGuard(RulesetStore(directories.workingDir));
 
   final Ref ref;
 
@@ -45,6 +48,11 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
 
   final ConfigOptionRepository configOptionRepository;
   final ProfilePathResolver profilePathResolver;
+
+  /// Wraps every core start and restart: confirms a downloaded rule-set the
+  /// core loaded, and puts the bundle back (and starts again) when one stops
+  /// the core from starting. See [RulesetStartGuard].
+  final RulesetStartGuard rulesetGuard;
 
   SingboxConfigOption? _configOptionsSnapshot;
   @override
@@ -86,17 +94,19 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
       setup().flatMap(
         (_) => applyConfigOption(activeProfile).flatMap(
           (_) => _readConfig(activeProfile.id).flatMap(
-            (opened) => singbox.start(
-              // The path of the slot we OPENED, not of the primary. It is
-              // handed to the platform shell and kept as `activeConfigPath`, so
-              // that a start the system initiates on its own — quick-settings
-              // tile, always-on, iOS on-demand — decrypts the same config this
-              // connect chose. Naming the primary here would send exactly those
-              // starts back to a hub we just failed away from.
-              profilePathResolver.encFileForSlot(activeProfile.id, opened.slot).path,
-              opened.content,
-              activeProfile.name,
-              disableMemoryLimit,
+            (opened) => _guarded(
+              () => singbox.start(
+                // The path of the slot we OPENED, not of the primary. It is
+                // handed to the platform shell and kept as `activeConfigPath`, so
+                // that a start the system initiates on its own — quick-settings
+                // tile, always-on, iOS on-demand — decrypts the same config this
+                // connect chose. Naming the primary here would send exactly those
+                // starts back to a hub we just failed away from.
+                profilePathResolver.encFileForSlot(activeProfile.id, opened.slot).path,
+                opened.content,
+                activeProfile.name,
+                disableMemoryLimit,
+              ),
             ),
           ),
         ),
@@ -109,11 +119,16 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   TaskEither<ConnectionFailure, Unit> reconnect(ProfileEntity activeProfile, bool disableMemoryLimit) =>
       applyConfigOption(activeProfile).flatMap(
         (_) => _readConfig(activeProfile.id).flatMap(
-          (opened) => singbox
-              .restart(opened.content, activeProfile.name, disableMemoryLimit)
-              .mapLeft(UnexpectedConnectionFailure.new),
+          (opened) => _guarded(
+            () => singbox
+                .restart(opened.content, activeProfile.name, disableMemoryLimit)
+                .mapLeft(UnexpectedConnectionFailure.new),
+          ),
         ),
       );
+
+  TaskEither<ConnectionFailure, Unit> _guarded(TaskEither<ConnectionFailure, Unit> Function() start) =>
+      TaskEither(() => rulesetGuard.run(() => start().run()));
 
   /// Opens the active slot's sealed config so the plaintext exists only in
   /// memory, for the moment it takes to hand it to the core.

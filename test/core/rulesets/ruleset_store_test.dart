@@ -207,6 +207,21 @@ void main() {
       expect((await store().readState()).lastCheck, DateTime.utc(2026, 10, 5, 9));
     });
 
+    test('extracting the bundle rewrites only the files that differ from it', () async {
+      await store().ensureInstalled();
+      await onDisk('block-ads.srs').writeAsBytes([3], flush: true);
+
+      final renamed = <String>[];
+      Future<void> recording(File from, String to) async {
+        renamed.add(p.basename(to));
+        await from.rename(to);
+      }
+
+      expect(await store(rename: recording).ensureInstalled(), isTrue);
+      expect(renamed, ['block-ads.srs']);
+      expect(await filesOnDisk(), bundleFiles);
+    });
+
     // A crash between renaming the files and writing the MANIFEST leaves new
     // files under the old MANIFEST. The next launch must not trust them.
     test('restores the bundle when files disagree with their MANIFEST', () async {

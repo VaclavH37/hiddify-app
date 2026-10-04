@@ -352,16 +352,31 @@ class RulesetStore {
 
   /// Puts the bundle back, after a core start failed with a downloaded set.
   /// [reject] is that set's version, so it is never installed again.
+  ///
+  /// The rejection is recorded before the files are touched. If extracting
+  /// fails (on Windows a core that just failed to start can still hold the
+  /// files open), this throws, but the rejected version can no longer pass
+  /// [chooseInstalled], so the next launch restores the bundle before the
+  /// core starts.
   Future<void> revertToBundled({String? reject}) => _locked(() async {
     final bundledJson = await bundle.manifestJson();
     final bundled = _parseManifest(bundledJson);
     _log.warning('reverting to the bundled rule-sets ${bundled.version}${reject == null ? '' : ', rejecting $reject'}');
-    await _extractBundled(bundled, bundledJson);
     var state = (await _readState()).withPending(null);
     if (reject != null) state = state.withRejected(reject);
     await _writeState(state);
     await _deleteStaged();
+    await _extractBundled(bundled, bundledJson);
   });
+
+  /// The installed version when it came from the mirror rather than the
+  /// bundle, else null.
+  Future<String?> installedDownloadVersion() async {
+    final installed = await _readManifest(dir);
+    if (installed == null) return null;
+    final bundled = _parseManifest(await bundle.manifestJson());
+    return installed.version == bundled.version ? null : installed.version;
+  }
 
   /// True when every file the [manifest] lists is in [targetDir] and hashes to
   /// its digest.
@@ -442,9 +457,13 @@ class RulesetStore {
     }
   }
 
+  /// Writes only the files that differ from the bundle. Besides sparing the
+  /// disk, it keeps a revert after a failed start away from files the core
+  /// still holds open on Windows, unless they are the ones that must change.
   Future<void> _extractBundled(RulesetManifest bundled, String bundledJson) async {
     await dir.create(recursive: true);
     for (final file in bundled.files) {
+      if (await _fileMatches(File(p.join(dir.path, file.name)), file.sha256)) continue;
       final tmp = File(p.join(dir.path, '${file.name}.tmp'));
       await tmp.writeAsBytes(await bundle.file(file.name), flush: true);
       if (!await _renameWithRetry(tmp, p.join(dir.path, file.name))) {
