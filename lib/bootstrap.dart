@@ -14,7 +14,7 @@ import 'package:hiddify/core/model/environment.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/preferences/preferences_migration.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
-import 'package:hiddify/core/rulesets/ruleset_extractor.dart';
+import 'package:hiddify/core/rulesets/ruleset_store.dart';
 import 'package:hiddify/features/app/widget/app.dart';
 import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
 import 'package:hiddify/features/log/data/log_data_providers.dart';
@@ -45,19 +45,19 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
   await _init("directories", () => container.read(appDirectoriesProvider.future));
   LoggerController.init(container.read(logPathResolverProvider).appFile().path);
 
-  // Extract bundled CN rule-sets into the Go core's working directory. Must
-  // run before the Go core boots so `Type: Local` rule-sets in builder.go can
-  // load: the core os.Chdir()s to the working path and resolves relative Local
+  // Put the rule-sets in the Go core's working directory: a download staged
+  // last session, the downloaded set already there, or the bundle. Must run
+  // before the Go core boots so `Type: Local` rule-sets in builder.go can load:
+  // the core os.Chdir()s to the working path and resolves relative Local
   // rule-set paths against it (CWD), so a .srs written anywhere else makes every
   // `RuleSet:`-keyed rule fail to open and the core refuses to start.
   //
-  // baseDir and workingDir are now the same directory on every platform. They
-  // used to diverge on Android, where workingDir was the external files dir —
-  // see `_migrateAndroidWorkingDir`. Keep passing workingDir explicitly: it is
-  // the contract the core actually depends on.
+  // Pass workingDir, never baseDir. They differ on iOS (the App Group root vs
+  // its `Working` folder, which the tunnel extension reads), and they used to
+  // differ on Android too, which is how this bug first surfaced.
   await _safeInit("rulesets", () async {
     final dirs = await container.read(appDirectoriesProvider.future);
-    await RulesetExtractor.ensureExtracted(dirs.workingDir);
+    await RulesetStore(dirs.workingDir).ensureInstalled();
   });
 
   final appInfo = await _init("app info", () => container.read(appInfoProvider.future));
@@ -159,13 +159,7 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
   Logger.bootstrap.info("bootstrap took [${stopWatch.elapsedMilliseconds}ms]");
   stopWatch.stop();
 
-  runApp(
-    ProviderScope(
-      parent: container,
-      observers: [RiverpodObserver()],
-      child: const App(),
-    ),
-  );
+  runApp(ProviderScope(parent: container, observers: [RiverpodObserver()], child: const App()));
 
   if (!kIsWeb) {
     FlutterNativeSplash.remove();

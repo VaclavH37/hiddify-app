@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regenerates assets/rulesets/MANIFEST after `make fetch-rulesets`. The MANIFEST
-# is consumed by lib/core/rulesets/ (ruleset_manifest.dart, ruleset_extractor.dart)
+# is consumed by lib/core/rulesets/ (ruleset_manifest.dart, ruleset_store.dart)
 # and has the same shape as the rule-set mirror's manifest:
 #   schema      the set of files builder.go expects; must equal kRulesetSchema in
 #               ruleset_manifest.dart. Bump both when a set is added, removed or
