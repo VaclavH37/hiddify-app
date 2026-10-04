@@ -22,8 +22,18 @@ class AppInfoEntity with _$AppInfoEntity {
   /// wire, and no server keys off it.
   String get userAgent => "RaynVPN/$version ($operatingSystem)";
 
-  /// User-Agent sent on subscription API requests: `Rayn/<version>`.
-  String get subscriptionUserAgent => "Rayn/$version";
+  /// User-Agent sent on subscription API requests: `Rayn/<version> (<os>)`,
+  /// e.g. `Rayn/1.6.1 (ios)`.
+  ///
+  /// The MW counts installs per platform from the bracketed comment. It uses
+  /// the same lowercase names as [userAgent] (`ios`, `android`, `windows`,
+  /// `macos`, `linux`), so one parser reads both. The MW accepts any agent
+  /// that starts with `Rayn`, and the comment leaves that prefix intact.
+  ///
+  /// Send the platform and nothing else. Adding the OS version, device model
+  /// or locale would make a device easier to single out, and the App Store
+  /// privacy answers say the app collects none of them.
+  String get subscriptionUserAgent => "Rayn/$version ($operatingSystem)";
 
   /// The version as About shows it. Just the version: a dev build used to
   /// append the environment name, so a phone read "1.5.2 dev" while desktop
