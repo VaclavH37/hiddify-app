@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
+import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
+import 'package:hiddify/core/rulesets/ruleset_store.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
@@ -34,8 +36,13 @@ class AboutPage extends HookConsumerWidget {
         itemBuilder: (context) => [
           PopupMenuItem(
             child: Text(t.common.addToClipboard),
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: appInfo.format()));
+            onTap: () async {
+              // The rule-set version rides along because it now changes
+              // between app versions, and support needs it to read a routing
+              // or blocking report.
+              final dirs = await ref.read(appDirectoriesProvider.future);
+              final rules = await RulesetStore(dirs.workingDir).describeInstalled();
+              await Clipboard.setData(ClipboardData(text: '${appInfo.format()}\n$rules'));
             },
           ),
         ],

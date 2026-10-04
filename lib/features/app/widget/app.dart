@@ -11,6 +11,7 @@ import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/notification/rayn_toast.dart';
 import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
+import 'package:hiddify/core/rulesets/ruleset_updater.dart';
 import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
 import 'package:hiddify/features/auth/account/notifier/account_redirect.dart';
@@ -108,6 +109,9 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
       // renewal screen when a refresh returns an account verdict.
       ref.listen(expiryWatchdogProvider, (_, _) {});
       ref.listen(accountRedirectProvider, (_, _) {});
+      // Refreshes the rule-sets from the Rayn mirror while connected. Off
+      // until the mirror's address is set in Constants.
+      ref.listen(rulesetUpdaterProvider, (_, _) {});
     }
     // Re-verify any active Google Play purchase once at launch (Android + an
     // account session). Silent, idempotent, self-guarding — recovers an

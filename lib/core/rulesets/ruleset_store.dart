@@ -96,7 +96,7 @@ class RulesetState {
     return RulesetState(pending: pending, rejected: next.sublist(start), lastCheck: lastCheck);
   }
 
-  RulesetState withLastCheck(DateTime at) => RulesetState(pending: pending, rejected: rejected, lastCheck: at);
+  RulesetState withLastCheck(DateTime? at) => RulesetState(pending: pending, rejected: rejected, lastCheck: at);
 
   Map<String, dynamic> toJson() => {
     if (pending != null) 'pending': pending,
@@ -229,7 +229,13 @@ class RulesetStore {
 
     _log.info('extracting bundled rule-sets ${bundled.version}: ${decision.reason}');
     await _extractBundled(bundled, bundledJson);
-    if (state.pending != null) await _writeState(state.withPending(null));
+    // The set on disk is now the bundle, so whatever the mirror had is worth
+    // asking for again on the next connection, not a day after the last ask:
+    // an app update, a damaged download or another build sharing this folder
+    // (a developer's release and debug builds) can all land here.
+    if (state.pending != null || state.lastCheck != null) {
+      await _writeState(state.withPending(null).withLastCheck(null));
+    }
     _log.info('rule-sets extracted (${bundled.files.length} files, version ${bundled.version})');
     return true;
   });
@@ -237,6 +243,20 @@ class RulesetStore {
   /// The manifest of the set on disk, or null when there is none or it is
   /// unreadable.
   Future<RulesetManifest?> installedManifest() => _readManifest(dir);
+
+  /// One line for the text the About page copies for support: the installed
+  /// version and whether it is the bundle or a download.
+  Future<String> describeInstalled() async {
+    final installed = await _readManifest(dir);
+    if (installed == null) return 'rule lists: none installed';
+    var source = 'downloaded';
+    try {
+      if (installed.version == _parseManifest(await bundle.manifestJson()).version) source = 'bundled';
+    } catch (_) {
+      source = 'source unknown';
+    }
+    return 'rule lists ${installed.version} ($source)';
+  }
 
   Future<RulesetState> readState() => _locked(_readState);
 

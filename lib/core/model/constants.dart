@@ -45,6 +45,23 @@ abstract class Constants {
       .where((prefix) => prefix.isNotEmpty)
       .toList();
 
+  /// Base URL of the rule-set mirror, without a trailing slash. Empty turns
+  /// rule-set updates off, and the bundle shipped with the build is all the
+  /// app uses. Set once the mirror is live.
+  ///
+  /// A diagnostics build may point it somewhere else for a live test:
+  ///
+  ///   --dart-define=RAYN_DIAGNOSTICS=true
+  ///   --dart-define=RAYN_RULESET_MIRROR=https://example.invalid/test
+  ///
+  /// A shipped build ignores the define, like [testRouteExcludeAddress].
+  static String get rulesetMirrorBase {
+    const override = String.fromEnvironment("RAYN_RULESET_MIRROR");
+    return diagnosticsBuild && override.isNotEmpty ? override : _rulesetMirrorBase;
+  }
+
+  static const _rulesetMirrorBase = "";
+
   /// Latency a screenshots build reports, in milliseconds, when the build
   /// names one:
   ///

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
@@ -35,6 +36,17 @@ class _ResponseTypeGuard extends Interceptor {
     }
     handler.next(options);
   }
+}
+
+/// A response body larger than the caller allowed. The connection is dropped
+/// once the cap is passed, so a hostile or broken server cannot fill memory.
+class ResponseTooLargeException implements Exception {
+  const ResponseTooLargeException(this.maxBytes);
+
+  final int maxBytes;
+
+  @override
+  String toString() => 'response larger than $maxBytes bytes';
 }
 
 class DioHttpClient with InfraLogger {
@@ -224,6 +236,43 @@ class DioHttpClient with InfraLogger {
   // straight to disk is exactly what the at-rest encryption work removed. If a
   // future feature genuinely needs a file, write it through the cipher rather
   // than reinstating a raw one.
+
+  /// Fetches a response body into memory as bytes, refusing more than
+  /// [maxBytes]: a declared length over the cap fails before the body is read,
+  /// and an undeclared one fails as soon as it passes the cap.
+  ///
+  /// This is not the removed `download()` above. That streamed secret
+  /// subscription bodies to disk. This is for public data, the rule-set mirror,
+  /// which the caller verifies against a digest before writing it anywhere,
+  /// and it never touches disk itself.
+  Future<Uint8List> getBytes(
+    String url, {
+    required int maxBytes,
+    CancelToken? cancelToken,
+    bool proxyOnly = false,
+  }) async {
+    final mode = proxyOnly
+        ? "proxy"
+        : await isPortOpen("127.0.0.1", port)
+        ? "both"
+        : "direct";
+    final response = await _dio[mode]!.get<ResponseBody>(
+      url,
+      cancelToken: cancelToken,
+      options: _options(url, responseType: ResponseType.stream),
+    );
+    final body = response.data!;
+    if (body.contentLength > maxBytes) {
+      await body.stream.listen(null).cancel();
+      throw ResponseTooLargeException(maxBytes);
+    }
+    final bytes = BytesBuilder(copy: false);
+    await for (final chunk in body.stream) {
+      bytes.add(chunk);
+      if (bytes.length > maxBytes) throw ResponseTooLargeException(maxBytes);
+    }
+    return bytes.takeBytes();
+  }
 
   Options _options(
     String url, {

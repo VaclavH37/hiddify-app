@@ -187,6 +187,26 @@ void main() {
       expect((await store().readState()).pending, isNull);
     });
 
+    test('extracting the bundle forgets the last mirror check, so the next connection asks again', () async {
+      await store().ensureInstalled();
+      await store().installDownloaded(manifestOf(newer, downloaded), {'block-ads.srs': downloaded['block-ads.srs']!});
+      await store().recordCheck(DateTime.utc(2026, 10, 5, 9));
+      await onDisk('block-ads.srs').writeAsBytes([3], flush: true); // forces an extraction
+
+      expect(await store().ensureInstalled(), isTrue);
+      final state = await store().readState();
+      expect(state.lastCheck, isNull);
+      expect(state.pending, isNull);
+    });
+
+    test('keeping the installed set keeps the last mirror check', () async {
+      await store().ensureInstalled();
+      await store().recordCheck(DateTime.utc(2026, 10, 5, 9));
+
+      expect(await store().ensureInstalled(), isFalse);
+      expect((await store().readState()).lastCheck, DateTime.utc(2026, 10, 5, 9));
+    });
+
     // A crash between renaming the files and writing the MANIFEST leaves new
     // files under the old MANIFEST. The next launch must not trust them.
     test('restores the bundle when files disagree with their MANIFEST', () async {
