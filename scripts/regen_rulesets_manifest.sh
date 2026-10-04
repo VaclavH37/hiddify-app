@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
 # Regenerates assets/rulesets/MANIFEST after `make fetch-rulesets`. The MANIFEST
-# is consumed by lib/core/rulesets/ruleset_extractor.dart: only `version` is
-# compared at runtime to decide whether to re-extract, but `fetched_at`,
-# `upstream_commit`, and per-file sha256s are useful for audit / CI hygiene.
+# is consumed by lib/core/rulesets/ (ruleset_manifest.dart, ruleset_extractor.dart)
+# and has the same shape as the rule-set mirror's manifest:
+#   schema      the set of files builder.go expects; must equal kRulesetSchema in
+#               ruleset_manifest.dart. Bump both when a set is added, removed or
+#               renamed.
+#   version     UTC timestamp that orders manifests (newer wins). Here it is the
+#               fetch time; the mirror uses its publish time.
+#   fetched_at  when the files came from upstream; read by check-rulesets-fresh.
+#   files       name, sha256 (checked on every launch) and size.
+# `upstream_commit` is for audit only.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 RULESETS_DIR="assets/rulesets"
 MANIFEST="${RULESETS_DIR}/MANIFEST"
-VERSION="$(date -u +%Y-%m-%d)"
+SCHEMA=1
 FETCHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+VERSION="${FETCHED_AT}"
 
 # Best-effort upstream commit lookup; falls back to "unknown" if jq is missing
 # or the GitHub API is rate-limited (unauthenticated requests get 60/hr).
@@ -90,6 +98,7 @@ done
 
 cat > "${MANIFEST}" <<EOF
 {
+  "schema": ${SCHEMA},
   "version": "${VERSION}",
   "fetched_at": "${FETCHED_AT}",
   "upstream_commit": {

@@ -1,5 +1,6 @@
 {
-  "version": "2026-09-20",
+  "schema": 1,
+  "version": "2026-09-20T13:54:30Z",
   "fetched_at": "2026-09-20T13:54:30Z",
   "upstream_commit": {
     "geosite": "2188cad8cff230c36953175811304957e6d04326",

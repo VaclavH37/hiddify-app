@@ -107,7 +107,7 @@ void main() {
   });
 
   group("RulesetManifestFile", () {
-    test("parses name and sha256, ignoring the unmodelled size field", () {
+    test("parses name, sha256 and size", () {
       final file = RulesetManifestFile.fromJson(const {
         "name": "direct-private.srs",
         "sha256": "260491243e0266e5ba543f509ca7f13b07d6f4c2c26ade3f675ddea1661f3213",
@@ -116,6 +116,12 @@ void main() {
 
       expect(file.name, "direct-private.srs");
       expect(file.sha256, "260491243e0266e5ba543f509ca7f13b07d6f4c2c26ade3f675ddea1661f3213");
+      expect(file.size, 754);
+    });
+
+    test("size is optional", () {
+      final file = RulesetManifestFile.fromJson(const {"name": "direct-private.srs", "sha256": "ab"});
+      expect(file.size, isNull);
     });
 
     // sha256 is required precisely so a manifest that omits it fails loudly
