@@ -693,10 +693,11 @@ get-geo-assets:
 	# curl -L https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db -o $(GEO_ASSETS_DIR)/geosite.db
 
 # CN routing rule-sets are bundled into the AAB so they're available on first
-# launch inside the GFW (where raw.githubusercontent.com is unreachable). The
-# Dart extractor in lib/core/rulesets/ copies these from assets/ to the Go
-# core's BasePath on first launch / app update. See RULESETS.md for the human
-# workflow.
+# launch inside the GFW (where raw.githubusercontent.com is unreachable).
+# RulesetStore (lib/core/rulesets/) installs them into the Go core's working
+# directory at launch; while connected, RulesetUpdater may replace them with a
+# newer set from the Rayn mirror, fetched through the tunnel. The bundle stays
+# the first-launch baseline and the fallback. See RULESETS.md.
 RULESETS_DIR := assets$(SEP)rulesets
 RULESETS_GEOSITE_BASE := https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set
 RULESETS_GEOIP_BASE := https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set
@@ -704,7 +705,8 @@ RULESETS_GEOIP_BASE := https://raw.githubusercontent.com/SagerNet/sing-geoip/rul
 # geosite-category-ads-all but it is the small upstream v2fly list (~900 rules,
 # 8 KB); hiddify-geo's is a merged list with 42,619 domain suffixes. It also
 # carries malware/phishing/cryptominer sets that SagerNet's rule-set branch does
-# not have at all. Build-time dependency only — the client never fetches these.
+# not have at all. Build-time dependency only: no client ever fetches these
+# URLs. The Rayn mirror's pipeline runs this same target and serves the result.
 RULESETS_BLOCK_BASE := https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block
 
 .PHONY: fetch-rulesets check-rulesets-fresh

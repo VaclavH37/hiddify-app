@@ -18,23 +18,81 @@ of Phase 0 of a catch-up campaign.
 
 ### <a id="no-remote-rulesets"></a>No rule-set may be `Type: Remote`
 
-Every rule-set is bundled in `assets/rulesets/*.srs` and extracted at runtime.
-Remote rule-sets reintroduce a `raw.githubusercontent.com` dependency on the
-cold-start path and leak the fact that this client fetches Hiddify's geo data.
+Every rule-set is bundled in `assets/rulesets/*.srs`, and the core only ever
+loads it as `Type: Local` from `<workingDir>/rulesets/`. Remote rule-sets
+reintroduce a `raw.githubusercontent.com` dependency on the cold-start path and
+leak the fact that this client fetches Hiddify's geo data. In this fork they are
+also unsafe: a corrupt cached copy is fatal to start, and a failed first
+download can crash the process (`rule_set_remote.go`).
+
+Since 2026-10-04 the files can be refreshed at runtime, but by the app, not the
+core: `RulesetUpdater` downloads a newer set from the Rayn mirror and
+`RulesetStore` renames it into place, where the core's file watcher reloads it.
+The core still sees only local files. See the three invariants below.
 
 - **Enforced by:** `hiddify-core/v2/config/block_rulesets_test.go` ·
   `TestNoRemoteRuleSets`
 - **Background:** `RULESETS.md`
 
-### <a id="ruleset-tag-filename-map"></a>The rule-set tag ↔ filename map spans four files
+### <a id="ruleset-downloads-tunnel-only"></a>Rule-set downloads go only through the tunnel, only from the Rayn mirror
+
+The updater runs only while connected and fetches with `proxyOnly: true`, so the
+request never leaves the device outside the tunnel and reveals nothing to the
+local network. The mirror serves neutral file names under a Rayn-controlled
+host, never an upstream or vendor URL. A direct fetch or an upstream URL would
+bring back both reasons the bundle exists.
+
+- **Enforced by:** `test/design/design_invariants_test.dart` · "rule-set
+  downloads go only through the tunnel" (source check of
+  `lib/core/rulesets/ruleset_updater.dart`)
+- **Background:** `RULESETS.md` (Runtime updates)
+
+### <a id="ruleset-content-guards"></a>Rule-set contents pass the content guards before anyone receives them
+
+The `direct-*` sets decide what bypasses the tunnel. A file that matched a
+must-tunnel name (google.com, telegram.org, raynlabs.io, the public DNS
+servers, ...) would route that traffic outside the VPN. The guard also caps
+file and set size (the iOS extension holds the whole set in memory) and pins
+each set's shape: one kind of condition per set, domain-only where a DNS rule
+uses it. It reads each set's role off the built config, not off file names. The
+mirror's pipeline runs the same test against freshly fetched upstream files and
+refuses to publish on failure.
+
+- **Enforced by:** `hiddify-core/v2/config/ruleset_guard_test.go` ·
+  `TestRuleSetContentGuards`, `TestRuleSetRolesFollowTheBuiltConfig`,
+  `TestRuleSetGuardsRejectBadFiles`
+- **Background:** `RULESETS.md` (Content guards)
+
+### <a id="ruleset-bundle-fallback"></a>The bundle is always the fallback for a downloaded rule-set
+
+A missing or corrupt local rule-set is fatal to the next core start, so a
+download must never be able to keep the VPN down. Every write is verified and
+renamed into place with the MANIFEST last; a set that disagrees with its
+MANIFEST, is for another schema or file list, is older than the bundle, or was
+rejected, is replaced by the bundle at launch; and a core start the downloaded
+set breaks puts the bundle back, rejects that version and starts again.
+
+- **Enforced by:** `test/core/rulesets/ruleset_store_test.dart` ·
+  `test/features/connection/ruleset_start_guard_test.dart`
+- **Background:** `RULESETS.md` (How they reach the core, Safety net)
+
+### <a id="ruleset-tag-filename-map"></a>The rule-set tag ↔ filename map spans four files, and the schema with it
 
 `Makefile` `fetch-rulesets`, `scripts/regen_rulesets_manifest.sh` (`FILES`),
 `hiddify-core/v2/config/builder.go` (`Path:` literals), and
 `block_rulesets_test.go` (`expectedBlockRuleSets`) must all agree. Changing one
 alone produces a core that fails to start.
 
+Adding, removing or renaming a set also bumps `kRulesetSchema`
+(`lib/core/rulesets/ruleset_manifest.dart`) and `SCHEMA` in the regen script,
+and the mirror publishes the new set under `v<schema>/`. Without that, a build
+would download file names its core does not load.
+
 - **Enforced by:** `block_rulesets_test.go` ·
-  `TestBundledRuleSetFilesSatisfyConfig` (partial — skips without build tags)
+  `TestBundledRuleSetFilesSatisfyConfig` (partial — skips without build tags);
+  `ruleset_guard_test.go` · `TestRuleSetRolesFollowTheBuiltConfig` (fails on any
+  change to the set list); `test/core/rulesets/ruleset_manifest_test.dart`
+  (bundled MANIFEST is `kRulesetSchema` and lists exactly the files beside it)
 - **Background:** `RULESETS.md`
 
 ### <a id="no-ip-ruleset-in-dns-rule"></a>No IP-based rule-set in a DNS rule
@@ -45,6 +103,8 @@ domain is leaked to whichever resolver that branch selects. This has bitten this
 fork before.
 
 - **Enforced by:** `block_rulesets_test.go` · `TestBlockDNSRuleUsesDomainSetsOnly`
+  (by name); `ruleset_guard_test.go` · `TestRuleSetContentGuards` (by content:
+  every set a DNS rule references must hold domain rules only)
 
 ### <a id="no-fakeip"></a>FakeIP stays off
 

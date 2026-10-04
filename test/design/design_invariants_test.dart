@@ -124,6 +124,37 @@ void main() {
     });
   });
 
+  group('rule-set downloads go only through the tunnel', () {
+    // A connected client refreshes its rule-sets from the Rayn mirror. The fetch
+    // must ride the tunnel: a direct one would show the local network which
+    // lists this client loads, and inside a censored network the mirror may not
+    // be reachable any other way. The shipped mirror address must be a Rayn host,
+    // never an upstream or vendor URL, or the bundle's other reason for existing
+    // (no runtime fingerprint) is gone too.
+    // DESIGN-INVARIANTS.md#ruleset-downloads-tunnel-only
+    test('the updater fetches through the core only', () {
+      final updater = File('lib/core/rulesets/ruleset_updater.dart').readAsStringSync();
+      expect(updater, contains('getBytes('));
+      expect(
+        RegExp(r'getBytes\([^;]*proxyOnly: true').hasMatch(updater),
+        isTrue,
+        reason: 'every rule-set fetch must pass proxyOnly: true',
+      );
+      expect(updater, isNot(contains('directOnly')));
+      expect(updater, isNot(contains('proxyOnly: false')));
+    });
+
+    test('the shipped mirror address is not an upstream or vendor host', () {
+      final constants = File('lib/core/model/constants.dart').readAsStringSync();
+      final shipped = RegExp('_rulesetMirrorBase = "([^"]*)"').firstMatch(constants)?.group(1);
+      expect(shipped, isNotNull, reason: 'Constants._rulesetMirrorBase not found');
+      for (final banned in ['github', 'hiddify', 'sagernet', 'jsdelivr']) {
+        expect(shipped!.toLowerCase(), isNot(contains(banned)));
+      }
+      if (shipped!.isNotEmpty) expect(shipped, startsWith('https://'));
+    });
+  });
+
   group('shipped artifacts are obfuscated', () {
     // --obfuscate --split-debug-info is the layer that makes the masked
     // rayn:// key tables worth having. Losing it on one platform is invisible
