@@ -4,7 +4,9 @@
 # machine with a Hiddify-era build the RaynVPN installer inherited C:\Program
 # Files\Hiddify. This unique GUID gives Rayn a clean, independent install identity.
 app_id: 9E2B4D7A-6C31-4F58-B0A9-3D8E1F2C5A64
-publisher: RaynLabs
+# fastforge reads `publisher_name` (a bare `publisher` key is ignored), and fills
+# AppPublisher with it: the name Add/Remove Programs shows for the install.
+publisher_name: Rayn Labs L.L.C.
 publisher_url: https://www.raynlabs.io
 display_name: Rayn VPN
 # Pin the shortcut target to the GUI binary (CMake BINARY_NAME -> RaynVPN.exe).

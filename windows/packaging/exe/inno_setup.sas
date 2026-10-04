@@ -65,12 +65,41 @@ Name: "{userstartup}\\{{DISPLAY_NAME}}"; Filename: "{app}\\{{EXECUTABLE_NAME}}";
 ; error 740 (ERROR_ELEVATION_REQUIRED). The `shellexec` flag routes the launch through
 ; ShellExecuteEx instead, which honors the manifest and performs the UAC elevation, so
 ; the app starts elevated like it does from the Start-menu shortcut.
-Filename: "{app}\\{{EXECUTABLE_NAME}}"; Description: "{cm:LaunchProgram,{{DISPLAY_NAME}}}"; Flags: shellexec nowait postinstall skipifsilent
+Filename: "{app}\\{{EXECUTABLE_NAME}}"; Description: "{cm:LaunchProgram,{{DISPLAY_NAME}}}"; Flags: shellexec nowait postinstall skipifsilent; Check: not IsUpdateRun
+; In-app update (the app starts this installer with /SILENT /RAYNUPDATE=1): the
+; entry above is skipped in silent mode, so this one brings the app back. It runs
+; elevated through shellexec like the shortcut does, and tells the new build it
+; was updated and whether to reconnect (/RAYNRECONNECT=1).
+Filename: "{app}\\{{EXECUTABLE_NAME}}"; Parameters: "--updated {code:ReconnectArg}"; Flags: shellexec nowait; Check: IsUpdateRun
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{userappdata}\RaynVPN"
+; The app's data folder: path_provider's support dir, %APPDATA%\<CompanyName>\<ProductName>
+; from Runner.rc ("Rayn VPN" \ "RaynVPN"). Holds the profile database, encrypted
+; configs, preferences, rule-sets and logs. Updates never run the uninstaller, so
+; they keep it. The company folder goes too once it is empty.
+Type: filesandordirs; Name: "{userappdata}\Rayn VPN\RaynVPN"
+Type: dirifempty; Name: "{userappdata}\Rayn VPN"
+; Installers the in-app updater downloaded. Not cleared on install: during an
+; update the running setup is one of these files. The app clears it after the
+; update instead.
+Type: filesandordirs; Name: "{app}\updates"
 
 [Code]
+// True when the in-app updater started this setup (/RAYNUPDATE=1).
+function IsUpdateRun(): Boolean;
+begin
+  Result := ExpandConstant('{param:RAYNUPDATE|0}') = '1';
+end;
+
+// "--reconnect" when the app was connected before it started the update.
+function ReconnectArg(Param: String): String;
+begin
+  if ExpandConstant('{param:RAYNRECONNECT|0}') = '1' then
+    Result := '--reconnect'
+  else
+    Result := '';
+end;
+
 function InitializeSetup(): Boolean;
 var
   ResultCode: Integer;
