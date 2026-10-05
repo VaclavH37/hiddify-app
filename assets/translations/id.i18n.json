@@ -214,7 +214,17 @@
       "connectFirst": "Hubungkan untuk mengunduhnya.",
       "install": "Pasang",
       "later": "Nanti",
-      "skip": "Lewati versi ini"
+      "skip": "Lewati versi ini",
+      "downloading": "Mengunduh ${received} dari ${total} MB…",
+      "verifying": "Memeriksa unduhan…",
+      "installing": "Memasang. Rayn VPN akan ditutup sekarang dan terbuka lagi dalam sekitar setengah menit.",
+      "failedDownload": "Unduhan tidak selesai. Coba lagi nanti.",
+      "failedDamaged": "Unduhan rusak dan telah dihapus. Coba lagi nanti.",
+      "failedLaunch": "Program pemasang tidak dapat dijalankan. Anda bisa mendapatkan versi terbaru dari halaman akun Anda.",
+      "updated": "Diperbarui ke ${version}.",
+      "notInstalledTitle": "Pembaruan tidak terpasang",
+      "notInstalledBody": "Rayn VPN masih versi ${version}. Coba lagi nanti, atau dapatkan versi terbaru dari halaman akun Anda.",
+      "openAccount": "Buka halaman akun"
     }
   },
   "connection": {

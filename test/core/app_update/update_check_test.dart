@@ -175,6 +175,14 @@ void main() {
       expect(store.seenPublishedAt, DateTime.utc(2026, 10, 25));
     });
 
+    test('the install attempt is remembered until the next launch settles it', () async {
+      expect(store.attemptBuild, isNull);
+      await store.recordAttempt(10602);
+      expect(store.attemptBuild, 10602);
+      await store.clearAttempt();
+      expect(store.attemptBuild, isNull);
+    });
+
     test('skip and prompt are remembered', () async {
       await store.skip(10602);
       await store.recordPrompt(10603, now);

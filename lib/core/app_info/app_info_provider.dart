@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:hiddify/core/model/app_info_entity.dart';
 import 'package:hiddify/core/model/environment.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -10,6 +11,11 @@ part 'app_info_provider.g.dart';
 
 @Riverpod(keepAlive: true)
 Environment environment(EnvironmentRef ref) => throw Exception("override environmentProvider");
+
+/// The command-line arguments the app was started with; empty on mobile.
+/// Overridden in bootstrap.
+@Riverpod(keepAlive: true)
+List<String> launchArgs(Ref ref) => const [];
 
 @Riverpod(keepAlive: true)
 class AppInfo extends _$AppInfo {

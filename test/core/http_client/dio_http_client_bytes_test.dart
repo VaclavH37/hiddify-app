@@ -1,11 +1,14 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
 
-/// [DioHttpClient.getBytes] fetches rule-sets from the mirror into memory. It
+/// [DioHttpClient.getBytes] fetches rule-sets from the mirror into memory, and
+/// [DioHttpClient.downloadToFile] streams the Windows installer to disk. Both
 /// must return the body byte for byte, and must stop reading the moment a body
-/// passes the caller's cap, declared or not.
+/// passes the caller's cap, declared or not. A download that does not finish
+/// leaves no file behind.
 void main() {
   late HttpServer server;
   late List<void Function(HttpResponse)> script;
@@ -85,5 +88,89 @@ void main() {
       },
     ];
     await expectLater(client().getBytes(url(), maxBytes: body.length), throwsA(anything));
+  });
+
+  group('downloadToFile', () {
+    late Directory dir;
+    late File target;
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('rayn_download_test');
+      target = File('${dir.path}/RaynVPN-setup.exe.part');
+    });
+
+    tearDown(() => dir.deleteSync(recursive: true));
+
+    final big = List<int>.generate(1024 * 1024, (i) => (i * 7) % 256);
+
+    void chunked(HttpResponse res) {
+      res.contentLength = big.length;
+      for (var i = 0; i < big.length; i += 64 * 1024) {
+        res.add(big.sublist(i, i + 64 * 1024));
+      }
+    }
+
+    test('writes the body byte for byte and reports progress up to its length', () async {
+      script = [chunked];
+      final progress = <int>[];
+      final written = await client().downloadToFile(url(), target, maxBytes: big.length, onProgress: progress.add);
+
+      expect(written, big.length);
+      expect(target.readAsBytesSync(), big);
+      expect(progress, isNotEmpty);
+      expect(progress.last, big.length);
+      expect(progress, orderedEquals([...progress]..sort()));
+    });
+
+    test('a declared length over the cap is refused and nothing is written', () async {
+      script = [chunked];
+      await expectLater(
+        client().downloadToFile(url(), target, maxBytes: big.length - 1),
+        throwsA(isA<ResponseTooLargeException>()),
+      );
+      expect(target.existsSync(), isFalse);
+    });
+
+    test('an undeclared body passing the cap is refused and the partial file deleted', () async {
+      script = [
+        (res) {
+          for (var i = 0; i < big.length; i += 64 * 1024) {
+            res.add(big.sublist(i, i + 64 * 1024));
+          }
+        },
+      ];
+      await expectLater(
+        client().downloadToFile(url(), target, maxBytes: 100 * 1024),
+        throwsA(isA<ResponseTooLargeException>()),
+      );
+      expect(target.existsSync(), isFalse);
+    });
+
+    test('a cancel part-way leaves no file', () async {
+      script = [chunked];
+      final token = CancelToken();
+      await expectLater(
+        client().downloadToFile(
+          url(),
+          target,
+          maxBytes: big.length,
+          cancelToken: token,
+          onProgress: (_) => token.cancel(),
+        ),
+        throwsA(anything),
+      );
+      expect(target.existsSync(), isFalse);
+    });
+
+    test('an error status writes nothing', () async {
+      script = [
+        (res) {
+          res.statusCode = 404;
+          res.write('not found');
+        },
+      ];
+      await expectLater(client().downloadToFile(url(), target, maxBytes: big.length), throwsA(anything));
+      expect(target.existsSync(), isFalse);
+    });
   });
 }

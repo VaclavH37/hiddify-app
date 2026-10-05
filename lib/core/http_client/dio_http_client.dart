@@ -274,6 +274,60 @@ class DioHttpClient with InfraLogger {
     return bytes.takeBytes();
   }
 
+  /// Streams a response body into [target], refusing more than [maxBytes] the
+  /// way [getBytes] does, and reports progress as it goes. Any failure,
+  /// including a cancel, deletes what was written. Returns the byte count.
+  ///
+  /// Not the removed `download()` either: that wrote secret subscription
+  /// bodies. This writes the Windows updater's installer, a public file that
+  /// the caller checks against the size and digest in its signed manifest
+  /// before anything runs it.
+  Future<int> downloadToFile(
+    String url,
+    File target, {
+    required int maxBytes,
+    CancelToken? cancelToken,
+    bool proxyOnly = false,
+    void Function(int received)? onProgress,
+  }) async {
+    final mode = proxyOnly
+        ? "proxy"
+        : await isPortOpen("127.0.0.1", port)
+        ? "both"
+        : "direct";
+    final response = await _dio[mode]!.get<ResponseBody>(
+      url,
+      cancelToken: cancelToken,
+      options: _options(url, responseType: ResponseType.stream),
+    );
+    final body = response.data!;
+    if (body.contentLength > maxBytes) {
+      await body.stream.listen(null).cancel();
+      throw ResponseTooLargeException(maxBytes);
+    }
+    final sink = target.openWrite();
+    var received = 0;
+    var complete = false;
+    try {
+      await for (final chunk in body.stream) {
+        received += chunk.length;
+        if (received > maxBytes) throw ResponseTooLargeException(maxBytes);
+        sink.add(chunk);
+        onProgress?.call(received);
+      }
+      await sink.flush();
+      complete = true;
+    } finally {
+      try {
+        await sink.close();
+      } on FileSystemException {
+        complete = false;
+      }
+      if (!complete && target.existsSync()) target.deleteSync();
+    }
+    return received;
+  }
+
   Options _options(
     String url, {
     String? userAgent,

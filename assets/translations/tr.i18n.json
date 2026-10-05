@@ -214,7 +214,17 @@
       "connectFirst": "İndirmek için bağlanın.",
       "install": "Yükle",
       "later": "Daha sonra",
-      "skip": "Bu sürümü atla"
+      "skip": "Bu sürümü atla",
+      "downloading": "İndiriliyor: ${received} / ${total} MB…",
+      "verifying": "İndirilen dosya kontrol ediliyor…",
+      "installing": "Yükleniyor. Rayn VPN şimdi kapanacak ve yaklaşık yarım dakika sonra yeniden açılacak.",
+      "failedDownload": "İndirme tamamlanmadı. Daha sonra tekrar deneyin.",
+      "failedDamaged": "İndirilen dosya bozuktu ve silindi. Daha sonra tekrar deneyin.",
+      "failedLaunch": "Yükleyici başlatılamadı. En son sürümü hesap sayfanızdan edinebilirsiniz.",
+      "updated": "${version} sürümüne güncellendi.",
+      "notInstalledTitle": "Güncelleme yüklenmedi",
+      "notInstalledBody": "Rayn VPN hâlâ ${version} sürümünde. Daha sonra tekrar deneyin veya en son sürümü hesap sayfanızdan edinin.",
+      "openAccount": "Hesap sayfasını aç"
     }
   },
   "connection": {

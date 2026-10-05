@@ -59,13 +59,17 @@ void main() {
   }
 
   group('AppUpdateDialog', () {
-    /// Opens the dialog; [onResult] gets the choice it closes with.
-    Future<void> open(
+    /// Opens the dialog over a checker in [status]; [onResult] gets the choice
+    /// it closes with. Pumps rather than settles: the indeterminate bar of the
+    /// later phases never stops moving.
+    Future<_FakeChecker> open(
       WidgetTester tester,
       UpdateManifest offer, {
       ConnectionStatus status = const ConnectionStatus.connected(),
+      UpdateProgress? progress,
       void Function(AppUpdateChoice?)? onResult,
     }) async {
+      final checker = _FakeChecker(AppUpdateStatus(offer: offer, progress: progress));
       await pump(
         tester,
         Builder(
@@ -81,10 +85,18 @@ void main() {
           ),
         ),
         status: status,
+        overrides: [appUpdateCheckerProvider.overrideWith(() => checker)],
       );
       await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      return checker;
     }
+
+    Finder inDialog(Finder matching) => find.descendant(of: find.byType(AppUpdateDialog), matching: matching);
+
+    bool canPop(WidgetTester tester) =>
+        tester.widget<PopScope>(inDialog(find.byWidgetPredicate((widget) => widget is PopScope))).canPop;
 
     testWidgets('names the version and size, says what installing does, and offers three choices', (tester) async {
       await open(tester, offer());
@@ -100,13 +112,19 @@ void main() {
       final install = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Install'));
       expect(install.onPressed, isNotNull);
       expect(install.autofocus, isFalse, reason: 'Enter must not start a download');
+      expect(canPop(tester), isTrue, reason: 'Escape is "Later" while nothing runs');
     });
 
-    for (final (label, choice) in [
-      ('Install', AppUpdateChoice.install),
-      ('Later', AppUpdateChoice.later),
-      ('Skip this version', AppUpdateChoice.skip),
-    ]) {
+    testWidgets('Install starts the install for this offer and the dialog stays to show it', (tester) async {
+      final checker = await open(tester, offer());
+      await tester.tap(find.text('Install'));
+      await tester.pump();
+
+      expect(checker.installs.single.build, 10602);
+      expect(find.byType(AppUpdateDialog), findsOneWidget);
+    });
+
+    for (final (label, choice) in [('Later', AppUpdateChoice.later), ('Skip this version', AppUpdateChoice.skip)]) {
       testWidgets('"$label" closes the dialog with $choice', (tester) async {
         AppUpdateChoice? result;
         await open(tester, offer(), onResult: (value) => result = value);
@@ -132,6 +150,62 @@ void main() {
       expect(find.text('This is an important update. Please install it soon.'), findsOneWidget);
       expect(find.text('Skip this version'), findsNothing);
       expect(find.widgetWithText(TextButton, 'Later'), findsOneWidget);
+    });
+
+    testWidgets('while downloading it shows how far, offers only Cancel, and cannot be dismissed', (tester) async {
+      final checker = await open(tester, offer(), progress: const UpdateDownloading(12 * 1024 * 1024, 32883242));
+
+      expect(find.text('Downloading 12 of 31 MB…'), findsOneWidget);
+      final bar = tester.widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator));
+      expect(bar.value, closeTo(12 * 1024 * 1024 / 32883242, 1e-9));
+      expect(find.text('Install'), findsNothing);
+      expect(find.text('Later'), findsNothing);
+      expect(canPop(tester), isFalse);
+
+      await tester.tap(find.text('Cancel'));
+      expect(checker.cancels, 1);
+    });
+
+    for (final (progress, label) in [
+      (const UpdateVerifying(), 'Checking the download…'),
+      (const UpdateInstalling(), 'Installing. Rayn VPN closes now and opens again in about half a minute.'),
+    ]) {
+      testWidgets('"$label" has no buttons and cannot be dismissed', (tester) async {
+        await open(tester, offer(), progress: progress);
+
+        expect(find.text(label), findsOneWidget);
+        expect(inDialog(find.byType(TextButton)), findsNothing);
+        expect(inDialog(find.byType(FilledButton)), findsNothing);
+        expect(canPop(tester), isFalse);
+      });
+    }
+
+    for (final (reason, message) in [
+      (UpdateFailure.download, "The download didn't finish. Try again later."),
+      (UpdateFailure.damaged, 'The download was damaged and has been deleted. Try again later.'),
+    ]) {
+      testWidgets('a failed $reason says so and closes', (tester) async {
+        AppUpdateChoice? result;
+        await open(tester, offer(), progress: UpdateFailed(reason), onResult: (value) => result = value);
+
+        expect(find.text(message), findsOneWidget);
+        expect(find.text('Open account page'), findsNothing);
+        expect(canPop(tester), isTrue);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+        expect(result, AppUpdateChoice.later, reason: 'closing a failure never skips the release');
+      });
+    }
+
+    testWidgets('an installer that would not start points to the account page', (tester) async {
+      await open(tester, offer(), progress: const UpdateFailed(UpdateFailure.launch));
+
+      expect(
+        find.text("The installer couldn't start. You can get the latest version from your account page."),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(TextButton, 'Open account page'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Close'), findsOneWidget);
     });
   });
 
@@ -222,6 +296,8 @@ class _FakeChecker extends AppUpdateChecker {
   final AppUpdateOutcome outcome;
   int checks = 0;
   int shown = 0;
+  int cancels = 0;
+  final installs = <UpdateManifest>[];
 
   @override
   AppUpdateStatus build() => initial;
@@ -234,6 +310,12 @@ class _FakeChecker extends AppUpdateChecker {
 
   @override
   Future<void> showOffer() async => shown++;
+
+  @override
+  Future<void> install(UpdateManifest offer) async => installs.add(offer);
+
+  @override
+  void cancelDownload() => cancels++;
 }
 
 class _RecordingToasts extends InAppNotificationController {

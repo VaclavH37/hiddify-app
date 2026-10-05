@@ -20,6 +20,7 @@ class AppUpdateStore {
   static const skippedBuildKey = 'app_update_skipped_build';
   static const promptedAtKey = 'app_update_prompted_at';
   static const promptedBuildKey = 'app_update_prompted_build';
+  static const attemptBuildKey = 'app_update_attempt_build';
 
   DateTime? get lastCheck => _time(lastCheckKey);
 
@@ -48,6 +49,15 @@ class AppUpdateStore {
     await _prefs.setInt(promptedBuildKey, build);
     await _prefs.setInt(promptedAtKey, at.millisecondsSinceEpoch);
   }
+
+  /// The build an update was installing when the app last exited for it.
+  /// The next launch settles it: the new build says "Updated", the old one
+  /// says the install did not finish.
+  int? get attemptBuild => _prefs.getInt(attemptBuildKey);
+
+  Future<void> recordAttempt(int build) => _prefs.setInt(attemptBuildKey, build);
+
+  Future<void> clearAttempt() => _prefs.remove(attemptBuildKey);
 
   Future<void> saveOffer(String envelope) => _prefs.setString(offerKey, envelope);
 

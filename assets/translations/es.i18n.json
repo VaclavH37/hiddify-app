@@ -214,7 +214,17 @@
       "connectFirst": "Conéctate para descargarla.",
       "install": "Instalar",
       "later": "Más tarde",
-      "skip": "Omitir esta versión"
+      "skip": "Omitir esta versión",
+      "downloading": "Descargando ${received} de ${total} MB…",
+      "verifying": "Comprobando la descarga…",
+      "installing": "Instalando. Rayn VPN se cerrará ahora y volverá a abrirse en aproximadamente medio minuto.",
+      "failedDownload": "La descarga no se completó. Inténtalo más tarde.",
+      "failedDamaged": "La descarga estaba dañada y se ha eliminado. Inténtalo más tarde.",
+      "failedLaunch": "No se pudo iniciar el instalador. Puedes obtener la última versión desde la página de tu cuenta.",
+      "updated": "Actualizado a ${version}.",
+      "notInstalledTitle": "La actualización no se instaló",
+      "notInstalledBody": "Rayn VPN sigue en la versión ${version}. Inténtalo más tarde u obtén la última versión desde la página de tu cuenta.",
+      "openAccount": "Abrir página de la cuenta"
     }
   },
   "connection": {

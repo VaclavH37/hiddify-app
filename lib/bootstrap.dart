@@ -30,7 +30,10 @@ import 'package:hiddify/riverpod_observer.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async {
+/// [args] are the command-line arguments, which only the desktop builds get.
+/// The Windows installer passes `--updated` (and `--reconnect`) when it starts
+/// the new build after an in-app update.
+Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env, {List<String> args = const []}) async {
   if (!kIsWeb) {
     FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   }
@@ -40,7 +43,9 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
 
   final stopWatch = Stopwatch()..start();
 
-  final container = ProviderContainer(overrides: [environmentProvider.overrideWithValue(env)]);
+  final container = ProviderContainer(
+    overrides: [environmentProvider.overrideWithValue(env), launchArgsProvider.overrideWithValue(args)],
+  );
 
   await _init("directories", () => container.read(appDirectoriesProvider.future));
   LoggerController.init(container.read(logPathResolverProvider).appFile().path);

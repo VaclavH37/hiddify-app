@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:hiddify/bootstrap.dart';
 import 'package:hiddify/core/model/environment.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   // debugPaintSizeEnabled = true;
 
@@ -13,5 +13,5 @@ Future<void> main() async {
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent),
   );
 
-  return await lazyBootstrap(widgetsBinding, Environment.dev);
+  return await lazyBootstrap(widgetsBinding, Environment.dev, args: args);
 }

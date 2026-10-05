@@ -198,13 +198,14 @@ void main() {
       }
     });
 
-    test('update checks fetch through the core only', () {
+    test('the manifest and the installer come through the core only', () {
       final checker = libSources['lib/core/app_update/app_update_checker.dart']!;
-      expect(
-        RegExp(r'getBytes\([^;]*proxyOnly: true').hasMatch(checker),
-        isTrue,
-        reason: 'every update fetch must pass proxyOnly: true',
-      );
+      final calls = RegExp(r'\.(getBytes|downloadToFile)\(').allMatches(checker).toList();
+      expect(calls.map((m) => m.group(1)).toSet(), {'getBytes', 'downloadToFile'});
+      for (final call in calls) {
+        final arguments = checker.substring(call.end, checker.indexOf(';', call.end));
+        expect(arguments, contains('proxyOnly: true'), reason: 'every ${call.group(1)} must pass proxyOnly: true');
+      }
       expect(checker, isNot(contains('directOnly')));
       expect(checker, isNot(contains('proxyOnly: false')));
     });

@@ -214,7 +214,17 @@
       "connectFirst": "连接后即可下载。",
       "install": "安装",
       "later": "稍后",
-      "skip": "跳过此版本"
+      "skip": "跳过此版本",
+      "downloading": "正在下载 ${received} / ${total} MB…",
+      "verifying": "正在校验下载的文件…",
+      "installing": "正在安装。Rayn VPN 将立即关闭，约半分钟后重新打开。",
+      "failedDownload": "下载未完成，请稍后再试。",
+      "failedDamaged": "下载的文件已损坏并已删除，请稍后再试。",
+      "failedLaunch": "无法启动安装程序。您可以前往账户页面获取最新版本。",
+      "updated": "已更新到 ${version}。",
+      "notInstalledTitle": "更新未安装",
+      "notInstalledBody": "Rayn VPN 仍为 ${version} 版本。请稍后再试，或前往您的账户页面获取最新版本。",
+      "openAccount": "打开账户页面"
     }
   },
   "connection": {
