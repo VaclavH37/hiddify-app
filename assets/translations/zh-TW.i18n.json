@@ -105,6 +105,15 @@
       "telegramChannel": "Telegram 頻道",
       "termsAndConditions": "條款與條件",
       "privacyPolicy": "隱私權政策",
+      "update": {
+        "available": "更新至 ${version}",
+        "check": "檢查更新",
+        "checking": "正在檢查…",
+        "upToDate": "Rayn VPN 已是最新版本。",
+        "failed": "無法檢查更新，請稍後再試。",
+        "website": "取得最新版本",
+        "websiteSubtitle": "前往您的帳戶頁面"
+      },
       "copyright": "© ${year} ${company}"
     },
     "settings": {
@@ -196,6 +205,16 @@
       "idleMenuBar": "它會留在選單列中。退出將完全關閉應用程式。",
       "keepRunning": "繼續執行",
       "remember": "記住我的選擇"
+    },
+    "appUpdate": {
+      "title": "有可用的更新",
+      "body": "Rayn VPN ${version} 已可安裝（${size} MB）。",
+      "important": "這是重要更新，請盡快安裝。",
+      "whatHappens": "安裝時 Rayn VPN 會關閉約半分鐘，之後自動重新開啟並重新連線。",
+      "connectFirst": "連線後即可下載。",
+      "install": "安裝",
+      "later": "稍後",
+      "skip": "略過此版本"
     }
   },
   "connection": {

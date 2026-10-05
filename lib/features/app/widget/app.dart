@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:hiddify/core/app_update/app_update_checker.dart';
+import 'package:hiddify/core/app_update/self_update.dart';
 import 'package:hiddify/core/localization/locale_extensions.dart';
 import 'package:hiddify/core/localization/locale_preferences.dart';
 import 'package:hiddify/core/localization/translations.dart';
@@ -112,6 +114,9 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
       // Refreshes the rule-sets from the Rayn mirror while connected. Off
       // until the mirror's address is set in Constants.
       ref.listen(rulesetUpdaterProvider, (_, _) {});
+      // Offers newer releases of the Windows EXE build while connected. The
+      // constant compiles it out of every other build.
+      if (kSelfUpdate && selfUpdatePlatform) ref.listen(appUpdateCheckerProvider, (_, _) {});
     }
     // Re-verify any active Google Play purchase once at launch (Android + an
     // account session). Silent, idempotent, self-guarding — recovers an

@@ -448,6 +448,10 @@ windows-zip-release: check-rulesets-fresh rayn-link-key
 	rm -rf RaynVPN; \
 	$(GREEN)Successful$(DONE)
 
+# The only build that carries the in-app updater (lib/core/app_update/). Every
+# other target leaves RAYN_SELF_UPDATE unset, so the compiler drops the updater
+# from them: Play forbids self-updating apps, and the portable ZIP and MSIX are
+# not updated in place. test/design/design_invariants_test.dart enforces this.
 windows-exe-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	  --platform windows \
@@ -456,7 +460,8 @@ windows-exe-release: check-rulesets-fresh rayn-link-key
 	  --artifact-name=$(FF_ARTIFACT_NAME) \
 	  --build-target=$(TARGET) \
 	  $(FF_OBFUSCATE) \
-	  $(FF_DART_DEFINES)
+	  $(FF_DART_DEFINES) \
+	  --build-dart-define=RAYN_SELF_UPDATE=true
 
 windows-msix-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \

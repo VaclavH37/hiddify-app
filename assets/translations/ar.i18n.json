@@ -105,6 +105,15 @@
       "telegramChannel": "قناة التيليجرام",
       "termsAndConditions": "الشروط والأحكام",
       "privacyPolicy": "سياسة الخصوصية",
+      "update": {
+        "available": "التحديث إلى ${version}",
+        "check": "التحقق من وجود تحديثات",
+        "checking": "جارٍ التحقق…",
+        "upToDate": "Rayn VPN محدَّث.",
+        "failed": "تعذّر التحقق من وجود تحديثات. يرجى المحاولة لاحقًا.",
+        "website": "احصل على أحدث إصدار",
+        "websiteSubtitle": "من صفحة حسابك"
+      },
       "copyright": "© ${year} ${company}"
     },
     "settings": {
@@ -196,6 +205,16 @@
       "idleMenuBar": "سيبقى في شريط القوائم. الخروج يغلقه تمامًا.",
       "keepRunning": "إبقاؤه قيد التشغيل",
       "remember": "تذكر خياري"
+    },
+    "appUpdate": {
+      "title": "يتوفر تحديث",
+      "body": "الإصدار ${version} من Rayn VPN جاهز للتثبيت (${size} ميغابايت).",
+      "important": "هذا تحديث مهم. يرجى تثبيته قريبًا.",
+      "whatHappens": "يُغلق التثبيت Rayn VPN لمدة نصف دقيقة تقريبًا، ثم يفتحه مرة أخرى ويعيد الاتصال.",
+      "connectFirst": "اتصل لتنزيله.",
+      "install": "تثبيت",
+      "later": "لاحقًا",
+      "skip": "تخطي هذا الإصدار"
     }
   },
   "connection": {

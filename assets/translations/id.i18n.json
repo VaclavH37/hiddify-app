@@ -105,6 +105,15 @@
       "telegramChannel": "Saluran Telegram",
       "termsAndConditions": "Syarat dan Ketentuan",
       "privacyPolicy": "Kebijakan Privasi",
+      "update": {
+        "available": "Perbarui ke ${version}",
+        "check": "Periksa pembaruan",
+        "checking": "Memeriksa…",
+        "upToDate": "Rayn VPN sudah versi terbaru.",
+        "failed": "Tidak dapat memeriksa pembaruan. Coba lagi nanti.",
+        "website": "Dapatkan versi terbaru",
+        "websiteSubtitle": "Dari halaman akun Anda"
+      },
       "copyright": "© ${year} ${company}"
     },
     "settings": {
@@ -196,6 +205,16 @@
       "idleMenuBar": "Rayn VPN tetap ada di bilah menu. Keluar akan menutupnya sepenuhnya.",
       "keepRunning": "Tetap berjalan",
       "remember": "Ingat pilihan saya"
+    },
+    "appUpdate": {
+      "title": "Pembaruan tersedia",
+      "body": "Rayn VPN ${version} siap dipasang (${size} MB).",
+      "important": "Ini pembaruan penting. Harap segera pasang.",
+      "whatHappens": "Pemasangan menutup Rayn VPN sekitar setengah menit, lalu membukanya kembali dan menyambung ulang.",
+      "connectFirst": "Hubungkan untuk mengunduhnya.",
+      "install": "Pasang",
+      "later": "Nanti",
+      "skip": "Lewati versi ini"
     }
   },
   "connection": {

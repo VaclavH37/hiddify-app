@@ -289,6 +289,15 @@
       "telegramChannel": "Telegram channel",
       "termsAndConditions": "Terms and conditions",
       "privacyPolicy": "Privacy policy",
+      "update": {
+        "available": "Update to ${version}",
+        "check": "Check for updates",
+        "checking": "Checking…",
+        "upToDate": "Rayn VPN is up to date.",
+        "failed": "Couldn't check for updates. Try again later.",
+        "website": "Get the latest version",
+        "websiteSubtitle": "From your account page"
+      },
       "copyright": "© ${year} ${company}"
     },
     "settings": {
@@ -380,6 +389,16 @@
       "idleMenuBar": "It stays in the menu bar. Exit closes it completely.",
       "keepRunning": "Keep running",
       "remember": "Remember my choice"
+    },
+    "appUpdate": {
+      "title": "Update available",
+      "body": "Rayn VPN ${version} is ready to install (${size} MB).",
+      "important": "This is an important update. Please install it soon.",
+      "whatHappens": "Installing closes Rayn VPN for about half a minute, then opens it again and reconnects.",
+      "connectFirst": "Connect to download it.",
+      "install": "Install",
+      "later": "Later",
+      "skip": "Skip this version"
     }
   },
   "connection": {

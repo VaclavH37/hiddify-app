@@ -105,6 +105,15 @@
       "telegramChannel": "Telegram kanalı",
       "termsAndConditions": "Şartlar ve Koşullar",
       "privacyPolicy": "Gizlilik Politikası",
+      "update": {
+        "available": "${version} sürümüne güncelle",
+        "check": "Güncellemeleri kontrol et",
+        "checking": "Kontrol ediliyor…",
+        "upToDate": "Rayn VPN güncel.",
+        "failed": "Güncellemeler kontrol edilemedi. Daha sonra tekrar deneyin.",
+        "website": "En son sürümü edinin",
+        "websiteSubtitle": "Hesap sayfanızdan"
+      },
       "copyright": "© ${year} ${company}"
     },
     "settings": {
@@ -196,6 +205,16 @@
       "idleMenuBar": "Menü çubuğunda kalır. Çıkış, uygulamayı tamamen kapatır.",
       "keepRunning": "Çalışmaya devam et",
       "remember": "Seçimimi hatırla"
+    },
+    "appUpdate": {
+      "title": "Güncelleme var",
+      "body": "Rayn VPN ${version} yüklenmeye hazır (${size} MB).",
+      "important": "Bu önemli bir güncelleme. Lütfen kısa süre içinde yükleyin.",
+      "whatHappens": "Yükleme, Rayn VPN'i yaklaşık yarım dakika kapatır, ardından yeniden açar ve tekrar bağlanır.",
+      "connectFirst": "İndirmek için bağlanın.",
+      "install": "Yükle",
+      "later": "Daha sonra",
+      "skip": "Bu sürümü atla"
     }
   },
   "connection": {

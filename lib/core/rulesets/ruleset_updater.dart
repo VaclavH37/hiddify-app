@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
@@ -12,6 +11,7 @@ import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/rulesets/ruleset_manifest.dart';
 import 'package:hiddify/core/rulesets/ruleset_store.dart';
 import 'package:hiddify/core/rulesets/srs_check.dart';
+import 'package:hiddify/core/utils/connected_loop.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:loggy/loggy.dart';
 import 'package:meta/meta.dart';
@@ -199,54 +199,6 @@ String describeMirrorError(Object error) => switch (error) {
   _ => error.runtimeType.toString(),
 };
 
-/// Runs [check] while connected: once after [firstDelay] when the connection
-/// comes up, then again after whatever delay each run returns, until it goes
-/// down. Disconnecting cancels the wait and calls [onStop], which aborts a run
-/// in flight; a run that finishes after the disconnect schedules nothing.
-class ConnectedLoop {
-  ConnectedLoop({required this.check, required this.firstDelay, this.onStop});
-
-  final Future<Duration> Function() check;
-  final Duration Function() firstDelay;
-  final void Function()? onStop;
-
-  Timer? _timer;
-  var _connected = false;
-
-  void connected(bool value) {
-    if (value == _connected) return;
-    _connected = value;
-    if (value) {
-      _schedule(firstDelay());
-    } else {
-      stop();
-    }
-  }
-
-  void stop() {
-    _timer?.cancel();
-    _timer = null;
-    onStop?.call();
-  }
-
-  void _schedule(Duration delay) {
-    _timer?.cancel();
-    _timer = Timer(delay, _fire);
-  }
-
-  Future<void> _fire() async {
-    _timer = null;
-    if (!_connected) return;
-    Duration next;
-    try {
-      next = await check();
-    } catch (_) {
-      next = rulesetRetryAfterFailure;
-    }
-    if (_connected && _timer == null) _schedule(next);
-  }
-}
-
 /// Keeps the rule-sets fresh from the Rayn mirror while the app is connected.
 ///
 /// Downloads go only through the tunnel (`proxyOnly`), never direct: the
@@ -273,6 +225,7 @@ class RulesetUpdater extends _$RulesetUpdater {
       // it opened, which on Windows otherwise refuse a rename), and spreads a
       // crowd that reconnects together after an outage.
       firstDelay: () => Duration(seconds: 30 + random.nextInt(91)),
+      retryAfterFailure: rulesetRetryAfterFailure,
       onStop: () => _inFlight?.cancel(),
     );
     _loop = loop;

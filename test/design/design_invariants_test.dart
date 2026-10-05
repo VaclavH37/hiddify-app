@@ -155,6 +155,74 @@ void main() {
     });
   });
 
+  group('self-update exists only in the Windows EXE build', () {
+    // The updater installs code as administrator, and Google Play forbids an
+    // app that updates itself outside the store; the App Store answer says the
+    // app has no update-check host. So it is compiled into the Windows EXE
+    // build alone: only `windows-exe-release` defines RAYN_SELF_UPDATE, and
+    // every use outside lib/core/app_update/ sits behind the constant, which
+    // the compiler folds away everywhere else.
+    final makefile = File('Makefile').readAsStringSync();
+    final recipes = _makeRecipes(makefile);
+    final libSources = {
+      for (final file in Directory('lib').listSync(recursive: true).whereType<File>())
+        if (file.path.endsWith('.dart')) file.path.replaceAll(r'\', '/'): file.readAsStringSync(),
+    };
+
+    test('only windows-exe-release defines RAYN_SELF_UPDATE', () {
+      expect(
+        [
+          for (final MapEntry(:key, :value) in recipes.entries)
+            if (value.contains('RAYN_SELF_UPDATE')) key,
+        ],
+        ['windows-exe-release'],
+      );
+      expect(
+        makefile.split('\n').where((line) => !line.trimLeft().startsWith('#') && line.contains('RAYN_SELF_UPDATE')),
+        hasLength(1),
+        reason: 'set once, in that recipe; never in FF_DART_DEFINES or another variable',
+      );
+    });
+
+    test('every use outside the module sits behind the constant', () {
+      for (final MapEntry(key: path, value: source) in libSources.entries) {
+        if (path.startsWith('lib/core/app_update/')) continue;
+        if (!source.contains('package:hiddify/core/app_update/')) continue;
+        expect(source, contains('kSelfUpdate &&'), reason: '$path uses the updater without the kSelfUpdate gate');
+      }
+    });
+
+    test('the signing code never ships: only the publish tool and the tests use it', () {
+      for (final MapEntry(key: path, value: source) in libSources.entries) {
+        expect(source, isNot(contains('app_update/update_signing.dart')), reason: path);
+      }
+    });
+
+    test('update checks fetch through the core only', () {
+      final checker = libSources['lib/core/app_update/app_update_checker.dart']!;
+      expect(
+        RegExp(r'getBytes\([^;]*proxyOnly: true').hasMatch(checker),
+        isTrue,
+        reason: 'every update fetch must pass proxyOnly: true',
+      );
+      expect(checker, isNot(contains('directOnly')));
+      expect(checker, isNot(contains('proxyOnly: false')));
+    });
+
+    test('releases come from the Rayn host over https and must carry a pinned signature', () {
+      final check = libSources['lib/core/app_update/update_check.dart']!;
+      expect(RegExp("_appUpdateBase = '([^']*)'").firstMatch(check)?.group(1), 'https://cdn.raynlabs.io');
+      expect(
+        RegExp(
+          r"^\s*'[a-z0-9-]+': '[A-Za-z0-9+/=]{88}',$",
+          multiLine: true,
+        ).hasMatch(libSources['lib/core/app_update/update_keys.dart']!),
+        isTrue,
+        reason: 'with no pinned key no release can ever verify',
+      );
+    });
+  });
+
   group('shipped artifacts are obfuscated', () {
     // --obfuscate --split-debug-info is the layer that makes the masked
     // rayn:// key tables worth having. Losing it on one platform is invisible

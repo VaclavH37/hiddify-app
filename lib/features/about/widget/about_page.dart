@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
+import 'package:hiddify/core/app_update/self_update.dart';
+import 'package:hiddify/core/app_update/widget/app_update_tile.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
@@ -124,6 +126,12 @@ class AboutPage extends HookConsumerWidget {
               ],
             ),
           ),
+          // The Windows EXE build's updater. kSelfUpdate is a compile-time
+          // constant, so every other build drops this row and the updater.
+          if (kSelfUpdate && selfUpdatePlatform) ...[
+            const SizedBox(height: RaynSpacing.lg),
+            const RaynSettingsGroup(children: [AppUpdateTile()]),
+          ],
           RaynSectionHeader(t.pages.about.links),
           RaynSettingsGroup(children: links),
           const SizedBox(height: RaynSpacing.xl),

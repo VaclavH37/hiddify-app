@@ -105,6 +105,15 @@
       "telegramChannel": "Canal de Telegram",
       "termsAndConditions": "Términos y condiciones",
       "privacyPolicy": "Política de privacidad",
+      "update": {
+        "available": "Actualizar a ${version}",
+        "check": "Buscar actualizaciones",
+        "checking": "Buscando…",
+        "upToDate": "Rayn VPN está actualizado.",
+        "failed": "No se pudieron buscar actualizaciones. Inténtalo más tarde.",
+        "website": "Obtener la última versión",
+        "websiteSubtitle": "Desde la página de tu cuenta"
+      },
       "copyright": "© ${year} ${company}"
     },
     "settings": {
@@ -196,6 +205,16 @@
       "idleMenuBar": "Seguirá en la barra de menús. Salir lo cierra por completo.",
       "keepRunning": "Mantener en ejecución",
       "remember": "Recordar mi elección"
+    },
+    "appUpdate": {
+      "title": "Actualización disponible",
+      "body": "Rayn VPN ${version} está listo para instalarse (${size} MB).",
+      "important": "Esta actualización es importante. Instálala pronto.",
+      "whatHappens": "La instalación cierra Rayn VPN durante medio minuto aproximadamente y luego lo vuelve a abrir y lo reconecta.",
+      "connectFirst": "Conéctate para descargarla.",
+      "install": "Instalar",
+      "later": "Más tarde",
+      "skip": "Omitir esta versión"
     }
   },
   "connection": {
