@@ -45,7 +45,7 @@ bring back both reasons the bundle exists.
 - **Enforced by:** `test/design/design_invariants_test.dart` · "rule-set
   downloads go only through the tunnel" (source check of
   `lib/core/rulesets/ruleset_updater.dart`)
-- **Background:** `RULESETS.md` (Runtime updates)
+- **Background:** `RULESETS.md` (Runtime updates), `RULESET-UPDATE-SERVER.md`
 
 ### <a id="ruleset-content-guards"></a>Rule-set contents pass the content guards before anyone receives them
 
@@ -61,7 +61,7 @@ refuses to publish on failure.
 - **Enforced by:** `hiddify-core/v2/config/ruleset_guard_test.go` ·
   `TestRuleSetContentGuards`, `TestRuleSetRolesFollowTheBuiltConfig`,
   `TestRuleSetGuardsRejectBadFiles`
-- **Background:** `RULESETS.md` (Content guards)
+- **Background:** `RULESETS.md` (Content guards), `RULESET-UPDATE-SERVER.md` (the pipeline)
 
 ### <a id="ruleset-bundle-fallback"></a>The bundle is always the fallback for a downloaded rule-set
 
@@ -298,10 +298,67 @@ changes has no value here and makes a forbidden path look maintained.
   assertion that no release target depends on a `*-libs` target would close it.
 - **Background:** `CORE_BUILD.md`, `METHODOLOGY.md` (§ Never)
 
-### <a id="no-upstream-autoupdate"></a>No in-app auto-update
+### <a id="self-update-windows-exe-only"></a>Self-update exists only in the Windows EXE build, and upstream's updater stays deleted
 
-`lib/features/app_update/` and `appcast.xml` were deleted. Upstream continues to
-maintain them.
+Upstream's `lib/features/app_update/` (a GitHub-releases and appcast checker that
+opened a browser) and `appcast.xml` were deleted and stay deleted; upstream
+continues to maintain them. Rayn has its own updater, `lib/core/app_update/`,
+and it is compiled into the Windows EXE build alone. `kSelfUpdate` is a
+dart-define that only `make windows-exe-release` sets, and every use outside the
+module sits behind `if (kSelfUpdate && …)`, so the compiler drops the updater,
+its manifest address and its pinned keys from Android, iOS, the Mac App Store,
+MSIX and the portable ZIP. Google Play forbids an app that updates itself
+outside the store, and the App Store answer says the app has no update-check
+host. The portable ZIP and MSIX are never updated in place.
+
+- **Enforced by:** `test/design/design_invariants_test.dart`, group *self-update
+  exists only in the Windows EXE build*: only `windows-exe-release` defines
+  `RAYN_SELF_UPDATE`, once; every `lib/` file outside the module that imports it
+  carries the `kSelfUpdate &&` gate. Checked once in a binary (2026-10-04): a
+  Windows release build without the define has none of the updater's strings in
+  `app.so`, and one with it does.
+- **Background:** `INSTALLER-UPDATE-SERVER.md`
+
+### <a id="update-integrity"></a>An update runs only if a pinned key signed it, and only the exact file it names
+
+An update installs code as administrator on every Windows client. The trust
+root is an ECDSA P-256 key the owner holds offline; the app pins its public key
+in `lib/core/app_update/update_keys.dart` (two slots, for rotation). The
+signature covers the exact payload bytes, and the payload names one installer
+under `app/windows/` by size and sha256. The R2 bucket, the CDN and any CI can
+withhold or delete an update, but none of them can make a client install one.
+
+- The private key never enters the repository or CI. The signing code
+  (`update_signing.dart`) is used by `tool/publish_windows_update.dart` and the
+  tests, never by `lib/`.
+- A stored offer is verified again on every read, because the preferences file
+  is user-writable. A manifest older than one already seen is refused.
+- The installer is downloaded into `<install dir>\updates`, which only an
+  administrator can write, and re-read from disk for its size and digest right
+  before it is started. The app runs elevated and starts the installer
+  elevated, so a user-writable folder (`%TEMP%`, `%LOCALAPPDATA%`) would let any
+  process swap the file between the check and the launch.
+
+- **Enforced by:** `test/core/app_update/update_manifest_test.dart` (signature,
+  tampering, unpinned key, malformed envelopes, every pinned key valid) ·
+  `update_check_test.dart` (refusals, replay, the stored offer re-verified) ·
+  `update_install_test.dart` (size and digest) · `test/design/design_invariants_test.dart`,
+  group *self-update exists only in the Windows EXE build* (signing code never
+  in `lib/`, a key pinned, the download folder beside the executable, the check
+  before the launch).
+- **Background:** `INSTALLER-UPDATE-SERVER.md`
+
+### <a id="update-downloads-tunnel-only"></a>Update checks and downloads go only through the tunnel
+
+The checker runs only while connected, and both the manifest and the installer
+are fetched with `proxyOnly: true`; a disconnect cancels a download. As with the
+rule-sets, the request then shows nothing to the local network, and the host
+may not be reachable any other way. A client that cannot connect gets the
+account page instead, on the About page.
+
+- **Enforced by:** `test/design/design_invariants_test.dart`, *the manifest and
+  the installer come through the core only*.
+- **Background:** `INSTALLER-UPDATE-SERVER.md`
 
 ---
 

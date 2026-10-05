@@ -13,7 +13,8 @@
 //
 // publish, in order:
 //   1. reads the version from pubspec.yaml and finds dist/<ver>+<build>/…exe;
-//   2. refuses a build that is not newer than the live manifest's;
+//   2. refuses a build that is not newer than the live manifest's, and an
+//      installer name already published with different contents;
 //   3. signs the manifest and verifies it with the keys this repository pins
 //      (lib/core/app_update/update_keys.dart), so a release the app would
 //      reject never goes out;
@@ -165,6 +166,19 @@ Future<void> _publish(Map<String, String> options) async {
   stdout.writeln('hashing ${installer.path} ($size bytes)…');
   final digest = (await sha256.bind(installer.openRead()).first).toString();
   final remotePath = 'app/windows/RaynVPN-$version-$build-windows.exe';
+
+  // A published installer name is immutable: the upload below skips a name
+  // that exists, and the CDN caches it for a year. The same version and build
+  // rebuilt is a different file, so signing its digest under that name would
+  // fail every client's check. Promoting the same file from test to stable is
+  // fine; a rebuild needs a new build number.
+  final published = await _sha256Of('$base/$remotePath?check=$digest');
+  if (published != null && published != digest) {
+    throw _ToolError(
+      '$remotePath is already published with different contents (sha256 ${published.substring(0, 16)}…, '
+      'this file ${digest.substring(0, 16)}…). Publish the file that was tested, or give a rebuild a new build number.',
+    );
+  }
   final manifest = UpdateManifest(
     schema: kUpdateManifestSchema,
     platform: 'windows',
@@ -273,6 +287,22 @@ Future<String?> _get(String url) async {
     }
     if (response.statusCode != 200) throw _ToolError('GET $url answered ${response.statusCode}');
     return await response.transform(utf8.decoder).join();
+  } finally {
+    client.close();
+  }
+}
+
+/// The sha256 of what [url] serves, or null when nothing is there.
+Future<String?> _sha256Of(String url) async {
+  final client = HttpClient()..userAgent = 'rayn-publish-windows-update';
+  try {
+    final response = await (await client.getUrl(Uri.parse(url))).close();
+    if (response.statusCode == 404) {
+      await response.drain<void>();
+      return null;
+    }
+    if (response.statusCode != 200) throw _ToolError('GET $url answered ${response.statusCode}');
+    return (await sha256.bind(response).first).toString();
   } finally {
     client.close();
   }

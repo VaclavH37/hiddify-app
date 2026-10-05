@@ -162,6 +162,9 @@ void main() {
     // build alone: only `windows-exe-release` defines RAYN_SELF_UPDATE, and
     // every use outside lib/core/app_update/ sits behind the constant, which
     // the compiler folds away everywhere else.
+    // DESIGN-INVARIANTS.md#self-update-windows-exe-only
+    // DESIGN-INVARIANTS.md#update-integrity
+    // DESIGN-INVARIANTS.md#update-downloads-tunnel-only
     final makefile = File('Makefile').readAsStringSync();
     final recipes = _makeRecipes(makefile);
     final libSources = {
@@ -195,6 +198,41 @@ void main() {
     test('the signing code never ships: only the publish tool and the tests use it', () {
       for (final MapEntry(key: path, value: source) in libSources.entries) {
         expect(source, isNot(contains('app_update/update_signing.dart')), reason: path);
+      }
+    });
+
+    test('the installer is downloaded beside the executable, never to a user-writable folder', () {
+      // Program Files is writable by administrators only. The app and the
+      // installer run elevated, so a per-user folder would let any process
+      // swap the file between the check and the launch.
+      final install = libSources['lib/core/app_update/update_install.dart']!;
+      expect(install, contains('Platform.resolvedExecutable'));
+      for (final MapEntry(key: path, value: source) in libSources.entries) {
+        if (!path.startsWith('lib/core/app_update/')) continue;
+        for (final userWritable in [
+          'systemTemp',
+          'getTemporaryDirectory',
+          'getApplicationSupportDirectory',
+          'appDirectoriesProvider',
+          'Platform.environment',
+        ]) {
+          expect(source, isNot(contains(userWritable)), reason: '$path: $userWritable');
+        }
+      }
+    });
+
+    test('the installer is checked against the manifest right before it is started, and started once', () {
+      final checker = libSources['lib/core/app_update/app_update_checker.dart']!;
+      final check = checker.indexOf('installerProblem(');
+      final launch = checker.indexOf('Process.start(');
+      expect(check, isNonNegative, reason: 'the downloaded file must be verified');
+      expect(launch, greaterThan(check), reason: 'verify, then launch');
+      expect('Process.start('.allMatches(checker), hasLength(1));
+      for (final MapEntry(key: path, value: source) in libSources.entries) {
+        if (path == 'lib/core/app_update/app_update_checker.dart' || !path.startsWith('lib/core/app_update/')) {
+          continue;
+        }
+        expect(source, isNot(contains('Process.')), reason: '$path starts processes outside the checked path');
       }
     });
 
