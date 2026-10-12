@@ -271,11 +271,9 @@ abstract class ConfigOptions {
       // enableTunService: false — the Go field exists but the Dart model field is
       // commented out, so it is never sent and is permanently false.
       setSystemProxy: false,
-      // Hardcoded false — UI toggle and preference removed, preserving the previous
-      // default. The toggle was redundant: `direct-private.srs` ships in the bundled
-      // rule-sets and is applied unconditionally by the always-on China-direct route
-      // rule, so RFC1918 destinations already go direct with this off. Turning it on
-      // only added an earlier, duplicate rule using sing-box's built-in private check.
+      // Ignored by the core, which always sends private destinations direct (the
+      // LAN rule in builder.go). Sent as false only because the field exists.
+      // `direct-private.srs` is NOT that rule: it lists local names, no addresses.
       bypassLan: false,
       // Hardcoded false — UI toggle removed; LAN sharing kept off by default.
       allowConnectionFromLan: false,

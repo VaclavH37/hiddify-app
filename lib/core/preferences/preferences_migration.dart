@@ -242,7 +242,9 @@ class PreferencesVersion6Migration extends PreferencesMigrationStep with InfraLo
 /// These backed controls that were removed for one of three reasons: the core never
 /// read them (`resolve-destination`, and `direct-dns-address`, whose only routing rule
 /// is gated on an NTP block that is commented out); they duplicated always-on
-/// behaviour (`bypass-lan`, already covered by the bundled private-address rule-set);
+/// behaviour (`bypass-lan`: the core now always sends private destinations direct —
+/// the bundled `direct-private` rule-set this note originally credited lists local
+/// names, not addresses, so until that rule existed the LAN went into the tunnel);
 /// or they were live footguns (`strict-route` off is a leak, `mixed-port` changed
 /// while connected sent API traffic outside the tunnel, `direct-dns-domain-strategy`
 /// set to `auto` reintroduces the poisoned-AAAA bug that migration v5 exists to fix).
