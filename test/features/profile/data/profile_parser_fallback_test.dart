@@ -382,8 +382,12 @@ void main() {
       } catch (_) {}
     });
 
+    // A real primary token by default, as every installed profile has one. With
+    // it null, a fallback answer's token compared equal to the stored one and
+    // the stuck-on-the-fallback rewrite could not happen in a test.
     RemoteProfileEntity buildEntity({
       String url = 'https://primary.example.com/sub',
+      String? sourceToken,
       String? fallbackUrl,
       String? fallbackSourceToken,
     }) => RemoteProfileEntity(
@@ -391,6 +395,7 @@ void main() {
       active: true,
       name: 'test',
       url: url,
+      sourceToken: sourceToken ?? _raynLink(url),
       lastUpdate: DateTime(2020),
       fallbackUrl: fallbackUrl,
       fallbackSourceToken: fallbackSourceToken,
@@ -421,6 +426,131 @@ void main() {
       expect(result.isRight(), isTrue);
       expect(fake.callCount, 2);
       expect(fake.calledUrls, ['https://primary.example.com/sub', 'https://fallback.example.com/sub']);
+    });
+
+    // The regression. One failed primary request used to adopt the fallback's
+    // url and token as the primary, and the client never asked the primary
+    // again: the backup middleware served those users from then on.
+    group('a fallback answer never rewrites the stored URLs', () {
+      const primaryUrl = 'https://primary.example.com/sub';
+      const fallbackUrl = 'https://fallback.example.com/sub';
+      late String primaryLink;
+      late String fallbackLink;
+
+      setUp(() {
+        primaryLink = _raynLink(primaryUrl);
+        fallbackLink = _raynLink(fallbackUrl);
+      });
+
+      RemoteProfileEntity stored() =>
+          buildEntity(sourceToken: primaryLink, fallbackUrl: fallbackUrl, fallbackSourceToken: fallbackLink);
+
+      void expectUnchanged(ParsedProfile parsed) {
+        expect(parsed.entry.url.value, primaryUrl);
+        expect(parsed.entry.sourceToken.value, primaryLink);
+        expect(parsed.entry.fallbackUrl.value, fallbackUrl);
+        expect(parsed.entry.fallbackSourceToken.value, fallbackLink);
+      }
+
+      test('the primary URL and token survive a failover', () async {
+        final fake = _FakeHttpClient(
+          steps: [
+            _FakeStep.networkError(),
+            _FakeStep.ok(headers: {}),
+          ],
+        );
+        final parser = ProfileParser(ref: ref, httpClient: fake);
+
+        final result = await parser.updateRemote(rp: stored()).run();
+
+        expect(fake.calledUrls, [primaryUrl, fallbackUrl]);
+        result.fold((l) => fail('expected Right, got $l'), expectUnchanged);
+      });
+
+      test('the next refresh asks the primary first again', () async {
+        final first = await ProfileParser(
+          ref: ref,
+          httpClient: _FakeHttpClient(
+            steps: [
+              _FakeStep.networkError(),
+              _FakeStep.ok(headers: {}),
+            ],
+          ),
+        ).updateRemote(rp: stored()).run();
+        final entry = first.getOrElse((l) => fail('expected Right, got $l')).entry;
+
+        final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+        await ProfileParser(ref: ref, httpClient: fake)
+            .updateRemote(
+              rp: buildEntity(
+                url: entry.url.value!,
+                sourceToken: entry.sourceToken.value,
+                fallbackUrl: entry.fallbackUrl.value,
+                fallbackSourceToken: entry.fallbackSourceToken.value,
+              ),
+            )
+            .run();
+
+        expect(fake.calledUrls, [primaryUrl]);
+      });
+
+      test("a new-url the fallback leg follows is not adopted as the primary", () async {
+        const renewedUrl = 'https://renewed.example.com/sub';
+        final fake = _FakeHttpClient(
+          steps: [
+            _FakeStep.networkError(),
+            _FakeStep.ok(headers: {'new-url': _raynLink(renewedUrl)}, body: _expiredEnvelope),
+            _FakeStep.ok(headers: {}),
+          ],
+        );
+        final parser = ProfileParser(ref: ref, httpClient: fake);
+
+        final result = await parser.updateRemote(rp: stored()).run();
+
+        // The renewal still serves this refresh...
+        expect(fake.calledUrls, [primaryUrl, fallbackUrl, renewedUrl]);
+        // ...but is not stored: the primary's own answer re-offers it next time.
+        result.fold((l) => fail('expected Right, got $l'), expectUnchanged);
+      });
+
+      test("the fallback's own fallback-url header is not stored", () async {
+        // Naming the primary is the harmful case: it would leave the client with
+        // the primary twice and no fallback at all.
+        final fake = _FakeHttpClient(
+          steps: [
+            _FakeStep.networkError(),
+            _FakeStep.ok(headers: {'fallback-url': _raynLink(primaryUrl)}),
+          ],
+        );
+        final parser = ProfileParser(ref: ref, httpClient: fake);
+
+        final result = await parser.updateRemote(rp: stored()).run();
+
+        result.fold((l) => fail('expected Right, got $l'), expectUnchanged);
+      });
+
+      test("the primary's own answer still rotates and updates the fallback", () async {
+        const renewedUrl = 'https://renewed.example.com/sub';
+        const newFallback = 'https://new-fallback.example.com/sub';
+        final renewedLink = _raynLink(renewedUrl);
+        final newFallbackLink = _raynLink(newFallback);
+        final fake = _FakeHttpClient(
+          steps: [
+            _FakeStep.ok(headers: {'new-url': renewedLink}, body: _expiredEnvelope),
+            _FakeStep.ok(headers: {'fallback-url': newFallbackLink}),
+          ],
+        );
+        final parser = ProfileParser(ref: ref, httpClient: fake);
+
+        final result = await parser.updateRemote(rp: stored()).run();
+
+        result.fold((l) => fail('expected Right, got $l'), (parsed) {
+          expect(parsed.entry.url.value, renewedUrl);
+          expect(parsed.entry.sourceToken.value, renewedLink);
+          expect(parsed.entry.fallbackUrl.value, newFallback);
+          expect(parsed.entry.fallbackSourceToken.value, newFallbackLink);
+        });
+      });
     });
 
     test('primary fails → fallback fails → original primary failure surfaces', () async {

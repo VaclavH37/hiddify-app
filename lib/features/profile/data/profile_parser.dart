@@ -41,8 +41,15 @@ typedef SubscriptionRotation = ({String url, String sourceToken});
 
 /// The terminal response of a subscription request: the headers, the `url` and
 /// `sourceToken` that produced it (the renewed pair when a `new-url` rotation
-/// was followed), and the body.
-typedef _ResolvedSubscription = ({Map<String, dynamic> headers, String url, String? sourceToken, String content});
+/// was followed), the body, and whether the fallback host answered in place of
+/// the primary ([viaFallback]).
+typedef _ResolvedSubscription = ({
+  Map<String, dynamic> headers,
+  String url,
+  String? sourceToken,
+  String content,
+  bool viaFallback,
+});
 
 /// A parsed profile plus the subscription body it came from.
 ///
@@ -192,18 +199,34 @@ class ProfileParser {
     HubCounters? counters,
   }) => _downloadWithFailover(rp, cancelToken, signal: signal, counters: counters).flatMap((resolved) {
     var rotated = rp;
-    // `_resolveDownload` already followed any `new-url`; persist the resulting
-    // token when it changed.
-    if (resolved.sourceToken != rp.sourceToken) {
-      _log.info('rotating subscription URL on refresh (new host: ${Uri.tryParse(resolved.url)?.host ?? "?"})');
-      rotated = rotated.copyWith(url: resolved.url, sourceToken: resolved.sourceToken);
-    }
-    final fallback = extractFallback(resolved.headers);
-    // Same as the rotation guard above: compare decrypted URLs, never cryptolink
-    // strings, or this rewrites both columns on every refresh (§4).
-    if (fallback != null && fallback.url != rp.fallbackUrl) {
-      _log.info('updating fallback URL on refresh (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
-      rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.sourceToken);
+    // Only the primary's answer may change the stored URLs. A fallback answer
+    // stands in for this one refresh: its url and token are the fallback's own,
+    // and adopting them as the primary made a single failed request permanent --
+    // every later refresh asked the fallback as "primary" and, with the
+    // fallback's `fallback-url` naming itself, never asked the primary again.
+    // Clients were left served only by the backup middleware that way.
+    //
+    // A `new-url` the fallback leg followed is dropped for the reason
+    // [fetchStandbyConfig] drops one: rotation is idempotent, the old token stays
+    // valid and every later response re-offers the renewal, so the next primary
+    // answer records it. Its `fallback-url` is dropped too: it names the
+    // fallback of the host that answered, not of the primary.
+    if (resolved.viaFallback) {
+      _log.info('served by the fallback for this refresh; stored subscription URLs unchanged');
+    } else {
+      // `_resolveDownload` already followed any `new-url`; persist the resulting
+      // token when it changed.
+      if (resolved.sourceToken != rp.sourceToken) {
+        _log.info('rotating subscription URL on refresh (new host: ${Uri.tryParse(resolved.url)?.host ?? "?"})');
+        rotated = rotated.copyWith(url: resolved.url, sourceToken: resolved.sourceToken);
+      }
+      final fallback = extractFallback(resolved.headers);
+      // Same as the rotation guard above: compare decrypted URLs, never cryptolink
+      // strings, or this rewrites both columns on every refresh (§4).
+      if (fallback != null && fallback.url != rp.fallbackUrl) {
+        _log.info('updating fallback URL on refresh (host: ${Uri.tryParse(fallback.url)?.host ?? "?"})');
+        rotated = rotated.copyWith(fallbackUrl: fallback.url, fallbackSourceToken: fallback.sourceToken);
+      }
     }
     return TaskEither.fromEither(populateHeaders(content: resolved.content, remoteHeaders: resolved.headers)).flatMap(
       (populatedHeaders) => TaskEither.fromEither(
@@ -402,6 +425,7 @@ class ProfileParser {
       url: url,
       sourceToken: sourceToken,
       content: downloaded.content,
+      viaFallback: false,
     ));
   });
 
@@ -413,6 +437,9 @@ class ProfileParser {
   /// [ProfileSubscriptionExpiredFailure] and [ProfileAccountUnavailableFailure]
   /// (the fallback host asks the same backend and would answer the same, so we
   /// surface the verdict instead).
+  ///
+  /// A fallback answer comes back marked [_ResolvedSubscription.viaFallback], so
+  /// callers can keep it from rewriting what is stored about the primary.
   TaskEither<ProfileFailure, _ResolvedSubscription> _downloadWithFailover(
     RemoteProfileEntity rp,
     CancelToken? cancelToken, {
@@ -450,7 +477,9 @@ class ProfileParser {
     final secondaryFailure = secondary.fold<ProfileFailure?>((l) => l, (_) => null);
     if (secondaryFailure == null) {
       _log.info('fallback subscription URL succeeded');
-      return secondary;
+      return secondary.map(
+        (r) => (headers: r.headers, url: r.url, sourceToken: r.sourceToken, content: r.content, viaFallback: true),
+      );
     }
     if (secondaryFailure is ProfileCancelByUserFailure) return secondary;
     _log.warning('fallback URL also failed; surfacing original primary failure');
