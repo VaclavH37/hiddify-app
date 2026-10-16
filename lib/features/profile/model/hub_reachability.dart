@@ -48,6 +48,110 @@ bool urlTestFailureConfirmed(DateTime? firstSeenAt, DateTime now) {
   return elapsed >= hubUrlTestWindow;
 }
 
+/// How long to wait for the result of the re-test [UrlTestWatch] asks for:
+/// the core's 5 s test timeout, its 1 s publish debounce, and a margin. A
+/// result that has not arrived by then is silence, and silence is not a verdict.
+const hubRetestGuard = Duration(seconds: 12);
+
+/// One location as the fast path sees it: its URL-test delay, and when that
+/// result was measured (null when the core has not tested it).
+typedef ExitObservation = ({int delay, DateTime? testedAt});
+
+/// What the caller does after feeding [UrlTestWatch] an event or a timer.
+enum UrlTestWatchStep {
+  /// Nothing new; any running timer stays.
+  none,
+
+  /// An open window closed (a location answered, or there is nothing to
+  /// judge): cancel the timer.
+  reset,
+
+  /// Every location just timed out: start the [hubUrlTestWindow] timer.
+  armWindow,
+
+  /// The window passed with every location still timed out: ask the core to
+  /// re-test the active location now, and start the [hubRetestGuard] timer.
+  retest,
+
+  /// A result measured after the re-test request timed out too: the hub is
+  /// not carrying traffic.
+  confirm,
+}
+
+/// The fast failover's decision: every location timed out, stayed that way for
+/// [hubUrlTestWindow], and a re-test taken after that timed out as well.
+///
+/// The window runs on a timer, not on the next event. Results only arrive
+/// when something tests: the core's sweep is 20–40 minutes apart, and its
+/// per-location re-check needs failing traffic (every 30 s at most), so an idle
+/// user could otherwise wait for an event that never comes. Captured on
+/// 2026-10-16: every result of a 3-minute dead session arrived in its first
+/// second.
+///
+/// The verdict needs a FRESH result, measured after the re-test was requested.
+/// That keeps "one bad sweep" from counting as a blocked hub, and it makes a
+/// stale list (the stream replays the previous session's last one when it is
+/// opened) unable to confirm anything.
+///
+/// Pure, so every rule is a plain test; the caller owns the timers.
+class UrlTestWatch {
+  DateTime? _since;
+  DateTime? _retestAt;
+  bool _timedOut = false;
+
+  /// An event from the core: the visible locations, as they stand now.
+  UrlTestWatchStep observe(List<ExitObservation> exits, DateTime now) {
+    if (!allExitsTimedOut(exits.map((exit) => exit.delay))) {
+      final open = _since != null || _retestAt != null;
+      reset();
+      return open ? UrlTestWatchStep.reset : UrlTestWatchStep.none;
+    }
+    _timedOut = true;
+    final retestAt = _retestAt;
+    if (retestAt != null) {
+      final fresh = exits.any((exit) => exit.testedAt?.isAfter(retestAt) ?? false);
+      if (!fresh) return UrlTestWatchStep.none;
+      reset();
+      return UrlTestWatchStep.confirm;
+    }
+    final since = _since;
+    // A first sighting, or a clock that moved backwards: see urlTestFailureConfirmed.
+    if (since == null || now.isBefore(since)) {
+      _since = now;
+      return UrlTestWatchStep.armWindow;
+    }
+    return UrlTestWatchStep.none;
+  }
+
+  /// The [hubUrlTestWindow] timer fired.
+  UrlTestWatchStep windowElapsed(DateTime now) {
+    if (_since == null || _retestAt != null || !_timedOut) return UrlTestWatchStep.none;
+    if (!urlTestFailureConfirmed(_since, now)) {
+      // Early by the wall clock, or the clock moved: start the window again
+      // rather than decide on a measurement that is not one.
+      _since = now;
+      return UrlTestWatchStep.armWindow;
+    }
+    _retestAt = now;
+    return UrlTestWatchStep.retest;
+  }
+
+  /// The [hubRetestGuard] timer fired with no fresh result: another window,
+  /// not a verdict.
+  UrlTestWatchStep retestExpired(DateTime now) {
+    if (_retestAt == null) return UrlTestWatchStep.none;
+    _retestAt = null;
+    _since = now;
+    return UrlTestWatchStep.armWindow;
+  }
+
+  void reset() {
+    _since = null;
+    _retestAt = null;
+    _timedOut = false;
+  }
+}
+
 /// How long to wait before the confirming probe.
 ///
 /// Long enough that a transient stall has passed, short enough that the user is

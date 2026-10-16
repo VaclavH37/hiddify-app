@@ -23,6 +23,7 @@ import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_outbound_groups.dart';
+import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:meta/meta.dart';
@@ -89,6 +90,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     ref.onDispose(() async {
       await _scheduler?.stop();
       _scheduler = null;
+      _resetUrlTestWatch();
       _transientTimer?.cancel();
       _transientTimer = null;
     });
@@ -112,11 +114,11 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     });
 
     // When the IP routing warning clears, the timeouts on record were caused
-    // by it, and fresh results are still seconds away. Counting them toward
-    // the fast path's window would fail over from a hub that never failed,
-    // and report it to the middleware as unreachable.
+    // by it, and fresh results are still seconds away. An open window must not
+    // carry them into a failover from a hub that never failed, reported to the
+    // middleware as unreachable.
     ref.listen(localRoutingNotifierProvider, (previous, next) {
-      if (previous != null && next == null) _allTimedOutSince = null;
+      if (previous != null && next == null) _resetUrlTestWatch();
     });
 
     // Only run the auto-update scheduler when the user has authenticated
@@ -133,10 +135,11 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   NeatPeriodicTaskScheduler? _scheduler;
   bool _forceNextRun = false;
 
-  /// When every exit first reported a timed-out URL test, or null if any of
-  /// them is currently healthy or still untested. In memory only: it describes
-  /// a live core session and means nothing across a restart.
-  DateTime? _allTimedOutSince;
+  /// The fast path's window over the core's URL-test results, and the one
+  /// timer it runs at a time (the window, then the re-test's guard). In memory
+  /// only: they describe a live core session and mean nothing across a restart.
+  final _urlTestWatch = UrlTestWatch();
+  Timer? _urlTestTimer;
 
   /// Guards `_failOverToStandby` against two callers at once. The refresh-cycle
   /// ladder and the URL-test watcher can now both reach it, and a failover is a
@@ -156,30 +159,63 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   /// not carrying traffic. It does NOT say the hub is to blame — an offline
   /// device looks identical — which is why this ends in the same
   /// `_failOverToStandby` whose post-switch probe reverts when the standby hub
-  /// is equally dead.
+  /// is equally dead. The window and the re-test are [UrlTestWatch]'s rules.
   void _onOutboundDelays(List<OutboundGroup> groups) {
-    final delays = groups
+    final exits = groups
         .expand((group) => group.items)
         .where((item) => !item.tag.contains('§hide§'))
-        .map((item) => item.urlTestDelay);
+        .map<ExitObservation>(
+          (item) => (delay: item.urlTestDelay, testedAt: item.hasUrlTestTime() ? item.urlTestTime.toDateTime() : null),
+        )
+        .toList();
+    _applyUrlTestStep(_urlTestWatch.observe(exits, DateTime.now()));
+  }
 
-    if (!allExitsTimedOut(delays)) {
-      _allTimedOutSince = null;
-      return;
+  void _applyUrlTestStep(UrlTestWatchStep step) {
+    switch (step) {
+      case UrlTestWatchStep.none:
+        return;
+      case UrlTestWatchStep.reset:
+        loggy.info("a location answered its URL test; closing the fast-path window");
+        _cancelUrlTestTimer();
+      case UrlTestWatchStep.armWindow:
+        loggy.info("every exit timed out its URL test; re-testing in ${hubUrlTestWindow.inSeconds}s before deciding");
+        _armUrlTestTimer(hubUrlTestWindow, () => _urlTestWatch.windowElapsed(DateTime.now()));
+      case UrlTestWatchStep.retest:
+        loggy.info("still timed out after ${hubUrlTestWindow.inSeconds}s; re-testing the active location");
+        _armUrlTestTimer(hubRetestGuard, () => _urlTestWatch.retestExpired(DateTime.now()));
+        unawaited(_retestActiveLocation());
+      case UrlTestWatchStep.confirm:
+        _cancelUrlTestTimer();
+        unawaited(_failOverOnUrlTestFailure());
     }
+  }
 
-    final now = DateTime.now();
-    final since = _allTimedOutSince;
-    // Re-stamp on a first sighting, and on a clock that moved backwards — see
-    // urlTestFailureConfirmed.
-    if (since == null || now.isBefore(since)) {
-      _allTimedOutSince = now;
-      return;
-    }
-    if (!urlTestFailureConfirmed(since, now)) return;
+  void _armUrlTestTimer(Duration after, UrlTestWatchStep Function() onFire) {
+    _urlTestTimer?.cancel();
+    _urlTestTimer = Timer(after, () {
+      _urlTestTimer = null;
+      _applyUrlTestStep(onFire());
+    });
+  }
 
-    _allTimedOutSince = null;
-    unawaited(_failOverOnUrlTestFailure());
+  void _cancelUrlTestTimer() {
+    _urlTestTimer?.cancel();
+    _urlTestTimer = null;
+  }
+
+  void _resetUrlTestWatch() {
+    _urlTestWatch.reset();
+    _cancelUrlTestTimer();
+  }
+
+  /// Asks the core to test the active location now ("" is the active group,
+  /// as the location page uses it). Its result arrives as an ordinary event,
+  /// stamped with the time it was measured, which is what lets the watch tell
+  /// it from the stale timeouts that opened the window.
+  Future<void> _retestActiveLocation() async {
+    final result = await ref.read(proxyRepositoryProvider).urlTest("").run();
+    result.match((failure) => loggy.info("could not ask the core to re-test the active location", failure), (_) {});
   }
 
   /// The fast path's preconditions, which are the ladder's own.
@@ -209,7 +245,8 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     if (_localRoutingExplains("every exit timed out its URL test")) return;
 
     loggy.warning(
-      "every exit timed out its URL test for ${hubUrlTestWindow.inSeconds}s; treating the primary hub as blocked",
+      "every exit timed out its URL test, and again on a re-test ${hubUrlTestWindow.inSeconds}s later; "
+      "treating the primary hub as blocked",
     );
     await _failOverToStandby(profile);
   }
