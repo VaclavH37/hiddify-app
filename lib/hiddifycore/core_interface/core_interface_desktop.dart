@@ -22,9 +22,14 @@ typedef StopFunc = Pointer<Utf8> Function();
 typedef StopFuncDart = Pointer<Utf8> Function();
 
 class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
-  static final HiddifyCoreNativeLibrary _box = _gen();
+  /// The core library itself, opened once. Exposed for the few exports that
+  /// are called directly rather than over gRPC (see `egress_routing_probe.dart`);
+  /// opening it from a second place would duplicate the path logic below.
+  static final DynamicLibrary library = _open();
 
-  static HiddifyCoreNativeLibrary _gen() {
+  static final HiddifyCoreNativeLibrary _box = HiddifyCoreNativeLibrary(library);
+
+  static DynamicLibrary _open() {
     String fullPath = "";
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
       fullPath = "hiddify-core";
@@ -41,12 +46,11 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
     }
 
     _logger.debug('hiddify-core native libs path: "$fullPath"');
-    final lib = DynamicLibrary.open(fullPath);
     // final stopFunc = lib.lookup<NativeFunction<StopFunc>>('stop').asFunction<StopFunc>();
     // final errPtr2 = stopFunc();
     // final err = errPtr2.cast<Utf8>().toDartString();
 
-    return HiddifyCoreNativeLibrary(lib);
+    return DynamicLibrary.open(fullPath);
   }
 
   Future<bool> isMusl() async {

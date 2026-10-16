@@ -6,6 +6,8 @@ import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.
 import 'package:hiddify/core/theme/rayn_motion.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/features/connection/local_routing/notifier/local_routing_notifier.dart';
+import 'package:hiddify/features/connection/local_routing/widget/local_routing_banner.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
 import 'package:hiddify/features/home/widget/home_canvas_layout.dart';
 import 'package:hiddify/features/home/widget/home_top_bar.dart';
@@ -78,6 +80,20 @@ class HomePage extends HookConsumerWidget {
   }
 }
 
+/// The banner slot holds one banner at a time. The IP routing warning (Windows)
+/// takes it while it is up, since it explains why nothing else works; the
+/// newest notification has it otherwise.
+class _Banner extends ConsumerWidget {
+  const _Banner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final issue = ref.watch(localRoutingNotifierProvider);
+    if (issue != null && !issue.dismissed) return LocalRoutingBanner(issue: issue);
+    return const NotificationBanner();
+  }
+}
+
 /// The orb, its status readout, the location card and the notification banner,
 /// placed by [HomeCanvasLayout]. One widget serves both breakpoints: desktop
 /// only narrows the column and reserves a band at the top for the bell.
@@ -132,7 +148,7 @@ class _HomeCanvas extends StatelessWidget {
                             duration: reduce ? Duration.zero : RaynMotion.standard,
                             curve: RaynMotion.standardCurve,
                             alignment: Alignment.topCenter,
-                            child: const NotificationBanner(),
+                            child: const _Banner(),
                           ),
                         ),
                         LayoutId(id: HomeCanvasSlot.orb, child: const ConnectionButton()),

@@ -10,6 +10,7 @@ import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/features/auth/account/model/account_state.dart';
 import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
+import 'package:hiddify/features/connection/local_routing/notifier/local_routing_notifier.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/notifications/data/notification_data_providers.dart';
@@ -109,6 +110,14 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
           onError: (_) => _allTimedOutSince = null,
         );
 
+    // When the IP routing warning clears, the timeouts on record were caused
+    // by it, and fresh results are still seconds away. Counting them toward
+    // the fast path's window would fail over from a hub that never failed,
+    // and report it to the middleware as unreachable.
+    ref.listen(localRoutingNotifierProvider, (previous, next) {
+      if (previous != null && next == null) _allTimedOutSince = null;
+    });
+
     // Only run the auto-update scheduler when the user has authenticated
     // (i.e. a profile exists). Pre-auth there's nothing to refresh.
     if (ref.watch(hasAnyProfileProvider).valueOrNull ?? false) {
@@ -198,11 +207,29 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     final profile = await ref.read(activeProfileProvider.future);
     if (profile is! RemoteProfileEntity) return;
     if (await _currentTier(profile.id) != HubTier.primary) return;
+    if (_localRoutingExplains("every exit timed out its URL test")) return;
 
     loggy.warning(
       "every exit timed out its URL test for ${hubUrlTestWindow.inSeconds}s; treating the primary hub as blocked",
     );
     await _failOverToStandby(profile);
+  }
+
+  /// Whether IP routing on the egress adapter explains the dead tunnel just
+  /// observed (Windows; always false elsewhere).
+  ///
+  /// When it does, the hub did not fail: Windows is routing the core's own
+  /// connections back into the tunnel. Failing over would restart the core
+  /// onto a standby hub that fails the same way, spend the flap budget, and
+  /// report the primary to the middleware as blocked; recording a failed check
+  /// would feed the same wrong verdict into its hub-health counts. The user
+  /// gets the home-page warning instead.
+  ///
+  /// Called after the caller's last await, so the answer describes now.
+  bool _localRoutingExplains(String observation) {
+    if (!ref.read(localRoutingNotifierProvider.notifier).explainsDeadTunnel()) return false;
+    loggy.warning("$observation, but IP routing is on for the egress adapter; not treating it as a hub failure");
+    return true;
   }
 
   Future<void> trigger() async {
@@ -261,9 +288,13 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
                 state = AsyncData((name: profile.name, success: false));
               } else {
                 loggy.debug("error updating profile [${profile.id}]", l);
-                ref
-                    .read(inAppNotificationControllerProvider)
-                    .showErrorToast(t.pages.profiles.msg.update.failureNamed(name: profile.name));
+                // While the IP routing warning is up it already explains why
+                // nothing reaches the network, this refresh included.
+                if (ref.read(localRoutingNotifierProvider) == null) {
+                  ref
+                      .read(inAppNotificationControllerProvider)
+                      .showErrorToast(t.pages.profiles.msg.update.failureNamed(name: profile.name));
+                }
                 state = AsyncData((name: profile.name, success: false));
                 // A refresh that failed WHILE CONNECTED is not noise — it is the
                 // primary symptom of a blocked hub on iOS and desktop, where the
@@ -423,6 +454,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       return;
     }
 
+    if (_localRoutingExplains("the confirming probe failed")) return;
     await _recordCheck(failed: true);
     await _failOverToStandby(profile);
   }
@@ -583,6 +615,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // client gets while a block persists: every other check is suppressed on a
     // standby leg.
     final carrying = await _tunnelCarriesTraffic(profile.url);
+    if (!carrying && _localRoutingExplains("the primary hub carries nothing after returning to it")) return;
     await _recordCheck(failed: !carrying);
     // Only worth telling the middleware once we know the primary works again.
     if (carrying) await _report(profile, HubSignal.recovered);

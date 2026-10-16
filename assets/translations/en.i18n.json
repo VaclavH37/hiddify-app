@@ -424,7 +424,20 @@
     "protected": "Protected",
     "unprotected": "Not protected",
     "subscriptionExpired": "Subscription expired",
-    "accountUnavailable": "Account unavailable"
+    "accountUnavailable": "Account unavailable",
+    "localRouting": {
+      "title": "Rayn VPN can't reach the internet",
+      "body": "IP routing is turned on for ${adapter}, so Windows sends Rayn VPN's own connections back into the tunnel and nothing gets through.",
+      "howToFix": "How to fix",
+      "dialogTitle": "Turn off IP routing on ${adapter}",
+      "intro": "Something on this PC turned on IP routing for ${adapter}. Turn off whichever of these you use:",
+      "stepSharing": "Mobile hotspot or Internet Connection Sharing: turn off Mobile hotspot in Settings > Network & internet. Then press Windows+R, type ncpa.cpl and press Enter, right-click ${adapter}, choose Properties, and on the Sharing tab untick the option that lets other network users connect.",
+      "stepIncoming": "Incoming Connections: in the same ncpa.cpl window, right-click Incoming Connections and choose Delete. If it comes back after a restart, press Windows+R, type services.msc, open Routing and Remote Access, click Stop and set Startup type to Disabled.",
+      "commandIntro": "Or run this in Command Prompt as administrator. It lasts until something turns the setting back on:",
+      "copy": "Copy",
+      "copied": "Command copied",
+      "footer": "Rayn VPN works again within a few seconds of the setting going off. You don't need to reconnect."
+    }
   },
   "errors": {
     "unexpected": "Unexpected error",

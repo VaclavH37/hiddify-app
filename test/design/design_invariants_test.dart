@@ -155,6 +155,44 @@ void main() {
     });
   });
 
+  group('a tunnel killed by local IP routing is not a hub failure', () {
+    // With IPv4 forwarding on for the egress adapter (Windows), the core's own
+    // connections are routed back into the tunnel and refused: every hub looks
+    // dead from this PC. Failing over would restart the core onto a standby
+    // hub that fails the same way and report the primary to the middleware as
+    // blocked; a failed check would feed the same wrong verdict into its hub
+    // health counts. So every place the ladder acts on a dead tunnel asks
+    // first, after its last await.
+    final ladder = File('lib/features/profile/notifier/profiles_update_notifier.dart')
+        .readAsStringSync()
+        .replaceAll('\r\n', '\n');
+
+    test('the URL-test fast path asks before failing over', () {
+      final start = ladder.indexOf('Future<void> _failOverOnUrlTestFailure()');
+      final end = ladder.indexOf('bool _localRoutingExplains(');
+      expect(start, isNonNegative);
+      expect(end, greaterThan(start));
+      final body = ladder.substring(start, end);
+      final asks = body.indexOf('_localRoutingExplains(');
+      expect(asks, isNonNegative, reason: 'the fast path must consult local routing');
+      expect(asks, lessThan(body.indexOf('_failOverToStandby(')));
+    });
+
+    test('no failed check is recorded without asking', () {
+      for (final failed in ['_recordCheck(failed: true)', '_recordCheck(failed: !carrying)']) {
+        final at = ladder.indexOf(failed);
+        expect(at, isNonNegative, reason: '$failed not found');
+        final before = ladder.substring(ladder.lastIndexOf('\n\n', at), at);
+        expect(
+          before,
+          contains('_localRoutingExplains('),
+          reason: '$failed must be preceded by the local routing check',
+        );
+      }
+      expect(RegExp(r'_recordCheck\(failed: true\)').allMatches(ladder).length, 1);
+    });
+  });
+
   group('self-update exists only in the Windows EXE build', () {
     // The updater installs code as administrator, and Google Play forbids an
     // app that updates itself outside the store; the App Store answer says the
