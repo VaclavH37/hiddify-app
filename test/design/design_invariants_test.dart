@@ -178,6 +178,15 @@ void main() {
       expect(asks, lessThan(body.indexOf('_failOverToStandby(')));
     });
 
+    test('the fast path follows the core session instead of subscribing once', () {
+      // The core's URL-test stream ends with its session. One subscription
+      // taken when the notifier was built was dead five seconds after a desktop
+      // launch, so the fast failover never ran there (production 1.6.2 log,
+      // 2026-10-16). activeOutboundGroupsProvider re-opens it on every start.
+      expect(ladder, isNot(contains('.watchActiveProxies()')));
+      expect(ladder, contains('ref.listen(activeOutboundGroupsProvider'));
+    });
+
     test('no failed check is recorded without asking', () {
       for (final failed in ['_recordCheck(failed: true)', '_recordCheck(failed: !carrying)']) {
         final at = ladder.indexOf(failed);

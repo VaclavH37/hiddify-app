@@ -22,8 +22,7 @@ import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
-import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
-import 'package:hiddify/features/proxy/model/proxy_failure.dart';
+import 'package:hiddify/features/proxy/active/active_outbound_groups.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:meta/meta.dart';
@@ -90,8 +89,6 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     ref.onDispose(() async {
       await _scheduler?.stop();
       _scheduler = null;
-      await _urlTestSub?.cancel();
-      _urlTestSub = null;
       _transientTimer?.cancel();
       _transientTimer = null;
     });
@@ -102,13 +99,17 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // latency pill red. The refresh-cycle ladder below stays as the backstop:
     // it survives the app being backgrounded, where this stream is cancelled,
     // and it tests the middleware rather than one connection-test host.
-    _urlTestSub = ref
-        .read(proxyRepositoryProvider)
-        .watchActiveProxies()
-        .listen(
-          (event) => event.fold((_) => _allTimedOutSince = null, _onOutboundDelays),
-          onError: (_) => _allTimedOutSince = null,
-        );
+    //
+    // Through a provider that re-opens the stream for every core session. This
+    // used to be one subscription taken here at app start, and the core's
+    // stream ends with its session: on desktop, which starts disconnected, it
+    // was dead five seconds after launch and the fast path never ran.
+    //
+    // Data only: while it re-opens, the provider reports loading with the
+    // previous session's list still attached, which is not a result.
+    ref.listen(activeOutboundGroupsProvider, (_, next) {
+      if (next case AsyncData(:final value)) _onOutboundDelays(value);
+    });
 
     // When the IP routing warning clears, the timeouts on record were caused
     // by it, and fresh results are still seconds away. Counting them toward
@@ -131,8 +132,6 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
 
   NeatPeriodicTaskScheduler? _scheduler;
   bool _forceNextRun = false;
-
-  StreamSubscription<Either<ProxyFailure, List<OutboundGroup>>>? _urlTestSub;
 
   /// When every exit first reported a timed-out URL test, or null if any of
   /// them is currently healthy or still untested. In memory only: it describes
