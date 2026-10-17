@@ -7,8 +7,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'active_outbound_groups.g.dart';
 
-/// The core's main outbound groups, each with its selected location and that
-/// location's URL-test result, for the core session that is running now.
+/// The core's main selector with every location in it, each with its URL-test
+/// result, for the core session that is running now.
+///
+/// The full outbounds stream, the one the location page reads, not the main
+/// one: that carries only each group's chosen entry, so the fast failover saw
+/// one location and took its failure for the hub's (2026-10-18). The selector
+/// is the first group and lists every location (builder.go), and its chosen
+/// entry is what traffic uses.
 ///
 /// The core's stream belongs to one session: with no session it fails after
 /// about five seconds ("hiddify service not found"), and it ends when the
@@ -32,6 +38,6 @@ Stream<List<OutboundGroup>> activeOutboundGroups(Ref ref) {
   if (!ref.watch(serviceRunningProvider)) return Stream.value(const <OutboundGroup>[]);
   return ref
       .read(proxyRepositoryProvider)
-      .watchActiveProxies()
-      .map((event) => event.getOrElse((_) => const <OutboundGroup>[]));
+      .watchProxies()
+      .map((event) => event.fold((_) => const <OutboundGroup>[], (group) => group == null ? const [] : [group]));
 }

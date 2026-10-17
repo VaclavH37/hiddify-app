@@ -155,6 +155,28 @@ void main() {
     });
   });
 
+  group('the fast failover judges the hub by every location', () {
+    // The core's main stream carries only each group's chosen entry, and the
+    // re-test used to test only the active location, so one location failing
+    // behind a healthy hub read as a dead hub (live, 2026-10-18).
+    final groups = File('lib/features/proxy/active/active_outbound_groups.dart').readAsStringSync();
+    final ladder = File(
+      'lib/features/profile/notifier/profiles_update_notifier.dart',
+    ).readAsStringSync().replaceAll('\r\n', '\n');
+
+    test('it reads the full outbounds stream, not the chosen entries alone', () {
+      expect(groups, contains('.watchProxies()'));
+      expect(groups, isNot(contains('.watchActiveProxies()')));
+    });
+
+    test('its re-test covers every location, and it judges them all', () {
+      final start = ladder.indexOf('Future<void> _retestEveryLocation()');
+      expect(start, isNonNegative, reason: 'the re-test of every location not found');
+      expect(ladder.substring(start, ladder.indexOf('\n  }\n', start)), contains('_groupTags'));
+      expect(ladder, contains('urlTestSnapshotOf(groups)'));
+    });
+  });
+
   group("the core's log stream survives a connection reset", () {
     // A reset kills every stream on desktop's single channel, and only setup()
     // opened the log stream there: after the first live failover on Windows

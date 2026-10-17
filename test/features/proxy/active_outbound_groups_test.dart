@@ -60,15 +60,42 @@ void main() {
     await settle();
     expect(repository.subscriptions, 1);
 
-    repository.emit(right([group('EXIT-Tokyo', 65535)]));
+    repository.emit(right(group('EXIT-Tokyo', 65535)));
     await settle();
     expect(seen.last.single.items.single.urlTestDelay, 65535);
+  });
+
+  test('the full list reaches the fast path: every location, not only the chosen one', () async {
+    running.state = true;
+    await settle();
+    repository.emit(
+      right(
+        OutboundGroup(
+          tag: 'select',
+          selected: 'EXIT-Los Angeles',
+          items: [
+            OutboundInfo(tag: 'EXIT-Los Angeles', urlTestDelay: 65535),
+            OutboundInfo(tag: 'EXIT-Tokyo', urlTestDelay: 180),
+          ],
+        ),
+      ),
+    );
+    await settle();
+    expect(seen.last.single.items.map((item) => item.tag), ['EXIT-Los Angeles', 'EXIT-Tokyo']);
+  });
+
+  test('no group from the core reads as nothing to judge', () async {
+    running.state = true;
+    await settle();
+    repository.emit(right(null));
+    await settle();
+    expect(seen.last, isEmpty);
   });
 
   test('an error from the core reads as nothing to judge', () async {
     running.state = true;
     await settle();
-    repository.emit(right([group('EXIT-Tokyo', 65535)]));
+    repository.emit(right(group('EXIT-Tokyo', 65535)));
     repository.emit(left(const ProxyFailure.unexpected('hiddify service not found')));
     await settle();
     expect(seen.last, isEmpty);
@@ -86,7 +113,7 @@ void main() {
   test('a disconnect drops the stream and reads empty; the next connect subscribes again', () async {
     running.state = true;
     await settle();
-    repository.emit(right([group('EXIT-Tokyo', 65535)]));
+    repository.emit(right(group('EXIT-Tokyo', 65535)));
     await settle();
 
     running.state = false;
@@ -103,13 +130,14 @@ void main() {
 class _FakeProxyRepository implements ProxyRepository {
   int subscriptions = 0;
   int cancelled = 0;
-  late StreamController<Either<ProxyFailure, List<OutboundGroup>>> _current;
+  late StreamController<Either<ProxyFailure, OutboundGroup?>> _current;
 
-  void emit(Either<ProxyFailure, List<OutboundGroup>> event) => _current.add(event);
+  void emit(Either<ProxyFailure, OutboundGroup?> event) => _current.add(event);
 
+  /// The full stream, every location listed: what the fast path reads.
   @override
-  Stream<Either<ProxyFailure, List<OutboundGroup>>> watchActiveProxies() {
-    final controller = StreamController<Either<ProxyFailure, List<OutboundGroup>>>(
+  Stream<Either<ProxyFailure, OutboundGroup?>> watchProxies() {
+    final controller = StreamController<Either<ProxyFailure, OutboundGroup?>>(
       onListen: () => subscriptions++,
       onCancel: () => cancelled++,
     );
@@ -117,8 +145,10 @@ class _FakeProxyRepository implements ProxyRepository {
     return controller.stream;
   }
 
+  /// The main stream, only each group's chosen entry: the fast path must not
+  /// read it (2026-10-18).
   @override
-  Stream<Either<ProxyFailure, OutboundGroup?>> watchProxies() => throw UnimplementedError();
+  Stream<Either<ProxyFailure, List<OutboundGroup>>> watchActiveProxies() => throw UnimplementedError();
 
   @override
   TaskEither<ProxyFailure, oldipinfo.IpInfo> getCurrentIpInfo(CancelToken cancelToken) => throw UnimplementedError();

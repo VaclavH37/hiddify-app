@@ -48,38 +48,55 @@ bool urlTestFailureConfirmed(DateTime? firstSeenAt, DateTime now) {
   return elapsed >= hubUrlTestWindow;
 }
 
-/// How long to wait for the result of the re-test [UrlTestWatch] asks for:
-/// the core's 5 s test timeout, its 1 s publish debounce, and a margin. A
-/// result that has not arrived by then is silence, and silence is not a verdict.
+/// How long to wait for the results of the re-test [UrlTestWatch] asks for:
+/// the core's 5 s test timeout, its 1 s publish debounce, and a margin. The core
+/// tests up to 10 locations at once, so every result of a typical list is in by
+/// then. None at all is silence, and silence is not a verdict.
 const hubRetestGuard = Duration(seconds: 12);
 
 /// One location as the fast path sees it: its URL-test delay, and when that
 /// result was measured (null when the core has not tested it).
 typedef ExitObservation = ({int delay, DateTime? testedAt});
 
+/// The core's view of the locations at one moment, as the fast path reads it.
+///
+/// [selected] is what traffic uses now: the selector's chosen entry, whose
+/// result is its chosen location's. It raises the alarm. [all] is every
+/// location, each once. It decides: every location dials the same hub, so all
+/// of them failing a fresh test is a statement about the hub, while one of
+/// them answering proves the hub carries traffic.
+typedef UrlTestSnapshot = ({List<ExitObservation> selected, List<ExitObservation> all});
+
+/// Whether a location answered: tested, and inside the timeout.
+bool _answered(ExitObservation exit) => exit.delay > 0 && exit.delay < hubUrlTestTimeout;
+
 /// What the caller does after feeding [UrlTestWatch] an event or a timer.
 enum UrlTestWatchStep {
   /// Nothing new; any running timer stays.
   none,
 
-  /// An open window closed (a location answered, or there is nothing to
-  /// judge): cancel the timer.
+  /// An open window closed (the location in use answered, or there is nothing
+  /// to judge): cancel the timer.
   reset,
 
-  /// Every location just timed out: start the [hubUrlTestWindow] timer.
+  /// The location in use just timed out: start the [hubUrlTestWindow] timer.
   armWindow,
 
-  /// The window passed with every location still timed out: ask the core to
-  /// re-test the active location now, and start the [hubRetestGuard] timer.
+  /// The window passed with the location in use still timed out: ask the core
+  /// to re-test every location now, and start the [hubRetestGuard] timer.
   retest,
 
-  /// A result measured after the re-test request timed out too: the hub is
-  /// not carrying traffic.
+  /// Another location answered its re-test: the hub carries traffic, and only
+  /// the location in use is failing. Not a hub failure; cancel the timer.
+  hubAnswered,
+
+  /// Every location's re-test timed out: the hub is not carrying traffic.
   confirm,
 }
 
-/// The fast failover's decision: every location timed out, stayed that way for
-/// [hubUrlTestWindow], and a re-test taken after that timed out as well.
+/// The fast failover's decision: the location in use timed out, stayed that
+/// way for [hubUrlTestWindow], and then a re-test of every location timed out
+/// as well.
 ///
 /// The window runs on a timer, not on the next event. Results only arrive
 /// when something tests: the core's sweep is 20–40 minutes apart, and its
@@ -88,13 +105,22 @@ enum UrlTestWatchStep {
 /// 2026-10-16: every result of a 3-minute dead session arrived in its first
 /// second.
 ///
-/// The verdict needs a FRESH result, measured after the re-test was requested.
+/// The verdict needs FRESH results, measured after the re-test was requested.
 /// That keeps "one bad sweep" from counting as a blocked hub, and it makes a
 /// stale list (the stream replays the previous session's last one when it is
 /// opened) unable to confirm anything.
 ///
-/// One verdict per run of timeouts. After it, the watch stays quiet until a
-/// location answers or the caller resets it for a new core session.
+/// And it needs EVERY location. The alarm comes from the location in use, and
+/// it used to be the whole verdict: the core's main stream carries only each
+/// group's chosen entry, so one location failing behind a healthy hub read as
+/// a dead hub. Live on 2026-10-18, Los Angeles timed out three times while the
+/// hub served other locations, and the watch declared the primary hub blocked;
+/// only a missing standby config stopped a needless failover and a false
+/// "unreachable" report to the middleware.
+///
+/// One verdict per run of timeouts, whichever way it goes. After it, the watch
+/// stays quiet until the location in use answers or the caller resets it for a
+/// new core session.
 ///
 /// Pure, so every rule is a plain test; the caller owns the timers.
 class UrlTestWatch {
@@ -102,7 +128,10 @@ class UrlTestWatch {
   DateTime? _retestAt;
   bool _timedOut = false;
 
-  /// A verdict was reached and every location is still timing out.
+  /// Fresh re-test results seen so far in this re-test, every one timed out.
+  int _freshTimedOut = 0;
+
+  /// A verdict was reached and the location in use is still timing out.
   ///
   /// More timeouts are that verdict again. Without this the watch re-opened
   /// its window on the core's next result, and when the verdict could not be
@@ -111,9 +140,9 @@ class UrlTestWatch {
   /// live on 2026-10-17. The ladder still covers a hub that stays dead.
   bool _decided = false;
 
-  /// An event from the core: the visible locations, as they stand now.
-  UrlTestWatchStep observe(List<ExitObservation> exits, DateTime now) {
-    if (!allExitsTimedOut(exits.map((exit) => exit.delay))) {
+  /// An event from the core: the locations as they stand now.
+  UrlTestWatchStep observe(UrlTestSnapshot snapshot, DateTime now) {
+    if (!allExitsTimedOut(snapshot.selected.map((exit) => exit.delay))) {
       final open = _since != null || _retestAt != null;
       reset();
       return open ? UrlTestWatchStep.reset : UrlTestWatchStep.none;
@@ -122,10 +151,17 @@ class UrlTestWatch {
     _timedOut = true;
     final retestAt = _retestAt;
     if (retestAt != null) {
-      final fresh = exits.any((exit) => exit.testedAt?.isAfter(retestAt) ?? false);
-      if (!fresh) return UrlTestWatchStep.none;
-      reset();
-      _decided = true;
+      // A list with no locations of its own can only be judged by what is in use.
+      final judged = snapshot.all.isEmpty ? snapshot.selected : snapshot.all;
+      final fresh = judged.where((exit) => exit.testedAt?.isAfter(retestAt) ?? false).toList();
+      if (fresh.any(_answered)) {
+        _decide();
+        return UrlTestWatchStep.hubAnswered;
+      }
+      _freshTimedOut = fresh.length;
+      // The rest are still being tested; the guard decides if they never report.
+      if (fresh.length < judged.length) return UrlTestWatchStep.none;
+      _decide();
       return UrlTestWatchStep.confirm;
     }
     final since = _since;
@@ -147,22 +183,36 @@ class UrlTestWatch {
       return UrlTestWatchStep.armWindow;
     }
     _retestAt = now;
+    _freshTimedOut = 0;
     return UrlTestWatchStep.retest;
   }
 
-  /// The [hubRetestGuard] timer fired with no fresh result: another window,
-  /// not a verdict.
+  /// The [hubRetestGuard] timer fired before every location reported.
+  ///
+  /// Fresh results that all timed out, with none answering, are the verdict:
+  /// the locations still unreported dial the same hub. No fresh result at all
+  /// is silence: another window, not a verdict.
   UrlTestWatchStep retestExpired(DateTime now) {
     if (_retestAt == null) return UrlTestWatchStep.none;
+    if (_freshTimedOut > 0) {
+      _decide();
+      return UrlTestWatchStep.confirm;
+    }
     _retestAt = null;
     _since = now;
     return UrlTestWatchStep.armWindow;
+  }
+
+  void _decide() {
+    reset();
+    _decided = true;
   }
 
   void reset() {
     _since = null;
     _retestAt = null;
     _timedOut = false;
+    _freshTimedOut = 0;
     _decided = false;
   }
 }

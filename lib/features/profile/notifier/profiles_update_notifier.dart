@@ -21,6 +21,7 @@ import 'package:hiddify/features/profile/model/hub_reachability.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
+import 'package:hiddify/features/profile/model/url_test_snapshot.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_outbound_groups.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
@@ -160,22 +161,21 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   bool _transientSeen = false;
   Timer? _transientTimer;
 
-  /// Reacts to the core's per-exit URL-test results.
+  /// The groups in the last event from the core: what a re-test asks it to test.
+  List<String> _groupTags = const [];
+
+  /// Reacts to the core's URL-test results.
   ///
-  /// Every exit dials the same hub, so all of them timing out says the hub is
-  /// not carrying traffic. It does NOT say the hub is to blame — an offline
-  /// device looks identical — which is why this ends in the same
-  /// `_failOverToStandby` whose post-switch probe reverts when the standby hub
-  /// is equally dead. The window and the re-test are [UrlTestWatch]'s rules.
+  /// The location in use timing out raises the alarm; a fresh re-test of every
+  /// location decides it. Every location dials the same hub, so all of them
+  /// timing out says the hub is not carrying traffic, and one answering says it
+  /// is. It does NOT say the hub is to blame — an offline device looks
+  /// identical — which is why this ends in the same `_failOverToStandby` whose
+  /// post-switch probe reverts when the standby hub is equally dead. The window
+  /// and the re-test are [UrlTestWatch]'s rules.
   void _onOutboundDelays(List<OutboundGroup> groups) {
-    final exits = groups
-        .expand((group) => group.items)
-        .where((item) => !item.tag.contains('§hide§'))
-        .map<ExitObservation>(
-          (item) => (delay: item.urlTestDelay, testedAt: item.hasUrlTestTime() ? item.urlTestTime.toDateTime() : null),
-        )
-        .toList();
-    _applyUrlTestStep(_urlTestWatch.observe(exits, DateTime.now()));
+    _groupTags = [for (final group in groups) group.tag];
+    _applyUrlTestStep(_urlTestWatch.observe(urlTestSnapshotOf(groups), DateTime.now()));
   }
 
   void _applyUrlTestStep(UrlTestWatchStep step) {
@@ -186,12 +186,21 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         loggy.info("a location answered its URL test; closing the fast-path window");
         _cancelUrlTestTimer();
       case UrlTestWatchStep.armWindow:
-        loggy.info("every exit timed out its URL test; re-testing in ${hubUrlTestWindow.inSeconds}s before deciding");
+        loggy.info(
+          "the location in use timed out its URL test; "
+          "re-testing every location in ${hubUrlTestWindow.inSeconds}s before deciding",
+        );
         _armUrlTestTimer(hubUrlTestWindow, () => _urlTestWatch.windowElapsed(DateTime.now()));
       case UrlTestWatchStep.retest:
-        loggy.info("still timed out after ${hubUrlTestWindow.inSeconds}s; re-testing the active location");
+        loggy.info("still timed out after ${hubUrlTestWindow.inSeconds}s; re-testing every location");
         _armUrlTestTimer(hubRetestGuard, () => _urlTestWatch.retestExpired(DateTime.now()));
-        unawaited(_retestActiveLocation());
+        unawaited(_retestEveryLocation());
+      case UrlTestWatchStep.hubAnswered:
+        _cancelUrlTestTimer();
+        loggy.info(
+          "another location answered its re-test, so the hub carries traffic and only the location in use "
+          "is failing; not failing over",
+        );
       case UrlTestWatchStep.confirm:
         _cancelUrlTestTimer();
         loggy.info("fast path: verdict reached; no more re-tests until a location answers or the tunnel reconnects");
@@ -217,13 +226,19 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     _cancelUrlTestTimer();
   }
 
-  /// Asks the core to test the active location now ("" is the active group,
-  /// as the location page uses it). Its result arrives as an ordinary event,
-  /// stamped with the time it was measured, which is what lets the watch tell
-  /// it from the stale timeouts that opened the window.
-  Future<void> _retestActiveLocation() async {
-    final result = await ref.read(proxyRepositoryProvider).urlTest("").run();
-    result.match((failure) => loggy.info("could not ask the core to re-test the active location", failure), (_) {});
+  /// Asks the core to test every location now.
+  ///
+  /// Testing a group tests each of its members (the core's monitor recurses
+  /// into nested groups), and the selector lists every location. "" would test
+  /// only the active one, which is all this used to ask for. The results arrive
+  /// as ordinary events, stamped with when they were measured, which is what
+  /// lets the watch tell them from the stale timeouts that opened the window.
+  Future<void> _retestEveryLocation() async {
+    final repository = ref.read(proxyRepositoryProvider);
+    for (final tag in _groupTags.isEmpty ? const [""] : _groupTags) {
+      final result = await repository.urlTest(tag).run();
+      result.match((failure) => loggy.info("could not ask the core to re-test [$tag]", failure), (_) {});
+    }
   }
 
   /// The fast path's preconditions, which are the ladder's own.
@@ -250,10 +265,10 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     final profile = await ref.read(activeProfileProvider.future);
     if (profile is! RemoteProfileEntity) return;
     if (await _currentTier(profile.id) != HubTier.primary) return;
-    if (_localRoutingExplains("every exit timed out its URL test")) return;
+    if (_localRoutingExplains("every location timed out its URL test")) return;
 
     loggy.warning(
-      "every exit timed out its URL test, and again on a re-test ${hubUrlTestWindow.inSeconds}s later; "
+      "the location in use timed out, and so did every location's re-test ${hubUrlTestWindow.inSeconds}s later; "
       "treating the primary hub as blocked",
     );
     await _failOverToStandby(profile);
