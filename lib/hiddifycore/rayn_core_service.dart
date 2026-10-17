@@ -11,6 +11,7 @@ import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper_stub.dart'
     if (dart.library.io) 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper.dart';
+import 'package:hiddify/hiddifycore/core_stream_errors.dart';
 import 'package:hiddify/hiddifycore/foreground_retry.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcommon/common.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
@@ -269,6 +270,8 @@ class RaynCoreService with InfraLogger {
     return TaskEither(() async {
       statusController.add(currentState = const CoreStatus.starting());
       loggy.debug("starting");
+      // Before the start, so the start's own lines are caught.
+      await _reopenLogStreamIfDead();
       final background = await core.setupBackground(sealedPath, name);
       if (background != const CoreStatus.started()) {
         statusController.add(currentState = const CoreStatus.stopped());
@@ -609,6 +612,22 @@ class RaynCoreService with InfraLogger {
     );
   }
 
+  /// Reopens the core's log stream on desktop if a connection reset killed it.
+  ///
+  /// Desktop runs one channel for both clients, and setup() is the only other
+  /// place that opens the log stream; start() reopens streams on mobile only.
+  /// A connection reset kills every stream on that channel (see
+  /// [coreStreamErrorLevel]), and a core restart makes one likely: after the
+  /// first live failover on Windows (2026-10-18) no core line reached the app
+  /// or an exported log for the rest of the session, the egress-routing line
+  /// included. The status stream already recovers through watchStatus.
+  Future<void> _reopenLogStreamIfDead() async {
+    if (!core.isInitialized() || !core.isSingleChannel()) return;
+    if (subscriptions.containsKey("fgLogListener")) return;
+    loggy.info("reopening the core log stream");
+    await startListeningLogs("fg", core.fgClient);
+  }
+
   Future<void> startListeningLogs(String key, CoreClient cc) async {
     final listenKey = "${key}LogListener";
     // await stopListenSingle(listenKey);
@@ -666,28 +685,20 @@ class RaynCoreService with InfraLogger {
     }
   }
 
-  /// Report a stream failure at the severity it actually warrants.
-  ///
-  /// `UNAVAILABLE` means nothing is listening on the port. For the BACKGROUND
-  /// core that is its normal resting state — it lives in the platform VPN
-  /// service and does not exist until the tunnel starts — and the unary path
-  /// has always treated it that way (see the `changeHiddifySettings` split).
-  /// The stream path did not, so every launch emitted a burst of ERROR lines
-  /// for a condition that is routine.
-  ///
-  /// That is not cosmetic. A foreground core that failed to start produces the
-  /// SAME lines, so the one failure worth acting on was indistinguishable from
-  /// the one that is expected, and an iOS import bug hid behind it. Hence the
-  /// key check rather than a blanket demotion: `UNAVAILABLE` from the
-  /// foreground core stays an error, because there it is one.
+  /// Report a stream failure at the severity it actually warrants; the rules
+  /// are [coreStreamErrorLevel]'s.
   void _logStreamError(String key, Object? error) {
-    final backgroundNotStarted =
-        key.startsWith("bg") && error is GrpcError && error.code == StatusCode.unavailable;
-    if (backgroundNotStarted) {
-      loggy.debug("$key: background core is not started yet");
-      return;
+    switch (coreStreamErrorLevel(key, error)) {
+      case CoreStreamErrorLevel.debug:
+        loggy.debug("$key: background core is not started yet");
+      case CoreStreamErrorLevel.warning:
+        loggy.warning(
+          "$key: the connection to the core was reset; the stream reopens when the core next starts",
+          error,
+        );
+      case CoreStreamErrorLevel.error:
+        loggy.error("Stream error in $key: $error");
     }
-    loggy.error("Stream error in $key: $error");
   }
 
   Future<StreamSubscription<T>?> listenSingle<T>(
@@ -700,7 +711,8 @@ class RaynCoreService with InfraLogger {
       await stopListenSingle(key);
     }
     subscriptions[key] = null;
-    subscriptions[key] = stream().listen(
+    late final StreamSubscription<T> subscription;
+    subscription = stream().listen(
       (event) {
         // loggy.debug(event);
       },
@@ -711,8 +723,15 @@ class RaynCoreService with InfraLogger {
         subscriptions[key]?.cancel();
         subscriptions.remove(key);
       },
+      // A stream that ended is gone too, so that an entry here always means a
+      // live stream (see _reopenLogStreamIfDead). Only this subscription's own
+      // entry: a replacement registered under the key since is left alone.
+      onDone: () {
+        if (identical(subscriptions[key], subscription)) subscriptions.remove(key);
+      },
     );
-    return subscriptions[key] as StreamSubscription<T>?;
+    subscriptions[key] = subscription;
+    return subscription;
   }
 
   loggyl.LogLevel getLogLevel(LogLevel level) {

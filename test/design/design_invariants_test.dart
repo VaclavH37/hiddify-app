@@ -155,6 +155,28 @@ void main() {
     });
   });
 
+  group("the core's log stream survives a connection reset", () {
+    // A reset kills every stream on desktop's single channel, and only setup()
+    // opened the log stream there: after the first live failover on Windows
+    // (2026-10-18) no core line reached the app for the rest of the session.
+    final service = File('lib/hiddifycore/rayn_core_service.dart').readAsStringSync().replaceAll('\r\n', '\n');
+
+    test('every start reopens a dead log stream, before the core starts', () {
+      final start = service.indexOf('TaskEither<ConnectionFailure, Unit> start(');
+      expect(start, isNonNegative);
+      final reopen = service.indexOf('_reopenLogStreamIfDead()', start);
+      final setupBackground = service.indexOf('core.setupBackground(', start);
+      expect(reopen, isNonNegative, reason: 'start() must reopen a dead log stream');
+      expect(reopen, lessThan(setupBackground), reason: "before the start, so the start's own lines are caught");
+    });
+
+    test('a stream that ends is dropped from the registry the reopen checks', () {
+      final listen = service.indexOf('Future<StreamSubscription<T>?> listenSingle<T>(');
+      expect(listen, isNonNegative);
+      expect(service.indexOf('onDone:', listen), isNonNegative);
+    });
+  });
+
   group('a sign-in caches the standby config', () {
     // A blocked primary can only fail over to a cached standby config. The
     // scheduled path fetches one only after a scheduled refresh, and a sign-in
