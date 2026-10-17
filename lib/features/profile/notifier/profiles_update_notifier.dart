@@ -389,10 +389,46 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     );
     if (!due) return;
 
+    loggy.debug("standby config cache is due; fetching");
+    await _fetchStandby(profile);
+  }
+
+  /// Caches the standby config for the profile a sign-in just imported.
+  ///
+  /// [_refreshStandbyCacheIfDue] runs only after a scheduled refresh, and the
+  /// import counts as the last one, so the first fetch was an update interval
+  /// away: an hour in which a blocked primary could not fail over ("standby
+  /// cached: false", seen live on 2026-10-17). Its stamps can also describe the
+  /// profile that was signed out, whose cache went with it, and those could
+  /// hold the first fetch off for up to a day.
+  ///
+  /// So this ignores both and fetches once. The import that just succeeded is
+  /// the successful primary refresh the scheduled path waits for, and a sign-in
+  /// is rare and user-initiated: one extra request per sign-in. A failure is
+  /// retried by the scheduled path, an hour after this attempt.
+  Future<void> cacheStandbyAfterSignIn() async {
+    // A fresh query, not activeProfileProvider: the import's row was written
+    // moments ago and that provider's stream may not have delivered it yet.
+    final active = await ref.read(profileRepositoryProvider).requireValue.watchActiveProfile().first;
+    final profile = active.getOrElse((_) => null);
+    if (profile is! RemoteProfileEntity) return;
+
+    // Whatever this stamp says, the cache it dates left with the previous
+    // profile. Left in place, it would also hold off the scheduled retry.
+    await ref.read(sharedPreferencesProvider).requireValue.remove(standbyCachedAtKey);
+    loggy.info("caching the standby config after sign-in");
+    await _fetchStandby(profile);
+  }
+
+  /// One standby fetch: records the attempt, then the cache if it worked.
+  ///
+  /// Failures are logged and swallowed, for the reason [_refreshStandbyCacheIfDue]
+  /// gives.
+  Future<void> _fetchStandby(RemoteProfileEntity profile) async {
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
     // Stamped BEFORE the attempt, so a fetch that hangs or throws still backs
     // off. Recording it afterwards would leave a crash loop retrying forever.
     await prefs.setString(standbyAttemptedAtKey, DateTime.now().toIso8601String());
-    loggy.debug("standby config cache is due; fetching");
 
     final result = await ref.read(profileRepositoryProvider).requireValue.refreshStandbyConfig(profile).run();
     final failure = result.fold<ProfileFailure?>((l) => l, (_) => null);
@@ -401,7 +437,8 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       return;
     }
     await prefs.setString(standbyCachedAtKey, DateTime.now().toIso8601String());
-    loggy.debug("standby config cached");
+    // Info, not debug: whether a failover has anywhere to go is support data.
+    loggy.info("standby config cached");
   }
 
   /// The reachability ladder: detect a dead primary hub, fail over to the

@@ -155,6 +155,42 @@ void main() {
     });
   });
 
+  group('a sign-in caches the standby config', () {
+    // A blocked primary can only fail over to a cached standby config. The
+    // scheduled path fetches one only after a scheduled refresh, and a sign-in
+    // counts as the last refresh: live on 2026-10-17, a fresh sign-in got
+    // "failover is not available (… standby cached: false …)" for its whole
+    // first hour.
+    final notifier = File('lib/features/profile/notifier/profiles_update_notifier.dart')
+        .readAsStringSync()
+        .replaceAll('\r\n', '\n');
+    final import = File('lib/features/profile/notifier/profile_notifier.dart')
+        .readAsStringSync()
+        .replaceAll('\r\n', '\n');
+
+    test('a successful import starts the fetch', () {
+      final success = import.indexOf('"successfully added profile"');
+      expect(success, isNonNegative, reason: 'the import success log line not found');
+      final call = import.indexOf('.cacheStandbyAfterSignIn()', success);
+      expect(call, isNonNegative, reason: 'the import success path must cache the standby config');
+      expect(call, lessThan(import.indexOf('return unit;', success)));
+    });
+
+    test("the sign-in fetch skips the scheduled path's due rules", () {
+      final start = notifier.indexOf('Future<void> cacheStandbyAfterSignIn()');
+      final end = notifier.indexOf('Future<void> _fetchStandby(');
+      expect(start, isNonNegative);
+      expect(end, greaterThan(start));
+      final body = notifier.substring(start, end);
+      expect(body, isNot(contains('standbyRefreshDue(')));
+      // The stamp dates the previous profile's cache; left in place it would
+      // also hold off the scheduled retry after a failed fetch.
+      final cleared = body.indexOf('remove(standbyCachedAtKey)');
+      expect(cleared, isNonNegative, reason: "the previous profile's cache stamp must not survive a sign-in");
+      expect(cleared, lessThan(body.indexOf('_fetchStandby(')));
+    });
+  });
+
   group('a tunnel killed by local IP routing is not a hub failure', () {
     // With IPv4 forwarding on for the egress adapter (Windows), the core's own
     // connections are routed back into the tunnel and refused: every hub looks

@@ -10,6 +10,7 @@ import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_repository.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
+import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
 import 'package:hiddify/utils/riverpod_utils.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -97,6 +98,10 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
             },
             (_) {
               loggy.info("successfully added profile");
+              // A blocked primary can only fail over to a cached standby config.
+              // Fetch it now, not an update interval from now. Not awaited: the
+              // sign-in is done, and the fetch must not hold it up.
+              unawaited(ref.read(foregroundProfilesUpdateNotifierProvider.notifier).cacheStandbyAfterSignIn());
               return unit;
             },
           )
