@@ -21,6 +21,31 @@ import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as p;
 
+/// The connection status the app sees, from the core's status stream: each
+/// change once.
+///
+/// The core's stream repeats itself. It is a BehaviorSubject that replays its
+/// last status to a new subscriber, and ConnectionNotifier subscribes afresh on
+/// every core start, which also restarts the gRPC status listener, whose first
+/// event is that same status again. A stop arrives from the core and then once
+/// more from RaynCoreService.stop(), which adds it in case the listener is
+/// already gone. So every connect and disconnect reached the app twice
+/// (2026-10-17), and listeners acted twice: a location picked before connecting
+/// was applied with two select calls 7 ms apart.
+///
+/// Only consecutive repeats go. A status that comes back after another one is a
+/// change, and a stop carrying a different failure is too.
+Stream<ConnectionStatus> connectionStatusFrom(Stream<CoreStatus> core) => core
+    .map(
+      (event) => switch (event) {
+        CoreStopped() => Disconnected(event.getCoreAlert()),
+        CoreStarting() => const Connecting(),
+        CoreStarted() => const Connected(),
+        CoreStopping() => const Disconnecting(),
+      },
+    )
+    .distinct();
+
 abstract interface class ConnectionRepository {
   SingboxConfigOption? get configOptionsSnapshot;
 
@@ -78,16 +103,7 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   }
 
   @override
-  Stream<ConnectionStatus> watchConnectionStatus() {
-    return singbox.watchStatus().map(
-      (event) => switch (event) {
-        CoreStopped() => Disconnected(event.getCoreAlert()),
-        CoreStarting() => const Connecting(),
-        CoreStarted() => const Connected(),
-        CoreStopping() => const Disconnecting(),
-      },
-    );
-  }
+  Stream<ConnectionStatus> watchConnectionStatus() => connectionStatusFrom(singbox.watchStatus());
 
   @override
   TaskEither<ConnectionFailure, Unit> connect(ProfileEntity activeProfile, bool disableMemoryLimit) =>
