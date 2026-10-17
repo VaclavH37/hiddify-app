@@ -11,6 +11,7 @@ import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper_stub.dart'
     if (dart.library.io) 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper.dart';
+import 'package:hiddify/hiddifycore/foreground_retry.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcommon/common.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
@@ -62,33 +63,26 @@ class RaynCoreService with InfraLogger {
   /// `configs/<id>.enc` instead.
   TaskEither<String, String> validateConfig(String content) {
     return TaskEither(() async {
-      ParseResponse response;
+      final ParseResponse response;
       try {
-        response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
-      } catch (first) {
-        // The foreground core is unreachable. Re-running setup is worth one
-        // attempt, but the retry has to be caught too: it used to be bare, so a
-        // second failure escaped this TaskEither entirely and reached the caller
-        // as a raw exception. That is how "the core is not listening" reached
-        // the user as `Failed to add profile: Unexpected error Error connecting:
-        // SocketException ... port 49465` — an ephemeral LOCAL port, which
-        // reads like a network fault and names nothing that exists in this
-        // codebase. The real destination is the foreground core on 127.0.0.1.
-        loggy.warning("foreground core unreachable during parse, re-running setup", first);
-        final setupResult = await setup().run();
-        final setupError = setupResult.getLeft().toNullable();
-        try {
-          response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
-        } catch (second) {
-          // Prefer setup's own message: it says WHY the core did not come up,
-          // where the parse failure only says that it is absent. Discarding it
-          // was the other half of the same bug.
-          return left(
-            setupError != null
-                ? "core did not start: $setupError"
-                : "cannot reach the local core to validate the configuration: $second",
-          );
-        }
+        // Heals on ANY first failure, not only an unreachable core: this call
+        // has always re-run setup for whatever went wrong, and every failure,
+        // first or second, has to come back as a Left. It used to escape this
+        // TaskEither as a raw exception, which is how "the core is not
+        // listening" reached the user as `Failed to add profile: Unexpected
+        // error Error connecting: SocketException ... port 49465` — an
+        // ephemeral LOCAL port, which reads like a network fault and names
+        // nothing that exists in this codebase. The real destination is the
+        // foreground core on 127.0.0.1.
+        response = await callForegroundCore(
+          call: () => core.fgClient.parse(ParseRequest(content: content, debug: false)),
+          heal: _healForeground,
+          shouldHeal: (_) => true,
+        );
+      } on ForegroundCoreUnreachable catch (e) {
+        return left(
+          _unreachableMessage(e, "cannot reach the local core to validate the configuration: ${e.lastError}"),
+        );
       }
       if (response.responseCode != ResponseCode.OK) return left("${response.responseCode} ${response.message}");
       return right(response.content);
@@ -97,13 +91,59 @@ class RaynCoreService with InfraLogger {
 
   TaskEither<String, String> generateFullConfig(String content) {
     return TaskEither(() async {
-      final response = await core.fgClient.parse(ParseRequest(content: content, debug: false));
+      final ParseResponse response;
+      try {
+        response = await callForegroundCore(
+          call: () => core.fgClient.parse(ParseRequest(content: content, debug: false)),
+          heal: _healForeground,
+        );
+      } on ForegroundCoreUnreachable catch (e) {
+        return left(_unreachableMessage(e, "cannot reach the local core to build the configuration: ${e.lastError}"));
+      }
       if (response.responseCode != ResponseCode.OK) return left("${response.responseCode} ${response.message}");
       return right(response.content);
     });
   }
 
-  TaskEither<String, Unit> setup() {
+  /// The heal [callForegroundCore] runs once before retrying: set the core up
+  /// again, which also restarts a foreground server that stopped listening (see
+  /// keepOrReviveLocked in the core's grpc_server.go). Returns why setup failed,
+  /// or null.
+  Future<String?> _healForeground(Object error) async {
+    loggy.warning("the local core was unreachable; restarting it and retrying once", error);
+    return (await setup().run()).getLeft().toNullable();
+  }
+
+  /// Prefers setup's own failure: it says WHY the core did not come up, where
+  /// the retried call only says that it is absent.
+  static String _unreachableMessage(ForegroundCoreUnreachable e, String otherwise) =>
+      e.healError != null ? "core did not start: ${e.healError}" : otherwise;
+
+  /// Restarts the foreground core if it stopped listening while the app was in
+  /// the background.
+  ///
+  /// iOS may reclaim the resources under a suspended app's sockets, after which
+  /// the foreground core refuses every connection. The pause handler cannot be
+  /// relied on to release the core first: it runs on a rebuild, and Flutter
+  /// stops producing frames once the app is hidden. Checking on resume catches
+  /// the loss before the user's next import does.
+  ///
+  /// A loopback connect, so cheap enough for every resume. Always true on
+  /// desktop, where the base [CoreInterface.isActiveFg] says so.
+  Future<void> reviveForegroundIfDead() async {
+    if (await core.isActiveFg()) return;
+    loggy.warning("the local core stopped listening while the app was in the background; restarting it");
+    await init();
+  }
+
+  /// One setup at a time. Bootstrap, the connection repository, resume and every
+  /// heal all call [setup]; overlapping calls share one run instead of each
+  /// rebuilding the clients and re-subscribing the streams.
+  final _setupFlight = SingleFlight<Either<String, Unit>>();
+
+  TaskEither<String, Unit> setup() => TaskEither(() => _setupFlight.run(_setup().run));
+
+  TaskEither<String, Unit> _setup() {
     return TaskEither(() async {
       try {
         final directories = ref.read(appDirectoriesProvider).requireValue;
@@ -161,17 +201,24 @@ class RaynCoreService with InfraLogger {
       // that should stop an import cold was reported as the one that is
       // routine, and the caller carried on into validateConfig to fail there
       // instead.
+      //
+      // The foreground call gets one heal-and-retry: this is the call a profile
+      // import makes first, so a foreground core that stopped listening while
+      // the app was suspended used to fail the import here with no retry at
+      // all, and keep failing until the app was force-quit.
       try {
-        final res = await core.fgClient.changeHiddifySettings(
-          ChangeHiddifySettingsRequest(hiddifySettingsJson: payload),
+        final res = await callForegroundCore(
+          call: () => core.fgClient.changeHiddifySettings(ChangeHiddifySettingsRequest(hiddifySettingsJson: payload)),
+          heal: _healForeground,
         );
         if (res.messageType != MessageType.EMPTY) return left("${res.messageType} ${res.message}");
-      } on GrpcError catch (e) {
-        if (e.code == StatusCode.unavailable) {
-          loggy.error("foreground core is unreachable", e);
-          return left("cannot reach the local core to apply settings: ${e.message ?? e.codeName}");
-        }
-        rethrow;
+      } on ForegroundCoreUnreachable catch (e) {
+        loggy.error("foreground core is unreachable", e.lastError);
+        final reason = switch (e.lastError) {
+          final GrpcError error => error.message ?? error.codeName,
+          final other => "$other",
+        };
+        return left(_unreachableMessage(e, "cannot reach the local core to apply settings: $reason"));
       }
 
       try {

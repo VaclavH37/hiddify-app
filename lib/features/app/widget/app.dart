@@ -83,7 +83,15 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     // Desktop never sets the flag (onPause returns early there and closes
     // nothing), so desktop no longer re-initialises on window focus either.
     // That is intended: there is nothing to restore.
-    if (!isOnPauseCalled) return;
+    if (!isOnPauseCalled) {
+      // Not released, but not necessarily alive either. onPause runs on a
+      // rebuild, and Flutter stops producing frames once the app is hidden, so
+      // a real trip to the background often skips it, and iOS may reclaim the
+      // foreground core's socket while the app is suspended. Restart the core
+      // only if it stopped listening.
+      if (PlatformUtils.isMobile) ref.read(raynCoreServiceProvider).reviveForegroundIfDead();
+      return;
+    }
     isOnPauseCalled = false;
     ref.read(raynCoreServiceProvider).init();
   }
