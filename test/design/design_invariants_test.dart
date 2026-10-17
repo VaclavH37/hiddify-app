@@ -223,6 +223,13 @@ void main() {
       expect(ladder, contains('ref.listen(activeOutboundGroupsProvider'));
     });
 
+    test('the fast path starts afresh with every core session', () {
+      // A verdict holds for the rest of its session (UrlTestWatch). The reset
+      // that ends it must not wait for the stream's empty list, which can come
+      // too late for a pending timer or not at all for a quick restart.
+      expect(ladder, contains('ref.listen(serviceRunningProvider, (_, _) => _resetUrlTestWatch())'));
+    });
+
     test('no failed check is recorded without asking', () {
       for (final failed in ['_recordCheck(failed: true)', '_recordCheck(failed: !carrying)']) {
         final at = ladder.indexOf(failed);

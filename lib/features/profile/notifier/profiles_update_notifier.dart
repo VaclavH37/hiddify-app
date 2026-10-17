@@ -113,6 +113,13 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       if (next case AsyncData(:final value)) _onOutboundDelays(value);
     });
 
+    // A watch, its verdict and its timers belong to one core session. The
+    // stream's empty list says the same when a session ends, but it arrives on
+    // the provider's next rebuild: after a timer due at that moment has
+    // already fired, and possibly not at all for a quick stop-start such as a
+    // failover's restart.
+    ref.listen(serviceRunningProvider, (_, _) => _resetUrlTestWatch());
+
     // When the IP routing warning clears, the timeouts on record were caused
     // by it, and fresh results are still seconds away. An open window must not
     // carry them into a failover from a hub that never failed, reported to the
@@ -187,6 +194,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         unawaited(_retestActiveLocation());
       case UrlTestWatchStep.confirm:
         _cancelUrlTestTimer();
+        loggy.info("fast path: verdict reached; no more re-tests until a location answers or the tunnel reconnects");
         unawaited(_failOverOnUrlTestFailure());
     }
   }

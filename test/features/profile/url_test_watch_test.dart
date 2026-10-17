@@ -106,7 +106,7 @@ void main() {
     test('a confirmation closes the window', () {
       final watch = awaitingRetest()..observe(allTimedOut(testedAt: at(15)), at(16));
       expect(watch.retestExpired(at(22)), UrlTestWatchStep.none);
-      expect(watch.observe(allTimedOut(testedAt: at(15)), at(17)), UrlTestWatchStep.armWindow);
+      expect(watch.windowElapsed(at(26)), UrlTestWatchStep.none);
     });
 
     test('no fresh result before the guard is silence: another window, not a verdict', () {
@@ -118,6 +118,45 @@ void main() {
     test('the guard firing with no re-test pending does nothing', () {
       final watch = UrlTestWatch()..observe(allTimedOut(), at(0));
       expect(watch.retestExpired(at(12)), UrlTestWatchStep.none);
+    });
+  });
+
+  group('after the verdict', () {
+    // One verdict per run of timeouts. When it could not be acted on (no
+    // standby cached), the watch used to re-open on the core's next result and
+    // re-test and re-decide every ~30 s for the rest of the session (live,
+    // 2026-10-17).
+
+    /// A watch that has just confirmed, at +16 s.
+    UrlTestWatch decided() {
+      final watch = awaitingRetest();
+      expect(watch.observe(allTimedOut(testedAt: at(15)), at(16)), UrlTestWatchStep.confirm);
+      return watch;
+    }
+
+    test('more timeouts stay quiet, however fresh', () {
+      final watch = decided();
+      expect(watch.observe(allTimedOut(testedAt: at(15)), at(17)), UrlTestWatchStep.none);
+      expect(watch.observe(allTimedOut(testedAt: at(45)), at(46)), UrlTestWatchStep.none);
+      expect(watch.observe(allTimedOut(testedAt: at(600)), at(601)), UrlTestWatchStep.none);
+      expect(watch.windowElapsed(at(610)), UrlTestWatchStep.none);
+    });
+
+    test('a location answering ends it: the next run of timeouts opens a window', () {
+      final watch = decided();
+      expect(watch.observe(oneHealthy(testedAt: at(40)), at(41)), UrlTestWatchStep.none);
+      expect(watch.observe(allTimedOut(testedAt: at(70)), at(71)), UrlTestWatchStep.armWindow);
+    });
+
+    test('a disconnect (an empty list) ends it', () {
+      final watch = decided();
+      expect(watch.observe(const [], at(30)), UrlTestWatchStep.none);
+      expect(watch.observe(allTimedOut(testedAt: at(40)), at(41)), UrlTestWatchStep.armWindow);
+    });
+
+    test('reset ends it: a new core session decides again', () {
+      final watch = decided()..reset();
+      expect(watch.observe(allTimedOut(testedAt: at(40)), at(41)), UrlTestWatchStep.armWindow);
     });
   });
 }

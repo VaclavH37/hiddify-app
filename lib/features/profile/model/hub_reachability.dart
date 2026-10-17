@@ -93,11 +93,23 @@ enum UrlTestWatchStep {
 /// stale list (the stream replays the previous session's last one when it is
 /// opened) unable to confirm anything.
 ///
+/// One verdict per run of timeouts. After it, the watch stays quiet until a
+/// location answers or the caller resets it for a new core session.
+///
 /// Pure, so every rule is a plain test; the caller owns the timers.
 class UrlTestWatch {
   DateTime? _since;
   DateTime? _retestAt;
   bool _timedOut = false;
+
+  /// A verdict was reached and every location is still timing out.
+  ///
+  /// More timeouts are that verdict again. Without this the watch re-opened
+  /// its window on the core's next result, and when the verdict could not be
+  /// acted on (no standby cached, the hour's backoff, the flap cap) it
+  /// re-tested and re-decided every ~30 s for the rest of the session: seen
+  /// live on 2026-10-17. The ladder still covers a hub that stays dead.
+  bool _decided = false;
 
   /// An event from the core: the visible locations, as they stand now.
   UrlTestWatchStep observe(List<ExitObservation> exits, DateTime now) {
@@ -106,12 +118,14 @@ class UrlTestWatch {
       reset();
       return open ? UrlTestWatchStep.reset : UrlTestWatchStep.none;
     }
+    if (_decided) return UrlTestWatchStep.none;
     _timedOut = true;
     final retestAt = _retestAt;
     if (retestAt != null) {
       final fresh = exits.any((exit) => exit.testedAt?.isAfter(retestAt) ?? false);
       if (!fresh) return UrlTestWatchStep.none;
       reset();
+      _decided = true;
       return UrlTestWatchStep.confirm;
     }
     final since = _since;
@@ -149,6 +163,7 @@ class UrlTestWatch {
     _since = null;
     _retestAt = null;
     _timedOut = false;
+    _decided = false;
   }
 }
 
