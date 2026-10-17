@@ -28,16 +28,42 @@ class LocalRoutingNotifier extends _$LocalRoutingNotifier with AppLogger {
   LocalRoutingTracker? _tracker;
   Timer? _recheck;
 
+  /// An [_update] is waiting for the current Riverpod flush to finish.
+  bool _updateQueued = false;
+
   @override
   LocalRoutingIssue? build() {
     if (!PlatformUtils.isWindows) return null;
     final probe = ref.watch(egressRoutingProbeProvider);
     _tracker = LocalRoutingTracker(probe.read);
     ref.onDispose(_stopRecheck);
-    ref.listen(connectionNotifierProvider, (_, _) => _update());
-    ref.listen(accountStateNotifierProvider, (_, _) => _update());
-    ref.listen(activeProxyNotifierProvider, (_, _) => _update());
+    // Leaves a queued update nothing to work on once this is gone; a rebuild
+    // sets a new tracker right after.
+    ref.onDispose(() => _tracker = null);
+    ref.listen(connectionNotifierProvider, (_, _) => _queueUpdate());
+    ref.listen(accountStateNotifierProvider, (_, _) => _queueUpdate());
+    ref.listen(activeProxyNotifierProvider, (_, _) => _queueUpdate());
     return null;
+  }
+
+  /// Runs [_update] once the Riverpod flush these listeners fire in is over.
+  ///
+  /// A connect rebuilds the connection notifier while Riverpod's scheduler is
+  /// walking the dependencies of ActiveProxyNotifier, which depends on it.
+  /// [_update] reads ActiveProxyNotifier, and read there it rebuilt in the
+  /// middle of that walk: "Concurrent modification during iteration" at every
+  /// Windows connect (2026-10-17). Worse, the scheduler marks a refresh done
+  /// before running it, so after the throw it never scheduled another; the
+  /// connection status then moved only when something read it, once 43 s
+  /// late. A microtask runs after the flush, and several changes in one flush
+  /// share one update that reads them as they settled.
+  void _queueUpdate() {
+    if (_updateQueued) return;
+    _updateQueued = true;
+    scheduleMicrotask(() {
+      _updateQueued = false;
+      _update();
+    });
   }
 
   /// Hides the warning until the issue clears; it comes back on a later one.
