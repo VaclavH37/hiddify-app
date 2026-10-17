@@ -7,6 +7,7 @@ import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
+import 'package:hiddify/features/proxy/model/proxy_failure.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
@@ -34,8 +35,12 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
     final t = await ref.watch(translationsProvider.future);
     final urlTestDelay = await ref
         .watch(activeProxyNotifierProvider.future)
-        .catchError((e) {
-          loggy.warning("error getting active proxy", e);
+        .catchError((Object e) {
+          // ServiceNotRunning is how the provider says "no tunnel": the normal
+          // state whenever this is not connected, and the latency is only used
+          // when it is. Logged as a warning, it put a false error in every
+          // support log at every connect and disconnect.
+          if (e is! ServiceNotRunning) loggy.warning("error getting active proxy", e);
           return OutboundInfo(urlTestDelay: 0);
         })
         .then((connection) => connection.urlTestDelay);
