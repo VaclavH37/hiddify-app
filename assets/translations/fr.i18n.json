@@ -240,7 +240,20 @@
     "protected": "Protégé",
     "unprotected": "Non protégé",
     "subscriptionExpired": "Abonnement expiré",
-    "accountUnavailable": "Compte indisponible"
+    "accountUnavailable": "Compte indisponible",
+    "localRouting": {
+      "title": "Rayn VPN ne peut pas accéder à internet",
+      "body": "Le routage IP est activé sur ${adapter} : Windows renvoie donc les propres connexions de Rayn VPN dans le tunnel, et plus rien ne passe.",
+      "howToFix": "Comment résoudre le problème",
+      "dialogTitle": "Désactiver le routage IP sur ${adapter}",
+      "intro": "Un élément de ce PC a activé le routage IP sur ${adapter}. Désactivez celui que vous utilisez :",
+      "stepSharing": "Point d'accès sans fil mobile ou Partage de connexion Internet : désactivez le Point d'accès sans fil mobile dans Paramètres > Réseau et Internet. Appuyez ensuite sur Windows+R, tapez ncpa.cpl puis appuyez sur Entrée, faites un clic droit sur ${adapter}, choisissez Propriétés et, dans l'onglet Partage, décochez l'option qui autorise les autres utilisateurs du réseau à se connecter.",
+      "stepIncoming": "Connexions entrantes : dans la même fenêtre ncpa.cpl, faites un clic droit sur Connexions entrantes et choisissez Supprimer. Si elles réapparaissent après un redémarrage, appuyez sur Windows+R, tapez services.msc, ouvrez Routage et accès distant (Routing and Remote Access), cliquez sur Arrêter et réglez le Type de démarrage sur Désactivé.",
+      "commandIntro": "Ou exécutez cette commande dans l'Invite de commandes en tant qu'administrateur. Elle reste valable jusqu'à ce que quelque chose réactive ce paramètre :",
+      "copy": "Copier",
+      "copied": "Commande copiée",
+      "footer": "Rayn VPN refonctionne quelques secondes après la désactivation du paramètre. Inutile de vous reconnecter."
+    }
   },
   "errors": {
     "unexpected": "Erreur inattendue",

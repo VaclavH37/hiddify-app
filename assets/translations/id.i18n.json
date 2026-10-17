@@ -240,7 +240,20 @@
     "protected": "Terlindungi",
     "unprotected": "Tidak terlindungi",
     "subscriptionExpired": "Langganan kedaluwarsa",
-    "accountUnavailable": "Akun tidak tersedia"
+    "accountUnavailable": "Akun tidak tersedia",
+    "localRouting": {
+      "title": "Rayn VPN tidak dapat terhubung ke internet",
+      "body": "Perutean IP aktif di ${adapter}, sehingga Windows mengirim koneksi milik Rayn VPN sendiri kembali ke terowongan dan tidak ada lalu lintas yang bisa lewat.",
+      "howToFix": "Cara memperbaiki",
+      "dialogTitle": "Matikan perutean IP di ${adapter}",
+      "intro": "Sesuatu di PC ini mengaktifkan perutean IP untuk ${adapter}. Matikan yang Anda gunakan di antara berikut ini:",
+      "stepSharing": "Hotspot seluler atau Berbagi Koneksi Internet: matikan Hotspot seluler di Pengaturan > Jaringan & internet. Lalu tekan Windows+R, ketik ncpa.cpl dan tekan Enter, klik kanan ${adapter}, pilih Properti, lalu di tab Berbagi, hapus centang opsi yang mengizinkan pengguna jaringan lain terhubung.",
+      "stepIncoming": "Koneksi Masuk: di jendela ncpa.cpl yang sama, klik kanan Koneksi Masuk dan pilih Hapus. Jika muncul lagi setelah restart, tekan Windows+R, ketik services.msc, buka Routing and Remote Access, klik Hentikan, lalu atur Jenis startup ke Dinonaktifkan.",
+      "commandIntro": "Atau jalankan perintah ini di Command Prompt sebagai administrator. Perintah ini berlaku sampai ada yang menyalakan pengaturan itu lagi:",
+      "copy": "Salin",
+      "copied": "Perintah disalin",
+      "footer": "Rayn VPN berfungsi lagi beberapa detik setelah pengaturan dimatikan. Anda tidak perlu menyambung ulang."
+    }
   },
   "errors": {
     "unexpected": "Kesalahan tak terduga",

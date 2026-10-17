@@ -240,7 +240,20 @@
     "protected": "Korunuyor",
     "unprotected": "Korunmuyor",
     "subscriptionExpired": "Abonelik sona erdi",
-    "accountUnavailable": "Hesap kullanılamıyor"
+    "accountUnavailable": "Hesap kullanılamıyor",
+    "localRouting": {
+      "title": "Rayn VPN internete erişemiyor",
+      "body": "${adapter} için IP yönlendirme açık. Bu yüzden Windows, Rayn VPN'in kendi bağlantılarını tünele geri gönderiyor ve hiçbir trafik geçemiyor.",
+      "howToFix": "Nasıl düzeltilir",
+      "dialogTitle": "${adapter} üzerinde IP yönlendirmeyi kapatın",
+      "intro": "Bu bilgisayardaki bir şey ${adapter} için IP yönlendirmeyi açtı. Aşağıdakilerden hangisini kullanıyorsanız kapatın:",
+      "stepSharing": "Mobil etkin nokta veya İnternet Bağlantı Paylaşımı: Ayarlar > Ağ ve internet bölümünden Mobil etkin noktayı kapatın. Ardından Windows+R tuşlarına basın, ncpa.cpl yazıp Enter'a basın, ${adapter} öğesine sağ tıklayın, Özellikler'i seçin ve Paylaşım sekmesinde diğer ağ kullanıcılarının bağlanmasına izin veren seçeneğin işaretini kaldırın.",
+      "stepIncoming": "Gelen Bağlantılar: aynı ncpa.cpl penceresinde Gelen Bağlantılar'a sağ tıklayıp Sil'i seçin. Yeniden başlattıktan sonra tekrar görünürse Windows+R tuşlarına basın, services.msc yazın, Yönlendirme ve Uzaktan Erişim (Routing and Remote Access) hizmetini açın, Durdur'a tıklayın ve Başlangıç türünü Devre dışı olarak ayarlayın.",
+      "commandIntro": "Ya da bu komutu Komut İstemi'nde yönetici olarak çalıştırın. Bir şey ayarı yeniden açana kadar geçerli kalır:",
+      "copy": "Kopyala",
+      "copied": "Komut kopyalandı",
+      "footer": "Ayar kapandıktan birkaç saniye sonra Rayn VPN yeniden çalışır. Yeniden bağlanmanız gerekmez."
+    }
   },
   "errors": {
     "unexpected": "Beklenmeyen hata",

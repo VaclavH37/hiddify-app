@@ -240,7 +240,20 @@
     "protected": "Protegido",
     "unprotected": "Sem proteção",
     "subscriptionExpired": "Assinatura expirada",
-    "accountUnavailable": "Conta indisponível"
+    "accountUnavailable": "Conta indisponível",
+    "localRouting": {
+      "title": "O Rayn VPN não consegue acessar a internet",
+      "body": "O roteamento IP está ativado em ${adapter}, então o Windows devolve as próprias conexões do Rayn VPN para o túnel e nenhum tráfego passa.",
+      "howToFix": "Como corrigir",
+      "dialogTitle": "Desative o roteamento IP em ${adapter}",
+      "intro": "Algo neste PC ativou o roteamento IP em ${adapter}. Desative o que você estiver usando:",
+      "stepSharing": "Hotspot Móvel ou Compartilhamento de Conexão com a Internet: desative o Hotspot Móvel em Configurações > Rede e Internet. Depois pressione Windows+R, digite ncpa.cpl e pressione Enter, clique com o botão direito em ${adapter}, escolha Propriedades e, na guia Compartilhamento, desmarque a opção que permite que outros usuários da rede se conectem.",
+      "stepIncoming": "Conexões de Entrada: na mesma janela do ncpa.cpl, clique com o botão direito em Conexões de Entrada e escolha Excluir. Se voltar a aparecer depois de reiniciar, pressione Windows+R, digite services.msc, abra Roteamento e Acesso Remoto (Routing and Remote Access), clique em Parar e defina o Tipo de inicialização como Desativado.",
+      "commandIntro": "Ou execute este comando no Prompt de Comando como administrador. Ele vale até que algo ative a configuração novamente:",
+      "copy": "Copiar",
+      "copied": "Comando copiado",
+      "footer": "O Rayn VPN volta a funcionar poucos segundos depois que a configuração é desativada. Não é preciso reconectar."
+    }
   },
   "errors": {
     "unexpected": "Erro inesperado",

@@ -240,7 +240,20 @@
     "protected": "Protegido",
     "unprotected": "Sin protección",
     "subscriptionExpired": "Suscripción caducada",
-    "accountUnavailable": "Cuenta no disponible"
+    "accountUnavailable": "Cuenta no disponible",
+    "localRouting": {
+      "title": "Rayn VPN no puede conectarse a internet",
+      "body": "El enrutamiento IP está activado en ${adapter}, así que Windows devuelve las propias conexiones de Rayn VPN al túnel y no pasa ningún tráfico.",
+      "howToFix": "Cómo solucionarlo",
+      "dialogTitle": "Desactiva el enrutamiento IP en ${adapter}",
+      "intro": "Algo en este PC activó el enrutamiento IP en ${adapter}. Desactiva lo que estés usando de esta lista:",
+      "stepSharing": "Zona con cobertura inalámbrica móvil o Conexión compartida a Internet: desactiva la Zona con cobertura inalámbrica móvil en Configuración > Red e Internet. Después pulsa Windows+R, escribe ncpa.cpl y pulsa Intro, haz clic con el botón derecho en ${adapter}, elige Propiedades y, en la pestaña Uso compartido, desmarca la opción que permite que otros usuarios de la red se conecten.",
+      "stepIncoming": "Conexiones entrantes: en la misma ventana de ncpa.cpl, haz clic con el botón derecho en Conexiones entrantes y elige Eliminar. Si vuelve a aparecer tras reiniciar, pulsa Windows+R, escribe services.msc, abre Enrutamiento y acceso remoto (Routing and Remote Access), haz clic en Detener y cambia el Tipo de inicio a Deshabilitado.",
+      "commandIntro": "O ejecuta este comando en el Símbolo del sistema como administrador. Dura hasta que algo vuelva a activar la opción:",
+      "copy": "Copiar",
+      "copied": "Comando copiado",
+      "footer": "Rayn VPN vuelve a funcionar unos segundos después de desactivar la opción. No hace falta volver a conectarse."
+    }
   },
   "errors": {
     "unexpected": "Error inesperado",

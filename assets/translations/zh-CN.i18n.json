@@ -240,7 +240,20 @@
     "protected": "已保护",
     "unprotected": "未保护",
     "subscriptionExpired": "订阅已到期",
-    "accountUnavailable": "账户不可用"
+    "accountUnavailable": "账户不可用",
+    "localRouting": {
+      "title": "Rayn VPN 无法连接互联网",
+      "body": "${adapter} 上开启了 IP 路由，导致 Windows 将 Rayn VPN 自身的连接送回隧道，所有流量都无法通过。",
+      "howToFix": "如何解决",
+      "dialogTitle": "关闭 ${adapter} 上的 IP 路由",
+      "intro": "此电脑上的某项功能为 ${adapter} 开启了 IP 路由。请关闭您正在使用的以下功能：",
+      "stepSharing": "移动热点或 Internet 连接共享：在“设置 > 网络和 Internet”中关闭“移动热点”。然后按 Windows+R，输入 ncpa.cpl 并按回车，右键单击 ${adapter}，选择“属性”，在“共享”选项卡中取消勾选允许其他网络用户连接的选项。",
+      "stepIncoming": "传入的连接：在同一个 ncpa.cpl 窗口中，右键单击“传入的连接”并选择“删除”。如果重启后它又出现，请按 Windows+R，输入 services.msc，打开“Routing and Remote Access”（路由和远程访问）服务，单击“停止”，并将“启动类型”设为“禁用”。",
+      "commandIntro": "或者以管理员身份在命令提示符中运行以下命令。在有程序重新开启该设置之前，它一直有效：",
+      "copy": "复制",
+      "copied": "命令已复制",
+      "footer": "该设置关闭后几秒内 Rayn VPN 即可恢复正常，无需重新连接。"
+    }
   },
   "errors": {
     "unexpected": "意外错误",

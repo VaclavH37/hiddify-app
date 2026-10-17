@@ -240,7 +240,20 @@
     "protected": "محافظت‌شده",
     "unprotected": "محافظت‌نشده",
     "subscriptionExpired": "اشتراک منقضی شده",
-    "accountUnavailable": "حساب در دسترس نیست"
+    "accountUnavailable": "حساب در دسترس نیست",
+    "localRouting": {
+      "title": "Rayn VPN نمی‌تواند به اینترنت وصل شود",
+      "body": "مسیریابی IP برای ${adapter} روشن است، بنابراین Windows اتصال‌های خود Rayn VPN را دوباره به تونل برمی‌گرداند و هیچ ترافیکی عبور نمی‌کند.",
+      "howToFix": "راه‌حل",
+      "dialogTitle": "مسیریابی IP را روی ${adapter} خاموش کنید",
+      "intro": "چیزی روی این رایانه مسیریابی IP را برای ${adapter} روشن کرده است. هر کدام از موارد زیر را که استفاده می‌کنید خاموش کنید:",
+      "stepSharing": "نقطه اتصال تلفن همراه (Mobile hotspot) یا اشتراک‌گذاری اتصال اینترنت (Internet Connection Sharing): نقطه اتصال تلفن همراه را در Settings > Network & internet خاموش کنید. سپس Windows+R را فشار دهید، ncpa.cpl را تایپ کنید و Enter بزنید، روی ${adapter} راست‌کلیک کنید، Properties را انتخاب کنید و در زبانه Sharing تیک گزینه‌ای را که به دیگر کاربران شبکه اجازه اتصال می‌دهد بردارید.",
+      "stepIncoming": "اتصالات ورودی (Incoming Connections): در همان پنجره ncpa.cpl روی Incoming Connections راست‌کلیک کنید و Delete را انتخاب کنید. اگر پس از راه‌اندازی مجدد دوباره ظاهر شد، Windows+R را فشار دهید، services.msc را تایپ کنید، سرویس Routing and Remote Access را باز کنید، روی Stop کلیک کنید و Startup type را روی Disabled بگذارید.",
+      "commandIntro": "یا این فرمان را در Command Prompt با دسترسی مدیر (administrator) اجرا کنید. تا زمانی که چیزی دوباره این تنظیم را روشن نکند، اثرش باقی می‌ماند:",
+      "copy": "کپی",
+      "copied": "فرمان کپی شد",
+      "footer": "چند ثانیه پس از خاموش شدن این تنظیم، Rayn VPN دوباره کار می‌کند. نیازی به اتصال مجدد نیست."
+    }
   },
   "errors": {
     "unexpected": "خطای غیرمنتظره",

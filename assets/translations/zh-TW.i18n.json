@@ -240,7 +240,20 @@
     "protected": "已保護",
     "unprotected": "未保護",
     "subscriptionExpired": "訂閱已到期",
-    "accountUnavailable": "帳戶不可用"
+    "accountUnavailable": "帳戶不可用",
+    "localRouting": {
+      "title": "Rayn VPN 無法連上網際網路",
+      "body": "${adapter} 已開啟 IP 路由，導致 Windows 將 Rayn VPN 本身的連線送回通道，所有流量都無法通過。",
+      "howToFix": "如何修正",
+      "dialogTitle": "關閉 ${adapter} 的 IP 路由",
+      "intro": "這台電腦上的某項功能為 ${adapter} 開啟了 IP 路由。請關閉您正在使用的下列功能：",
+      "stepSharing": "行動熱點或網際網路連線共用：在「設定 > 網路和網際網路」中關閉「行動熱點」。然後按 Windows+R，輸入 ncpa.cpl 並按 Enter，以滑鼠右鍵按一下 ${adapter}，選擇「內容」，在「共用」索引標籤中取消勾選允許其他網路使用者連線的選項。",
+      "stepIncoming": "內送連線：在同一個 ncpa.cpl 視窗中，以滑鼠右鍵按一下「內送連線」並選擇「刪除」。如果重新開機後又出現，請按 Windows+R，輸入 services.msc，開啟「Routing and Remote Access」（路由及遠端存取）服務，按一下「停止」，並將「啟動類型」設為「已停用」。",
+      "commandIntro": "或以系統管理員身分在命令提示字元中執行下列命令。在有程式重新開啟此設定之前，它都會有效：",
+      "copy": "複製",
+      "copied": "已複製命令",
+      "footer": "此設定關閉後幾秒內，Rayn VPN 就會恢復正常，不需要重新連線。"
+    }
   },
   "errors": {
     "unexpected": "意外錯誤",
