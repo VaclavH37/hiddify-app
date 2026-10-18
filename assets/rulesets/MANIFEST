@@ -1,22 +1,22 @@
 {
   "schema": 1,
-  "version": "2026-10-06T11:17:18Z",
-  "fetched_at": "2026-10-06T11:17:18Z",
+  "version": "2026-10-18T09:10:45Z",
+  "fetched_at": "2026-10-18T09:10:45Z",
   "upstream_commit": {
-    "geosite": "be94d52ad035da5350a1e5f62515185725034d86",
-    "geoip": "7fe82a879ad2666526730c195b55a6d8d9147908",
-    "blocklists": "8c56dd37680147574ee8bd47831b7b4aefb1331c"
+    "geosite": "95793ceb929b8340764019327ed053148880e725",
+    "geoip": "eb32cd6ed4a16fcb3bf9a36ccebf28e45716ae84",
+    "blocklists": "32d6d50a65a3f66cd5e678bf3565a05eaceb68ef"
   },
   "files": [
-    {"name": "direct-private.srs", "sha256": "260491243e0266e5ba543f509ca7f13b07d6f4c2c26ade3f675ddea1661f3213", "size": 754},
+    {"name": "direct-private.srs", "sha256": "2bffb3b561d226330331bcdc25d724ad117af44fcf8875d419bbcde009b6a2c7", "size": 788},
     {"name": "direct-apple.srs", "sha256": "682b0e0fe96628e32c943386e048b4b3f15c95d54949c455045725baa8497159", "size": 2320},
-    {"name": "direct-regional-sites.srs", "sha256": "fc4cb8e6db7107783c93ed1c65f81708f07189bc8452667d6bbdf92401fd6a8c", "size": 56145},
-    {"name": "direct-regional-ips.srs", "sha256": "ebee603fdf402314b44b9f653cdcf6d9cc9c41e84e2b3515e3123c5c920a93bc", "size": 34185},
-    {"name": "block-ads.srs", "sha256": "fe8660ff9fc8b85c976d0fcb9cea8b4ba35807f97ba3cbb7091fb8fae999a34f", "size": 546659},
-    {"name": "block-malware.srs", "sha256": "c4e9277a73c92322ead4bc54496e03e6ed3967e161f6c5f23867906074e74315", "size": 7185},
-    {"name": "block-phishing.srs", "sha256": "54540d6514274d1ba53b25bda71080ede3c5410c4538dfde006ecaa067a8366d", "size": 488036},
+    {"name": "direct-regional-sites.srs", "sha256": "9375d94d0e44da5f03ac9732326326824f90f0e0e3f3880fc97a9c026bbf768f", "size": 56189},
+    {"name": "direct-regional-ips.srs", "sha256": "81ada5cafd9d831adc48776f29cdfe55c9713d9287caeef9de925ef30f66cce4", "size": 34268},
+    {"name": "block-ads.srs", "sha256": "bd9bd9d3f8c25be62a28c58437dcec90459d5abaf8dd75bb1899e9d7355cfefa", "size": 523439},
+    {"name": "block-malware.srs", "sha256": "c874be3c92f8dcb2dfbfa82473df1366c3d429e497e63cac9138dd75c7a8138e", "size": 7559},
+    {"name": "block-phishing.srs", "sha256": "40ec7b1c12ac7863b14c0fadad67e9fe57473db08cb17dcbca5267a6d7f6cd20", "size": 409645},
     {"name": "block-cryptominers.srs", "sha256": "c4ea85d329cab457cf268cd4d337d6fb1945d3925fe5381f5ea4e063b38e5360", "size": 3294},
-    {"name": "block-malware-ips.srs", "sha256": "40c99d10625fb115fd42d9339dea6f861ab3c0375d99b5aef04a51770de43785", "size": 5517},
-    {"name": "block-phishing-ips.srs", "sha256": "a6ffdd1d44d21a98eec2d3ce1f1c5a0c58d372633c71ebc234c3244ea88ec775", "size": 257}
+    {"name": "block-malware-ips.srs", "sha256": "fb43525db8ee06998e1da4f6e7b3a6b15a89f4dda99d60bfd3784c03f7a54171", "size": 4647},
+    {"name": "block-phishing-ips.srs", "sha256": "1fb67729d2ca73148195cf177d99e27029423c76eebba6a2533b89a8dbe7abc4", "size": 241}
   ]
 }
