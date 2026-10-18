@@ -15,6 +15,7 @@ import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/rulesets/ruleset_updater.dart';
 import 'package:hiddify/core/theme/app_theme.dart';
+import 'package:hiddify/core/theme/system_bar_style.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
 import 'package:hiddify/features/auth/account/notifier/account_redirect.dart';
 import 'package:hiddify/features/auth/account/notifier/expiry_watchdog.dart';
@@ -178,14 +179,10 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
                 if (kDebugMode && _debugAccessibility) {
                   return AccessibilityTools(checkFontOverflows: true, child: content);
                 }
+                // The system-bar style for every screen. Pages add no region of
+                // their own; an AppBar takes the same style from the theme.
                 return AnnotatedRegion<SystemUiOverlayStyle>(
-                  value: SystemUiOverlayStyle(
-                    statusBarColor: theme.scaffoldBackgroundColor,
-                    systemNavigationBarColor: theme.scaffoldBackgroundColor,
-                    systemNavigationBarIconBrightness: theme.brightness == Brightness.dark
-                        ? Brightness.light
-                        : Brightness.dark,
-                  ),
+                  value: raynSystemBarStyle(theme.brightness),
                   child: content,
                 );
               },

@@ -6,10 +6,9 @@ import 'package:hiddify/core/model/environment.dart';
 Future<void> main(List<String> args) async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
+  // Bar colours are not set anywhere: MainActivity makes the bars transparent,
+  // and the app's root region sets only icon brightness (raynSystemBarStyle).
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent),
-  );
 
   return await lazyBootstrap(widgetsBinding, Environment.prod, args: args);
 }

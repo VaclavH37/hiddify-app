@@ -3,10 +3,14 @@ package com.raynlabs.app
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.Manifest
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.VpnService
 import android.os.Build
+import android.os.Bundle
 import android.util.Log
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -41,6 +45,46 @@ class MainActivity : FlutterFragmentActivity(), ServiceConnection.Callback {
     var logCallback: ((Boolean) -> Unit)? = null
     val serviceStatus = MutableLiveData(Status.Stopped)
     val serviceAlerts = MutableLiveData<ServiceEvent?>(null)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        applyOrientationPolicy()
+        super.onCreate(savedInstanceState)
+        // After super: FlutterFragmentActivity.onCreate tints the status bar
+        // below API 35 and would undo this. Draws behind both system bars on
+        // every version, as Android 15+ already forces; the Dart side keeps
+        // content clear of them and sets only icon brightness.
+        enableEdgeToEdge()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Folding or unfolding a foldable moves the display across 600dp.
+        applyOrientationPolicy()
+    }
+
+    /**
+     * Phones stay portrait; displays at least 600dp on their shorter side
+     * (tablets, unfolded foldables, ChromeOS) rotate freely. Android 16 ignores
+     * an orientation lock on those displays anyway, and Play flags a lock in
+     * the manifest. Measured on the display rather than the window, so a
+     * narrow split-screen or desktop window on a tablet is not locked.
+     */
+    private fun applyOrientationPolicy() {
+        val wanted = if (displaySmallestWidthDp() >= 600) {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+        if (requestedOrientation != wanted) requestedOrientation = wanted
+    }
+
+    private fun displaySmallestWidthDp(): Int {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val bounds = windowManager.maximumWindowMetrics.bounds
+            return (minOf(bounds.width(), bounds.height()) / resources.displayMetrics.density).toInt()
+        }
+        return resources.configuration.smallestScreenWidthDp
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

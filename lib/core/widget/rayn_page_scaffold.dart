@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 
 /// Shared scaffold for pages that adopt the redesigned Rayn surface
@@ -22,16 +21,13 @@ class RaynPageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = context.rayn;
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
-      child: DefaultTextStyle.merge(
-        style: TextStyle(color: palette.textPrimary),
-        child: Scaffold(
-          backgroundColor: palette.pageBackground,
-          body: SafeArea(child: body),
-        ),
+    // No system-bar style here: the app's root region sets it for every page.
+    return DefaultTextStyle.merge(
+      style: TextStyle(color: palette.textPrimary),
+      child: Scaffold(
+        backgroundColor: palette.pageBackground,
+        body: SafeArea(child: body),
       ),
     );
   }

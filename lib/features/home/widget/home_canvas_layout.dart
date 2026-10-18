@@ -1,4 +1,6 @@
-import 'package:flutter/rendering.dart';
+import 'dart:math' as math;
+
+import 'package:flutter/widgets.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 
 /// The pieces of the connection page, laid out by [HomeCanvasLayout].
@@ -21,7 +23,7 @@ enum HomeCanvasSlot { banner, orb, card }
 /// must to keep the card inside the canvas, and it never rises into the banner
 /// or the app bar.
 class HomeCanvasLayout extends MultiChildLayoutDelegate {
-  HomeCanvasLayout({required this.topInset, required this.orbDiameter});
+  HomeCanvasLayout({required this.topInset, required this.orbDiameter, this.onNeededHeight});
 
   /// Height to keep clear at the top: the app bar on mobile, the band the bell
   /// occupies on desktop. The banner goes immediately below it.
@@ -30,6 +32,12 @@ class HomeCanvasLayout extends MultiChildLayoutDelegate {
   /// Diameter of the orb's circle. The orb child is taller than this because
   /// its label hangs below, and it is the circle that should be centred.
   final double orbDiameter;
+
+  /// Told, on every layout, the height the canvas needs to fit everything:
+  /// the top inset, the banner if there is one, the orb, the card and the
+  /// space below it. Called during layout, so a listener must not rebuild
+  /// synchronously ([HomeCanvas] waits for the end of the frame).
+  final ValueChanged<double>? onNeededHeight;
 
   /// Gap between [topInset] and the banner.
   static const double bannerGap = RaynSpacing.sm;
@@ -73,9 +81,99 @@ class HomeCanvasLayout extends MultiChildLayoutDelegate {
 
     positionChild(HomeCanvasSlot.orb, Offset((size.width - orbSize.width) / 2, orbTop));
     positionChild(HomeCanvasSlot.card, Offset(0, orbTop + orbSize.height + orbToCard));
+
+    onNeededHeight?.call(minTop + groupHeight);
   }
 
   @override
   bool shouldRelayout(HomeCanvasLayout oldDelegate) =>
       topInset != oldDelegate.topInset || orbDiameter != oldDelegate.orbDiameter;
+}
+
+/// The connection page's canvas: [HomeCanvasLayout] in a box that fills the
+/// space it is given, and grows and scrolls when the pieces need more.
+///
+/// The height the pieces need is known only once they have been laid out, so
+/// the canvas takes it on the next frame. Until the first layout it uses
+/// [minHeight] below [topInset]. Without this the canvas had a fixed minimum
+/// that left out the banner: on a short screen with a banner up, the card was
+/// pushed past the end of the scroll and could not be reached.
+class HomeCanvas extends StatefulWidget {
+  const HomeCanvas({
+    super.key,
+    required this.topInset,
+    required this.orbDiameter,
+    required this.minHeight,
+    required this.banner,
+    required this.orb,
+    required this.card,
+    this.horizontalPadding = 0,
+  });
+
+  final double topInset;
+  final double orbDiameter;
+  final double minHeight;
+  final Widget banner;
+  final Widget orb;
+  final Widget card;
+  final double horizontalPadding;
+
+  @override
+  State<HomeCanvas> createState() => _HomeCanvasState();
+}
+
+class _HomeCanvasState extends State<HomeCanvas> {
+  /// What the pieces needed at the last layout; null before the first.
+  double? _needed;
+
+  /// A newer value waiting for the end of the frame.
+  double? _pending;
+
+  void _onNeededHeight(double needed) {
+    final current = _needed;
+    if (current != null && (needed - current).abs() < 0.5) {
+      _pending = null;
+      return;
+    }
+    final alreadyScheduled = _pending != null;
+    _pending = needed;
+    if (alreadyScheduled) return;
+    // Reported during layout, where a rebuild is not allowed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final value = _pending;
+      _pending = null;
+      if (value == null || !mounted) return;
+      setState(() => _needed = value);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final needed = _needed ?? widget.topInset + widget.minHeight;
+        return SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: SizedBox(
+            height: math.max(constraints.maxHeight, needed),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
+              child: CustomMultiChildLayout(
+                delegate: HomeCanvasLayout(
+                  topInset: widget.topInset,
+                  orbDiameter: widget.orbDiameter,
+                  onNeededHeight: _onNeededHeight,
+                ),
+                children: [
+                  LayoutId(id: HomeCanvasSlot.banner, child: widget.banner),
+                  LayoutId(id: HomeCanvasSlot.orb, child: widget.orb),
+                  LayoutId(id: HomeCanvasSlot.card, child: widget.card),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

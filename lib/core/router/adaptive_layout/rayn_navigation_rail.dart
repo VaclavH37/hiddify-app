@@ -40,42 +40,55 @@ class RaynNavigationRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.rayn;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    // The rail's colour runs under the system bars, its content stays clear
+    // of them: on an Android tablet or unfolded foldable the app draws behind
+    // the status bar and the gesture handle. Of the sides, only the outer edge
+    // (the left, or the right in a right-to-left language) is the rail's; the
+    // page beside it handles its own. The rail widens by that inset (a display
+    // cutout in landscape, say) so its content keeps its usual width.
+    final padding = MediaQuery.paddingOf(context);
+    final outerInset = rtl ? padding.right : padding.left;
     return Container(
-      width: extended ? extendedWidth : collapsedWidth,
+      width: (extended ? extendedWidth : collapsedWidth) + outerInset,
       decoration: BoxDecoration(
         color: palette.bgSurface,
-        border: Border(right: BorderSide(color: palette.hairline)),
+        border: BorderDirectional(end: BorderSide(color: palette.hairline)),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _BrandBlock(extended: extended),
-                      const SizedBox(height: RaynSpacing.xl),
-                      for (int i = 0; i < destinations.length; i++) ...[
-                        _NavItem(
-                          destination: destinations[i],
-                          selected: i == selectedIndex,
-                          extended: extended,
-                          onTap: () => onDestinationSelected(i),
-                        ),
-                        if (i != destinations.length - 1) const SizedBox(height: RaynSpacing.xs),
+      child: SafeArea(
+        left: !rtl,
+        right: rtl,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.md, vertical: RaynSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _BrandBlock(extended: extended),
+                        const SizedBox(height: RaynSpacing.xl),
+                        for (int i = 0; i < destinations.length; i++) ...[
+                          _NavItem(
+                            destination: destinations[i],
+                            selected: i == selectedIndex,
+                            extended: extended,
+                            onTap: () => onDestinationSelected(i),
+                          ),
+                          if (i != destinations.length - 1) const SizedBox(height: RaynSpacing.xs),
+                        ],
+                        if (footer != null) ...[const Spacer(), footer!],
                       ],
-                      if (footer != null) ...[const Spacer(), footer!],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

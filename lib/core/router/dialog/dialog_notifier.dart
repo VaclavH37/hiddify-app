@@ -18,10 +18,20 @@ class DialogNotifier extends _$DialogNotifier {
   @override
   void build() {}
 
-  Future<T?> _show<T>(Widget child) async {
+  Future<T?> _show<T>(Widget child, {bool fullScreen = false}) async {
     final context = rootNavKey.currentContext;
     if (context == null) return null;
-    return await Navigator.of(context).push<T>(DialogRoute(context: context, builder: (context) => child));
+    return await Navigator.of(context).push<T>(
+      DialogRoute(
+        context: context,
+        // A full-screen route keeps its own content clear of the system bars
+        // and is closed by its own button or Back, not by a tap on the strip
+        // of page the safe-area inset would otherwise leave showing.
+        useSafeArea: !fullScreen,
+        barrierDismissible: !fullScreen,
+        builder: (context) => child,
+      ),
+    );
   }
 
   /// A picker or a details panel. A bottom sheet on a phone, where that is
@@ -54,7 +64,7 @@ class DialogNotifier extends _$DialogNotifier {
   }
 
   Future<String?> showQrScanner() async {
-    return await _show<String?>(const QrCodeScannerDialog());
+    return await _show<String?>(const QrCodeScannerDialog(), fullScreen: true);
   }
 
   Future<void> showOk(String title, String description) async {

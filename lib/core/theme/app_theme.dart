@@ -5,6 +5,7 @@ import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
+import 'package:hiddify/core/theme/system_bar_style.dart';
 
 class AppTheme {
   AppTheme(this.mode, this.fontFamily);
@@ -114,6 +115,10 @@ class AppTheme {
         backgroundColor: palette.bgSurface,
         surfaceTintColor: Colors.transparent,
         foregroundColor: palette.textPrimary,
+        // Without this an AppBar works its style out from its own background,
+        // and the transparent one on Home reads as dark: white status icons
+        // on the light theme.
+        systemOverlayStyle: raynSystemBarStyle(brightness),
       ),
       // Buttons: one shape and one height for all three families, so the
       // pre-auth forms, the dialogs and the settings sub-pages agree. Filled

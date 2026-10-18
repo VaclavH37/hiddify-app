@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/theme/rayn_radius.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/core/theme/system_bar_style.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -33,57 +35,61 @@ class QrCodeScannerDialog extends HookConsumerWidget {
     final handled = useRef(false);
     final frame = math.min(MediaQuery.sizeOf(context).shortestSide * 0.7, 280.0);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            MobileScanner(
-              placeholderBuilder: (context) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-              overlayBuilder: (context, constraints) => Center(
-                child: Container(
-                  width: frame,
-                  height: frame,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(RaynRadius.card),
-                    border: Border.all(color: Colors.white70, width: 2),
+    // Light system-bar icons in either theme: they sit on black.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: raynSystemBarStyle(Brightness.dark),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              MobileScanner(
+                placeholderBuilder: (context) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                overlayBuilder: (context, constraints) => Center(
+                  child: Container(
+                    width: frame,
+                    height: frame,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(RaynRadius.card),
+                      border: Border.all(color: Colors.white70, width: 2),
+                    ),
                   ),
                 ),
+                errorBuilder: (context, error) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(RaynSpacing.xl),
+                    child: Text(
+                      t.common.msg.permission.denied,
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                onDetect: (barcodes) {
+                  if (handled.value || barcodes.barcodes.isEmpty) return;
+                  final rawData = barcodes.barcodes.first.rawValue;
+                  if (rawData == null) return;
+                  handled.value = true;
+                  context.pop(rawData);
+                },
               ),
-              errorBuilder: (context, error) => Center(
+              Align(
+                alignment: AlignmentDirectional.topStart,
                 child: Padding(
-                  padding: const EdgeInsets.all(RaynSpacing.xl),
-                  child: Text(
-                    t.common.msg.permission.denied,
-                    style: const TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
+                  padding: const EdgeInsets.all(RaynSpacing.md),
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                    child: IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                    ),
                   ),
                 ),
               ),
-              onDetect: (barcodes) {
-                if (handled.value || barcodes.barcodes.isEmpty) return;
-                final rawData = barcodes.barcodes.first.rawValue;
-                if (rawData == null) return;
-                handled.value = true;
-                context.pop(rawData);
-              },
-            ),
-            Align(
-              alignment: AlignmentDirectional.topStart,
-              child: Padding(
-                padding: const EdgeInsets.all(RaynSpacing.md),
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                  child: IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
-                    tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                  ),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

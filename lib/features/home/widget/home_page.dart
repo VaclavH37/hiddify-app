@@ -1,7 +1,4 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/theme/rayn_motion.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
@@ -52,27 +49,26 @@ class HomePage extends HookConsumerWidget {
         ? (isDark ? Assets.images.worldmapBgPortraitDark : Assets.images.worldmapBgPortraitLight)
         : (isDark ? Assets.images.worldmapBgDesktopDark : Assets.images.worldmapBgDesktopLight);
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
-      child: DefaultTextStyle.merge(
-        style: TextStyle(color: palette.textPrimary),
-        child: Scaffold(
-          extendBodyBehindAppBar: true,
-          appBar: isMobile ? const HomeMobileAppBar() : null,
-          body: ColoredBox(
-            color: palette.bgPrimary,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // The map is ~4,500 draw ops and never changes, so it gets its
-                // own layer; without the boundary it would be replayed every
-                // frame the connection button animates.
-                RepaintBoundary(child: background.svg(fit: BoxFit.cover)),
-                _HomeCanvas(isMobile: isMobile),
-                // Desktop has no app bar; the bell floats top-right instead.
-                if (!isMobile) const HomeTopBarBell(),
-              ],
-            ),
+    // The system-bar style comes from the app's root region and, under the
+    // app bar, from the theme's appBarTheme.
+    return DefaultTextStyle.merge(
+      style: TextStyle(color: palette.textPrimary),
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: isMobile ? const HomeMobileAppBar() : null,
+        body: ColoredBox(
+          color: palette.bgPrimary,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // The map is ~4,500 draw ops and never changes, so it gets its
+              // own layer; without the boundary it would be replayed every
+              // frame the connection button animates.
+              RepaintBoundary(child: background.svg(fit: BoxFit.cover)),
+              _HomeCanvas(isMobile: isMobile),
+              // Desktop has no app bar; the bell floats top-right instead.
+              if (!isMobile) const HomeTopBarBell(),
+            ],
           ),
         ),
       ),
@@ -100,17 +96,17 @@ class _Banner extends ConsumerWidget {
 ///
 /// The canvas normally fills the body exactly, so nothing scrolls. When the
 /// body is shorter than the pieces need (a desktop window dragged to its
-/// minimum, a very small phone with a banner showing) the canvas grows to
-/// [_minHeight] and scrolls instead of letting the card run under the
-/// navigation bar.
+/// minimum, a small phone or a split-screen window with a banner showing) the
+/// canvas grows to what they measured and scrolls instead of letting the card
+/// run under the navigation bar (see [HomeCanvas]).
 class _HomeCanvas extends StatelessWidget {
   const _HomeCanvas({required this.isMobile});
 
   final bool isMobile;
 
-  /// Height the layout needs below the top inset before it has to give up on
-  /// keeping the card inside the canvas: the orb and its label, the card, and
-  /// the gap and bottom inset [HomeCanvasLayout] adds.
+  /// Height assumed below the top inset until the first layout has measured
+  /// the pieces: the orb and its label, the card, and the gap and bottom inset
+  /// [HomeCanvasLayout] adds.
   static const double _minHeight = 340;
 
   @override
@@ -127,38 +123,22 @@ class _HomeCanvas extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 600),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final height = math.max(constraints.maxHeight, topInset + _minHeight);
-              return SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                child: SizedBox(
-                  height: height,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: RaynSpacing.lg),
-                    child: CustomMultiChildLayout(
-                      delegate: HomeCanvasLayout(topInset: topInset, orbDiameter: ConnectionButton.diameter),
-                      children: [
-                        LayoutId(
-                          id: HomeCanvasSlot.banner,
-                          // The banner collapses to nothing when there is no
-                          // notification; animate the change so the orb glides
-                          // rather than jumps when one arrives or is dismissed.
-                          child: AnimatedSize(
-                            duration: reduce ? Duration.zero : RaynMotion.standard,
-                            curve: RaynMotion.standardCurve,
-                            alignment: Alignment.topCenter,
-                            child: const _Banner(),
-                          ),
-                        ),
-                        LayoutId(id: HomeCanvasSlot.orb, child: const ConnectionButton()),
-                        LayoutId(id: HomeCanvasSlot.card, child: const ActiveProxyFooter()),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+          child: HomeCanvas(
+            topInset: topInset,
+            orbDiameter: ConnectionButton.diameter,
+            minHeight: _minHeight,
+            horizontalPadding: RaynSpacing.lg,
+            // The banner collapses to nothing when there is no notification;
+            // animate the change so the orb glides rather than jumps when one
+            // arrives or is dismissed.
+            banner: AnimatedSize(
+              duration: reduce ? Duration.zero : RaynMotion.standard,
+              curve: RaynMotion.standardCurve,
+              alignment: Alignment.topCenter,
+              child: const _Banner(),
+            ),
+            orb: const ConnectionButton(),
+            card: const ActiveProxyFooter(),
           ),
         ),
       ),
