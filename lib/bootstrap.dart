@@ -26,7 +26,6 @@ import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
 import 'package:hiddify/hiddifycore/rayn_core_service_provider.dart';
-import 'package:hiddify/riverpod_observer.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -164,7 +163,16 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env, {List
   Logger.bootstrap.info("bootstrap took [${stopWatch.elapsedMilliseconds}ms]");
   stopWatch.stop();
 
-  runApp(ProviderScope(parent: container, observers: [RiverpodObserver()], child: const App()));
+  // The widget tree gets a child of `container`, never `container` itself. The
+  // scope ties its container's refreshes to Flutter frames, and frames stop
+  // while the window is hidden or the app is paused. Every provider lives in
+  // `container`, so its refreshes keep running on the event loop instead.
+  runApp(
+    UncontrolledProviderScope(
+      container: ProviderContainer(parent: container),
+      child: const App(),
+    ),
+  );
 
   if (!kIsWeb) {
     FlutterNativeSplash.remove();

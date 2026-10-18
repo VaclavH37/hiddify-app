@@ -45,7 +45,9 @@ class CoreInterface {
 
   bool isInitialized() {
     try {
-      bgClient; // touch it
+      // Reading a `late` field that was never set throws; that is the test.
+      // ignore: unnecessary_statements
+      bgClient;
       return true;
     } catch (_) {
       return false;

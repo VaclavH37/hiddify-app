@@ -757,10 +757,14 @@ class RaynCoreService with InfraLogger {
       await stopListenSingle("bg");
       try {
         await core.fgClient.close(CloseRequest(mode: SetupMode.GRPC_NORMAL_INSECURE));
-      } catch (e) {}
+      } catch (_) {
+        // Best effort: the server for this mode may already be gone.
+      }
       try {
         await core.fgClient.close(CloseRequest(mode: SetupMode.GRPC_NORMAL));
-      } catch (e) {}
+      } catch (_) {
+        // Best effort, as above.
+      }
     }
   }
 }
