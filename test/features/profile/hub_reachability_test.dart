@@ -283,4 +283,47 @@ void main() {
       expect(moved('aaaa', 'bbbb', from: HubTier.standby, to: HubTier.standby), isTrue);
     });
   });
+
+  group('probeAfterRestart', () {
+    // A fresh core can drop the first probe while its location group settles
+    // (2026-10-19, Android). A false "dead" after the switch to standby would
+    // send the client back to the blocked hub.
+    late List<Duration> waits;
+    late int retries;
+
+    Future<bool> run(List<bool> answers) {
+      final queue = [...answers];
+      return probeAfterRestart(
+        () async => queue.removeAt(0),
+        onRetry: () => retries++,
+        wait: (d) async => waits.add(d),
+      );
+    }
+
+    setUp(() {
+      waits = [];
+      retries = 0;
+    });
+
+    test('a probe that answers is not repeated', () async {
+      expect(await run([true]), isTrue);
+      expect(waits, isEmpty);
+      expect(retries, 0);
+    });
+
+    test('one failed probe gets a second chance once the group has settled', () async {
+      expect(await run([false, true]), isTrue);
+      expect(waits, [hubPostRestartRetryDelay]);
+      expect(retries, 1);
+    });
+
+    test('two failed probes are a verdict', () async {
+      expect(await run([false, false]), isFalse);
+      expect(waits, [hubPostRestartRetryDelay]);
+    });
+
+    test('the wait outlasts the core URL test timeout', () {
+      expect(hubPostRestartRetryDelay, greaterThanOrEqualTo(const Duration(seconds: 5)));
+    });
+  });
 }

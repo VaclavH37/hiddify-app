@@ -223,6 +223,39 @@ class UrlTestWatch {
 /// still in the app looking at a tunnel that is not working.
 const hubConfirmDelay = Duration(seconds: 30);
 
+/// How long to wait before the second probe after a core restart.
+///
+/// A freshly started core picks a location before its first URL-test round is
+/// in, and when that location fails its test the group moves on and closes
+/// what was running through it, the probe included. Live on 2026-10-19
+/// (Android): the standby core started on Los Angeles, moved to Seattle about a
+/// second later, and the probe's DNS lookup died with "use of closed network
+/// connection"; only the HTTP client's own retry saved it. The core's test
+/// times out after 5 s, so by then its first round is in.
+const hubPostRestartRetryDelay = Duration(seconds: 5);
+
+/// The probe that follows a core restart: one more attempt,
+/// [hubPostRestartRetryDelay] after a failed one.
+///
+/// Only for those probes. They decide where the client goes next, and a false
+/// "dead" after the switch to standby sends it back to the blocked hub with the
+/// offline backoff set. The ladder's own probe already has a confirming probe
+/// [hubConfirmDelay] later.
+///
+/// [onRetry] runs before the wait, for the log.
+Future<bool> probeAfterRestart(
+  Future<bool> Function() probe, {
+  void Function()? onRetry,
+  Future<void> Function(Duration) wait = _wait,
+}) async {
+  if (await probe()) return true;
+  onRetry?.call();
+  await wait(hubPostRestartRetryDelay);
+  return probe();
+}
+
+Future<void> _wait(Duration duration) => Future<void>.delayed(duration);
+
 /// How long a forced standby leg lasts before the client retries the primary.
 ///
 /// Once on standby the client is not dialling the primary hub any more, so

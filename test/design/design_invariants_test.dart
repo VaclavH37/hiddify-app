@@ -220,6 +220,29 @@ void main() {
     });
   });
 
+  group('the probe after a restart gets a second chance', () {
+    // A fresh core can drop the first probe while its location group settles:
+    // on 2026-10-19 only the HTTP client's own retry kept an Android client
+    // from reverting to the blocked hub.
+    final ladder = File(
+      'lib/features/profile/notifier/profiles_update_notifier.dart',
+    ).readAsStringSync().replaceAll('\r\n', '\n');
+
+    String body(String signature) {
+      final start = ladder.indexOf(signature);
+      expect(start, isNonNegative, reason: '$signature not found');
+      return ladder.substring(start, ladder.indexOf('\n  }\n', start));
+    }
+
+    for (final signature in ['Future<void> _failOverToStandbyLocked(', 'Future<void> _restartOnPrimary(']) {
+      test('${signature.split(' ').last} probes with the retry', () {
+        final source = body(signature);
+        expect(source, contains('_tunnelCarriesTrafficAfterRestart(profile.url)'));
+        expect(source, isNot(contains('_tunnelCarriesTraffic(profile.url)')));
+      });
+    }
+  });
+
   group("the core's log stream survives a connection reset", () {
     // A reset kills every stream on desktop's single channel, and only setup()
     // opened the log stream there: after the first live failover on Windows

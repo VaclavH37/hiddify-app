@@ -635,7 +635,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // client never made.
     await prefs.setStringList(hubFlipsKey, [...flips.map((at) => at.toIso8601String()), now.toIso8601String()]);
 
-    if (await _tunnelCarriesTraffic(profile.url)) {
+    if (await _tunnelCarriesTrafficAfterRestart(profile.url)) {
       loggy.warning("the standby hub carries traffic; the primary hub was the problem");
       await _report(profile, HubSignal.unreachable);
       return;
@@ -721,7 +721,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // A verdict about the primary hub like any other, and one of the few this
     // client gets while a block persists: every other check is suppressed on a
     // standby leg.
-    final carrying = await _tunnelCarriesTraffic(profile.url);
+    final carrying = await _tunnelCarriesTrafficAfterRestart(profile.url);
     if (!carrying && _localRoutingExplains("the primary hub carries nothing after returning to it")) return;
     await _recordCheck(failed: !carrying);
     // Only worth telling the middleware once we know the primary works again.
@@ -820,6 +820,14 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       return false;
     }
   }
+
+  /// [_tunnelCarriesTraffic] for the probe right after a core restart, which
+  /// gets one more attempt (see [probeAfterRestart]).
+  Future<bool> _tunnelCarriesTrafficAfterRestart(String url) => probeAfterRestart(
+    () => _tunnelCarriesTraffic(url),
+    onRetry: () =>
+        loggy.info("the probe after the restart failed; trying once more in ${hubPostRestartRetryDelay.inSeconds}s"),
+  );
 
   /// Bookkeeping for an account verdict, shared by the poll and the
   /// reachability probe: record it (the home page, the connect guard and the
