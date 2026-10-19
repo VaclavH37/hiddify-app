@@ -220,6 +220,27 @@ void main() {
     });
   });
 
+  group('a start in progress is not shown as disconnected', () {
+    // The core reports a plain STOPPED until the app's Start reaches it; on iOS
+    // that read as Disconnected for 3.2 s mid-failover (2026-10-19).
+    final service = File('lib/hiddifycore/rayn_core_service.dart').readAsStringSync().replaceAll('\r\n', '\n');
+
+    test('every start runs with the flag set', () {
+      final start = service.indexOf('TaskEither<ConnectionFailure, Unit> start(');
+      expect(start, isNonNegative);
+      expect(service.substring(start, service.indexOf('\n  }\n', start)), contains('_whileStarting(() => _start('));
+    });
+
+    test("the status stream asks before publishing the core's status", () {
+      final listener = service.indexOf('Future<void> startListeningStatus(');
+      expect(listener, isNonNegative);
+      final body = service.substring(listener, service.indexOf('\n  }\n', listener));
+      final asks = body.indexOf('coreStatusIsNews(status, startInFlight: _startInFlight)');
+      expect(asks, isNonNegative);
+      expect(asks, lessThan(body.indexOf('statusController.add(currentState)')));
+    });
+  });
+
   group('the probe after a restart gets a second chance', () {
     // A fresh core can drop the first probe while its location group settles:
     // on 2026-10-19 only the HTTP client's own retry kept an Android client

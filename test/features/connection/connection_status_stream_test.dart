@@ -107,6 +107,34 @@ void main() {
     });
   });
 
+  group('while a start is under way', () {
+    // A status stream opened before the app's Start reaches the core opens with
+    // a plain STOPPED: on iOS after a resume mid-failover it showed
+    // Disconnected for 3.2 s over a start still under way (2026-10-19).
+    CoreStatus fromCore(MessageType type) =>
+        CoreStatus.fromCoreInfo(CoreInfoResponse(coreState: CoreStates.STOPPED, messageType: type));
+
+    test('a plain stopped is not news', () {
+      expect(coreStatusIsNews(fromCore(MessageType.EMPTY), startInFlight: true), isFalse);
+      expect(coreStatusIsNews(fromCore(MessageType.ALREADY_STOPPED), startInFlight: true), isFalse);
+      expect(coreStatusIsNews(const CoreStatus.stopped(), startInFlight: true), isFalse);
+    });
+
+    test('a failed start is', () {
+      expect(coreStatusIsNews(fromCore(MessageType.START_SERVICE), startInFlight: true), isTrue);
+    });
+
+    test('starting and started are', () {
+      expect(coreStatusIsNews(const CoreStatus.starting(), startInFlight: true), isTrue);
+      expect(coreStatusIsNews(const CoreStatus.started(), startInFlight: true), isTrue);
+    });
+
+    test('outside a start, every status is', () {
+      expect(coreStatusIsNews(fromCore(MessageType.EMPTY), startInFlight: false), isTrue);
+      expect(coreStatusIsNews(const CoreStatus.stopping(), startInFlight: false), isTrue);
+    });
+  });
+
   test('a stop with a different failure is a change; the same failure again is not', () async {
     const denied = CoreStatus.stopped(alert: CoreAlert.requestVPNPermission, message: 'denied');
     expect(await seen(const [CoreStatus.started(), denied, denied, CoreStatus.stopped()]), const [

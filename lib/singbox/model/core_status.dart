@@ -100,6 +100,18 @@ sealed class CoreStatus with _$CoreStatus {
   }
 }
 
+/// Whether a status from the core's own stream is news to the app.
+///
+/// While the app is starting the core, a plain "stopped" is not. The core
+/// truthfully reports it until the app's `Start` reaches it, and a status stream
+/// opened in that gap (every mobile start, and an iOS resume mid-start) opens
+/// with it. Published, it flipped Connecting to Disconnected: for milliseconds
+/// on Android, and for 3.2 s on iOS in the 2026-10-19 failover, with the orb
+/// offering "Tap to connect" over a start still under way. A stop that carries
+/// an alert is a failure and always news.
+bool coreStatusIsNews(CoreStatus status, {required bool startInFlight}) =>
+    !startInFlight || status is! CoreStopped || status.alert != null;
+
 enum CoreAlert {
   requestVPNPermission,
   requestNotificationPermission,

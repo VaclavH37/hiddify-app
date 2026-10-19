@@ -269,7 +269,33 @@ class RaynCoreService with InfraLogger {
   ) {
     // Held until the core runs. On iOS the tunnel comes up first and then waits
     // for the `Start` below, which an app suspended in between never sends.
-    return TaskEither(() => core.withBackgroundTime(() => _start(sealedPath, content, name, disableMemoryLimit)));
+    return TaskEither(
+      () => core.withBackgroundTime(() => _whileStarting(() => _start(sealedPath, content, name, disableMemoryLimit))),
+    );
+  }
+
+  /// Set while a start is under way: the status stream holds back a plain
+  /// "stopped" until it is over (see [coreStatusIsNews]).
+  bool _startInFlight = false;
+
+  /// Runs [start] with [_startInFlight] set.
+  ///
+  /// A start that fails without publishing its outcome (a gRPC error on
+  /// `Start`) used to leave the "stopped" the stream opened with on screen. That
+  /// one is now held back, so it is published here instead.
+  Future<Either<ConnectionFailure, Unit>> _whileStarting(
+    Future<Either<ConnectionFailure, Unit>> Function() start,
+  ) async {
+    _startInFlight = true;
+    try {
+      final result = await start();
+      if (result.isLeft() && currentState is CoreStarting) {
+        statusController.add(currentState = const CoreStatus.stopped());
+      }
+      return result;
+    } finally {
+      _startInFlight = false;
+    }
   }
 
   /// Runs [body] with the app kept alive until it finishes (see
@@ -608,7 +634,12 @@ class RaynCoreService with InfraLogger {
           })
           .endWith(CoreInfoResponse(coreState: CoreStates.STOPPED))
           .map((event) {
-            currentState = CoreStatus.fromCoreInfo(event);
+            final status = CoreStatus.fromCoreInfo(event);
+            if (!coreStatusIsNews(status, startInFlight: _startInFlight)) {
+              loggy.debug("not yet started; a start is under way");
+              return currentState;
+            }
+            currentState = status;
             statusController.add(currentState);
             return currentState;
           }),
