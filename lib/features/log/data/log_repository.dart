@@ -32,11 +32,11 @@ class LogRepositoryImpl with ExceptionHandler, InfraLogger implements LogReposit
         } else {
           await logPathResolver.coreFile().create(recursive: true);
         }
-        if (await logPathResolver.appFile().exists()) {
-          await logPathResolver.appFile().writeAsString("");
-        } else {
-          await logPathResolver.appFile().create(recursive: true);
-        }
+        // app.log is left alone. FileLogPrinter has had it open since bootstrap
+        // set up the logger, and already emptied it then. Emptying it again
+        // here, under a writer that keeps its offset, turned everything logged
+        // before this point into NUL bytes at the top of the file (2026-10-19,
+        // Android and Windows).
       }
       return right(unit);
     }, LogUnexpectedFailure.new);
