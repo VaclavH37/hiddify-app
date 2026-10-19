@@ -35,16 +35,31 @@ import 'package:path/path.dart' as p;
 ///
 /// Only consecutive repeats go. A status that comes back after another one is a
 /// change, and a stop carrying a different failure is too.
-Stream<ConnectionStatus> connectionStatusFrom(Stream<CoreStatus> core) => core
-    .map(
-      (event) => switch (event) {
-        CoreStopped() => Disconnected(event.getCoreAlert()),
-        CoreStarting() => const Connecting(),
-        CoreStarted() => const Connected(),
-        CoreStopping() => const Disconnecting(),
-      },
-    )
-    .distinct();
+///
+/// One exception: "stopping" straight after "stopped" goes as well. On Android
+/// and iOS the platform shell stops the core a second time when it tears the
+/// tunnel down (`Mobile.close` calls `Stop()`), and the core announces
+/// "stopping" before it finds nothing running. Every mobile disconnect, the
+/// failover's included, went Disconnecting, Disconnected, Disconnecting,
+/// Disconnected (2026-10-19). A real stop always follows a start.
+Stream<ConnectionStatus> connectionStatusFrom(Stream<CoreStatus> core) {
+  ConnectionStatus? last;
+  return core
+      .map(
+        (event) => switch (event) {
+          CoreStopped() => Disconnected(event.getCoreAlert()),
+          CoreStarting() => const Connecting(),
+          CoreStarted() => const Connected(),
+          CoreStopping() => const Disconnecting(),
+        },
+      )
+      .where((status) {
+        if (status is Disconnecting && last is Disconnected) return false;
+        last = status;
+        return true;
+      })
+      .distinct();
+}
 
 abstract interface class ConnectionRepository {
   SingboxConfigOption? get configOptionsSnapshot;

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/features/connection/data/connection_repository.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
+import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/singbox/model/core_status.dart';
 
 /// The core's status stream repeats itself (a replaying subject, a status
@@ -45,6 +46,65 @@ void main() {
       ]),
       const [Disconnected(), Connecting(), Connected(), Disconnecting(), Disconnected(), Connecting(), Connected()],
     );
+  });
+
+  group("the platform's second stop on Android and iOS", () {
+    // Mobile.close stops the core again after the app has: it announces
+    // STOPPING, then finds nothing running and reports ALREADY_STOPPED. Then
+    // the listener ends with STOPPED, and stop() adds its own (2026-10-19).
+    final secondStop = [
+      const CoreStatus.stopping(),
+      CoreStatus.fromCoreInfo(
+        CoreInfoResponse(coreState: CoreStates.STOPPED, messageType: MessageType.ALREADY_STOPPED),
+      ),
+      const CoreStatus.stopped(),
+      const CoreStatus.stopped(),
+    ];
+
+    test('is no failure and no second disconnect', () async {
+      expect(
+        await seen([
+          const CoreStatus.started(),
+          const CoreStatus.stopping(),
+          const CoreStatus.stopped(),
+          ...secondStop,
+        ]),
+        const [Connected(), Disconnecting(), Disconnected()],
+      );
+    });
+
+    test('a failover goes straight from disconnected to connecting', () async {
+      expect(
+        await seen([
+          const CoreStatus.started(),
+          const CoreStatus.stopping(),
+          const CoreStatus.stopped(),
+          ...secondStop,
+          const CoreStatus.starting(),
+          const CoreStatus.started(),
+        ]),
+        const [Connected(), Disconnecting(), Disconnected(), Connecting(), Connected()],
+      );
+    });
+
+    test('ALREADY_STOPPED carries no alert, while a real start failure still does', () {
+      final already = CoreStatus.fromCoreInfo(
+        CoreInfoResponse(coreState: CoreStates.STOPPED, messageType: MessageType.ALREADY_STOPPED),
+      );
+      expect(already.getCoreAlert(), isNull);
+      final failed = CoreStatus.fromCoreInfo(
+        CoreInfoResponse(coreState: CoreStates.STOPPED, messageType: MessageType.START_SERVICE, message: 'boom'),
+      );
+      expect(failed.getCoreAlert(), isA<UnexpectedConnectionFailure>());
+    });
+
+    test('cancelling a connect still shows disconnecting', () async {
+      expect(await seen(const [CoreStatus.starting(), CoreStatus.stopping(), CoreStatus.stopped()]), const [
+        Connecting(),
+        Disconnecting(),
+        Disconnected(),
+      ]);
+    });
   });
 
   test('a stop with a different failure is a change; the same failure again is not', () async {

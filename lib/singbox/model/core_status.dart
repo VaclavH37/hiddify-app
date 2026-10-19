@@ -53,7 +53,12 @@ sealed class CoreStatus with _$CoreStatus {
           MessageType.ERROR_PARSING_CONFIG => CoreAlert.emptyConfiguration,
           MessageType.ERROR_BUILDING_CONFIG => CoreAlert.emptyConfiguration,
           MessageType.EMPTY_CONFIGURATION => CoreAlert.emptyConfiguration,
-          MessageType.ALREADY_STOPPED => CoreAlert.createService,
+          // Not a failure. On Android and iOS the platform shell stops the core
+          // a second time when it tears the tunnel down (`Mobile.close` calls
+          // `Stop()`), and that stop finds nothing running. Read as
+          // createService, every mobile disconnect reported a connection
+          // failure (2026-10-19).
+          MessageType.ALREADY_STOPPED => null,
           MessageType.ALREADY_STARTED => CoreAlert.startService,
 
           // MessageType.REQUEST_VPN_PERMISSION => SingboxAlert.requestVPNPermission,
