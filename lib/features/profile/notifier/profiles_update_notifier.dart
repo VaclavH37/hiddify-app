@@ -26,6 +26,7 @@ import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_outbound_groups.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
+import 'package:hiddify/hiddifycore/rayn_core_service_provider.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:meta/meta.dart';
 import 'package:neat_periodic_task/neat_periodic_task.dart';
@@ -561,7 +562,10 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     if (_failoverInFlight) return;
     _failoverInFlight = true;
     try {
-      await _failOverToStandbyLocked(profile);
+      // Held from the stop to the report. An iOS app suspended part-way left a
+      // tunnel with no core behind it (2026-10-19), and a probe cut off by the
+      // suspension would read as a dead standby and revert to the blocked hub.
+      await ref.read(raynCoreServiceProvider).withBackgroundTime(() => _failOverToStandbyLocked(profile));
     } finally {
       _failoverInFlight = false;
     }
@@ -698,6 +702,13 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     await prefs.remove(hubPrimaryDigestKey);
     await prefs.remove(hubPrimaryTierKey);
     if (!restart) return;
+    // Held across the restart and its probe, for the same reason as the switch
+    // to standby (see _failOverToStandby).
+    await ref.read(raynCoreServiceProvider).withBackgroundTime(() => _restartOnPrimary(profile, probeAccount));
+  }
+
+  Future<void> _restartOnPrimary(RemoteProfileEntity profile, bool probeAccount) async {
+    final prefs = ref.read(sharedPreferencesProvider).requireValue;
     final connection = ref.read(connectionNotifierProvider.notifier);
     if (!await connection.stopForSlot()) return;
     if (probeAccount && await _accountVerdictExplainsFailure(profile)) {

@@ -8,6 +8,7 @@ import 'package:grpc/grpc.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/utils/laststeam.dart';
+import 'package:hiddify/hiddifycore/background_time.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
 import 'package:hiddify/singbox/model/core_status.dart';
@@ -467,6 +468,18 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   Future<bool> isActiveBg() async {
     return await isPortOpen("127.0.0.1", portBack);
   }
+
+  late final _backgroundTime = BackgroundTime(
+    begin: () => methodChannel.invokeMethod<void>("begin_background_task"),
+    end: () => methodChannel.invokeMethod<void>("end_background_task"),
+  );
+
+  /// iOS only. Android keeps the Dart side running in the background (its
+  /// refresh cycles fire while the app is paused), so there is nothing to ask
+  /// for there, and its method channel has no such method.
+  @override
+  Future<T> withBackgroundTime<T>(Future<T> Function() body) =>
+      PlatformUtils.isIOS ? _backgroundTime.hold(body) : body();
 }
 
 Future<bool> waitUntilPort(

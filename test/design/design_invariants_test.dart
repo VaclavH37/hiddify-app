@@ -177,6 +177,49 @@ void main() {
     });
   });
 
+  group('an app-driven core start survives leaving the app', () {
+    // On iOS the tunnel comes up first and then waits for the app's `Start`
+    // over gRPC. An app suspended in between left a VPN with nothing behind
+    // it until the user came back: 15 s in the 2026-10-19 failover test, and
+    // for good had they not.
+    final service = File('lib/hiddifycore/rayn_core_service.dart').readAsStringSync().replaceAll('\r\n', '\n');
+    final ladder = File(
+      'lib/features/profile/notifier/profiles_update_notifier.dart',
+    ).readAsStringSync().replaceAll('\r\n', '\n');
+    final mobile = File('lib/hiddifycore/core_interface/core_interface_mobile.dart').readAsStringSync();
+    final handler = File('ios/Runner/Handlers/MethodHandler.swift').readAsStringSync().replaceAll('\r\n', '\n');
+
+    String body(String source, String signature) {
+      final start = source.indexOf(signature);
+      expect(start, isNonNegative, reason: '$signature not found');
+      return source.substring(start, source.indexOf('\n  }\n', start));
+    }
+
+    test('every core start holds background time until the core runs', () {
+      expect(body(service, 'TaskEither<ConnectionFailure, Unit> start('), contains('core.withBackgroundTime('));
+    });
+
+    test('a hub switch and a return to the primary hold it through the probe', () {
+      expect(
+        body(ladder, 'Future<void> _failOverToStandby('),
+        contains('withBackgroundTime(() => _failOverToStandbyLocked('),
+      );
+      expect(body(ladder, 'Future<void> _returnToPrimary('), contains('withBackgroundTime(() => _restartOnPrimary('));
+    });
+
+    test('the hold is asked for on iOS only, through the Runner', () {
+      expect(mobile, contains('PlatformUtils.isIOS ? _backgroundTime.hold(body) : body()'));
+      expect(mobile, contains('"begin_background_task"'));
+      expect(mobile, contains('"end_background_task"'));
+      expect(handler, contains('case "begin_background_task":'));
+      expect(handler, contains('case "end_background_task":'));
+      // The handler is compiled for macOS too, which has no UIApplication.
+      final begin = handler.indexOf('beginBackgroundTask(withName:');
+      expect(begin, isNonNegative);
+      expect(handler.lastIndexOf('#if os(iOS)', begin), greaterThan(handler.lastIndexOf('#endif', begin)));
+    });
+  });
+
   group("the core's log stream survives a connection reset", () {
     // A reset kills every stream on desktop's single channel, and only setup()
     // opened the log stream there: after the first live failover on Windows

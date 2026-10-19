@@ -267,71 +267,84 @@ class RaynCoreService with InfraLogger {
     String name,
     bool disableMemoryLimit,
   ) {
-    return TaskEither(() async {
-      statusController.add(currentState = const CoreStatus.starting());
-      loggy.debug("starting");
-      // Before the start, so the start's own lines are caught.
-      await _reopenLogStreamIfDead();
-      final background = await core.setupBackground(sealedPath, name);
-      if (background != const CoreStatus.started()) {
-        statusController.add(currentState = const CoreStatus.stopped());
-        return left(background.getCoreAlert() ?? const ConnectionFailure.unexpected("failed to start core"));
-      }
-      if (!core.isSingleChannel()) {
-        await startListeningLogs("bg", core.bgClient);
-        await startListeningStatus("bg", core.bgClient);
-      }
-      // if (latestOptions != null) {
-      //   await core.bgClient.changeHiddifySettings(
-      //     ChangeHiddifySettingsRequest(
-      //       hiddifySettingsJson: jsonEncode(latestOptions!.toJson()),
-      //     ),
-      //   );
-      // }
-      try {
-        final res = await core.bgClient.start(
-          StartRequest(
-            // configContent only — never configPath. `ReadContent` in the core
-            // prefers content and only falls back to reading the path, so
-            // sending a path here would make the core open a file we have
-            // deliberately encrypted.
-            configContent: content,
-            configName: name,
-            disableMemoryLimit: disableMemoryLimit,
-          ),
+    // Held until the core runs. On iOS the tunnel comes up first and then waits
+    // for the `Start` below, which an app suspended in between never sends.
+    return TaskEither(() => core.withBackgroundTime(() => _start(sealedPath, content, name, disableMemoryLimit)));
+  }
+
+  /// Runs [body] with the app kept alive until it finishes (see
+  /// `CoreInterface.withBackgroundTime`): for work that spans a core restart.
+  Future<T> withBackgroundTime<T>(Future<T> Function() body) => core.withBackgroundTime(body);
+
+  Future<Either<ConnectionFailure, Unit>> _start(
+    String sealedPath,
+    String content,
+    String name,
+    bool disableMemoryLimit,
+  ) async {
+    statusController.add(currentState = const CoreStatus.starting());
+    loggy.debug("starting");
+    // Before the start, so the start's own lines are caught.
+    await _reopenLogStreamIfDead();
+    final background = await core.setupBackground(sealedPath, name);
+    if (background != const CoreStatus.started()) {
+      statusController.add(currentState = const CoreStatus.stopped());
+      return left(background.getCoreAlert() ?? const ConnectionFailure.unexpected("failed to start core"));
+    }
+    if (!core.isSingleChannel()) {
+      await startListeningLogs("bg", core.bgClient);
+      await startListeningStatus("bg", core.bgClient);
+    }
+    // if (latestOptions != null) {
+    //   await core.bgClient.changeHiddifySettings(
+    //     ChangeHiddifySettingsRequest(
+    //       hiddifySettingsJson: jsonEncode(latestOptions!.toJson()),
+    //     ),
+    //   );
+    // }
+    try {
+      final res = await core.bgClient.start(
+        StartRequest(
+          // configContent only — never configPath. `ReadContent` in the core
+          // prefers content and only falls back to reading the path, so
+          // sending a path here would make the core open a file we have
+          // deliberately encrypted.
+          configContent: content,
+          configName: name,
+          disableMemoryLimit: disableMemoryLimit,
+        ),
+      );
+      ref.read(coreRestartSignalProvider.notifier).restart();
+      if (res.messageType != MessageType.ALREADY_STARTED && res.messageType != MessageType.EMPTY) {
+        final alert = res.message.contains("denied") ? CoreAlert.requestVPNPermission : CoreAlert.startFailed;
+        currentState = CoreStatus.stopped(
+          alert: alert,
+          message: "failed to start core ${res.messageType} ${res.message}",
         );
-        ref.read(coreRestartSignalProvider.notifier).restart();
-        if (res.messageType != MessageType.ALREADY_STARTED && res.messageType != MessageType.EMPTY) {
-          final alert = res.message.contains("denied") ? CoreAlert.requestVPNPermission : CoreAlert.startFailed;
-          currentState = CoreStatus.stopped(
-            alert: alert,
-            message: "failed to start core ${res.messageType} ${res.message}",
-          );
 
-          statusController.add(currentState);
+        statusController.add(currentState);
 
-          return left(
-            currentState.getCoreAlert() ??
-                ConnectionFailure.unexpected("failed to start core ${res.messageType} ${res.message}"),
-          );
-        }
-      } on GrpcError catch (e) {
-        loggy.error("failed to start bg core: $e");
-        ref.read(coreRestartSignalProvider.notifier).restart();
-        if (e.code == StatusCode.unavailable) {
-          return left(const ConnectionFailure.unexpected("background core is not started yet!"));
-        }
-        // throw InvalidConfig(e.message);
-        // throw DioException.connectionError(requestOptions: RequestOptions(), reason: e.codeName, error: e);
-
-        // throw DioException(requestOptions: RequestOptions(), error: e);
-        return left(const ConnectionFailure.unexpected("failed to start background core"));
+        return left(
+          currentState.getCoreAlert() ??
+              ConnectionFailure.unexpected("failed to start core ${res.messageType} ${res.message}"),
+        );
       }
+    } on GrpcError catch (e) {
+      loggy.error("failed to start bg core: $e");
+      ref.read(coreRestartSignalProvider.notifier).restart();
+      if (e.code == StatusCode.unavailable) {
+        return left(const ConnectionFailure.unexpected("background core is not started yet!"));
+      }
+      // throw InvalidConfig(e.message);
+      // throw DioException.connectionError(requestOptions: RequestOptions(), reason: e.codeName, error: e);
 
-      // if (res.messageType != MessageType.EMPTY) return left(res);
+      // throw DioException(requestOptions: RequestOptions(), error: e);
+      return left(const ConnectionFailure.unexpected("failed to start background core"));
+    }
 
-      return right(unit);
-    });
+    // if (res.messageType != MessageType.EMPTY) return left(res);
+
+    return right(unit);
   }
 
   TaskEither<String, Unit> stop() {

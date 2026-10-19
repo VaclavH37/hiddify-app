@@ -43,6 +43,11 @@ class CoreInterface {
     return true;
   }
 
+  /// Runs [body] with the app kept alive until it finishes, where the platform
+  /// would suspend it part-way. A pass-through wherever the app keeps running
+  /// in the background.
+  Future<T> withBackgroundTime<T>(Future<T> Function() body) => body();
+
   bool isInitialized() {
     try {
       // Reading a `late` field that was never set throws; that is the test.

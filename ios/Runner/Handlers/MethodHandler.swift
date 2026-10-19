@@ -9,6 +9,7 @@
 import FlutterMacOS
 #else
 import Flutter
+import UIKit
 #endif
 import Combine
 import RaynCore
@@ -17,6 +18,12 @@ public class MethodHandler: NSObject, FlutterPlugin {
     
     private var cancelBag: Set<AnyCancellable> = []
     
+    #if os(iOS)
+    /// The background time Dart holds around a core start. One at a time: Dart
+    /// counts nested holds itself and asks only for the outermost one.
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    #endif
+
     public static let name = "\(Bundle.main.serviceIdentifier)/method"
     
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -229,6 +236,21 @@ public class MethodHandler: NSObject, FlutterPlugin {
         case "reset":
             VPNManager.shared.reset()
             result(true)
+        // Held by Dart around a core start and a hub switch. The extension brings
+        // the tunnel up and then waits for the app to send the configuration over
+        // gRPC, so an app suspended in between left a VPN with nothing behind it
+        // until the user came back (2026-10-19 failover test: 15 s). macOS does
+        // not suspend the app this way, and Dart only asks on iOS.
+        case "begin_background_task":
+            #if os(iOS)
+            beginBackgroundTask()
+            #endif
+            result(true)
+        case "end_background_task":
+            #if os(iOS)
+            endBackgroundTask()
+            #endif
+            result(true)
         // Removed with this comment as their headstone, so nobody re-adds them:
         //
         //   select_outbound, url_test  -- called LibboxNewStandaloneCommandClient()
@@ -249,6 +271,23 @@ public class MethodHandler: NSObject, FlutterPlugin {
         }
     }
     
+    #if os(iOS)
+    private func beginBackgroundTask() {
+        guard backgroundTask == .invalid else { return }
+        // iOS ends the grace period itself after about 30 s; the handler must
+        // release it then, or the app is killed rather than suspended.
+        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "core-start") { [weak self] in
+            self?.endBackgroundTask()
+        }
+    }
+
+    private func endBackgroundTask() {
+        guard backgroundTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = .invalid
+    }
+    #endif
+
     private func waitForStop() -> Future<Void, Never> {
         return Future { promise in
             var cancellable: AnyCancellable? = nil
