@@ -534,6 +534,83 @@ void main() {
     }
   });
 
+  group('Android release runs R8', () {
+    // Play scores the DEX code of every bundle for obfuscation, shrinking and
+    // optimization and wants 25% in each. 1.6.2 scored 1%: minifyEnabled false
+    // kept R8 off, and nothing noticed. The keeps on the Go bridge are the
+    // other half — a minified build that strips them still builds and signs,
+    // then fails at connect.
+    // DESIGN-INVARIANTS.md#android-release-r8
+    final gradle = _withoutLineComments(
+      File('android/app/build.gradle').readAsStringSync(),
+      '//',
+    );
+    final rules = _withoutLineComments(
+      File('android/app/proguard-rules.pro').readAsStringSync(),
+      '#',
+    );
+    final makefile = File('Makefile').readAsStringSync();
+    final recipes = _makeRecipes(makefile);
+
+    test('the release build minifies', () {
+      expect(gradle, contains('minifyEnabled true'));
+      expect(
+        gradle,
+        isNot(contains('minifyEnabled false')),
+        reason: 'R8 is off again, so every Play DEX score falls to ~1%.',
+      );
+    });
+
+    for (final keep in const [
+      '-keep class go.** { *; }',
+      '-keep class com.raynlabs.core.** { *; }',
+      '-keep class com.raynlabs.app.** { *; }',
+    ]) {
+      test('proguard-rules.pro has `$keep`', () {
+        expect(
+          rules,
+          contains(keep),
+          reason: 'Go finds the bridge classes and our callbacks by name over '
+              'JNI; R8 renames or removes them without this keep.',
+        );
+      });
+    }
+
+    for (final option in const ['-ignorewarnings', '-dontobfuscate', '-dontshrink', '-dontoptimize']) {
+      test('proguard-rules.pro does not use $option', () {
+        expect(
+          rules,
+          isNot(contains(option)),
+          reason: '$option hides missing classes or zeroes a Play DEX score '
+              'for the whole app.',
+        );
+      });
+    }
+
+    test('archive-r8-mapping fails a build that left no mapping', () {
+      final definition = RegExp(r'^define archive-r8-mapping\n([\s\S]*?)^endef', multiLine: true)
+          .firstMatch(makefile.replaceAll('\r\n', '\n'))
+          ?.group(1);
+      expect(definition, isNotNull, reason: 'archive-r8-mapping is not defined in the Makefile');
+      expect(definition, contains('mapping.txt'));
+      expect(definition, contains('exit 1'));
+    });
+
+    for (final target in const ['android-apk-release', 'android-aab-release']) {
+      test('$target clears, then archives, the R8 mapping', () {
+        final recipe = recipes[target];
+        expect(recipe, isNotNull, reason: 'target "$target" no longer exists in the Makefile');
+        expect(
+          recipe,
+          contains(r'rm -rf $(R8_MAPPING_DIR)'),
+          reason: 'without the delete, a mapping left by an earlier build is '
+              'archived and R8 being off goes unnoticed.',
+        );
+        expect(recipe, contains(r'$(call archive-r8-mapping,'));
+      });
+    }
+  });
+
   group('Apple builds cannot fetch upstream prebuilt cores', () {
     // ios-libs and macos-libs used to curl Hiddify's compiled core straight into
     // the path the Xcode project bundles, and ios-prepare / macos-prepare
@@ -907,6 +984,11 @@ List<File> _dartFilesUnder(String dir) => Directory(dir)
     .whereType<File>()
     .where((f) => f.path.endsWith('.dart'))
     .toList();
+
+/// [text] without the lines that start (after indentation) with [marker], so a
+/// comment explaining a removed setting does not count as the setting.
+String _withoutLineComments(String text, String marker) =>
+    text.split('\n').where((line) => !line.trimLeft().startsWith(marker)).join('\n');
 
 List<File> _filesNamed(String dir, String name) => Directory(dir)
     .listSync(recursive: true)

@@ -107,6 +107,21 @@ DISTRIBUTOR_ARGS=--skip-clean --build-target $(TARGET) --artifact-name=$(FF_ARTI
 # `--flag`, `k=v` pairs become `--k v`.
 FF_OBFUSCATE=--flutter-build-args=obfuscate,split-debug-info=build/symbols
 
+# R8's output for the Android release build that just ran. Play reads the
+# mapping from inside the AAB; an APK handed out any other way can only be
+# retraced with this exact copy. Each Android release recipe deletes the folder
+# first, and archive-r8-mapping then requires mapping.txt: a build that leaves
+# none did not run R8. DESIGN-INVARIANTS.md#android-release-r8
+R8_MAPPING_DIR=build/app/outputs/mapping/release
+
+# $(call archive-r8-mapping,<folder>) copies it to dist/<version>/<folder>.
+define archive-r8-mapping
+@test -s $(R8_MAPPING_DIR)/mapping.txt || { echo "R8 did not run: no $(R8_MAPPING_DIR)/mapping.txt" >&2; exit 1; }
+@VER=$$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d '\r'); \
+  rm -rf "dist/$$VER/$(1)" && mkdir -p "dist/$$VER" && cp -r $(R8_MAPPING_DIR) "dist/$$VER/$(1)" && \
+  echo "R8 mapping archived to dist/$$VER/$(1)"
+endef
+
 # Opt-in dart-defines, empty by default. Exists so a RELEASE build can carry a
 # diagnostic affordance that is otherwise compiled out — TestFlight rejects debug
 # builds (`get-task-allow`), and with the build host in the cloud and no USB path
@@ -400,6 +415,7 @@ gen_translations: #generating missing translations using google translate
 android-release: android-apk-release android-aab-release
 
 android-apk-release: check-rulesets-fresh rayn-link-key
+	rm -rf $(R8_MAPPING_DIR)
 	$(FASTFORGE) package \
 	  --platform android \
 	  --targets apk \
@@ -409,9 +425,11 @@ android-apk-release: check-rulesets-fresh rayn-link-key
 	  $(FF_OBFUSCATE) \
 	  $(FF_DART_DEFINES) \
 	  --build-target-platform=android-arm,android-arm64,android-x64
+	$(call archive-r8-mapping,mapping-apk)
 	ls -R build/app/outputs
 
 android-aab-release: check-rulesets-fresh rayn-link-key
+	rm -rf $(R8_MAPPING_DIR)
 	$(FASTFORGE) package \
 	  --platform android \
 	  --targets aab \
@@ -421,6 +439,7 @@ android-aab-release: check-rulesets-fresh rayn-link-key
 	  $(FF_OBFUSCATE) \
 	  $(FF_DART_DEFINES) \
 	  --build-dart-define=release=google-play
+	$(call archive-r8-mapping,mapping-aab)
 
 windows-release: windows-zip-release windows-exe-release windows-msix-release
 

@@ -280,6 +280,26 @@ separately.
   `macos-release` only fails, since the Mac client ships through the Mac App
   Store), plus a check that `FF_OBFUSCATE` still carries both flags.
 
+### <a id="android-release-r8"></a>Android release builds run R8, and the Go bridge stays kept
+
+Play scores the DEX code of every bundle for obfuscation, shrinking and
+optimization and wants at least 25% in each. With R8 off, 1.6.2 scored 1% for
+obfuscation. That `minifyEnabled false` was our own (a7ad3a89, 2026-06-14),
+and nothing failed when it went in. Switching R8 off again, or adding one of the
+global `-dont*` switches, would be just as quiet. The keeps are the other half:
+a minified build that strips the gomobile bridge still builds and signs, then
+fails at connect.
+
+- **Enforced by:** `test/design/design_invariants_test.dart`, group *Android
+  release runs R8*:
+  - `minifyEnabled true` in `android/app/build.gradle`;
+  - the `go.**`, `com.raynlabs.core.**` and `com.raynlabs.app.**` keeps in
+    `proguard-rules.pro`;
+  - none of `-ignorewarnings`, `-dontobfuscate`, `-dontshrink` or
+    `-dontoptimize`;
+  - both Android release recipes archive the mapping and fail without one.
+- **Background:** `CORE_BUILD.md` → "Minification (R8)"
+
 ### <a id="never-adopt-prebuilt-core-url"></a>Never adopt upstream changes to the prebuilt-core download URL
 
 `Makefile`'s `windows-libs`, `android-libs`, `macos-libs` and `linux-*-libs`

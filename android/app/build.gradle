@@ -111,14 +111,16 @@ android {
                 // build before an unsigned/debug-signed release can ship.
                 signingConfig null
             }
-            // Minification is intentionally OFF: the app's logic is in Dart
-            // (libapp.so) and the Go core (libhiddify-core.so), neither touched
-            // by R8 — only the thin Kotlin shell would be, where the breakage
-            // risk (gomobile JNI callbacks, gRPC, gson) outweighs the benefit.
-            // proguard-rules.pro is kept current as a safety net so enabling
-            // minifyEnabled later won't strip the native bridge. If enabled,
-            // re-validate on-device (see CORE_BUILD.md).
-            minifyEnabled false
+            // R8 runs on release builds: Play scores the DEX code for
+            // obfuscation, shrinking and optimization and wants 25% in each
+            // (1.6.2 scored 1% with R8 off). It processes only the Kotlin shell
+            // and the Java libraries, never the Dart code (libapp.so) or the Go
+            // core (librayn-core.so). The keeps that hold the Go bridge together
+            // are in proguard-rules.pro. A build that strips the bridge still
+            // builds and signs, so validate changes to the rules on a device
+            // (CORE_BUILD.md → "Minification (R8)").
+            // DESIGN-INVARIANTS.md#android-release-r8
+            minifyEnabled true
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             ndk {
