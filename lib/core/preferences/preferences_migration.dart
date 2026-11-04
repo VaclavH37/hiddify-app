@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:hiddify/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +21,7 @@ class PreferencesMigration with InfraLogger {
       PreferencesVersion5Migration(sharedPreferences),
       PreferencesVersion6Migration(sharedPreferences),
       PreferencesVersion7Migration(sharedPreferences),
+      PreferencesVersion8Migration(sharedPreferences),
     ];
 
     if (currentVersion == migrationSteps.length) {
@@ -278,6 +281,84 @@ class PreferencesVersion7Migration extends PreferencesMigrationStep with InfraLo
     ];
     for (final key in keysToClear) {
       await sharedPreferences.remove(key);
+    }
+  }
+}
+
+/// v8 — forget "Auto rotate", removed in 1.6.4.
+///
+/// The core no longer builds the round-robin `balance` group. Its selector
+/// falls back to Fastest server on any device whose cache file still names
+/// that group, because Selector.Start restores a cached choice only while it is
+/// still a member. Three app-side records could still describe the removed
+/// mode:
+///
+/// - `selected_location` with mode `rotate`, the connection page's location
+///   card. Dropped, so the card shows "Select location" until the next connect
+///   records the Fastest exit, rather than the balancer's last city captioned
+///   as Fastest.
+/// - `selected_location_pending` naming `balance`, a pre-connect pick not yet
+///   applied. Dropped: applying it would only fail five times and give up.
+/// - `proxy_group_snapshot`, the cached picker list. Its `balance` row is
+///   removed so the pre-connect picker never shows it, and a selection of
+///   `balance` moves to `lowest`, which is where the core will land.
+///
+/// Raw JSON on purpose, like the steps above: the model classes may change
+/// later, and a migration must keep reading what an old build wrote. Anything
+/// that does not parse is left alone; the notifiers already discard it.
+class PreferencesVersion8Migration extends PreferencesMigrationStep with InfraLogger {
+  PreferencesVersion8Migration(super.sharedPreferences);
+
+  static const _selectedLocationKey = 'selected_location';
+  static const _pendingKey = 'selected_location_pending';
+  static const _snapshotKey = 'proxy_group_snapshot';
+  static const _rotateMode = 'rotate';
+  static const _rotateTag = 'balance';
+  static const _fastestTag = 'lowest';
+
+  @override
+  Future<void> migrate() async {
+    if (_decode(_selectedLocationKey)?['m'] == _rotateMode) {
+      loggy.debug('dropping the Auto rotate location record');
+      await sharedPreferences.remove(_selectedLocationKey);
+    }
+
+    if (_decode(_pendingKey)?['o'] == _rotateTag) {
+      loggy.debug('dropping a pending Auto rotate pick');
+      await sharedPreferences.remove(_pendingKey);
+    }
+
+    final snapshot = _decode(_snapshotKey);
+    final items = snapshot?['i'];
+    if (snapshot == null || items is! List) return;
+    bool isRotate(Object? item) => item is Map && item['t'] == _rotateTag;
+    final wasSelected = snapshot['s'] == _rotateTag;
+    if (!wasSelected && !items.any(isRotate)) return;
+
+    loggy.debug('removing Auto rotate from the cached location list');
+    final kept = items.where((item) => !isRotate(item)).toList();
+    if (kept.isEmpty) {
+      await sharedPreferences.remove(_snapshotKey);
+      return;
+    }
+    if (wasSelected) {
+      final hasFastest = kept.any((item) => item is Map && item['t'] == _fastestTag);
+      snapshot['s'] = hasFastest ? _fastestTag : '';
+    }
+    snapshot['i'] = kept;
+    await sharedPreferences.setString(_snapshotKey, jsonEncode(snapshot));
+  }
+
+  /// The JSON object stored under [key], or null when there is none or it is
+  /// not one.
+  Map<String, dynamic>? _decode(String key) {
+    try {
+      final raw = sharedPreferences.getString(key);
+      if (raw == null) return null;
+      final value = jsonDecode(raw);
+      return value is Map<String, dynamic> ? value : null;
+    } catch (_) {
+      return null;
     }
   }
 }

@@ -12,14 +12,12 @@ void main() {
       OutboundInfo(tag: tag, urlTestDelay: delay, isGroup: group, urlTestTime: Timestamp.fromDateTime(at));
 
   // The selector as the core reports it in the full stream: the url-test group
-  // it has chosen (carrying its chosen location's result), the balancer, and
-  // every location.
+  // it has chosen (carrying its chosen location's result) and every location.
   final selector = OutboundGroup(
     tag: 'select',
     selected: 'lowest',
     items: [
       info('lowest', 65535, group: true),
-      info('balance', 180, group: true),
       info('EXIT-Los Angeles', 65535),
       info('EXIT-Tokyo', 180),
       info('direct §hide§', 20),

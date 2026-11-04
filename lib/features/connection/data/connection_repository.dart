@@ -212,7 +212,7 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   /// loopback gRPC channel is unauthenticated.
   ///
   /// This is the config as the API delivered it. To inspect the *built* config —
-  /// our routing rules, DNS servers, inbounds and balancer groups — rebuild the
+  /// our routing rules, DNS servers, inbounds and selector groups — rebuild the
   /// core with `EXTRA_TAGS=raynconfigdump` (see `v2/hcore/configdump.go`).
   Future<void> _dumpForDebug(String content) async {
     if (kDebugMode) {

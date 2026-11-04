@@ -160,11 +160,11 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
     // Node tags are generated in final display form by the MW API, so the client
     // does NOT parse the internal tag schema. The core reports the whole selector
     // chain (e.g. "lowest → EXIT-SK-SEOUL-01"); we resolve it to the primary node
-    // hop — skipping the client-injected auto-selector group names — and show that
-    // tag verbatim, matching what the in-app list shows.
+    // hop — skipping the client-injected "Fastest server" group name — and show
+    // that tag verbatim, matching what the in-app list shows.
     private fun resolvedOutbound(tag: String): String {
         val hops = tag.split(detourSeparator).map { it.trim() }.filter { it.isNotEmpty() }
-        val hop = hops.firstOrNull { it.lowercase() != "lowest" && it.lowercase() != "balance" }
+        val hop = hops.firstOrNull { it.lowercase() != "lowest" }
             ?: hops.firstOrNull()
             ?: tag
         return displayNodeTag(hop)

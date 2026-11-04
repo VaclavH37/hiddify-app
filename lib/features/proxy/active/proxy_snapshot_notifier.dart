@@ -21,9 +21,6 @@ class SnapshotItem {
     required this.isGroup,
     required this.groupSelectedTagDisplay,
     required this.countryCode,
-    required this.city,
-    required this.region,
-    required this.org,
   });
 
   final String tag;
@@ -31,17 +28,16 @@ class SnapshotItem {
   final String type;
   final bool isGroup;
 
-  /// For an auto-selector group (urltest "Lowest"), the resolved member's tag —
-  /// lets the pre-connect display reconstruct "Tokyo, JP" instead of the mode
-  /// name. Empty for plain exits / balancer groups.
+  /// For the "Fastest server" group (urltest "lowest"), the resolved member's
+  /// tag — lets the pre-connect display reconstruct "Tokyo, JP" instead of the
+  /// mode name. Empty for plain exits.
   final String groupSelectedTagDisplay;
 
-  // Full geo is captured (not just the country) so a balancer's resolved exit
-  // renders as "Tokyo, JP" offline, not a bare "JP".
+  /// The flag's country code. Snapshots written before 1.6.4 also carry the
+  /// probe's city, region and hosting org ('ci', 'r', 'o'), which only the
+  /// removed "Auto rotate" display read; decoding ignores them and the next
+  /// capture drops them.
   final String countryCode;
-  final String city;
-  final String region;
-  final String org;
 
   Map<String, dynamic> toJson() => {
     't': tag,
@@ -50,9 +46,6 @@ class SnapshotItem {
     'g': isGroup,
     'sd': groupSelectedTagDisplay,
     'c': countryCode,
-    'ci': city,
-    'r': region,
-    'o': org,
   };
 
   static SnapshotItem? fromJson(Map<String, dynamic> m) {
@@ -65,9 +58,6 @@ class SnapshotItem {
       isGroup: (m['g'] as bool?) ?? false,
       groupSelectedTagDisplay: (m['sd'] as String?) ?? '',
       countryCode: (m['c'] as String?) ?? '',
-      city: (m['ci'] as String?) ?? '',
-      region: (m['r'] as String?) ?? '',
-      org: (m['o'] as String?) ?? '',
     );
   }
 }
@@ -113,7 +103,7 @@ class ProxySnapshot {
         isGroup: it.isGroup,
         tagDisplay: it.tagDisplay,
         groupSelectedTagDisplay: it.groupSelectedTagDisplay,
-        ipinfo: IpInfo(countryCode: it.countryCode, city: it.city, region: it.region, org: it.org),
+        ipinfo: IpInfo(countryCode: it.countryCode),
       ),
     ),
   );
@@ -164,9 +154,6 @@ class ProxySnapshotNotifier extends _$ProxySnapshotNotifier {
               isGroup: it.isGroup,
               groupSelectedTagDisplay: it.groupSelectedTagDisplay,
               countryCode: flagCountryCode(it),
-              city: it.ipinfo.city,
-              region: it.ipinfo.region,
-              org: it.ipinfo.org,
             ),
           )
           .toList(),

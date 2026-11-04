@@ -59,10 +59,11 @@ void main() {
       );
       expect(flagCountryCode(resolved), 'JP');
 
+      // Before the group has picked a member: nothing to read a flag from but
+      // the probe's geolocation.
       final unresolved = OutboundInfo(
-        tag: 'balance',
+        tag: 'lowest',
         isGroup: true,
-        groupSelectedTagDisplay: 'round-robin',
         ipinfo: IpInfo(countryCode: 'US'),
       );
       expect(flagCountryCode(unresolved), 'US');

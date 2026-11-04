@@ -21,24 +21,10 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 // `BalancerStrategy` used to live here (round-robin / consistent-hashing /
 // sticky-sessions), backing a Settings → Routing picker and the `balancer-strategy`
-// field on SingboxConfigOption. Both are gone and the client no longer sends the
-// key at all.
-//
-// The picker was removed because it could not do what it claimed: it only fed the
-// `balance` outbound group, which the selector does not default to, and two of its
-// three options were broken anyway — builder.go never set the group's `MaxRetry`,
-// so consistent-hashing degenerated to "first alive node" and sticky-sessions
-// returned a time-seeded pick with no liveness check.
-//
-// The field then followed once the core stopped needing it: DefaultHiddifyOptions()
-// sets round-robin and normalizeBalancerStrategy() in builder.go rejects anything
-// unusable, so an absent key resolves correctly. Before that fix the key HAD to be
-// sent — the Go default was "", which the balancer rejects with "unknown load
-// balance strategy", failing service start on any profile with >1 outbound.
-//
-// If a strategy control is ever reintroduced, note the constraint that bit here:
-// omitting the key is safe, but sending an empty string is not — it overwrites the
-// core's default with the one value that cannot work.
+// field on SingboxConfigOption. It only configured the core's `balance` group
+// ("Auto rotate" in the location picker), and two of its three options were
+// broken. The picker went first; the group itself was removed from the core in
+// 1.6.4, which no longer reads the key.
 
 // `IPv6Mode` used to live here, backing a Settings → Routing picker. It was
 // serialised, sent to the core over gRPC and persisted — and read by nothing:

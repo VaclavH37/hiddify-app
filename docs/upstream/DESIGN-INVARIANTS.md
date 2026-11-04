@@ -122,14 +122,23 @@ along with `fakeip-remote-sites.srs`; `store_fakeip` is false.
 - **Enforced by:** `hiddify-core/v2/config/ntp_removal_test.go` ·
   `TestBuiltConfigHasNoNTPBlock`
 
-### <a id="balancer-strategy-never-empty"></a>Balancer strategy is never empty
+### <a id="selector-defaults-to-fastest"></a>The selector offers Fastest server and the exits, and defaults to Fastest
 
-`DefaultHiddifyOptions()` upstream never sets it, and an empty strategy makes
-sing-box fail at **service start** with `unknown load balance strategy` whenever
-a profile has more than one outbound. The Dart side no longer exposes the
-control, so the default must be self-sufficient.
+With more than one exit, the `select` group's members are the url-test group
+(`lowest`, "Fastest server") followed by the exits, and nothing else. Its
+default is `lowest`. That default is where a first connect goes, and where
+`Selector.Start` falls back when the cache file names a member that no longer
+exists.
 
-- **Enforced by:** `hiddify-core/v2/config/balancer_strategy_test.go`
+There is no round-robin `balance` group ("Auto rotate"). It sent each new
+connection to the next exit in turn, so one page left from several addresses
+at up to twice the best latency. It was removed in 1.6.4. Devices that had
+chosen it fell back to the default with no core migration. App-side records
+are cleared by preferences migration v8.
+
+- **Enforced by:** `hiddify-core/v2/config/design_invariants_test.go` ·
+  `TestSelectorOffersFastestThenTheExits`, and the golden fixtures
+  (`v2/config/testdata/golden/`)
 
 ---
 

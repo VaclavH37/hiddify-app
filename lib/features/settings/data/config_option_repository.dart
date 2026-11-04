@@ -153,15 +153,9 @@ abstract class ConfigOptions {
       // travellers / professionals in mainland China. The Go core's Region
       // branch consumes this to wire geosite-cn / geoip-cn direct routing.
       region: "cn",
-      // `balancer-strategy` is deliberately absent from this payload. It fed the
-      // `balance` outbound group, which the selector does not default to, so it did
-      // nothing unless the user chose "Auto rotate" — and its picker was removed.
-      //
-      // Omitting the key is now safe because the core supplies it: settings are
-      // unmarshalled OVER DefaultHiddifyOptions(), which sets round-robin, and
-      // normalizeBalancerStrategy in builder.go rejects anything unusable at the
-      // point of use. Sending an empty string would NOT be equivalent — that
-      // overwrites the good default with the exact value the balancer rejects.
+      // No `balancer-strategy`: it configured the round-robin `balance` group
+      // ("Auto rotate"), which the core stopped building in 1.6.4 and no longer
+      // reads.
       blockAds: ref.watch(blockAds),
       executeConfigAsIs: false,
       // Release builds are pinned to `warn`, and the picker is compiled out of the

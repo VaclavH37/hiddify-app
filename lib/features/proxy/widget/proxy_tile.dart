@@ -24,9 +24,10 @@ class ProxyTile extends ConsumerWidget {
     final palette = context.rayn;
     final t = ref.watch(translationsProvider).requireValue;
 
-    // Group rows are the client-injected automatic modes; node rows show the
-    // name the middleware authored, with only the role prefix and a trailing
-    // flag emoji stripped. The tag schema is not otherwise parsed.
+    // Group rows are the client-injected automatic mode ("Fastest server");
+    // node rows show the name the middleware authored, with only the role
+    // prefix and a trailing flag emoji stripped. The tag schema is not
+    // otherwise parsed.
     final mode = proxy.isGroup ? ExitMode.forGroupTag(proxy.tagDisplay) : null;
     final displayName = proxy.isGroup ? (mode?.caption(t) ?? proxy.tagDisplay) : displayNodeTag(proxy.tagDisplay);
 
@@ -56,11 +57,7 @@ class ProxyTile extends ConsumerWidget {
               child: Row(
                 children: [
                   if (proxy.isGroup)
-                    Icon(
-                      mode == ExitMode.rotate ? Icons.shuffle_rounded : Icons.bolt_rounded,
-                      size: 28,
-                      color: palette.textSecondary,
-                    )
+                    Icon(Icons.bolt_rounded, size: 28, color: palette.textSecondary)
                   else
                     IPCountryFlag(countryCode: flagCountryCode(proxy), size: 28, rounded: true),
                   const SizedBox(width: RaynSpacing.lg),
