@@ -268,6 +268,25 @@ without explicit approval.
   resolution (which catches a transitive reintroduction), and any
   `package:sentry` import under `lib/`.
 
+### <a id="no-ip-lookups"></a>The core makes no IP-geolocation lookups
+
+sing-box 1.14's outbound monitoring asks third-party services for the public IP
+and location of every outbound it tests. Through a direct outbound that hands
+them the user's real IP address; through an exit, the address of one of our
+nodes. Three of the services are plain HTTP. `v2/config/ipinfo_off.go` replaces
+the lists it walks with one entry that answers without touching the network.
+
+A DNS reject rule does not stop this and must not be brought back for it. A
+direct outbound resolves through `default_domain_resolver`, which skips the DNS
+rules, and a VLESS exit sends the hostname to the hub unresolved. Such a rule only
+stops users reaching those sites themselves.
+
+The replacement is a variable `go:linkname`, which nothing checks: a sing-box bump
+that renames the lists still builds, and the lookups silently resume.
+
+- **Enforced by:** `hiddify-core/v2/config/no_ipinfo_probes_test.go` ·
+  `TestIPLookupsNeverDial`, which measures whether anything is dialed
+
 ### <a id="no-query-all-packages"></a>`QUERY_ALL_PACKAGES` is not requested
 
 Removed with the per-app-proxy feature for Play compliance. An upstream manifest
