@@ -145,6 +145,13 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // failover's restart.
     ref.listen(serviceRunningProvider, (_, _) => _resetUrlTestWatch());
 
+    // A session whose tunnel carried nothing, with the device clock unread:
+    // read it the moment our servers are reachable again (see
+    // [_readClockAfterDeadSession]).
+    ref.listen(serviceRunningProvider, (_, running) {
+      if (!running) _readClockAfterDeadSession();
+    });
+
     // When the IP routing warning clears, the timeouts on record were caused
     // by it, and fresh results are still seconds away. An open window must not
     // carry them into a failover from a hub that never failed, reported to the
@@ -194,6 +201,37 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   /// The groups in the last event from the core: what a re-test asks it to test.
   List<String> _groupTags = const [];
 
+  /// Set when this session's tunnel stopped carrying traffic while the device
+  /// clock was unread; cleared when a location answers or the reading is taken.
+  bool _readClockWhenCoreStops = false;
+
+  /// Reads the device clock after a session whose tunnel carried nothing.
+  ///
+  /// A wrong clock and a dead hub look the same from inside the tunnel, and the
+  /// clock can only be read from our servers' answers. On iOS and desktop the
+  /// app's own requests die with the tunnel, so while it is up nothing can be
+  /// read. A failover reads it on the way back (the account probe goes out with
+  /// the core down), but the failover is often not due: the offline backoff
+  /// left by a previous attempt holds it off for an hour. Then the user sees
+  /// "No response", disconnects, and nothing has told them why.
+  ///
+  /// So the first moment the core is down again, one refresh is forced. Its
+  /// answer carries the middleware's `Date`, and a wrong clock raises the home
+  /// page warning right after the disconnect. Only after a dead session and
+  /// only without a recent reading, so a working session costs nothing.
+  ///
+  /// Skipped while a failover is restarting the core: that takes its own
+  /// reading, and a refresh racing it would interleave with its writes.
+  void _readClockAfterDeadSession() {
+    if (!_readClockWhenCoreStops || _failoverInFlight) return;
+    _readClockWhenCoreStops = false;
+    if (!ref.read(clockSkewNotifierProvider.notifier).needsReading) return;
+    loggy.info("the tunnel carried nothing and the device clock is unread; refreshing to read our servers' time");
+    // After the current Riverpod flush: this runs inside a listener, and the
+    // refresh reads providers (the "no sync reads in listeners" rule).
+    scheduleMicrotask(() => unawaited(trigger()));
+  }
+
   /// Reacts to the core's URL-test results.
   ///
   /// The location in use timing out raises the alarm; a fresh re-test of every
@@ -214,6 +252,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         return;
       case UrlTestWatchStep.reset:
         loggy.info("a location answered its URL test; closing the fast-path window");
+        _readClockWhenCoreStops = false;
         _cancelUrlTestTimer();
       case UrlTestWatchStep.armWindow:
         loggy.info(
@@ -225,7 +264,9 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         loggy.info("still timed out after ${hubUrlTestWindow.inSeconds}s; re-testing every location");
         _armUrlTestTimer(hubRetestGuard, () => _urlTestWatch.retestExpired(DateTime.now()));
         unawaited(_retestEveryLocation());
+        if (ref.read(clockSkewNotifierProvider.notifier).needsReading) _readClockWhenCoreStops = true;
       case UrlTestWatchStep.hubAnswered:
+        _readClockWhenCoreStops = false;
         _cancelUrlTestTimer();
         loggy.info(
           "another location answered its re-test, so the hub carries traffic and only the location in use "

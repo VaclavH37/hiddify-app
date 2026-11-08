@@ -149,6 +149,21 @@ void main() {
       expect(tracker.issue?.dismissed, isFalse, reason: 'a later wrong clock shows again');
     });
 
+    test('knows whether the clock was read recently, whatever it said', () {
+      final tracker = ClockTracker();
+      expect(tracker.hasFreshReading(t0), isFalse, reason: 'never read');
+      tracker.sample(sample(deviceAheadSeconds: 0), t0);
+      expect(
+        tracker.hasFreshReading(t0 + const Duration(minutes: 29)),
+        isTrue,
+        reason: 'a right clock is a reading too',
+      );
+      expect(tracker.hasFreshReading(t0 + clockEvidenceFreshFor), isFalse);
+
+      final rejected = ClockTracker()..certificateDatesRejected(t0);
+      expect(rejected.hasFreshReading(t0), isTrue);
+    });
+
     test('explains a dead tunnel only on recent evidence', () {
       final tracker = ClockTracker();
       expect(tracker.explains(t0), isFalse);

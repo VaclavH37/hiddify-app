@@ -47,6 +47,15 @@ void main() {
     expect(notifier.explainsDeadTunnel(), isFalse);
   });
 
+  test('needs a reading until it gets one', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(clockSkewNotifierProvider.notifier);
+    expect(notifier.needsReading, isTrue);
+    notifier.sample(fastBy(Duration.zero));
+    expect(notifier.needsReading, isFalse);
+  });
+
   test('a certificate dated as expired raises it without an offset', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);

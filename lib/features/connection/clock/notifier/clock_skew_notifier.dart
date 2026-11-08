@@ -50,6 +50,10 @@ class ClockSkewNotifier extends _$ClockSkewNotifier with AppLogger implements Cl
   /// fault. Synchronous, so a caller evaluates it after its last await.
   bool explainsDeadTunnel() => _tracker.explains(_uptime.elapsed);
 
+  /// Whether the clock is unread, or was last read too long ago to say
+  /// anything about now.
+  bool get needsReading => !_tracker.hasFreshReading(_uptime.elapsed);
+
   void _apply(ClockEffect effect) {
     switch (effect) {
       case ClockEffect.raised:

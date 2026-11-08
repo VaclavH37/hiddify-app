@@ -357,6 +357,16 @@ void main() {
       expect(ladder, contains('ref.listen(activeOutboundGroupsProvider'));
     });
 
+    test('a dead session with the clock unread reads it once the core stops', () {
+      // On iOS and desktop the app's own requests die with the tunnel, so a
+      // wrong clock can only be read after it. Without this, a user whose
+      // failover was held off by the offline backoff saw "No response" and
+      // no warning (Windows, 2026-11-08).
+      expect(ladder, contains('if (!running) _readClockAfterDeadSession();'));
+      final body = ladder.substring(ladder.indexOf('void _readClockAfterDeadSession()'));
+      expect(body.indexOf('_failoverInFlight'), lessThan(body.indexOf('trigger()')));
+    });
+
     test('the fast path starts afresh with every core session', () {
       // A verdict holds for the rest of its session (UrlTestWatch). The reset
       // that ends it must not wait for the stream's empty list, which can come

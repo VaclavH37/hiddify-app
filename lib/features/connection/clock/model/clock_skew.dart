@@ -139,17 +139,30 @@ enum ClockEffect {
 class ClockTracker {
   ClockIssue? _issue;
   Duration? _evidenceAt;
+  Duration? _lastReadingAt;
 
   ClockIssue? get issue => _issue;
 
+  /// Whether the clock was read recently, whatever the reading said. Without
+  /// one, a dead tunnel cannot be told apart from a wrong clock, and the app
+  /// takes a reading at the next moment our servers are reachable.
+  bool hasFreshReading(Duration now) {
+    final at = _lastReadingAt;
+    return at != null && now - at < clockEvidenceFreshFor;
+  }
+
   ClockEffect sample(ClockSample sample, Duration now) {
+    _lastReadingAt = now;
     final off = sample.skew.abs();
     if (off - sample.uncertainty >= clockSkewRaiseThreshold) return _raise(sample.skew, now);
     if (off + sample.uncertainty < clockSkewClearThreshold) return _clear();
     return ClockEffect.none;
   }
 
-  ClockEffect certificateDatesRejected(Duration now) => _raise(null, now);
+  ClockEffect certificateDatesRejected(Duration now) {
+    _lastReadingAt = now;
+    return _raise(null, now);
+  }
 
   /// Whether a wrong clock explains a dead tunnel right now.
   bool explains(Duration now) {
