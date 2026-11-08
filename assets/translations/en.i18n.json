@@ -436,6 +436,12 @@
       "copy": "Copy",
       "copied": "Command copied",
       "footer": "Rayn VPN works again within a few seconds of the setting going off. You don't need to reconnect."
+    },
+    "clock": {
+      "title": "Your device's time is wrong",
+      "body": "Rayn VPN may not connect until it's correct. Turn on automatic date and time.",
+      "bodyApple": "Rayn VPN may not connect until it's correct. Go to Settings > General > Date & Time and turn on Set Automatically.",
+      "openSettings": "Open date and time settings"
     }
   },
   "errors": {

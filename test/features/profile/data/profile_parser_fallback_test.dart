@@ -6,6 +6,7 @@ import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/core/model/app_info_entity.dart';
 import 'package:hiddify/core/model/environment.dart';
+import 'package:hiddify/features/connection/clock/model/clock_skew.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/model/hub_reachability.dart';
 import 'package:hiddify/features/profile/model/hub_tier.dart';
@@ -936,9 +937,79 @@ void main() {
       expect(fake.callCount, 2);
     });
   });
+
+  group('clock evidence', () {
+    // The "device time is wrong" check reads every subscription response's
+    // `Date`, error responses included: the covert 404 is our middleware too.
+    late ProviderContainer container;
+    late Ref ref;
+
+    setUp(() async {
+      container = ProviderContainer(overrides: [appInfoProvider.overrideWith(_FakeAppInfo.new)]);
+      ref = container.read(_dummyRefProvider);
+      await container.read(appInfoProvider.future);
+    });
+
+    tearDown(() => container.dispose());
+
+    RemoteProfileEntity entity() => RemoteProfileEntity(
+      id: 'test-id',
+      active: true,
+      name: 'test',
+      url: 'https://primary.example.com/sub',
+      lastUpdate: DateTime(2020),
+    );
+
+    // The middleware's clock, two minutes behind this device: the device is
+    // two minutes fast, as on the phone that prompted the check.
+    String serverDate() => HttpDate.format(DateTime.now().toUtc().subtract(const Duration(minutes: 2)));
+
+    test('a subscription answer hands its Date over', () async {
+      final sink = _RecordingClockSink();
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {'date': serverDate()})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake, clockEvidence: sink);
+
+      await parser.updateRemote(rp: entity()).run();
+
+      final sample = sink.samples.single;
+      expect(sample.skew.inSeconds, inInclusiveRange(119, 121));
+    });
+
+    test('so does an error answer', () async {
+      final sink = _RecordingClockSink();
+      final fake = _FakeHttpClient(steps: [_FakeStep.status(404, '', headers: {'date': serverDate()})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake, clockEvidence: sink);
+
+      await parser.updateRemote(rp: entity()).run();
+
+      expect(sink.samples.single.skew.inSeconds, inInclusiveRange(119, 121));
+    });
+
+    test('an answer without a Date says nothing', () async {
+      final sink = _RecordingClockSink();
+      final fake = _FakeHttpClient(steps: [_FakeStep.ok(headers: {})]);
+      final parser = ProfileParser(ref: ref, httpClient: fake, clockEvidence: sink);
+
+      await parser.updateRemote(rp: entity()).run();
+
+      expect(sink.samples, isEmpty);
+      expect(sink.certificateRejections, 0);
+    });
+  });
 }
 
 final _dummyRefProvider = Provider<Ref>((ref) => ref);
+
+class _RecordingClockSink implements ClockEvidenceSink {
+  final samples = <ClockSample>[];
+  int certificateRejections = 0;
+
+  @override
+  void sample(ClockSample sample) => samples.add(sample);
+
+  @override
+  void certificateDatesRejected() => certificateRejections++;
+}
 
 class _FakeAppInfo extends AppInfo {
   @override
@@ -962,7 +1033,8 @@ class _FakeStep {
 
   /// A non-2xx answer, which dio raises as a bad-response exception before
   /// the parser ever sees the body — the middleware's covert 404.
-  factory _FakeStep.status(int statusCode, String body) => _FakeStep._(error: _StatusMarker(statusCode), body: body);
+  factory _FakeStep.status(int statusCode, String body, {Map<String, dynamic>? headers}) =>
+      _FakeStep._(error: _StatusMarker(statusCode), body: body, headers: headers);
 
   final Map<String, dynamic>? headers;
   final Object? error;
@@ -1021,7 +1093,12 @@ class _FakeHttpClient extends DioHttpClient {
         throw DioException.badResponse(
           statusCode: status.statusCode,
           requestOptions: options,
-          response: Response<String>(requestOptions: options, statusCode: status.statusCode, data: step.body),
+          response: Response<String>(
+            requestOptions: options,
+            statusCode: status.statusCode,
+            data: step.body,
+            headers: Headers.fromMap({for (final e in (step.headers ?? const {}).entries) e.key: ['${e.value}']}),
+          ),
         );
       }
       throw DioException(

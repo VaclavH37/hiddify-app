@@ -252,6 +252,12 @@
       "copy": "Copiar",
       "copied": "Comando copiado",
       "footer": "O Rayn VPN volta a funcionar poucos segundos depois que a configuração é desativada. Não é preciso reconectar."
+    },
+    "clock": {
+      "title": "O horário do seu dispositivo está errado",
+      "body": "O Rayn VPN pode não se conectar até que ele seja corrigido. Ative a data e hora automáticas.",
+      "bodyApple": "O Rayn VPN pode não se conectar até que ele seja corrigido. Acesse Ajustes > Geral > Data e Hora e ative Definir Automaticamente.",
+      "openSettings": "Abrir configurações de data e hora"
     }
   },
   "errors": {

@@ -10,6 +10,7 @@ import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/features/auth/account/model/account_state.dart';
 import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
+import 'package:hiddify/features/connection/clock/notifier/clock_skew_notifier.dart';
 import 'package:hiddify/features/connection/local_routing/notifier/local_routing_notifier.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
@@ -127,6 +128,12 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // carry them into a failover from a hub that never failed, reported to the
     // middleware as unreachable.
     ref.listen(localRoutingNotifierProvider, (previous, next) {
+      if (previous != null && next == null) _resetUrlTestWatch();
+    });
+
+    // The same for the "device time is wrong" warning: once the clock is
+    // right, the timeouts on record were the hubs refusing the old clock.
+    ref.listen(clockSkewNotifierProvider, (previous, next) {
       if (previous != null && next == null) _resetUrlTestWatch();
     });
 
@@ -266,7 +273,10 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     final profile = await ref.read(activeProfileProvider.future);
     if (profile is! RemoteProfileEntity) return;
     if (await _currentTier(profile.id) != HubTier.primary) return;
-    if (_localRoutingExplains("every location timed out its URL test")) return;
+    if (_localRoutingExplains("every location timed out its URL test") ||
+        _clockExplains("every location timed out its URL test")) {
+      return;
+    }
 
     loggy.warning(
       "the location in use timed out, and so did every location's re-test ${hubUrlTestWindow.inSeconds}s later; "
@@ -289,6 +299,23 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
   bool _localRoutingExplains(String observation) {
     if (!ref.read(localRoutingNotifierProvider.notifier).explainsDeadTunnel()) return false;
     loggy.warning("$observation, but IP routing is on for the egress adapter; not treating it as a hub failure");
+    return true;
+  }
+
+  /// Whether a wrong device clock explains the dead tunnel just observed.
+  ///
+  /// Every hub refuses a REALITY handshake stamped more than 60 s from its own
+  /// clock, so a phone that is two minutes fast looks exactly like a blocked
+  /// hub, on the standby hub too. The same reasons as [_localRoutingExplains]
+  /// apply: no failover, no failed check, no report; the home page tells the
+  /// user to fix the clock instead. Only recent evidence counts (see
+  /// [ClockSkewNotifier.explainsDeadTunnel]), so an old reading cannot hide a
+  /// real outage.
+  ///
+  /// Called after the caller's last await, so the answer describes now.
+  bool _clockExplains(String observation) {
+    if (!ref.read(clockSkewNotifierProvider.notifier).explainsDeadTunnel()) return false;
+    loggy.warning("$observation, but the device clock is wrong; not treating it as a hub failure");
     return true;
   }
 
@@ -348,9 +375,9 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
                 state = AsyncData((name: profile.name, success: false));
               } else {
                 loggy.debug("error updating profile [${profile.id}]", l);
-                // While the IP routing warning is up it already explains why
-                // nothing reaches the network, this refresh included.
-                if (ref.read(localRoutingNotifierProvider) == null) {
+                // While the IP routing or device time warning is up it already
+                // explains why nothing reaches the network, this refresh included.
+                if (ref.read(localRoutingNotifierProvider) == null && ref.read(clockSkewNotifierProvider) == null) {
                   ref
                       .read(inAppNotificationControllerProvider)
                       .showErrorToast(t.pages.profiles.msg.update.failureNamed(name: profile.name));
@@ -551,7 +578,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       return;
     }
 
-    if (_localRoutingExplains("the confirming probe failed")) return;
+    if (_localRoutingExplains("the confirming probe failed") || _clockExplains("the confirming probe failed")) return;
     await _recordCheck(failed: true);
     await _failOverToStandby(profile);
   }
@@ -722,7 +749,13 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     // client gets while a block persists: every other check is suppressed on a
     // standby leg.
     final carrying = await _tunnelCarriesTrafficAfterRestart(profile.url);
-    if (!carrying && _localRoutingExplains("the primary hub carries nothing after returning to it")) return;
+    // The account probe just above went out with the core down, so on every
+    // platform its answer carried a fresh `Date` for the clock check.
+    if (!carrying &&
+        (_localRoutingExplains("the primary hub carries nothing after returning to it") ||
+            _clockExplains("the primary hub carries nothing after returning to it"))) {
+      return;
+    }
     await _recordCheck(failed: !carrying);
     // Only worth telling the middleware once we know the primary works again.
     if (carrying) await _report(profile, HubSignal.recovered);

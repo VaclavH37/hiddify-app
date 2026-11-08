@@ -252,6 +252,12 @@
       "copy": "Salin",
       "copied": "Perintah disalin",
       "footer": "Rayn VPN berfungsi lagi beberapa detik setelah pengaturan dimatikan. Anda tidak perlu menyambung ulang."
+    },
+    "clock": {
+      "title": "Waktu di perangkat Anda salah",
+      "body": "Rayn VPN mungkin tidak dapat terhubung sampai waktunya diperbaiki. Aktifkan tanggal dan waktu otomatis.",
+      "bodyApple": "Rayn VPN mungkin tidak dapat terhubung sampai waktunya diperbaiki. Buka Pengaturan > Umum > Tanggal & Waktu, lalu aktifkan Atur Otomatis.",
+      "openSettings": "Buka pengaturan tanggal dan waktu"
     }
   },
   "errors": {

@@ -252,6 +252,12 @@
       "copy": "Copier",
       "copied": "Commande copiée",
       "footer": "Rayn VPN refonctionne quelques secondes après la désactivation du paramètre. Inutile de vous reconnecter."
+    },
+    "clock": {
+      "title": "L'heure de votre appareil est incorrecte",
+      "body": "Rayn VPN risque de ne pas se connecter tant qu'elle n'est pas corrigée. Activez la date et l'heure automatiques.",
+      "bodyApple": "Rayn VPN risque de ne pas se connecter tant qu'elle n'est pas corrigée. Allez dans Réglages > Général > Date et heure et activez Réglage automatique.",
+      "openSettings": "Ouvrir les réglages de date et d'heure"
     }
   },
   "errors": {

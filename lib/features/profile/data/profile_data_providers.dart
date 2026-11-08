@@ -1,6 +1,7 @@
 import 'package:hiddify/core/db/provider/db_providers.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/http_client/http_client_provider.dart';
+import 'package:hiddify/features/connection/clock/notifier/clock_skew_notifier.dart';
 import 'package:hiddify/features/profile/data/profile_config_cipher.dart';
 import 'package:hiddify/features/profile/data/profile_data_source.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
@@ -39,5 +40,9 @@ ProfilePathResolver profilePathResolver(Ref ref) {
 
 @Riverpod(keepAlive: true)
 ProfileParser profileParser(Ref ref) {
-  return ProfileParser(ref: ref, httpClient: ref.watch(httpClientProvider));
+  return ProfileParser(
+    ref: ref,
+    httpClient: ref.watch(httpClientProvider),
+    clockEvidence: ref.watch(clockSkewNotifierProvider.notifier),
+  );
 }

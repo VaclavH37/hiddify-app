@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show HttpHeaders;
 
 import 'package:dartx/dartx.dart';
 import 'package:dio/dio.dart';
@@ -6,6 +7,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/db/db.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
+import 'package:hiddify/features/connection/clock/model/clock_skew.dart';
 import 'package:hiddify/features/profile/data/profile_data_mapper.dart';
 import 'package:hiddify/features/profile/model/account_envelope.dart';
 import 'package:hiddify/features/profile/model/hub_reachability.dart';
@@ -121,9 +123,17 @@ class ProfileParser {
   final Ref _ref;
   final DioHttpClient _httpClient;
 
+  /// Takes every subscription response's `Date` for the "device time is wrong"
+  /// check. Subscription responses only: they come from our own middleware,
+  /// never from a cache, which is what makes their `Date` worth trusting.
+  final ClockEvidenceSink? _clockEvidence;
+
   static final _log = Loggy('profile_parser');
 
-  ProfileParser({required Ref ref, required DioHttpClient httpClient}) : _ref = ref, _httpClient = httpClient;
+  ProfileParser({required Ref ref, required DioHttpClient httpClient, ClockEvidenceSink? clockEvidence})
+    : _ref = ref,
+      _httpClient = httpClient,
+      _clockEvidence = clockEvidence;
   TaskEither<ProfileFailure, ParsedProfile> addLocal({
     required String id,
     required String content,
@@ -266,6 +276,7 @@ class ProfileParser {
     //   throw const ProfileFailure.invalidUrl('HTTP is not supported. Please use HTTPS for secure connection.');
 
     // getText, not download: the body must stay in memory (see [ParsedProfile]).
+    final sentAt = DateTime.now();
     final rs = await _httpClient
         .getText(
           url.trim(),
@@ -281,12 +292,15 @@ class ProfileParser {
           // id only: the body says nothing by design, and this is the one
           // line support has to go on.
           if (err.response case final response?) {
+            _noteClock(sentAt, response.headers);
             _log.warning(
               'subscription request answered ${response.statusCode} (cf-ray ${response.headers.value("cf-ray") ?? "-"})',
             );
           }
+          if (isCertificateDateFailure(err.error)) _clockEvidence?.certificateDatesRejected();
           throw err;
         });
+    _noteClock(sentAt, rs.headers);
     final content = await expandRemoteLines(
       content: rs.data ?? '',
       httpClient: _httpClient,
@@ -300,6 +314,18 @@ class ProfileParser {
     });
     return (headers: headers, content: content);
   }, (err, st) => err is ProfileFailure ? err : ProfileFailure.unexpected(err, st));
+
+  void _noteClock(DateTime sentAt, Headers headers) {
+    final sink = _clockEvidence;
+    if (sink == null) return;
+    final sample = ClockSample.fromResponse(
+      sentAt: sentAt,
+      receivedAt: DateTime.now(),
+      date: headers.value(HttpHeaders.dateHeader),
+      age: headers.value(HttpHeaders.ageHeader),
+    );
+    if (sample != null) sink.sample(sample);
+  }
 
   /// Builds the optional request headers a subscription fetch may carry.
   ///

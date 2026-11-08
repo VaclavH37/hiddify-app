@@ -2,6 +2,7 @@ package com.raynlabs.app
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -29,6 +30,7 @@ class PlatformSettingsHandler : FlutterPlugin, MethodChannel.MethodCallHandler, 
             IsIgnoringBatteryOptimizations("is_ignoring_battery_optimizations"),
             RequestIgnoreBatteryOptimizations("request_ignore_battery_optimizations"),
             GetConfigKey("get_config_key"),
+            OpenDateSettings("open_date_settings"),
         }
     }
 
@@ -117,7 +119,33 @@ class PlatformSettingsHandler : FlutterPlugin, MethodChannel.MethodCallHandler, 
                 activity?.startActivityForResult(intent, REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
             }
 
+            // The "device time is wrong" banner's button. A device without a
+            // date and time screen gets the main Settings screen instead; false
+            // when neither opened, and the banner's text is all the user has.
+            Trigger.OpenDateSettings.method -> {
+                result.runCatching {
+                    success(
+                        openSettings(android.provider.Settings.ACTION_DATE_SETTINGS) ||
+                            openSettings(android.provider.Settings.ACTION_SETTINGS)
+                    )
+                }
+            }
+
             else -> result.notImplemented()
+        }
+    }
+
+    private fun openSettings(action: String): Boolean {
+        val current = activity
+        return try {
+            if (current != null) {
+                current.startActivity(Intent(action))
+            } else {
+                Application.application.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            true
+        } catch (e: ActivityNotFoundException) {
+            false
         }
     }
 }

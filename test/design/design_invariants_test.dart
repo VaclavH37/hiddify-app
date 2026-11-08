@@ -343,6 +343,9 @@ void main() {
       final asks = body.indexOf('_localRoutingExplains(');
       expect(asks, isNonNegative, reason: 'the fast path must consult local routing');
       expect(asks, lessThan(body.indexOf('_failOverToStandby(')));
+      final clock = body.indexOf('_clockExplains(');
+      expect(clock, isNonNegative, reason: 'the fast path must consult the device clock');
+      expect(clock, lessThan(body.indexOf('_failOverToStandby(')));
     });
 
     test('the fast path follows the core session instead of subscribing once', () {
@@ -371,6 +374,9 @@ void main() {
           contains('_localRoutingExplains('),
           reason: '$failed must be preceded by the local routing check',
         );
+        // A device clock more than 60 s off makes every hub refuse the
+        // REALITY handshake: the same false hub failure, on every platform.
+        expect(before, contains('_clockExplains('), reason: '$failed must be preceded by the device clock check');
       }
       expect(RegExp(r'_recordCheck\(failed: true\)').allMatches(ladder).length, 1);
     });

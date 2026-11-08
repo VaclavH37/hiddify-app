@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:accessibility_tools/accessibility_tools.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +22,7 @@ import 'package:hiddify/core/theme/theme_preferences.dart';
 import 'package:hiddify/features/auth/account/notifier/account_redirect.dart';
 import 'package:hiddify/features/auth/account/notifier/expiry_watchdog.dart';
 import 'package:hiddify/features/auth/payment/notifier/iap_launch_reverify.dart';
+import 'package:hiddify/features/connection/clock/notifier/clock_skew_notifier.dart';
 import 'package:hiddify/features/connection/widget/connection_wrapper.dart';
 import 'package:hiddify/features/notifications/notifier/notification_monitor.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -76,6 +79,12 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     // runs again here; nothing to do pre-auth.
     if (ref.read(hasAnyProfileProvider).valueOrNull ?? false) {
       ref.read(expiryWatchdogProvider.notifier).check();
+      // Back from the date and time settings, most likely: one refresh brings
+      // a fresh `Date` from the middleware, which clears the warning if the
+      // clock is right now and keeps it if it is not.
+      if (ref.read(clockSkewNotifierProvider) != null) {
+        unawaited(ref.read(foregroundProfilesUpdateNotifierProvider.notifier).trigger());
+      }
     }
     // Rebuild only what [onPause] closed. Without this guard a resume set up the
     // core again even when it had never been released — which, before

@@ -6,6 +6,8 @@ import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/features/auth/login/data/pow_solver.dart';
 import 'package:hiddify/features/auth/login/model/auth_api_exception.dart';
+import 'package:hiddify/features/connection/clock/model/clock_skew.dart';
+import 'package:hiddify/features/connection/clock/notifier/clock_skew_notifier.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -17,6 +19,7 @@ AuthApiClient authApiClient(Ref ref) {
   return AuthApiClient(
     baseUrl: Constants.apiBaseUrl,
     userAgent: ref.watch(appInfoProvider).requireValue.userAgent,
+    clockEvidence: ref.watch(clockSkewNotifierProvider.notifier),
   );
 }
 
@@ -28,8 +31,9 @@ AuthApiClient authApiClient(Ref ref) {
 /// off, and the API host must never be tunnelled), and we need JSON `POST` with
 /// a `Bearer` header — none of which the shared client supports.
 class AuthApiClient with InfraLogger {
-  AuthApiClient({required String baseUrl, required String userAgent})
-    : _dio = Dio(
+  AuthApiClient({required String baseUrl, required String userAgent, ClockEvidenceSink? clockEvidence})
+    : _clockEvidence = clockEvidence,
+      _dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 15),
@@ -52,6 +56,10 @@ class AuthApiClient with InfraLogger {
   }
 
   final Dio _dio;
+
+  /// Takes every response's `Date` for the "device time is wrong" check: the
+  /// API is our own server and always answers fresh.
+  final ClockEvidenceSink? _clockEvidence;
 
   /// Fetch a fresh PoW challenge, solve it off the UI thread, and submit the
   /// gated request with `pow_challenge` / `pow_nonce` merged into [body].
@@ -101,6 +109,7 @@ class AuthApiClient with InfraLogger {
 
   Future<Map<String, dynamic>> _request(Future<Response<dynamic>> Function() send, String path) async {
     final Response<dynamic> resp;
+    final sentAt = DateTime.now();
     try {
       resp = await send();
     } on DioException catch (e) {
@@ -108,8 +117,10 @@ class AuthApiClient with InfraLogger {
       // unreachable — surfaced as a 0-status exception so callers can offer the
       // "paste your token instead" fallback. Never log bodies/credentials.
       loggy.debug("auth api transport failure on $path: ${e.type}");
+      if (isCertificateDateFailure(e.error)) _clockEvidence?.certificateDatesRejected();
       throw AuthApiException.unreachable(e.message ?? e.type.name);
     }
+    _noteClock(sentAt, resp.headers);
 
     final status = resp.statusCode ?? 0;
     final data = resp.data;
@@ -123,6 +134,18 @@ class AuthApiClient with InfraLogger {
       message: (map['error'] as String?) ?? 'request failed',
       retryAfter: _retryAfter(resp.headers),
     );
+  }
+
+  void _noteClock(DateTime sentAt, Headers headers) {
+    final sink = _clockEvidence;
+    if (sink == null) return;
+    final sample = ClockSample.fromResponse(
+      sentAt: sentAt,
+      receivedAt: DateTime.now(),
+      date: headers.value(HttpHeaders.dateHeader),
+      age: headers.value(HttpHeaders.ageHeader),
+    );
+    if (sample != null) sink.sample(sample);
   }
 
   Duration? _retryAfter(Headers headers) {

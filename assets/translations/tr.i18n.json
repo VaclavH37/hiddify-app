@@ -252,6 +252,12 @@
       "copy": "Kopyala",
       "copied": "Komut kopyalandı",
       "footer": "Ayar kapandıktan birkaç saniye sonra Rayn VPN yeniden çalışır. Yeniden bağlanmanız gerekmez."
+    },
+    "clock": {
+      "title": "Cihazınızın saati yanlış",
+      "body": "Saat düzeltilene kadar Rayn VPN bağlanamayabilir. Otomatik tarih ve saati açın.",
+      "bodyApple": "Saat düzeltilene kadar Rayn VPN bağlanamayabilir. Ayarlar > Genel > Tarih ve Saat bölümüne gidin ve Otomatik Olarak Ayarla'yı açın.",
+      "openSettings": "Tarih ve saat ayarlarını aç"
     }
   },
   "errors": {

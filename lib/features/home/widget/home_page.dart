@@ -3,6 +3,8 @@ import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.
 import 'package:hiddify/core/theme/rayn_motion.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
+import 'package:hiddify/features/connection/clock/notifier/clock_skew_notifier.dart';
+import 'package:hiddify/features/connection/clock/widget/clock_banner.dart';
 import 'package:hiddify/features/connection/local_routing/notifier/local_routing_notifier.dart';
 import 'package:hiddify/features/connection/local_routing/widget/local_routing_banner.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
@@ -76,14 +78,17 @@ class HomePage extends HookConsumerWidget {
   }
 }
 
-/// The banner slot holds one banner at a time. The IP routing warning (Windows)
-/// takes it while it is up, since it explains why nothing else works; the
-/// newest notification has it otherwise.
+/// The banner slot holds one banner at a time. The device time warning comes
+/// first: a wrong clock breaks every hub on every platform. Then the IP routing
+/// warning (Windows). Each takes the slot while it is up, since it explains why
+/// nothing else works; the newest notification has it otherwise.
 class _Banner extends ConsumerWidget {
   const _Banner();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final clock = ref.watch(clockSkewNotifierProvider);
+    if (clock != null && !clock.dismissed) return const ClockBanner();
     final issue = ref.watch(localRoutingNotifierProvider);
     if (issue != null && !issue.dismissed) return LocalRoutingBanner(issue: issue);
     return const NotificationBanner();
