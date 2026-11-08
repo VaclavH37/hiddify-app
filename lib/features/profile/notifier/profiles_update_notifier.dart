@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dartx/dartx.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/db/db.dart';
@@ -50,8 +49,29 @@ Duration refreshHoldFor(Duration? retryAfter) =>
     ? ForegroundProfilesUpdateNotifier.interval
     : retryAfter;
 
+/// The longest hold [refreshHoldFor] and [transientRecheckDelay] can set: the
+/// Worker's `retry_after` is accepted up to a day (AccountEnvelope.maxRetryAfter).
+const _longestRefreshHold = Duration(days: 1);
+
 /// Whether an unforced refresh is still inside a hold.
-bool refreshHeldBack(DateTime? notBefore, DateTime now) => notBefore != null && now.isBefore(notBefore);
+///
+/// A hold further away than any hold can be was stamped by a clock that has
+/// since been set back (the "device time is wrong" banner asks for exactly
+/// that). It is not a hold, and honouring it would stop refreshes until real
+/// time caught up with the old clock.
+bool refreshHeldBack(DateTime? notBefore, DateTime now) =>
+    notBefore != null && now.isBefore(notBefore) && notBefore.difference(now) <= _longestRefreshHold;
+
+/// Whether the scheduler ran recently enough to skip this cycle. A run stamped
+/// in the future came from a clock that has since been set back: not recent.
+bool refreshRanRecently(DateTime? previousRun, DateTime now, Duration interval) =>
+    previousRun != null && !previousRun.isAfter(now) && now.difference(previousRun) < interval;
+
+/// Whether a profile's own update interval has passed since its last refresh.
+/// A last refresh in the future came from a clock that has since been set back:
+/// due now, rather than once real time catches up with it.
+bool profileRefreshDue(Duration? updateInterval, DateTime lastUpdate, DateTime now) =>
+    updateInterval != null && (lastUpdate.isAfter(now) || updateInterval <= now.difference(lastUpdate));
 
 /// A transient 4012's first re-check happens once, early: at what the Worker
 /// asked for or 30 s, whichever is later (its final handover, §4.3). One early
@@ -69,8 +89,10 @@ const accountVerdictProbeAtKey = 'account_verdict_probe_at';
 /// handover); inside that window a dead tunnel is the hub failure it looks like.
 const accountVerdictProbeInterval = Duration(seconds: 60);
 
+/// A probe stamped in the future came from a clock that has since been set
+/// back, and does not count as recent.
 bool verdictProbeDue(DateTime? lastProbeAt, DateTime now) =>
-    lastProbeAt == null || !now.isBefore(lastProbeAt.add(accountVerdictProbeInterval));
+    lastProbeAt == null || lastProbeAt.isAfter(now) || !now.isBefore(lastProbeAt.add(accountVerdictProbeInterval));
 
 @Riverpod(keepAlive: true)
 class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifier with AppLogger {
@@ -336,7 +358,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     try {
       final previousRun = DateTime.tryParse(ref.read(sharedPreferencesProvider).requireValue.getString(prefKey) ?? "");
 
-      if (!force && previousRun != null && previousRun.add(interval) > DateTime.now()) {
+      if (!force && refreshRanRecently(previousRun, DateTime.now(), interval)) {
         loggy.debug("too soon! previous run: [$previousRun]");
         return;
       }
@@ -362,7 +384,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
         final heldBack = !force && refreshHeldBack(DateTime.tryParse(prefs.getString(accountRetryNotBeforeKey) ?? ""), DateTime.now());
         if (heldBack) {
           loggy.debug("holding back profile [${profile.id}] refresh until [${prefs.getString(accountRetryNotBeforeKey)}]");
-        } else if (force || updateInterval != null && updateInterval <= DateTime.now().difference(profile.lastUpdate)) {
+        } else if (force || profileRefreshDue(updateInterval, profile.lastUpdate, DateTime.now())) {
           final t = ref.read(translationsProvider).requireValue;
           final result = await _refreshCarryingCounters(profile.url);
           await result.fold(

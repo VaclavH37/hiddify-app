@@ -95,10 +95,14 @@ const hubTierDwell = Duration(hours: 6);
 /// to 6–7 h once the hourly poll is included and lifting their share of time on
 /// the metered link from ~15% to ~21%. Higher burn rates make it worse.
 ///
-/// A null [lastSwitchAt] means we have never switched, so nothing is owed.
+/// A null [lastSwitchAt] means we have never switched, so nothing is owed. Nor
+/// does one in the future: it was stamped by a clock that has since been set
+/// back, and honouring it would hold the subscriber off the primary hub until
+/// real time caught up with that clock.
 bool shouldReconnectForTier(HubTier applied, HubTier incoming, DateTime? lastSwitchAt, DateTime now) {
   if (applied == incoming) return false;
   if (incoming == HubTier.standby) return true;
   if (lastSwitchAt == null) return true;
-  return now.difference(lastSwitchAt) >= hubTierDwell;
+  final since = now.difference(lastSwitchAt);
+  return since.isNegative || since >= hubTierDwell;
 }

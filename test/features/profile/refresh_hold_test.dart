@@ -39,4 +39,33 @@ void main() {
     expect(refreshHeldBack(now, now), isFalse);
     expect(refreshHeldBack(now.subtract(const Duration(minutes: 1)), now), isFalse);
   });
+
+  // The "device time is wrong" banner asks users to fix their clock, which
+  // moves it back for a fast one. Everything stamped while it was fast then
+  // lies in the future, and must not read as "not yet".
+  group('after the clock is set back', () {
+    final now = DateTime.utc(2026, 11, 8, 12);
+    final stampedByAFastClock = now.add(const Duration(days: 365));
+
+    test('a hold further away than any hold can be is not a hold', () {
+      expect(refreshHeldBack(now.add(const Duration(days: 1)), now), isTrue, reason: 'the longest real hold');
+      expect(refreshHeldBack(stampedByAFastClock, now), isFalse);
+    });
+
+    test('the scheduler runs, the profile is due, and the ladder may ask again', () {
+      const interval = ForegroundProfilesUpdateNotifier.interval;
+      expect(refreshRanRecently(stampedByAFastClock, now, interval), isFalse);
+      expect(refreshRanRecently(now.subtract(const Duration(minutes: 5)), now, interval), isTrue);
+      expect(refreshRanRecently(now.subtract(interval), now, interval), isFalse);
+      expect(refreshRanRecently(null, now, interval), isFalse);
+
+      const hourly = Duration(hours: 1);
+      expect(profileRefreshDue(hourly, stampedByAFastClock, now), isTrue);
+      expect(profileRefreshDue(hourly, now.subtract(const Duration(minutes: 30)), now), isFalse);
+      expect(profileRefreshDue(hourly, now.subtract(hourly), now), isTrue);
+      expect(profileRefreshDue(null, stampedByAFastClock, now), isFalse, reason: 'no interval, no schedule');
+
+      expect(verdictProbeDue(stampedByAFastClock, now), isTrue);
+    });
+  });
 }

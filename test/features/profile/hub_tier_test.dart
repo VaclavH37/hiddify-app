@@ -78,6 +78,13 @@ void main() {
       expect(shouldReconnectForTier(HubTier.standby, HubTier.primary, now.subtract(hubTierDwell * 2), now), isTrue);
     });
 
+    test('a switch stamped in the future does not hold the return', () {
+      // Stamped by a clock that was fast and has since been set right: the
+      // dwell would otherwise run until real time caught up with it.
+      final stampedByAFastClock = now.add(const Duration(days: 30));
+      expect(shouldReconnectForTier(HubTier.standby, HubTier.primary, stampedByAFastClock, now), isTrue);
+    });
+
     // The deferred-then-flipped-back case. `applied` is the tier the CORE holds,
     // not the last one observed, so a return the dwell floor suppressed cannot
     // come back as a reconnect to the tier already in use.
