@@ -50,7 +50,11 @@ check_completeness() { # repo ledger watermark
 
   local backlog ledger_shas diff
   backlog=$(git -C "$repo" log --no-merges --format=%H "$watermark..$SNAPSHOT" | sort)
-  ledger_shas=$(tail -n +2 "$ledger" | cut -f1 | sort)
+  # The ledgers are cumulative, so only this campaign's rows are compared with
+  # this campaign's backlog. Field 10 is the campaign. Without the filter every
+  # earlier campaign's rows report as "not in the backlog" once a second one opens.
+  ledger_shas=$(tail -n +2 "$ledger" \
+    | awk -F'\t' -v c="$CAMPAIGN" '{ sub(/\r$/, "") } $10 == c { print $1 }' | sort)
 
   local untriaged stale n_untriaged n_stale
   untriaged=$(comm -23 <(echo "$backlog") <(echo "$ledger_shas") | grep -c . || true)
@@ -125,10 +129,17 @@ reverted_target_is_traceable() { # repo sha -> 0 if this is a revert of a tracea
   git -C "$repo" log -1 --format=%B "$target" 2>/dev/null | grep -q '^Upstream: '
 }
 
-check_traceability() { # repo label
-  local repo=$1 label=$2
+check_traceability() { # repo label ledger
+  local repo=$1 label=$2 ledger=$3
   local missing=0 total=0 reverts=0 waived=0
-  for sha in $(git -C "$repo" log --format=%H "$PRE..custom-main" 2>/dev/null); do
+  # Only the commits this campaign's ledger rows name. It used to scan everything
+  # after the campaign's pre-catchup tag, which is the campaign's own commits only
+  # on the day it closes; from then on the range fills with ordinary product work
+  # that has no upstream provenance and should not have any.
+  local campaign_shas
+  campaign_shas=$(tail -n +2 "$ledger" \
+    | awk -F'\t' -v c="$CAMPAIGN" '{ sub(/\r$/, "") } $10 == c && $6 != "" { print $6 }' | sort -u)
+  for sha in $campaign_shas; do
     total=$((total + 1))
     if git -C "$repo" log -1 --format=%B "$sha" | grep -q '^Upstream: '; then
       continue
@@ -158,6 +169,24 @@ check_traceability() { # repo label
     [ -n "$note" ] && note="$note)"
     echo "  ok  $total $label commit(s), all carry provenance$note"
   fi
+
+  # The other direction, and the one that stops a commit being picked and never
+  # recorded: anything after the pre-catchup tag that names an upstream commit has
+  # to be in a ledger. "Upstream: none" names nothing and is skipped.
+  local claimed=0 unrecorded=0 upstream
+  for sha in $(git -C "$repo" log --format=%H --grep='^Upstream: ' "$PRE..custom-main" 2>/dev/null); do
+    for upstream in $(git -C "$repo" log -1 --format=%B "$sha" | tr -d '\r' \
+        | sed -n 's/^Upstream: \([0-9a-f]\{7,40\}\).*$/\1/p'); do
+      claimed=$((claimed + 1))
+      # Reads the file itself. Piped from tail, grep -q exits at its first match,
+      # tail dies on SIGPIPE, and pipefail turns that into "not found".
+      if ! grep -q "^$upstream" "$ledger"; then
+        fail "$label ${sha:0:8} names upstream ${upstream:0:8}, which has no row in $(basename "$ledger")"
+        unrecorded=$((unrecorded + 1))
+      fi
+    done
+  done
+  [ "$unrecorded" -eq 0 ] && echo "  ok  $claimed upstream claim(s) in $label commits, all in the ledger"
 }
 
 echo "campaign $CAMPAIGN"
@@ -171,8 +200,8 @@ check_non_repudiation "$CORE" docs/upstream/LEDGER-core.tsv
 check_non_repudiation .       docs/upstream/LEDGER-app.tsv
 echo
 echo "3. reverse traceability"
-check_traceability "$CORE" core
-check_traceability .       app
+check_traceability "$CORE" core docs/upstream/LEDGER-core.tsv
+check_traceability .       app  docs/upstream/LEDGER-app.tsv
 echo
 [ $status -eq 0 ] && echo "all checks passed" || echo "CHECKS FAILED"
 exit $status

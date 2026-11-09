@@ -443,15 +443,23 @@ Upstream copy does not follow this rule.
 
 `ProfileParser` takes the subscription response headers, filters them to
 `allowedOverrideConfigs`, JSON-encodes the survivors and stores them in the
-`profile_override` column (`profile_parser.dart:601-615`). At connect,
-`connection_repository.dart:153` calls
+`profile_override` column (`profile_parser.dart:791-805`). At connect,
+`connection_repository.dart:231` calls
 `configOptionRepository.fullOptionsOverrided(prof.profileOverride)` and merges
 them over the serialised options.
 
-That is what lets the backend retune `remote-dns-address`, `direct-dns-address`,
-`block-quic`, `url-test-tolerance` and the rest **per subscription, without a
-client rebuild**. Several settings were removed from the UI specifically because
-this channel keeps them adjustable.
+That was meant to let the backend retune `remote-dns-address`,
+`direct-dns-address` and the rest **per subscription, without a client rebuild**,
+and several settings were removed from the UI on that understanding.
+
+**It does not do that today (found 2026-11-08).** Every header first passes the
+`allowedProfileHeaders` filter (`profile_parser.dart:670`), which names none of
+the override keys, so they are gone before `allowedOverrideConfigs` runs. The only
+value that reaches the column is `tls-tricks`, which the parser builds itself from
+`enable-fragment` (`:754`). `block-quic` and `url-test-tolerance` were never in
+`allowedOverrideConfigs`. The same filter is at the merge base, so this is
+inherited. The column still has to stay: `tls-tricks` depends on it, and so does
+any future use of the channel.
 
 It is derived-then-persisted, not derivable on demand: the unfiltered headers are
 discarded at parse time, and `populated_headers` holds a different subset
@@ -531,7 +539,7 @@ future divergence.
 
 ## Product scope
 
-These four exist because upstream keeps building in directions this product does
+These exist because upstream keeps building in directions this product does
 not go. Without them the same commits get re-triaged every campaign, and
 "we don't do that" lives only in someone's memory.
 
@@ -553,12 +561,47 @@ adds supporting RPCs (GetLANIP); they have no call site here.
 *Enforced by:* the absence of the settings surface. A new RPC alone cannot expose
 it, but a UI addition would need this row revisited.
 
-### <a id="no-linux-release"></a>No Linux release is planned
+### <a id="linux-port-plan"></a><a id="no-linux-release"></a>Linux is a planned release, behind its own port plan
 
-Linux builds exist in the Makefile inherited from upstream and are not shipped.
-Desktop-entry, AppImage and packaging commits are therefore out of scope.
+Reversed 2026-11-08. This was `#no-linux-release`, on the grounds that no Linux
+release was planned; the owner now plans one. Linux is still not shipped, and
+three things stand between this tree and a first release:
 
-*Enforced by:* release process — Linux is not a release target.
+- The `linux-*-prepare` targets in the `Makefile` download Hiddify's prebuilt core
+  (see [never-adopt-prebuilt-core-url](#never-adopt-prebuilt-core-url)). They have
+  to build ours instead.
+- Opening the tunnel needs a privileged helper, and there is none. Upstream's root
+  service (`b4908265`, `225378d3`, `8e854547`) is rejected as written: it writes
+  the plaintext config to a temp file, against
+  [config-encrypted-at-rest](#config-encrypted-at-rest). The helper is designed in
+  the Linux port plan.
+- `linux/packaging/` still carries Hiddify's names. The `.deb` config installs as
+  package `hiddify` and removes Hiddify's user data on uninstall.
+
+Upstream's Linux packaging and safety fixes are now in scope.
+
+*Enforced by:* nothing yet; the port plan owns it.
+
+### <a id="mas-app-extension-only"></a>macOS ships through the Mac App Store, as an app extension
+
+The Mac client is a sandboxed app and a Network Extension app extension, sharing
+the iOS Swift code and selling through StoreKit. Upstream also builds a system
+extension, Developer ID signing, notarization and a root background service, all
+for direct-download builds. Those have no place here and are rejected against this
+anchor; fixes that apply to an App Store build are taken.
+
+*Enforced by:* the retired `macos-release` target, and group *Apple builds cannot
+fetch upstream prebuilt cores* in `test/design/design_invariants_test.dart`.
+
+### <a id="no-chains"></a>No chained outbounds
+
+Upstream v5 can put WARP, Psiphon or another proxy in front of or behind the chosen
+one ("extra security" and "unblocker"). The middleware decides the whole path here,
+hub then exit, and a client-added hop would send users' traffic through a provider
+they never agreed to.
+
+*Enforced by:* the absence of the options in `v2/config`. Removing the WARP code
+([warp-removed](#warp-removed)) does not cover a chain of two ordinary outbounds.
 
 ### <a id="fork-owns-its-dependency-set"></a>The fork owns its own dependency set
 
