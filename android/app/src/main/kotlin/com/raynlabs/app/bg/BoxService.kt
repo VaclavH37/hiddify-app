@@ -56,6 +56,16 @@ class BoxService(
     companion object {
         private const val TAG = "A/BoxService"
 
+        // The running service's platform interface. The core keeps one per process, and this
+        // service shares its process with the app, so the foreground core's setup would replace it
+        // with null every time the app comes back from the background. The next in-place restart
+        // (failover, tier change) then opens the tun itself and fails with "open /dev/tun:
+        // permission denied", leaving a dead tunnel that Android still shows as connected.
+        // MethodHandler passes this one instead of null.
+        @Volatile
+        var activePlatformInterface: PlatformInterface? = null
+            private set
+
         private var initializeOnce = false
         private lateinit var workingDir: File
         private fun initialize() {
@@ -159,6 +169,7 @@ class BoxService(
 
             DefaultNetworkMonitor.start()
             Libbox.setMemoryLimit(!Settings.disableMemoryLimit)
+            activePlatformInterface = platformInterface
             val newService = try {
                 Mobile.setup(
                     SetupOptions().also {
@@ -329,6 +340,7 @@ class BoxService(
 //            }
 //            commandServer = null
             withContext(Dispatchers.Main) {
+                if (activePlatformInterface === platformInterface) activePlatformInterface = null
                 Mobile.close(4L)
                 status.value = Status.Stopped
                 service.stopSelf()
@@ -385,6 +397,7 @@ class BoxService(
     }
 
     fun onDestroy() {
+        if (activePlatformInterface === platformInterface) activePlatformInterface = null
         binder.close()
     }
 

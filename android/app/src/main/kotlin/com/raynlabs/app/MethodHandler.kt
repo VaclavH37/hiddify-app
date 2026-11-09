@@ -133,7 +133,7 @@ class MethodHandler(private val scope: CoroutineScope) : FlutterPlugin,
                                     // alive. Dart reads it back over get_grpc_secret.
                                     it.secret = Settings.grpcSecret
                                     it.debug = Settings.debugMode
-                                },null)
+                                }, BoxService.activePlatformInterface)
 
 //                            Libbox.setup(Settings.baseDir, Settings.workingDir, Settings.tempDir, false)
                             Libbox.redirectStderr(File(Settings.workingDir, "stderr2.log").path)
