@@ -51,12 +51,17 @@
 
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode|assetsPaths"
             android:exported="true"
             android:hardwareAccelerated="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
             android:windowSoftInputMode="adjustResize">
+            <!-- assetsPaths: Android can attach system overlays (navigation mode, wallpaper
+                 colours) while the app is running, for example when a fresh install's
+                 backup check finally ends. Without this it rebuilds the activity, which
+                 restarts Flutter: seen on the first connect on networks where Google is
+                 unreachable until the tunnel comes up. -->
 
 
             <!-- Specifies an Android theme to apply to this Activity as soon as
