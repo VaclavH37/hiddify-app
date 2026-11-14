@@ -32,7 +32,7 @@ Nothing here was built or run. A commit was either read in full against our code
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `9b152148` | One status wait, and the stream created once | core_interface_mobile.dart:406: the break leaves only the switch, so every mobile connect waits about 4 s extra. Proposed ADAPT. |
+| `9b152148` | One status wait, and the stream created once | core_interface_mobile.dart:406: the break leaves only the switch, so every mobile connect waits about 4 s extra. Proposed ADAPT. **Landed for 1.6.5 as `8e731098`.** |
 
 ### 3. One cancelled call can kill every core stream
 
@@ -57,22 +57,22 @@ Nothing here was built or run. A commit was either read in full against our code
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `511d2e34` | Moves the settings PopScope to the shell | routing_config_notifier.dart:147 keeps a PopScope inside a branch that stays mounted; after visiting Settings, Android back can stop closing the app. Proposed ADAPT. |
+| `511d2e34` | Moves the settings PopScope to the shell | routing_config_notifier.dart:147 keeps a PopScope inside a branch that stays mounted; after visiting Settings, Android back can stop closing the app. Proposed ADAPT. **Landed for 1.6.5 as `dd99ceb1`.** |
 
 ### 7. Stuck status after a suspend, and leaked connections
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `8e95f602` | Keeps the last outbound and reopens an ended stream | No doOnDone in active_proxy_notifier.dart; after a suspend the button can stick on Connecting while the tunnel works. Proposed ADAPT. |
-| `422a7b2a` | Shuts replaced gRPC channels | core_interface_mobile.dart:188,216 and desktop :84; each resume leaks connections against the iOS extension memory cap. Proposed ADAPT. |
-| `364a935a` | Reopen backoff of 2 to 30 s | Goes with 8e95f602; without it, 2 s retries flood the logs. Proposed ADAPT. |
-| `2c8b5c10` | Proxies page survives stream loss | proxies_overview_notifier.dart:80; the location list errors after a dropped stream. Proposed ADAPT. |
+| `8e95f602` | Keeps the last outbound and reopens an ended stream | No doOnDone in active_proxy_notifier.dart; after a suspend the button can stick on Connecting while the tunnel works. Proposed ADAPT. **Landed for 1.6.5 as `6185ca76`.** |
+| `422a7b2a` | Shuts replaced gRPC channels | core_interface_mobile.dart:188,216 and desktop :84; each resume leaks connections against the iOS extension memory cap. Proposed ADAPT. **Landed for 1.6.5 as `c363d6e1`.** |
+| `364a935a` | Reopen backoff of 2 to 30 s | Goes with 8e95f602; without it, 2 s retries flood the logs. Proposed ADAPT. **Landed for 1.6.5 as `31958f87`.** |
+| `2c8b5c10` | Proxies page survives stream loss | proxies_overview_notifier.dart:80; the location list errors after a dropped stream. Proposed ADAPT. **Landed for 1.6.5 as `b0f03c9a`.** |
 
 ### 8. First connect behind slow permission dialogs (needs #2)
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `bb6d9785` | Answers the start call after the permission dialogs | MainActivity.kt startService returns immediately; on a fresh install slow dialogs can fail the first connect at about 20 s. Depends on 9b152148. Proposed ADAPT. |
+| `bb6d9785` | Answers the start call after the permission dialogs | MainActivity.kt startService returns immediately; on a fresh install slow dialogs can fail the first connect at about 20 s. Depends on 9b152148. Proposed ADAPT. **Landed for 1.6.5 as `de25ac6f`.** |
 
 ### 9. Core: observers left open, pings stop when idle
 
