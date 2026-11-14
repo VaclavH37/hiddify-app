@@ -955,6 +955,27 @@ void main() {
     });
   });
 
+  group('http2 stays overridden to 3.1 or later', () {
+    // http2 2.3.1 closes the whole gRPC connection when the core answers a
+    // stream the app has just cancelled (dart-lang/http#1799), so every call on
+    // it fails at once (upstream af389367). grpc still allows only http2 2.x, so
+    // a dependency sweep that drops the override would bring it back silently.
+    test('pubspec overrides it', () {
+      expect(File('pubspec.yaml').readAsStringSync().contains('  http2: ^3.1.0'), isTrue);
+    });
+
+    test('the lock resolves 3.1 or later', () {
+      final lock = File('pubspec.lock').readAsStringSync();
+      final start = lock.indexOf('  http2:');
+      expect(start, isNot(-1));
+      final entry = lock.substring(start, lock.indexOf('source: hosted', start));
+      final version = lock.substring(start).split('version: "')[1].split('"').first;
+      expect(entry.contains('direct overridden'), isTrue);
+      final parts = version.split('.').map(int.parse).toList();
+      expect(parts[0] > 3 || (parts[0] == 3 && parts[1] >= 1), isTrue, reason: 'http2 resolved to $version');
+    });
+  });
+
   group('the shipped core options match the Go golden fixture', () {
     // hiddify-core/v2/config/golden_config_test.go pins the generated sing-box
     // config for the configuration this client actually sends. To do that it

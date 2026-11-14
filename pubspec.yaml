@@ -145,6 +145,13 @@ dev_dependencies:
 
 dependency_overrides:
   build_config: ^1.2.0
+  # http2 2.3.1 closes the WHOLE connection with a PROTOCOL_ERROR when the core
+  # answers a stream the app has just cancelled (dart-lang/http#1799), and every
+  # call on it fails: the status listener the connect button relies on, the log
+  # stream, the location list. 3.1.0 fixes it, but grpc (even 5.x) still allows
+  # only http2 2.x, so the version is overridden until grpc allows 3.x. grpc
+  # 4.1.0 implements none of the classes 3.1.0's breaking change touches.
+  http2: ^3.1.0
 
 flutter:
   uses-material-design: true
