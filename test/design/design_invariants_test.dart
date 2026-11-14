@@ -903,6 +903,30 @@ void main() {
     });
   });
 
+  group('replaced gRPC channels are shut down, never awaited', () {
+    // setup runs again on every resume and opened new channels without closing
+    // the old ones, each staying connected until its idle timeout (upstream
+    // 422a7b2a); on iOS that is to the packet tunnel extension, with its tight
+    // memory cap. grpc's shutdown waits for every stream still open on the
+    // channel, so awaiting it would hold up setup: each call must be
+    // fire-and-forget.
+    for (final path in const [
+      'lib/hiddifycore/core_interface/core_interface_mobile.dart',
+      'lib/hiddifycore/core_interface/core_interface_desktop.dart',
+    ]) {
+      test(path, () {
+        final source = File(path).readAsStringSync();
+        final shutdowns = 'shutdown()'.allMatches(source).length;
+        expect(shutdowns, greaterThanOrEqualTo(2), reason: 'replaced channels must be shut down');
+        expect(
+          'shutdown().ignore()'.allMatches(source).length,
+          shutdowns,
+          reason: 'an awaited shutdown waits for every open stream and holds up setup',
+        );
+      });
+    }
+  });
+
   group('the shipped core options match the Go golden fixture', () {
     // hiddify-core/v2/config/golden_config_test.go pins the generated sing-box
     // config for the configuration this client actually sends. To do that it

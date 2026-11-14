@@ -84,6 +84,13 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   // the old listener.
   LastStream<CoreStatus>? _statusStream;
   LastStream<CoreStatus> get _status => _statusStream!;
+
+  // The channels behind fgClient and bgClient. setup runs again on every resume,
+  // and each run opened new channels without closing the ones they replaced, so
+  // each stayed connected until its idle timeout: on iOS, to the packet tunnel
+  // extension, which has a tight memory cap. Replaced channels are shut down.
+  ClientChannel? _fgChannel;
+  ClientChannel? _bgChannel;
   @override
   Future<String> setup(Directories directories, bool debug, int mode) async {
     _debug = debug;
@@ -192,14 +199,13 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
       await _reportPinnedCertificate(channelOption);
     }
 
-    fgClient = CoreClient(
-      ClientChannel(
-        '127.0.0.1',
-        port: portFront,
-        options: ChannelOptions(credentials: channelOption),
-      ),
-      options: _callOptions(),
+    final replacedFg = _fgChannel;
+    _fgChannel = ClientChannel(
+      '127.0.0.1',
+      port: portFront,
+      options: ChannelOptions(credentials: channelOption),
     );
+    fgClient = CoreClient(_fgChannel!, options: _callOptions());
 
     // Authenticated, but NOT encrypted — see the matching note in
     // StartGrpcServerByMode. The background core runs in the platform VPN service
@@ -220,18 +226,27 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
     // unlock the pinned channel that carries the decrypted subscription. Scoped
     // this way, a captured value reaches only this core, and only until the next
     // connect rotates it (setupBackground).
+    final replacedBg = _bgChannel;
+    _bgChannel = ClientChannel(
+      '127.0.0.1',
+      port: portBack,
+      options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
+    );
     bgClient = CoreClient(
-      ClientChannel(
-        '127.0.0.1',
-        port: portBack,
-        options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
-      ),
+      _bgChannel!,
       // A PROVIDER, not static metadata: providers run per RPC, so rotation is a
       // field assignment rather than a client rebuild. Rebuilding would mean
       // re-subscribing the status and log streams that RaynCoreService attaches
       // to this client at bootstrap, which is the fragile part of this file.
       options: _bgCallOptions(),
     );
+
+    // Never awaited: grpc's shutdown waits for every stream still open on the
+    // channel, which would hold up setup. Streams on the old channels end once
+    // their providers resubscribe on the new ones (init's restart signal), and a
+    // stream that ends is reopened (active_proxy_notifier.dart).
+    replacedFg?.shutdown().ignore();
+    replacedBg?.shutdown().ignore();
     // await start("/sdcard/Android/data/com.raynlabs.app/files/configs/cdc633e9-8cfc-4a67-948d-009f779a5c91.json", "hiddify");
     return "";
   }

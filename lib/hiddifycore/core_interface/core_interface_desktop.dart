@@ -74,6 +74,10 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
 
   static final String secret = generateRandomPassword(100);
 
+  // The channel behind fgClient and bgClient, kept so a later setup can shut it
+  // down rather than leave it connected until its idle timeout.
+  ClientChannel? _channel;
+
   @override
   Future<String> setup(Directories directories, bool debug, int mode) async {
     // Generate a random password for the grpc service
@@ -81,13 +85,12 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
     // final err = errPtr2.cast<Utf8>().toDartString();
     // throw Exception('stop: $err');
     const channelOption = ChannelCredentials.insecure();
-    final helloClient = HelloClient(
-      ClientChannel(
-        '127.0.0.1',
-        port: port,
-        options: const ChannelOptions(credentials: channelOption),
-      ),
+    final helloChannel = ClientChannel(
+      '127.0.0.1',
+      port: port,
+      options: const ChannelOptions(credentials: channelOption),
     );
+    final helloClient = HelloClient(helloChannel);
 
     try {
       await helloClient.sayHello(HelloRequest(name: "test"));
@@ -124,20 +127,25 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
       }
       final res = await helloClient.sayHello(HelloRequest(name: "test"));
       loggy.info(res.toString());
+    } finally {
+      // Only ever used for the probe above; it used to stay open for good.
+      helloChannel.shutdown().ignore();
     }
-    bgClient = fgClient = CoreClient(
-      ClientChannel(
-        'localhost',
-        port: port,
-        options: const ChannelOptions(
-          credentials: ChannelCredentials.insecure(),
-          // credentials: ChannelCredentials.secure(
-          //   password: secret,
-          //   onBadCertificate: (certificate, host) => true,
-          // ),
-        ),
+    final replaced = _channel;
+    _channel = ClientChannel(
+      'localhost',
+      port: port,
+      options: const ChannelOptions(
+        credentials: ChannelCredentials.insecure(),
+        // credentials: ChannelCredentials.secure(
+        //   password: secret,
+        //   onBadCertificate: (certificate, host) => true,
+        // ),
       ),
     );
+    bgClient = fgClient = CoreClient(_channel!);
+    // Never awaited: grpc's shutdown waits for the streams still open on it.
+    replaced?.shutdown().ignore();
 
     return "";
   }
