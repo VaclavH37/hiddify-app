@@ -38,7 +38,7 @@ Nothing here was built or run. A commit was either read in full against our code
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `af389367` | Overrides http2 to 3.1.0 | pubspec.lock:817 is 2.3.1; core_stream_errors.dart documents it. A cancelled stream kills the channel and every core stream fails. Proposed ADAPT. |
+| `af389367` | Overrides http2 to 3.1.0 | pubspec.lock:817 is 2.3.1; core_stream_errors.dart documents it. A cancelled stream kills the channel and every core stream fails. Proposed ADAPT. **Landed for 1.6.5 as `a124e55f`.** |
 
 ### 4. Security: Windows core control port has no authentication
 
