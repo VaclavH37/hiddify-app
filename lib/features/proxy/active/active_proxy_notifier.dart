@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/utils/throttler.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
@@ -8,6 +10,7 @@ import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/init_signal.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'active_proxy_notifier.g.dart';
 
@@ -26,12 +29,25 @@ class ActiveProxyNotifier extends _$ActiveProxyNotifier with AppLogger {
     if (!serviceRunning) {
       return Stream.error(const ServiceNotRunning());
     }
+    Timer? reopen;
+    ref.onDispose(() => reopen?.cancel());
     return ref
         .read(proxyRepositoryProvider)
         .watchActiveProxies()
+        // A failed event used to become an empty outbound with no delay, which the
+        // connect button shows as a Connecting that never clears while the tunnel
+        // works. The last outbound stays, and the stream is reopened below.
+        .where((event) => event.isRight())
         .map((event) => event.getOrElse((l) => List<OutboundGroup>.empty()))
         .map((event) => event.firstOrNull?.items.first ?? OutboundInfo())
-        .map(pinDelayForMarketing);
+        .map(pinDelayForMarketing)
+        .doOnDone(() {
+          // gRPC ends the stream when its connection drops, for example once iOS
+          // suspends the app. serviceRunning stays true throughout, so nothing
+          // else would ever open it again.
+          loggy.debug("active proxy stream ended, reopening");
+          reopen = Timer(const Duration(seconds: 2), ref.invalidateSelf);
+        });
   }
 
   final _urlTestThrottler = Throttler(const Duration(seconds: 1));
