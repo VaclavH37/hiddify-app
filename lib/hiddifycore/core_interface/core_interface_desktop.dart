@@ -1,16 +1,17 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:grpc/grpc.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/gen/hiddify_core_generated_bindings.dart';
+import 'package:hiddify/hiddifycore/core_interface/core_certificate_pin.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hello/hello.pb.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hello/hello_service.pbgrpc.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 
 import 'package:loggy/loggy.dart';
@@ -66,12 +67,17 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
   // loopback is not isolated between processes on any desktop OS either. Kept in
   // step with CoreInterfaceMobile.portFront; see the reasoning there.
   final port = 21978;
+
+  /// [length] characters from a CSPRNG. Letters and digits only: the value
+  /// crosses FFI as a C string and travels as an HTTP/2 header.
   static String generateRandomPassword(int length) {
     const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = Random();
+    final random = Random.secure();
     return List.generate(length, (_) => characters[random.nextInt(characters.length)]).join();
   }
 
+  /// The credential the core requires on every call (requireSecret,
+  /// grpc_server.go). New for each process, never stored.
   static final String secret = generateRandomPassword(100);
 
   // The channel behind fgClient and bgClient, kept so a later setup can shut it
@@ -80,70 +86,61 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
 
   @override
   Future<String> setup(Directories directories, bool debug, int mode) async {
-    // Generate a random password for the grpc service
-    // final errPtr2 = _box.stop();
-    // final err = errPtr2.cast<Utf8>().toDartString();
-    // throw Exception('stop: $err');
-    const channelOption = ChannelCredentials.insecure();
-    final helloChannel = ClientChannel(
-      '127.0.0.1',
-      port: port,
-      options: const ChannelOptions(credentials: channelOption),
-    );
-    final helloClient = HelloClient(helloChannel);
-
-    try {
-      await helloClient.sayHello(HelloRequest(name: "test"));
-      loggy.info("core is already started!");
-    } catch (e) {
-      //core is not started yet
-
+    // Authenticated in both directions, as on mobile (mode 1, GRPC_NORMAL): TLS
+    // with a certificate this client pins, and a secret the core requires on
+    // every call. This used to be mode 3, plaintext with no authentication, so
+    // any program on the machine could drive the core, which runs elevated here:
+    // start or stop the tunnel, or read every hub and node address from
+    // OutboundsInfo. Mode 3 itself stays for the standalone CLI, on its own port.
+    //
+    // No unauthenticated hello probe first any more; it would attach to
+    // whatever answered on the port. hcore.Setup returns early when this mode's
+    // server already exists, so calling it every time is safe.
+    //
+    // Debug builds: a hot restart mints a new secret while the running core
+    // keeps the first one, so every call is refused until the app is restarted.
+    final err = using((arena) {
       final errPtr = _box.setup(
-        directories.baseDir.path.toNativeUtf8().cast(),
-        directories.workingDir.path.toNativeUtf8().cast(),
-        directories.tempDir.path.toNativeUtf8().cast(),
-        // Hardcoded, and it deliberately IGNORES the `mode` argument this method
-        // was passed — so mobile moving to the authenticated mode does not drag
-        // desktop with it before desktop has been tested.
-        //
-        // Desktop has the same exposure: loopback is not isolated between
-        // processes here either, and a desktop Hiddify install binds a core of
-        // its own. The pieces exist — `secret` above is already generated and
-        // passed to Setup, and GetServerPublicKey is exported over FFI
-        // (hiddify_core_generated_bindings.dart) — so this is pinning the
-        // certificate and attaching the secret, exactly as mobile now does. It
-        // needs a Windows DLL rebuild and a connect test, which is why it is not
-        // in the same change.
-        SetupMode.GRPC_NORMAL_INSECURE.value,
-        "127.0.0.1:$port".toNativeUtf8().cast(),
-        secret.toNativeUtf8().cast(),
+        directories.baseDir.path.toNativeUtf8(allocator: arena).cast(),
+        directories.workingDir.path.toNativeUtf8(allocator: arena).cast(),
+        directories.tempDir.path.toNativeUtf8(allocator: arena).cast(),
+        SetupMode.GRPC_NORMAL.value,
+        "127.0.0.1:$port".toNativeUtf8(allocator: arena).cast(),
+        secret.toNativeUtf8(allocator: arena).cast(),
         0,
         debug ? 1 : 0,
       );
-      final err = errPtr.cast<Utf8>().toDartString();
-
-      if (err.isNotEmpty) {
-        return err;
-      }
-      final res = await helloClient.sayHello(HelloRequest(name: "test"));
-      loggy.info(res.toString());
-    } finally {
-      // Only ever used for the probe above; it used to stay open for good.
-      helloChannel.shutdown().ignore();
+      // Read at once and never freed here: the core's emptyOrErrorC frees an
+      // error string itself before returning it (platform/desktop/custom.go).
+      return errPtr.cast<Utf8>().toDartString();
+    });
+    if (err.isNotEmpty) {
+      return err;
     }
+
+    // In-process, over FFI: fetching the certificate over the connection it is
+    // meant to authenticate would authenticate nothing.
+    final keyPtr = _box.GetServerPublicKey();
+    final pem = keyPtr.cast<Utf8>().toDartString();
+    _box.freeString(keyPtr);
+    if (pem.isEmpty) {
+      // Fail rather than fall back to an insecure channel: a silent downgrade is
+      // the one outcome worse than not connecting.
+      return "core did not provide a certificate to pin";
+    }
+    final pin = CoreCertificatePin.fromPem(Uint8List.fromList(utf8.encode(pem)));
+    if (pin == null) {
+      return "core certificate is not a valid PEM";
+    }
+
     final replaced = _channel;
     _channel = ClientChannel(
-      'localhost',
+      '127.0.0.1',
       port: port,
-      options: const ChannelOptions(
-        credentials: ChannelCredentials.insecure(),
-        // credentials: ChannelCredentials.secure(
-        //   password: secret,
-        //   onBadCertificate: (certificate, host) => true,
-        // ),
-      ),
+      options: ChannelOptions(credentials: pin.credentials()),
     );
-    bgClient = fgClient = CoreClient(_channel!);
+    // On the client rather than per call, so no RPC can be added without it.
+    bgClient = fgClient = CoreClient(_channel!, options: CallOptions(metadata: {grpcSecretMetadataKey: secret}));
     // Never awaited: grpc's shutdown waits for the streams still open on it.
     replaced?.shutdown().ignore();
 

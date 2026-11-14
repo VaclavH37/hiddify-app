@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -9,6 +8,7 @@ import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/utils/laststeam.dart';
 import 'package:hiddify/hiddifycore/background_time.dart';
+import 'package:hiddify/hiddifycore/core_interface/core_certificate_pin.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
 import 'package:hiddify/singbox/model/core_status.dart';
@@ -35,9 +35,8 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   // authenticate would authenticate nothing.
   Uint8List? _serverCertificate;
 
-  /// DER of [_serverCertificate], decoded once so the pin check is a byte
-  /// comparison rather than a parse on every handshake.
-  Uint8List? _pinnedDer;
+  /// The pin on [_serverCertificate] (see CoreCertificatePin).
+  CoreCertificatePin? _pin;
   String? _secret;
 
   /// Credential for the BACKGROUND core, rotated by [setupBackground] on every
@@ -45,9 +44,7 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   /// bgClient.
   String? _bgSecret;
 
-  /// gRPC normalises header names and rejects a key containing upper case
-  /// outright. Asserted core-side too (TestSecretMetadataKeyIsWireLegal).
-  static const _grpcSecretMetadataKey = 'x-rayn-secret';
+  static const _grpcSecretMetadataKey = grpcSecretMetadataKey;
 
   // Loopback gRPC ports for the two cores: `portFront` is the one embedded in
   // this app process, `portBack` the one in the platform VPN service.
@@ -166,36 +163,19 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
         return "core did not provide a credential";
       }
 
-      _pinnedDer = _derFromPem(_serverCertificate!);
-      if (_pinnedDer == null) {
+      final pin = CoreCertificatePin.fromPem(_serverCertificate!);
+      if (pin == null) {
         return "core certificate is not a valid PEM";
       }
+      _pin = pin;
 
-      // Pins the certificate and nothing else — ChannelCredentials.secure builds
-      // a SecurityContext with no trusted roots and adds only these bytes, so a
-      // handshake with any other core aborts instead of succeeding.
-      //
-      // `onBadCertificate` is not a relaxation of that, it is the same pin
-      // enforced a second way, and on iOS it is the ONLY way that works.
-      // `certificates:` asks the platform's trust engine to chain the peer to
-      // this certificate as an anchor, and on Apple platforms that engine is
-      // Security.framework, not BoringSSL — it applies Apple's own TLS server
-      // policy on top of chain validity, and it rejected this certificate with
-      // `CERTIFICATE_VERIFY_FAILED: application verification failure` while the
-      // bytes on both ends were identical. (A real mismatch reports
-      // `self signed certificate`; the two are distinguishable, which is how
-      // this was told apart from a plumbing bug.)
-      //
-      // Chain validation was never what this needed. The question here is not
-      // "does this certificate chain to something I trust" but "is this the
-      // exact certificate the core handed me in-process moments ago", and an
-      // equality check answers that directly — strictly narrower than anchor
-      // trust, since an anchor would also vouch for anything it signed. Nothing
-      // is accepted that the trust-store path would have refused.
-      channelOption = ChannelCredentials.secure(
-        certificates: _serverCertificate,
-        onBadCertificate: _isPinnedCertificate,
-      );
+      // Pins the certificate and nothing else, both through the trust store and
+      // by byte equality in onBadCertificate. On iOS the second is the only way
+      // that works; CoreCertificatePin explains why neither half is redundant.
+      // (A real mismatch reports `self signed certificate`; Apple's policy
+      // rejection reports `application verification failure`, which is how the
+      // two were told apart.)
+      channelOption = pin.credentials();
       await _reportPinnedCertificate(channelOption);
     }
 
@@ -261,37 +241,7 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   /// own hostname. Possessing the certificate is not enough to use it either:
   /// the handshake still requires the matching private key, which never leaves
   /// the core.
-  bool _isPinnedCertificate(X509Certificate certificate, String host) {
-    final pinned = _pinnedDer;
-    if (pinned == null) return false;
-
-    final presented = certificate.der;
-    if (presented.length != pinned.length) {
-      loggy.error("core certificate does not match the pin; refusing the channel");
-      return false;
-    }
-    var difference = 0;
-    for (var i = 0; i < pinned.length; i++) {
-      difference |= pinned[i] ^ presented[i];
-    }
-    if (difference != 0) {
-      loggy.error("core certificate does not match the pin; refusing the channel");
-      return false;
-    }
-    return true;
-  }
-
-  /// Decodes a PEM certificate to DER, or null if it is not one.
-  static Uint8List? _derFromPem(Uint8List pem) {
-    final body =
-        String.fromCharCodes(pem).replaceAll(RegExp('-----[^-]+-----'), '').replaceAll(RegExp(r'\s'), '');
-    if (body.isEmpty) return null;
-    try {
-      return base64.decode(body);
-    } on FormatException {
-      return null;
-    }
-  }
+  bool _isPinnedCertificate(X509Certificate certificate, String host) => _pin?.matches(certificate) ?? false;
 
   /// Compares the certificate this client pinned against the one the core
   /// actually presents, and says which of the two is wrong.

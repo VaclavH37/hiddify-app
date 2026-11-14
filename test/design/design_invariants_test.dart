@@ -917,7 +917,8 @@ void main() {
       test(path, () {
         final source = File(path).readAsStringSync();
         final shutdowns = 'shutdown()'.allMatches(source).length;
-        expect(shutdowns, greaterThanOrEqualTo(2), reason: 'replaced channels must be shut down');
+        // Mobile replaces two channels, desktop one (its hello probe is gone).
+        expect(shutdowns, greaterThanOrEqualTo(path.contains('mobile') ? 2 : 1), reason: 'replaced channels must be shut down');
         expect(
           'shutdown().ignore()'.allMatches(source).length,
           shutdowns,
@@ -925,6 +926,33 @@ void main() {
         );
       });
     }
+  });
+
+  group('the Windows core channel is authenticated', () {
+    // The desktop core used mode 3: plaintext, no authentication, so any program
+    // on the machine could drive the elevated core (upstream 092b5ee7, desktop
+    // half). It now uses mode 1, as mobile does: the certificate the core hands
+    // over in-process, pinned, and a secret on every call.
+    final source = _withoutLineComments(
+      File('lib/hiddifycore/core_interface/core_interface_desktop.dart').readAsStringSync(),
+      '//',
+    );
+
+    test('set up in the authenticated mode', () {
+      expect(source.contains('SetupMode.GRPC_NORMAL.value'), isTrue);
+      expect(source.contains('GRPC_NORMAL_INSECURE'), isFalse);
+    });
+
+    test('the channel pins the certificate and sends the secret', () {
+      expect(source.contains('pin.credentials()'), isTrue);
+      expect(source.contains('grpcSecretMetadataKey: secret'), isTrue);
+      expect(source.contains('ChannelCredentials.insecure'), isFalse);
+    });
+
+    test('the secret comes from a CSPRNG', () {
+      expect(source.contains('Random.secure()'), isTrue);
+      expect(source.contains('Random()'), isFalse);
+    });
   });
 
   group('the shipped core options match the Go golden fixture', () {

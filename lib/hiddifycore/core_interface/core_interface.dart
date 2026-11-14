@@ -2,6 +2,12 @@ import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
 import 'package:hiddify/singbox/model/core_status.dart';
 
+/// The header carrying the shared secret the core requires on every call
+/// (requireSecret in grpc_server.go). It must stay lower-case: gRPC normalises
+/// header names and rejects a key containing upper case outright. Asserted
+/// core-side too (TestSecretMetadataKeyIsWireLegal).
+const grpcSecretMetadataKey = 'x-rayn-secret';
+
 class CoreInterface {
   late CoreClient fgClient;
   late CoreClient bgClient;
