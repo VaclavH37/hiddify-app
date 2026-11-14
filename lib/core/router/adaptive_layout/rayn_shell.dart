@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/router/adaptive_layout/rayn_navigation_rail.dart';
+import 'package:hiddify/core/router/adaptive_layout/shell_back_handler.dart';
 import 'package:hiddify/core/router/adaptive_layout/shell_route_action.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/router/go_router/routing_config_notifier.dart';
@@ -57,37 +58,40 @@ class RaynShell extends HookConsumerWidget {
 
     final isDesktop = Breakpoint(context).isDesktop();
 
-    return Material(
-      child: Scaffold(
-        body: isMobileBreakpoint
-            ? navigationShell
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  FocusScope(
-                    node: navScopeNode,
-                    child: RaynNavigationRail(
-                      extended: isDesktop,
-                      destinations: _raynNavRailDests(_actions(t)),
-                      selectedIndex: navigationShell.currentIndex,
-                      onDestinationSelected: (index) => _onTap(context, index),
-                      footer: SidebarStatus(extended: isDesktop),
+    return ShellBackHandler(
+      navigationShell: navigationShell,
+      child: Material(
+        child: Scaffold(
+          body: isMobileBreakpoint
+              ? navigationShell
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FocusScope(
+                      node: navScopeNode,
+                      child: RaynNavigationRail(
+                        extended: isDesktop,
+                        destinations: _raynNavRailDests(_actions(t)),
+                        selectedIndex: navigationShell.currentIndex,
+                        onDestinationSelected: (index) => _onTap(context, index),
+                        footer: SidebarStatus(extended: isDesktop),
+                      ),
                     ),
-                  ),
-                  Expanded(child: navigationShell),
-                ],
-              ),
-        bottomNavigationBar: isMobileBreakpoint
-            ? FocusScope(
-                node: navScopeNode,
-                child: _raynBottomNavBar(
-                  context: context,
-                  selectedIndex: navigationShell.currentIndex,
-                  destinations: _navDests(_actions(t)),
-                  onDestinationSelected: (index) => _onTap(context, index),
+                    Expanded(child: navigationShell),
+                  ],
                 ),
-              )
-            : null,
+          bottomNavigationBar: isMobileBreakpoint
+              ? FocusScope(
+                  node: navScopeNode,
+                  child: _raynBottomNavBar(
+                    context: context,
+                    selectedIndex: navigationShell.currentIndex,
+                    destinations: _navDests(_actions(t)),
+                    onDestinationSelected: (index) => _onTap(context, index),
+                  ),
+                )
+              : null,
+        ),
       ),
     );
   }

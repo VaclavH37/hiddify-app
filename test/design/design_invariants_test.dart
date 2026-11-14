@@ -846,6 +846,33 @@ void main() {
     });
   });
 
+  group('the shell owns the back press', () {
+    // go_router keeps every shell branch mounted, and a PopScope inside a branch
+    // stays registered after the user leaves it. One in the Settings branch, or
+    // go_router's own guard while Settings has About open, swallowed back
+    // presses meant for Home, so back could no longer close the app
+    // (flutter/flutter#193098, upstream 511d2e34). Back at a branch root is
+    // handled once, by ShellBackHandler around the shell.
+
+    test('no PopScope inside the routing config', () {
+      final source = _withoutLineComments(
+        File('lib/core/router/go_router/routing_config_notifier.dart').readAsStringSync(),
+        '//',
+      );
+      expect(
+        source.contains('PopScope('),
+        isFalse,
+        reason: 'A PopScope in a shell branch stays mounted after the user leaves it and swallows back '
+            'presses meant for another branch. Handle back in ShellBackHandler instead.',
+      );
+    });
+
+    test('RaynShell is wrapped in ShellBackHandler', () {
+      final source = File('lib/core/router/adaptive_layout/rayn_shell.dart').readAsStringSync();
+      expect(source.contains('ShellBackHandler('), isTrue, reason: 'RaynShell must own the back press.');
+    });
+  });
+
   group('the shipped core options match the Go golden fixture', () {
     // hiddify-core/v2/config/golden_config_test.go pins the generated sing-box
     // config for the configuration this client actually sends. To do that it

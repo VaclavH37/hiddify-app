@@ -142,13 +142,13 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                 GoRoute(
                   name: 'settings',
                   path: '/settings',
-                  builder: (context, _) => FocusScope(
+                  // No PopScope here: back at Settings' root is handled by
+                  // ShellBackHandler on the shell. One inside this branch stays
+                  // mounted after the user leaves it and swallows back presses
+                  // meant for Home.
+                  builder: (_, _) => FocusScope(
                     node: branchesScope['settings'],
-                    child: PopScope(
-                      canPop: false,
-                      onPopInvokedWithResult: (_, _) => context.goNamed('home'),
-                      child: const SettingsPage(),
-                    ),
+                    child: const SettingsPage(),
                   ),
                   routes: <GoRoute>[
                     GoRoute(
