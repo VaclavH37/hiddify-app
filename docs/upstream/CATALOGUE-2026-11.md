@@ -44,8 +44,8 @@ Nothing here was built or run. A commit was either read in full against our code
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `092b5ee7` | mTLS for gRPC, desktop half only | core_interface_desktop.dart:128 uses insecure credentials and grpc_server.go:360 has no auth, so any local process can drive the elevated core on port 21978. Security (E4). Proposed ADAPT. |
-| `core cbe9a1ca` | mTLS for secure gRPC modes | grpc_server.go:360: the Windows mode has no auth, so any local process can drive the elevated core. Security (E4). Proposed ADAPT with 092b5ee7. |
+| `092b5ee7` | mTLS for gRPC, desktop half only | core_interface_desktop.dart:128 uses insecure credentials and grpc_server.go:360 has no auth, so any local process can drive the elevated core on port 21978. Security (E4). Proposed ADAPT. **Landed for 1.6.5 as `a0778b0f`.** |
+| `core cbe9a1ca` | mTLS for secure gRPC modes | grpc_server.go:360: the Windows mode has no auth, so any local process can drive the elevated core. Security (E4). Proposed ADAPT with 092b5ee7. **Already covered in 1.6.5 (Windows uses mode 1 since `a0778b0f`).** |
 
 ### 5. Security: local proxy has no password while connected (design first)
 
@@ -386,7 +386,7 @@ Also `787dcf9a` (desktop entry and AppImage update keys, from campaign 2026-08),
 
 | Commit | What it does | Notes |
 |---|---|---|
-| `2419e105` | Desktop mTLS smoke test | Absent; insecure at core_interface_desktop.dart:114. |
+| `2419e105` | Desktop mTLS smoke test | Absent; insecure at core_interface_desktop.dart:114. **Already covered in 1.6.5 (Windows uses mode 1 since `a0778b0f`).** |
 
 ### Until: support reports about dead selected proxies
 
