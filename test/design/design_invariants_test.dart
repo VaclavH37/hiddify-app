@@ -873,6 +873,36 @@ void main() {
     });
   });
 
+  group('an Android start waiting on a permission dialog always finishes', () {
+    // MainActivity.startService answers the app's start call only after the
+    // notification and VPN dialogs (upstream bb6d9785). It waits on
+    // `pendingStart`, and a start that is never completed leaves every later
+    // connect waiting on it. Each way a start can end must complete it.
+    final activity = File('android/app/src/main/kotlin/com/raynlabs/app/MainActivity.kt').readAsStringSync();
+
+    test('each refusal and failure finishes the start with false', () {
+      // prepare() throwing, notification denied, VPN denied, starting the
+      // service throwing, and onDestroy.
+      expect(
+        'finishStart(false)'.allMatches(activity).length,
+        greaterThanOrEqualTo(5),
+        reason: 'a path that ends a start without finishStart leaves later connects waiting forever',
+      );
+      expect(activity.contains('finishStart(true)'), isTrue, reason: 'a started service must finish the start');
+    });
+
+    test('onDestroy finishes a start still waiting on a dialog', () {
+      final start = activity.indexOf('override fun onDestroy()');
+      final onDestroy = start < 0 ? '' : activity.substring(start, activity.indexOf('super.onDestroy()', start));
+      expect(onDestroy.contains('finishStart(false)'), isTrue);
+    });
+
+    test('the start call answers with the outcome, after the dialogs', () {
+      final handler = File('android/app/src/main/kotlin/com/raynlabs/app/MethodHandler.kt').readAsStringSync();
+      expect(handler.contains('success(mainActivity.startService())'), isTrue);
+    });
+  });
+
   group('the shipped core options match the Go golden fixture', () {
     // hiddify-core/v2/config/golden_config_test.go pins the generated sing-box
     // config for the configuration this client actually sends. To do that it
