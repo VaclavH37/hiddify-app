@@ -6,6 +6,7 @@ import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
+import 'package:hiddify/core/utils/resubscribe_backoff.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/proxy_snapshot_notifier.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
@@ -15,6 +16,7 @@ import 'package:hiddify/hiddifycore/init_signal.dart';
 import 'package:hiddify/utils/riverpod_utils.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'proxies_overview_notifier.g.dart';
 
@@ -63,6 +65,10 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
     ref.watch(coreRestartSignalProvider);
     final serviceRunning = ref.watch(serviceRunningProvider);
     final sortBy = ref.watch(proxiesSortNotifierProvider);
+    if (serviceRunning != _lastServiceRunning) {
+      _lastServiceRunning = serviceRunning;
+      _reopenBackoff.reset();
+    }
     if (!serviceRunning) {
       // Pre-connect: there is no core, so render the cached snapshot captured on
       // the last connected session. Null on first-ever run → the page shows its
@@ -71,17 +77,38 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
       yield snapshot == null ? null : await _sortOutbounds(snapshot.toOutboundGroup(), sortBy);
       return;
     }
+    Timer? reopen;
+    ref.onDispose(() => reopen?.cancel());
     yield* ref
         .watch(proxyRepositoryProvider)
         .watchProxies()
-        .map(
-          (event) => event.getOrElse((err) {
+        // A failed event used to become an error, which the location list showed
+        // until the page was rebuilt, though the tunnel kept working. It is
+        // logged, the last list stays on screen, and the stream is reopened below.
+        .where(
+          (event) => event.fold((err) {
             loggy.warning("error receiving proxies", err);
-            throw err;
-          }),
+            return false;
+          }, (_) => true),
         )
+        .map((event) {
+          // Delivering again: the next reopen waits the shortest time.
+          _reopenBackoff.reset();
+          return event.getOrElse((_) => null);
+        })
+        .doOnDone(() {
+          // gRPC ends the stream when its connection drops, for example once iOS
+          // suspends the app. Reopened with the same growing wait as the active
+          // proxy (active_proxy_notifier.dart).
+          final wait = _reopenBackoff.next();
+          loggy.debug("proxies stream ended, reopening in $wait");
+          reopen = Timer(wait, ref.invalidateSelf);
+        })
         .asyncMap((proxies) async => await _sortOutbounds(proxies, sortBy));
   }
+
+  final _reopenBackoff = ResubscribeBackoff();
+  bool? _lastServiceRunning;
 
   Future<OutboundGroup?> _sortOutbounds(OutboundGroup? proxies, ProxiesSort sortBy) async {
     if (proxies == null) return null;
