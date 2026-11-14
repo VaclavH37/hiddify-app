@@ -69,6 +69,37 @@ void main() {
     expect(repository.subscriptions, 2);
   });
 
+  testWidgets('reopening that keeps failing waits longer each time', (tester) async {
+    // upstream 364a935a: 2 s, then 4 s, so an unreachable core is not retried,
+    // and logged, every 2 seconds.
+    await start(tester);
+    repository.end();
+    await tester.pump(const Duration(seconds: 2));
+    expect(repository.subscriptions, 2);
+
+    repository.end();
+    await tester.pump(const Duration(seconds: 2));
+    expect(repository.subscriptions, 2, reason: 'the second wait is 4 s');
+    await tester.pump(const Duration(seconds: 2));
+    expect(repository.subscriptions, 3);
+  });
+
+  testWidgets('a stream that delivers again goes back to the short wait', (tester) async {
+    await start(tester);
+    repository.end();
+    await tester.pump(const Duration(seconds: 2));
+    expect(repository.subscriptions, 2);
+
+    // The first event is the cached replay; the second proves the stream works.
+    repository
+      ..emit(right(groups('EXIT-Tokyo', 120)))
+      ..emit(right(groups('EXIT-Tokyo', 130)));
+    await tester.pump();
+    repository.end();
+    await tester.pump(const Duration(seconds: 2));
+    expect(repository.subscriptions, 3);
+  });
+
   testWidgets('a disconnect cancels a pending reopen', (tester) async {
     await start(tester);
     repository.end();
@@ -83,12 +114,12 @@ void main() {
 
 class _FakeProxyRepository implements ProxyRepository {
   int subscriptions = 0;
-  StreamController<Either<ProxyFailure, List<OutboundGroup>>>? _active;
+  late StreamController<Either<ProxyFailure, List<OutboundGroup>>> _active;
 
-  void emit(Either<ProxyFailure, List<OutboundGroup>> event) => _active!.add(event);
+  void emit(Either<ProxyFailure, List<OutboundGroup>> event) => _active.add(event);
 
   /// Ends the stream the way gRPC does when its connection drops.
-  void end() => _active!.close();
+  void end() => _active.close();
 
   @override
   Stream<Either<ProxyFailure, List<OutboundGroup>>> watchActiveProxies() {

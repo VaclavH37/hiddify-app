@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:hiddify/core/haptic/haptic_service.dart';
+import 'package:hiddify/core/utils/resubscribe_backoff.dart';
 import 'package:hiddify/core/utils/throttler.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/marketing_delay.dart';
@@ -26,10 +27,15 @@ class ActiveProxyNotifier extends _$ActiveProxyNotifier with AppLogger {
     // ref.disposeDelay(const Duration(seconds: 20));
     ref.watch(coreRestartSignalProvider);
     final serviceRunning = ref.watch(serviceRunningProvider);
+    if (serviceRunning != _lastServiceRunning) {
+      _lastServiceRunning = serviceRunning;
+      _reopenBackoff.reset();
+    }
     if (!serviceRunning) {
       return Stream.error(const ServiceNotRunning());
     }
     Timer? reopen;
+    var received = 0;
     ref.onDispose(() => reopen?.cancel());
     return ref
         .read(proxyRepositoryProvider)
@@ -41,14 +47,26 @@ class ActiveProxyNotifier extends _$ActiveProxyNotifier with AppLogger {
         .map((event) => event.getOrElse((l) => List<OutboundGroup>.empty()))
         .map((event) => event.firstOrNull?.items.first ?? OutboundInfo())
         .map(pinDelayForMarketing)
+        .map((info) {
+          // The first event is the core service's cached list (startWith in
+          // watchActiveGroups), sent even when the call fails. Only a later one
+          // shows the stream really works.
+          if (++received > 1) _reopenBackoff.reset();
+          return info;
+        })
         .doOnDone(() {
           // gRPC ends the stream when its connection drops, for example once iOS
           // suspends the app. serviceRunning stays true throughout, so nothing
-          // else would ever open it again.
-          loggy.debug("active proxy stream ended, reopening");
-          reopen = Timer(const Duration(seconds: 2), ref.invalidateSelf);
+          // else would ever open it again. While reopening keeps failing the wait
+          // grows, so an unreachable core is not retried every 2 seconds.
+          final wait = _reopenBackoff.next();
+          loggy.debug("active proxy stream ended, reopening in $wait");
+          reopen = Timer(wait, ref.invalidateSelf);
         });
   }
+
+  final _reopenBackoff = ResubscribeBackoff();
+  bool? _lastServiceRunning;
 
   final _urlTestThrottler = Throttler(const Duration(seconds: 1));
 
