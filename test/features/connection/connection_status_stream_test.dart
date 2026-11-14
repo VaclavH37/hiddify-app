@@ -143,4 +143,22 @@ void main() {
       Disconnected(),
     ]);
   });
+
+  group('what settles a mobile start', () {
+    // The platform service's status stream reports a plain stop before the
+    // service has begun, so only "up" or a stop with a reason answers a start.
+    test('the service coming up does', () {
+      expect(coreStatusSettlesStart(const CoreStatus.started()), isTrue);
+    });
+
+    test('a stop with a reason does', () {
+      expect(coreStatusSettlesStart(const CoreStatus.stopped(alert: CoreAlert.requestVPNPermission)), isTrue);
+    });
+
+    test('a plain stop, starting and stopping do not', () {
+      expect(coreStatusSettlesStart(const CoreStatus.stopped()), isFalse);
+      expect(coreStatusSettlesStart(const CoreStatus.starting()), isFalse);
+      expect(coreStatusSettlesStart(const CoreStatus.stopping()), isFalse);
+    });
+  });
 }

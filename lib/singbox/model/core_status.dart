@@ -112,6 +112,18 @@ sealed class CoreStatus with _$CoreStatus {
 bool coreStatusIsNews(CoreStatus status, {required bool startInFlight}) =>
     !startInFlight || status is! CoreStopped || status.alert != null;
 
+/// Whether a status from the platform service settles a mobile start.
+///
+/// The reply to "start" only means the service was asked to start; whether it
+/// did arrives later on the status stream. The start waits for the first status
+/// that answers it: the service is up, or it stopped with a reason. A plain stop
+/// does not count, because the stream reports one before the service has begun.
+bool coreStatusSettlesStart(CoreStatus status) => switch (status) {
+  CoreStarted() => true,
+  CoreStopped(:final alert) => alert != null,
+  _ => false,
+};
+
 enum CoreAlert {
   requestVPNPermission,
   requestNotificationPermission,

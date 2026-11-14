@@ -78,15 +78,22 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
   bool _isBgClientAvailable = false;
   bool _debug = false;
 
-  late LastStream<CoreStatus> _status;
+  // Created once, by the first setup. setup runs again on every resume,
+  // including the one right after the VPN dialog closes. Replacing the stream
+  // there left a start already waiting on the old one deaf, and never closed
+  // the old listener.
+  LastStream<CoreStatus>? _statusStream;
+  LastStream<CoreStatus> get _status => _statusStream!;
   @override
   Future<String> setup(Directories directories, bool debug, int mode) async {
     _debug = debug;
     final secureMode = [1, 2].contains(mode);
 
-    final status = statusChannel.receiveBroadcastStream().map(CoreStatus.fromEvent);
-    final alerts = alertsChannel.receiveBroadcastStream().map(CoreStatus.fromEvent);
-    _status = LastStream(ValueConnectableStream(Rx.merge([status, alerts])).autoConnect());
+    if (_statusStream == null) {
+      final status = statusChannel.receiveBroadcastStream().map(CoreStatus.fromEvent);
+      final alerts = alertsChannel.receiveBroadcastStream().map(CoreStatus.fromEvent);
+      _statusStream = LastStream(ValueConnectableStream(Rx.merge([status, alerts])).autoConnect());
+    }
 
     // Set the core up FIRST, unconditionally.
     //
@@ -403,28 +410,20 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
 
     _isBgClientAvailable = true;
     loggy.info("Waiting for starting core");
-    for (var i = 0; i < 20; i++) {
-      try {
-        final res = await _status.get(timeout: const Duration(seconds: 1));
-
-        switch (res) {
-          case CoreStarted():
-            break;
-          case CoreStopped():
-            if (res.alert != null) {
-              return res;
-            }
-
-          case CoreStopping():
-          // return res;
-          case CoreStarting():
-        }
-        await Future.delayed(const Duration(milliseconds: 200));
-      } on TimeoutException {
-        // just retry
-      }
+    final waitingSince = DateTime.now();
+    // Waits once for the first status that settles the start (see
+    // coreStatusSettlesStart); on a timeout the port check below decides.
+    //
+    // This used to poll 20 times, and its `break` only left the `switch`, so
+    // every connect sat through all 20 rounds: about 4 s, even when the service
+    // was up at once.
+    try {
+      final res = await _status.get(timeout: const Duration(seconds: 20), where: coreStatusSettlesStart);
+      if (res is CoreStopped) return res;
+    } on TimeoutException {
+      loggy.warning("no start status from the service in 20 s");
     }
-    loggy.info("Waiting for starting core finished");
+    loggy.info("Waiting for starting core finished after ${DateTime.now().difference(waitingSince).inMilliseconds}ms");
 
     if (!await waitUntilPort(portBack, true, null)) {
       await stopMethodChannel();
