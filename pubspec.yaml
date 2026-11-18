@@ -107,10 +107,16 @@ dependencies:
   # for example camelCase to snake_case
   # helloWorld -> hello_worlds
   recase: ^4.1.0
-  # Used for managing deep links on desktop platforms
+  # Delivers rayn:// links to Dart on every platform.
   # platform-specific settings
   # https://github.com/llfbandit/app_links/tree/master/doc
-  app_links: ^6.4.0
+  #
+  # 7.x because the iOS app uses the UIScene lifecycle: under scenes iOS hands
+  # links to the scene (openURLContexts, or the connection options on a cold
+  # start) and never calls the app-delegate methods 6.x listens on, so with 6.x
+  # every rayn:// link would be dropped. 7.0.0 registers as a scene delegate.
+  # 7.1+ needs Flutter 3.44, so on the current toolchains this resolves to 7.0.0.
+  app_links: ^7.0.0
   # Used for registering custom schemes in the Windows registry
   win32: ^5.12.0
   # Working with Wifi(get LAN IP address)
