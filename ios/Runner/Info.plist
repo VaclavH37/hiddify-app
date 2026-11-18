@@ -71,6 +71,35 @@
 	<string>This app needs camera access to scan QR codes</string>
 	<key>SERVICE_IDENTIFIER</key>
 	<string>$(SERVICE_IDENTIFIER)</string>
+	<!-- The UIScene lifecycle. iOS 27 refuses to launch an app built with the
+	     iOS 27 SDK that does not adopt it: UIKit stops the process during launch
+	     (EXC_BREAKPOINT in _UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption),
+	     which is how 1.6.4 closed on every iOS 27 device. One scene, run by
+	     Flutter's own FlutterSceneDelegate, loading the same Main storyboard as
+	     before. Because the Flutter view now appears only when the scene
+	     connects, plugins and our channels register in AppDelegate's
+	     didInitializeImplicitFlutterEngine rather than at launch. -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>FlutterSceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

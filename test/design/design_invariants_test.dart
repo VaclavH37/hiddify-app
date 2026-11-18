@@ -220,6 +220,67 @@ void main() {
     });
   });
 
+  group('the iOS app adopts the UIScene lifecycle', () {
+    // iOS 27 refuses to launch an app built with the iOS 27 SDK that still uses
+    // the app-delegate lifecycle: UIKit stops it during launch (EXC_BREAKPOINT in
+    // _UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption). 1.6.4 was
+    // the first build made with Xcode 27 and closed on every iOS 27 device. The
+    // three parts below only work together: the manifest makes the app
+    // scene-based, which moves the Flutter view's creation after launch, which
+    // is why registration has to wait for the engine, and which is why links
+    // need a plugin that listens on the scene.
+    final plist = File('ios/Runner/Info.plist').readAsStringSync().replaceAll('\r\n', '\n');
+    final delegate = _withoutLineComments(
+      File('ios/Runner/AppDelegate.swift').readAsStringSync().replaceAll('\r\n', '\n'),
+      '//',
+    );
+
+    String body(String source, String signature) {
+      final start = source.indexOf(signature);
+      expect(start, isNonNegative, reason: '$signature not found');
+      return source.substring(start, source.indexOf('\n    }\n', start));
+    }
+
+    test('Info.plist declares one scene, run by FlutterSceneDelegate, from the Main storyboard', () {
+      expect(plist, contains('<key>UIApplicationSceneManifest</key>'));
+      expect(RegExp(r'<key>UIApplicationSupportsMultipleScenes</key>\s*<false/>').hasMatch(plist), isTrue);
+      expect(RegExp(r'<key>UISceneDelegateClassName</key>\s*<string>FlutterSceneDelegate</string>').hasMatch(plist), isTrue);
+      expect(RegExp(r'<key>UISceneStoryboardFile</key>\s*<string>Main</string>').hasMatch(plist), isTrue);
+    });
+
+    test('nothing registers at launch: there is no engine yet under scenes', () {
+      final launch = body(delegate, 'didFinishLaunchingWithOptions');
+      expect(launch, isNot(contains('register')));
+      expect(delegate, isNot(contains('self.registrar(')));
+    });
+
+    test('every channel and plugin registers on the implicit engine', () {
+      expect(delegate, contains('FlutterImplicitEngineDelegate'));
+      final engine = body(delegate, 'func didInitializeImplicitFlutterEngine(');
+      for (final handler in const [
+        'MethodHandler',
+        'PlatformMethodHandler',
+        'FileMethodHandler',
+        'StatusEventHandler',
+        'AlertsEventHandler',
+        'RaynBillingHandler',
+      ]) {
+        expect(engine, contains('$handler.register(with: registry.registrar(forPlugin: $handler.name)!)'));
+      }
+      expect(engine, contains('GeneratedPluginRegistrant.register(with: registry)'));
+    });
+
+    test('app_links is 7 or later, the first version that listens on the scene', () {
+      // 6.x registers only as an application delegate, and under scenes iOS no
+      // longer calls application(_:open:options:), so every rayn:// link would
+      // be dropped without an error.
+      final lock = File('pubspec.lock').readAsStringSync().replaceAll('\r\n', '\n');
+      final entry = RegExp(r'^  app_links:\n(?:    .*\n)*?    version: "(\d+)\.', multiLine: true).firstMatch(lock);
+      expect(entry, isNotNull, reason: 'app_links not found in pubspec.lock');
+      expect(int.parse(entry!.group(1)!), greaterThanOrEqualTo(7));
+    });
+  });
+
   group('a start in progress is not shown as disconnected', () {
     // The core reports a plain STOPPED until the app's Start reaches it; on iOS
     // that read as Disconnected for 3.2 s mid-failover (2026-10-19).
