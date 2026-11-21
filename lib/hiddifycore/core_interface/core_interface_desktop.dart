@@ -115,8 +115,10 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
         0,
         debug ? 1 : 0,
       );
-      // Read at once and never freed here: the core's emptyOrErrorC frees an
-      // error string itself before returning it (platform/desktop/custom.go).
+      // Read at once and not freed. The core hands the string over (since
+      // hiddify-core 74afa56; it used to free an error string before returning
+      // it), but a DLL from before that has already freed it, so freeing here
+      // could double-free. setup runs once per launch; the few bytes stay.
       return errPtr.cast<Utf8>().toDartString();
     });
     if (err.isNotEmpty) {
