@@ -51,7 +51,7 @@ Nothing here was built or run. A commit was either read in full against our code
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `core 71150af4` | Splits local and LAN ports; closes the VPN-mode port (VPN-mode part only) | builder.go:636: the mixed inbound on 12334 has no password while connected, so any local app can use it. proxyOnly fetches depend on it, so a design comes first. LAN half rejected, no-lan-sharing. Security (E4). Proposed ADAPT. |
+| `core 71150af4` | Splits local and LAN ports; closes the VPN-mode port (VPN-mode part only) | builder.go:636: the mixed inbound on 12334 has no password while connected, so any local app can use it. proxyOnly fetches depend on it, so a design comes first. LAN half rejected, no-lan-sharing. Security (E4). Proposed ADAPT. **Landed for 1.6.6 as core `33eb7a3` + app `ff22496c` (a derived password, not a closed port).** |
 
 ### 6. Android back button after Settings
 
@@ -78,8 +78,8 @@ Nothing here was built or run. A commit was either read in full against our code
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `core a89c3079` | Close also ends the daemon's observers | stop.go:34 calls only CloseService; StartedService.Close exists at our pin and is never called, so observers stay open on every disconnect. Proposed ADAPT. |
-| `core 6ba0d6df` | The proxy stream keeps the monitor awake | proxy_info.go:188 never calls Touch, which exists at our pin; pings stop after the core has been idle. Proposed ADAPT. |
+| `core a89c3079` | Close also ends the daemon's observers | stop.go:34 calls only CloseService; StartedService.Close exists at our pin and is never called, so observers stay open on every disconnect. Proposed ADAPT. **Landed for 1.6.6 as core `de3dd89`.** |
+| `core 6ba0d6df` | The proxy stream keeps the monitor awake | proxy_info.go:188 never calls Touch, which exists at our pin; pings stop after the core has been idle. Proposed ADAPT. **Landed for 1.6.6 as core `f371fc6` (touch on open only, no ticker).** |
 
 ### 10. Connect button shows the wrong state
 
@@ -143,8 +143,8 @@ Also `787dcf9a` (desktop entry and AppImage update keys, from campaign 2026-08),
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
 | `33779458` | World-readable AppDir; appimagetool failure stops the build | Makefile:556,566. Proposed ADAPT with the Linux rebrand. |
-| `core b841a3a9` | capget overruns its buffer | linux_utils.go:30 passes one CapUserData for a call that writes two. No shipped caller, corruption once Linux ships. Security (E4). Proposed TAKE. |
-| `core eeaf27e6` | godebug multipathtcp=0 | Absent in go.mod. Go 1.24+ listens on MPTCP by default on Linux; shipped listeners are loopback only, so the value is for Linux. gomobile builds ignore the line. Security (E4). Proposed ADAPT. |
+| `core b841a3a9` | capget overruns its buffer | linux_utils.go:30 passes one CapUserData for a call that writes two. No shipped caller, corruption once Linux ships. Security (E4). Proposed TAKE. **Landed for 1.6.6 as core `36bdb09`.** |
+| `core eeaf27e6` | godebug multipathtcp=0 | Absent in go.mod. Go 1.24+ listens on MPTCP by default on Linux; shipped listeners are loopback only, so the value is for Linux. gomobile builds ignore the line. Security (E4). Proposed ADAPT. **Landed for 1.6.6 as core `2e26ef1`.** |
 
 ## Already in Rayn
 
