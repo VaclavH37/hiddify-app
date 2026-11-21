@@ -49,6 +49,11 @@ class CoreInterface {
     return true;
   }
 
+  /// The password the core's local mixed port asks for (local_proxy_auth.dart),
+  /// or null when it asks for none. Read on every connection to that port: on
+  /// mobile the secret it is derived from rotates with each connect.
+  String? get localProxyPassword => null;
+
   /// Runs [body] with the app kept alive until it finishes, where the platform
   /// would suspend it part-way. A pass-through wherever the app keeps running
   /// in the background.

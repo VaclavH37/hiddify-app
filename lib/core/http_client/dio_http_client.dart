@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
 
+import 'package:hiddify/hiddifycore/core_interface/local_proxy_auth.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 
 /// Re-applies the response type a request asked for, on every attempt.
@@ -51,7 +52,12 @@ class ResponseTooLargeException implements Exception {
 
 class DioHttpClient with InfraLogger {
   final Map<String, Dio> _dio = {};
-  DioHttpClient({required Duration timeout, required this.userAgent, required bool debug}) {
+  DioHttpClient({
+    required Duration timeout,
+    required this.userAgent,
+    required bool debug,
+    String? Function()? localProxyPassword,
+  }) : _localProxyPassword = localProxyPassword ?? (() => null) {
     for (final mode in ["proxy", "direct", "both"]) {
       _dio[mode] = Dio(
         BaseOptions(
@@ -102,14 +108,11 @@ class DioHttpClient with InfraLogger {
       _dio[mode]!.httpClientAdapter = IOHttpClientAdapter(
         createHttpClient: () {
           final client = HttpClient();
+          // Called per request, so a rotated password is picked up at once.
           client.findProxy = (url) {
-            if (mode == "proxy") {
-              return "PROXY localhost:$port";
-            } else if (mode == "direct") {
-              return "DIRECT";
-            } else {
-              return "PROXY localhost:$port; DIRECT";
-            }
+            if (mode == "direct") return "DIRECT";
+            final proxy = "PROXY ${_proxyCredentials()}localhost:$port";
+            return mode == "proxy" ? proxy : "$proxy; DIRECT";
           };
           return client;
         },
@@ -151,6 +154,23 @@ class DioHttpClient with InfraLogger {
   void setProxyPort(int port) {
     this.port = port;
     loggy.debug("setting proxy port: [$port]");
+  }
+
+  /// Where the core's local proxy password comes from
+  /// (CoreInterface.localProxyPassword); none by default.
+  ///
+  /// Dart's HttpClient sends it as `Proxy-Authorization: Basic` to the proxy,
+  /// for a CONNECT and for a plain request alike. It also repeats the header
+  /// on the request it then sends through a CONNECT tunnel, inside TLS, so the
+  /// destination sees it too; every tunnel-only fetch goes to Rayn's own hosts,
+  /// and the value opens a loopback port that the next connect re-keys.
+  final String? Function() _localProxyPassword;
+
+  /// `user:password@` for the local proxy, or nothing when it takes no password.
+  String _proxyCredentials() {
+    final password = _localProxyPassword();
+    if (password == null || password.isEmpty) return "";
+    return "$localProxyUser:$password@";
   }
 
   Future<Response<T>> get<T>(

@@ -10,6 +10,7 @@ import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/gen/hiddify_core_generated_bindings.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_certificate_pin.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
+import 'package:hiddify/hiddifycore/core_interface/local_proxy_auth.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
@@ -79,6 +80,10 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
   /// The credential the core requires on every call (requireSecret,
   /// grpc_server.go). New for each process, never stored.
   static final String secret = generateRandomPassword(100);
+
+  /// From [secret]: on desktop the core in this process runs the tunnel.
+  @override
+  String? get localProxyPassword => deriveLocalProxyPassword(secret);
 
   // The channel behind fgClient and bgClient, kept so a later setup can shut it
   // down rather than leave it connected until its idle timeout.

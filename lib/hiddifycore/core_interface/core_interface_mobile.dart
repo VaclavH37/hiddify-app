@@ -10,6 +10,7 @@ import 'package:hiddify/core/utils/laststeam.dart';
 import 'package:hiddify/hiddifycore/background_time.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_certificate_pin.dart';
 import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
+import 'package:hiddify/hiddifycore/core_interface/local_proxy_auth.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
 import 'package:hiddify/singbox/model/core_status.dart';
 
@@ -346,6 +347,13 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
     if (secret == null || secret.isEmpty) return CallOptions();
     return CallOptions(metadata: {_grpcSecretMetadataKey: secret});
   }
+
+  /// From the BACKGROUND secret: the core that runs the tunnel, and so opens
+  /// the local port, is the VPN service's (Android) or the packet tunnel's
+  /// (iOS). It is the value every background call already authenticates with,
+  /// so a mismatch here would show there first.
+  @override
+  String? get localProxyPassword => deriveLocalProxyPassword(_bgSecret);
 
   @override
   Future<CoreStatus> setupBackground(String path, String name) async {

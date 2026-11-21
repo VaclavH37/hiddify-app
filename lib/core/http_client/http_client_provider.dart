@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
+import 'package:hiddify/hiddifycore/rayn_core_service_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -13,6 +14,10 @@ DioHttpClient httpClient(Ref ref) {
     timeout: const Duration(seconds: 15),
     userAgent: ref.watch(appInfoProvider).requireValue.userAgent,
     debug: kDebugMode,
+    // The core's local port asks for a password derived from its gRPC secret
+    // (local_proxy_auth.dart). Read lazily, per request: the core service is
+    // built at bootstrap, and on mobile the secret rotates with every connect.
+    localProxyPassword: () => ref.read(raynCoreServiceProvider).core.localProxyPassword,
   );
 
   // The mixed port is a compile-time constant now that it is not user-editable, so
