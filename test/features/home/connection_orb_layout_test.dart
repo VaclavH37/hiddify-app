@@ -81,4 +81,25 @@ void main() {
     expect(ring.center.dx, closeTo(after.center.dx, 0.5));
     expect(ring.center.dy, closeTo(after.center.dy, 0.5));
   });
+
+  // Connecting, connected, connecting again (a reconnect, a restart): faster
+  // than the ring's and the label's 180 ms fade, each comes back while its
+  // earlier self is still fading out, under the same key. The default
+  // switcher layout then failed with "Duplicate keys found".
+  testWidgets('the ring and the label survive flipping back within their fade', (tester) async {
+    Future<void> show(OrbState state) async {
+      await tester.pumpWidget(host(ConnectionOrb(state: state, onTap: () {}), unboundedHeight: false));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    await show(states['connected']!);
+    await tester.pump(const Duration(milliseconds: 300));
+    for (final name in ['connecting', 'connected', 'connecting', 'connected']) {
+      await show(states[name]!);
+    }
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Connected'), findsOneWidget);
+    expect(find.text('Connecting…'), findsNothing);
+  });
 }

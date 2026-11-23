@@ -7,6 +7,7 @@ import 'package:hiddify/core/theme/rayn_motion.dart';
 import 'package:hiddify/core/theme/rayn_palette.dart';
 import 'package:hiddify/core/theme/rayn_spacing.dart';
 import 'package:hiddify/core/theme/rayn_typography.dart';
+import 'package:hiddify/core/widget/unique_keys_layout.dart';
 import 'package:hiddify/features/auth/account/model/account_state.dart';
 import 'package:hiddify/features/auth/account/notifier/account_state_notifier.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
@@ -315,6 +316,9 @@ class ConnectionOrb extends HookWidget {
       right: -ringOverhang,
       bottom: -ringOverhang,
       child: AnimatedSwitcher(
+        // The ring can come back before its fade-out ends (connecting, connected,
+        // connecting again on a reconnect); see uniqueKeysLayout.
+        layoutBuilder: uniqueKeysLayout(),
         duration: reduce ? Duration.zero : RaynMotion.fast,
         child: state.ring
             // Expand to the positioned box: left to itself the indicator
@@ -349,6 +353,8 @@ class ConnectionOrb extends HookWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: _labelMaxWidth),
               child: AnimatedSwitcher(
+                // Keyed by the label, which can flip back within the fade.
+                layoutBuilder: uniqueKeysLayout(),
                 duration: reduce ? Duration.zero : RaynMotion.fast,
                 child: Text(
                   state.label,
