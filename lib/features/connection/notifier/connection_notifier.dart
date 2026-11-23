@@ -297,6 +297,11 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
       return;
     }
     if (_refusedByAccount()) return;
+    // Connecting from here on. The core reports Starting only once the app has
+    // set it up and read the config, about a second after the tap, and until
+    // then the orb said "Tap to connect". A later status from the core wins over
+    // this one, and a failure below replaces it with the error.
+    state = const AsyncData(Connecting());
     await _recordAppliedTier(activeProfile);
     await _connectionRepo.connect(activeProfile, ref.read(Preferences.disableMemoryLimit)).mapLeft((
       ConnectionFailure err,
