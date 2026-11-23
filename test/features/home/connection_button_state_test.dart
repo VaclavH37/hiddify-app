@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/features/auth/account/model/account_state.dart';
+import 'package:hiddify/features/connection/model/connection_failure.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
 import 'package:hiddify/features/profile/model/account_envelope.dart';
@@ -54,6 +55,31 @@ void main() {
     expect(state.ring, isTrue);
     expect(state.enabled, isFalse);
     expect(state.label, t.connection.disconnecting);
+  });
+
+  // The core reports a failed start as Disconnected with the failure attached.
+  test('a failed start shows as a failure, named, and tappable to retry', () {
+    const failure = ConnectionFailure.missingVpnPermission();
+    expect(
+      orbStateFor(const AsyncData(Disconnected(failure)), 0, t),
+      OrbState(tint: OrbTint.error, label: t.errors.connectivity.missingVpnPermission, ring: false, enabled: true),
+    );
+    // Through a reload too.
+    expect(
+      orbStateFor(
+        const AsyncLoading<ConnectionStatus>().copyWithPrevious(
+          const AsyncData(Disconnected(failure)),
+          isRefresh: false,
+        ),
+        0,
+        t,
+      ).tint,
+      OrbTint.error,
+    );
+  });
+
+  test('a routine stop, with no failure, stays "Tap to connect"', () {
+    expect(orbStateFor(const AsyncData(Disconnected()), 0, t).tint, OrbTint.disconnected);
   });
 
   test('an error names itself and stays tappable so the user can retry', () {

@@ -134,6 +134,16 @@ OrbState _orbStateForStatus(AsyncValue<ConnectionStatus> status, int delay, Tran
     return OrbState(tint: OrbTint.error, label: t.presentShortError(error), ring: false, enabled: true);
   }
   return switch (status.valueOrNull) {
+    // A failed start comes back from the core as Disconnected with the failure
+    // attached. Read as "Tap to connect", it looked as if nothing had been
+    // tried. It shows as a failure until the next tap or status; a routine stop
+    // carries no failure (core_status.dart decides which alerts are one).
+    Disconnected(:final connectionFailure?) => OrbState(
+      tint: OrbTint.error,
+      label: t.presentShortError(connectionFailure),
+      ring: false,
+      enabled: true,
+    ),
     Disconnected() => OrbState(
       tint: OrbTint.disconnected,
       label: t.connection.tapToConnect,
