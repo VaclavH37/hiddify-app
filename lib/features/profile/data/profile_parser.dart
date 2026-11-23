@@ -775,8 +775,14 @@ class ProfileParser {
         }
         if (headers['profile-update-interval'] case final String updateIntervalStr
             when options == null && !isAutoUpdateDisable) {
-          final updateInterval = Duration(hours: int.parse(updateIntervalStr));
-          options = ProfileOptions(updateInterval: updateInterval);
+          // Whole hours. A decimal is truncated, as in subscription-userinfo,
+          // and anything that is not a number is ignored: int.parse threw on
+          // both, failing the whole profile rather than this one setting. 0
+          // still means every refresh cycle, as before; what the middleware
+          // means by it is not known.
+          if (num.tryParse(updateIntervalStr.trim()) case final hours? when hours.isFinite) {
+            options = ProfileOptions(updateInterval: Duration(hours: hours.toInt()));
+          }
         }
 
         SubscriptionInfo? subInfo;

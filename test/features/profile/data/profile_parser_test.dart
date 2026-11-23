@@ -292,6 +292,25 @@ void main() {
     });
   });
 
+  group("profile-update-interval", () {
+    // int.parse threw on anything but an integer, and the parse is one
+    // try/catch, so the whole profile failed to load over one setting.
+    for (final (value, hours) in [("1", 1), ("12.0", 12), ("1.5", 1), (" 2 ", 2), ("0", 0)]) {
+      test("Should read '$value' as $hours h", () {
+        final rp = parseWithHeaders({"profile-title": "title", "profile-update-interval": value});
+        expect(rp.options, equals(ProfileOptions(updateInterval: Duration(hours: hours))));
+      });
+    }
+
+    for (final value in ["abc", "1h", "NaN", "Infinity"]) {
+      test("Should ignore '$value' and still load the profile", () {
+        final rp = parseWithHeaders({"profile-title": "title", "profile-update-interval": value});
+        expect(rp.name, equals("title"));
+        expect(rp.options, isNull);
+      });
+    }
+  });
+
   group("hub tier headers", () {
     // The middleware decides the tier and emits only that tier's outbounds; the
     // client's whole job is to carry these two headers through to the UI and the
