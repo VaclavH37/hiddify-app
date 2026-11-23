@@ -81,6 +81,35 @@ void main() {
     expect(repo.connects, 1);
     expect(state(), const AsyncData<ConnectionStatus>(Connecting()));
   });
+
+  test('a failed connect shows its error while the dialog is open', () async {
+    dialogs.open = Completer();
+    await notifier().toggleConnection();
+    await _until(() => repo.connects == 1);
+    repo.connecting!.complete(left(const ConnectionFailure.missingVpnPermission()));
+    await _until(() => dialogs.shown.isNotEmpty);
+
+    expect(state().hasError, isTrue);
+    expect(state().error, const ConnectionFailure.missingVpnPermission());
+    dialogs.open!.complete();
+    await _settle();
+  });
+
+  test('a status the core sends while the failure dialog is open wins', () async {
+    dialogs.open = Completer();
+    await notifier().toggleConnection();
+    await _until(() => repo.connects == 1);
+    repo.connecting!.complete(left(const ConnectionFailure.unexpected('late')));
+    await _until(() => dialogs.shown.isNotEmpty);
+
+    // The tunnel came up after all.
+    repo.report(const Connected());
+    await _settle();
+    dialogs.open!.complete();
+    await _settle();
+
+    expect(state(), const AsyncData<ConnectionStatus>(Connected()));
+  });
 }
 
 /// Lets microtasks and zero-length timers run until [done], or fails.

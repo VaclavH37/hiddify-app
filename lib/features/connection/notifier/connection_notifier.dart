@@ -307,13 +307,17 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
       ConnectionFailure err,
     ) async {
       loggy.warning("error connecting", err);
+      // Before the dialog, not after it. A status the core sends while the
+      // dialog is open (a late Started, say) must win over this error; set
+      // after, the error overwrote it when the dialog closed and the orb showed
+      // a failure over a tunnel that was working.
+      state = AsyncError(err, StackTrace.current);
       //Go err is not normal object to see the go errors are string and need to be dumped
       await ref
           .read(dialogNotifierProvider.notifier)
           .showCustomAlertFromErr(err.present(ref.read(translationsProvider).requireValue));
       loggy.warning(err);
       await ref.read(Preferences.startedByUser.notifier).update(false);
-      state = AsyncError(err, StackTrace.current);
     }).run();
   }
 
