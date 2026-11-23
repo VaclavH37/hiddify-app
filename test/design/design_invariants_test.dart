@@ -1317,6 +1317,15 @@ void main() {
       expect(box.substring(first, box.indexOf('\n', first)), contains('opens = true'));
     });
   });
+
+  test('the portable ZIP is repacked as a real zip', () {
+    // Git Bash's tar is GNU tar, which ignores -a for .zip and wrote an
+    // uncompressed tar under the .zip name (upstream 8aaeb368).
+    final recipe = _makeRecipes(File('Makefile').readAsStringSync().replaceAll('\r\n', '\n'))['windows-zip-release'];
+    expect(recipe, isNotNull);
+    expect(recipe, contains('/c/Windows/System32/tar.exe -a -cf'));
+    expect(RegExp(r'(^|[\s;])tar -a').hasMatch(recipe!), isFalse, reason: "a bare tar is Git Bash's GNU tar");
+  });
 }
 
 /// Every `XCBuildConfiguration` body in a pbxproj, one string per block.

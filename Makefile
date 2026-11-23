@@ -443,6 +443,9 @@ android-aab-release: check-rulesets-fresh rayn-link-key
 
 windows-release: windows-zip-release windows-exe-release windows-msix-release
 
+# The portable ZIP is repacked with Windows' own tar.exe, which is bsdtar: Git
+# Bash's tar is GNU tar, which ignores -a for .zip and writes an uncompressed tar
+# under the .zip name (Explorer shows it empty, Expand-Archive refuses it).
 windows-zip-release: check-rulesets-fresh rayn-link-key
 	$(FASTFORGE) package \
 	  --platform windows \
@@ -463,7 +466,7 @@ windows-zip-release: check-rulesets-fresh rayn-link-key
 	mkdir -p RaynVPN; \
 	unzip -q "$$ZIP_FILE" -d RaynVPN/; \
 	rm "$$ZIP_FILE"; \
-	tar -a -cf "$$FILE_NAME.zip" RaynVPN; \
+	/c/Windows/System32/tar.exe -a -cf "$$FILE_NAME.zip" RaynVPN; \
 	rm -rf RaynVPN; \
 	$(GREEN)Successful$(DONE)
 
