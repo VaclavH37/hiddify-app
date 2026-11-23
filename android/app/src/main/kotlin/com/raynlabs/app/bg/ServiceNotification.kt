@@ -34,6 +34,7 @@ import com.squareup.wire.GrpcClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 
 import kotlinx.coroutines.Job
@@ -76,6 +77,21 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
 //            CommandClient(GlobalScope, CommandClient.ConnectionType.Status, this)
     private var receiverRegistered = false
 
+    /**
+     * Whether the notification is up: from the start's first [show] (`opens`) until [close].
+     *
+     * A stop can land while a start is still running: the notification's Stop button, the
+     * quick-settings tile or another VPN can end the service during Starting. The start then
+     * went on to show "Started" and begin polling, which put the notification back on a
+     * stopped service, where it stayed, ongoing. A poll whose blocking call was in flight at
+     * the stop did the same, briefly. With this cleared, both do nothing. Guarded by [lock],
+     * since [close] also runs off the main thread.
+     */
+    private var active = false
+    private val lock = Any()
+
+    private fun isUp(): Boolean = synchronized(lock) { active }
+
 
     private val notificationBuilder by lazy {
         NotificationCompat.Builder(service, notificationChannel)
@@ -112,28 +128,34 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
                 }
     }
 
-    fun show(profileName: String, @StringRes contentTextId: Int) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Application.notification.createNotificationChannel(
-                NotificationChannel(
-                    notificationChannel, "Rayn VPN service", NotificationManager.IMPORTANCE_LOW
+    /** Shows the service notification. [opens] is for the start's first call only; see [active]. */
+    fun show(profileName: String, @StringRes contentTextId: Int, opens: Boolean = false) {
+        synchronized(lock) {
+            if (opens) active = true
+            if (!active) return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Application.notification.createNotificationChannel(
+                    NotificationChannel(
+                        notificationChannel, "Rayn VPN service", NotificationManager.IMPORTANCE_LOW
+                    )
                 )
+            }
+            service.startForeground(
+                notificationId, notificationBuilder
+                    .setContentTitle(profileName.takeIf { it.isNotBlank() } ?: "Rayn VPN")
+                    .setContentText(service.getString(contentTextId)).build()
             )
         }
-        service.startForeground(
-            notificationId, notificationBuilder
-                .setContentTitle(profileName.takeIf { it.isNotBlank() } ?: "Rayn VPN")
-                .setContentText(service.getString(contentTextId)).build()
-        )
     }
 
 
     suspend fun start() {
+        if (!isUp()) return
         if (Settings.dynamicNotification && checkPermission()) {
 //            commandClient.connect()
             startListenSystemInfo()
             withContext(Dispatchers.Main) {
-                registerReceiver()
+                if (isUp()) registerReceiver()
             }
         }
     }
@@ -151,10 +173,13 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
         val downlink=status.downlink_total - previous.downlink_total
         val content = "${Libbox.formatBytes(uplink)}/s ↑\t${Libbox.formatBytes(downlink)}/s ↓ \n${resolvedOutbound(status.current_outbound)}"
         val title = "${status.current_profile}"
-        Application.notificationManager.notify(
-                notificationId,
-                notificationBuilder.setContentTitle(title).setContentText(content).build()
-        )
+        synchronized(lock) {
+            if (!active) return
+            Application.notificationManager.notify(
+                    notificationId,
+                    notificationBuilder.setContentTitle(title).setContentText(content).build()
+            )
+        }
     }
 
     // Node tags are generated in final display form by the MW API, so the client
@@ -194,7 +219,12 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
 
     fun close() {
         stopListenSystemInfo()
-        ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        synchronized(lock) {
+            active = false
+            ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            // And by its id: a refresh posted with notify() is not the foreground one.
+            Application.notification.cancel(notificationId)
+        }
         if (receiverRegistered) {
             service.unregisterReceiver(this)
             receiverRegistered = false
@@ -207,6 +237,8 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
         // Cancel any previous stream if still running
         Log.d("notification","startListenSystemInfo")
         streamingJob?.cancel()
+        // Also reached from the screen-on broadcast, which can arrive after a stop.
+        if (!isUp()) return
 
         streamingJob = streamingCoroutineScope.launch(Dispatchers.IO) {
             Log.d("notification", "startListenSystemInfo-launch")
@@ -230,6 +262,8 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
                 while (isActive) {
                     try {
                         val current = coreClient.GetSystemInfo().executeBlocking(Empty())
+                        // Stopped while the blocking call was in flight: throws, ending the loop.
+                        ensureActive()
                         previous?.let { updateStatus(it, current) }
                         previous = current
                     } catch (e: CancellationException) {

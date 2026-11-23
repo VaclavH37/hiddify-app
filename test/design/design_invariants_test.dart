@@ -1282,6 +1282,41 @@ void main() {
     }
     expect(unanchored, isEmpty);
   });
+
+  group('the Android notification stays gone after a stop', () {
+    // A stop during Starting (the notification's Stop button, the tile, another
+    // VPN) was followed by the start's own "Started" and its polling, which put
+    // the notification back on a stopped service, ongoing (upstream 247f1b5a).
+    const dir = 'android/app/src/main/kotlin/com/raynlabs/app/bg';
+    final notification = File('$dir/ServiceNotification.kt').readAsStringSync().replaceAll('\r\n', '\n');
+    final box = File('$dir/BoxService.kt').readAsStringSync().replaceAll('\r\n', '\n');
+
+    /// The body of the Kotlin method [signature], up to its closing brace.
+    String method(String source, String signature) {
+      final start = source.indexOf(signature);
+      expect(start, isNonNegative, reason: '$signature not found');
+      return source.substring(start, source.indexOf('\n    }\n', start));
+    }
+
+    test('close clears the flag and removes the notification by its id too', () {
+      final close = method(notification, 'fun close()');
+      expect(close, contains('active = false'));
+      expect(close, contains('Application.notification.cancel(notificationId)'));
+    });
+
+    test('nothing posts it or polls for it while it is closed', () {
+      expect(method(notification, 'fun show('), contains('if (!active) return'));
+      expect(method(notification, 'fun updateStatus('), contains('if (!active) return'));
+      expect(method(notification, 'suspend fun start()'), contains('if (!isUp()) return'));
+      expect(method(notification, 'fun startListenSystemInfo()'), contains('if (!isUp()) return'));
+    });
+
+    test("the start's first show is the only one that opens it", () {
+      expect(RegExp(r'notification\.show\([^)]*opens = true\)').allMatches(box).length, 1);
+      final first = box.indexOf('notification.show(', box.indexOf('private suspend fun startService()'));
+      expect(box.substring(first, box.indexOf('\n', first)), contains('opens = true'));
+    });
+  });
 }
 
 /// Every `XCBuildConfiguration` body in a pbxproj, one string per block.

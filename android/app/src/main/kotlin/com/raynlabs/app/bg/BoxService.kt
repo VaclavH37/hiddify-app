@@ -149,7 +149,9 @@ class BoxService(
             status.postValue(Status.Starting)
             Log.d(TAG, "starting service")
             withContext(Dispatchers.Main) {
-                notification.show(activeProfileName, R.string.status_starting)
+                // The one call that opens it; a stop during the start closes it for good
+                // (ServiceNotification.active), and the later calls only update it.
+                notification.show(activeProfileName, R.string.status_starting, opens = true)
             }
 
             val selectedConfigPath = Settings.activeConfigPath
