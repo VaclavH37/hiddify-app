@@ -89,6 +89,42 @@ void main() {
     }
   });
 
+  // Every core start sends the restart signal, which rebuilds the connection
+  // notifier: Riverpod then holds an AsyncLoading carrying the last value (a
+  // dependency rebuild, so isRefresh false) until the stream answers again.
+  group('while the status reloads', () {
+    AsyncValue<ConnectionStatus> reloading(AsyncValue<ConnectionStatus> previous) =>
+        const AsyncLoading<ConnectionStatus>().copyWithPrevious(previous, isRefresh: false);
+
+    test('the last status keeps its look instead of the first-load one', () {
+      for (final (status, delay) in [
+        (const AsyncData<ConnectionStatus>(Disconnected()), 0),
+        (const AsyncData<ConnectionStatus>(Connecting()), 0),
+        (const AsyncData<ConnectionStatus>(Connected()), 0),
+        (const AsyncData<ConnectionStatus>(Connected()), 21),
+        (const AsyncData<ConnectionStatus>(Disconnecting()), 0),
+      ]) {
+        final previous = reloading(status);
+        expect(previous, isA<AsyncLoading<ConnectionStatus>>());
+        expect(orbStateFor(previous, delay, t), orbStateFor(status, delay, t), reason: '$status at $delay ms');
+      }
+    });
+
+    test('a reload after an error still shows the error', () {
+      final error = AsyncError<ConnectionStatus>(Exception('boom'), StackTrace.empty);
+      expect(orbStateFor(reloading(error), 0, t), orbStateFor(error, 0, t));
+      expect(orbStateFor(reloading(error), 0, t).tint, OrbTint.error);
+    });
+
+    test('an error carrying an older value shows the error, not the value', () {
+      final error = AsyncError<ConnectionStatus>(
+        Exception('boom'),
+        StackTrace.empty,
+      ).copyWithPrevious(const AsyncData(Connected()));
+      expect(orbStateFor(error, 21, t).tint, OrbTint.error);
+    });
+  });
+
   group('account verdict', () {
     final expired = AccountExpired(details: AccountExpiry.none, detectedAt: DateTime.utc(2026, 9, 14));
     final unavailable = AccountUnavailable(code: 'ACCOUNT_SUSPENDED', detectedAt: DateTime.utc(2026, 9, 14));

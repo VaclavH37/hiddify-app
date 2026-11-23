@@ -122,49 +122,54 @@ OrbState orbStateFor(
   );
 }
 
+/// Reads the status through a reload. Every core start sends the restart
+/// signal, which rebuilds the connection notifier, and until its stream answers
+/// again Riverpod holds an AsyncLoading that still carries the last value (or
+/// the last error). Matching settled data only, the orb flashed its dimmed
+/// first-load look in the middle of every connect.
 OrbState _orbStateForStatus(AsyncValue<ConnectionStatus> status, int delay, Translations t) {
-  return switch (status) {
-    AsyncData(value: Disconnected()) => OrbState(
+  // An error first: a reload after one carries it with no value, and an error
+  // can carry an older value too.
+  if (status case AsyncValue(hasError: true, :final error?)) {
+    return OrbState(tint: OrbTint.error, label: t.presentShortError(error), ring: false, enabled: true);
+  }
+  return switch (status.valueOrNull) {
+    Disconnected() => OrbState(
       tint: OrbTint.disconnected,
       label: t.connection.tapToConnect,
       ring: false,
       enabled: true,
     ),
-    AsyncData(value: Connecting()) => OrbState(
-      tint: OrbTint.connecting,
-      label: t.connection.connecting,
-      ring: true,
-      enabled: false,
-    ),
-    AsyncData(value: Connected()) when delay <= 0 => OrbState(
+    Connecting() => OrbState(tint: OrbTint.connecting, label: t.connection.connecting, ring: true, enabled: false),
+    Connected() when delay <= 0 => OrbState(
       tint: OrbTint.connecting,
       label: t.connection.connecting,
       ring: true,
       enabled: true,
       isConnected: true,
     ),
-    AsyncData(value: Connected()) => OrbState(
+    Connected() => OrbState(
       tint: OrbTint.connected,
       label: t.connection.connected,
       ring: false,
       enabled: true,
       isConnected: true,
     ),
-    AsyncData(value: Disconnecting()) => OrbState(
+    Disconnecting() => OrbState(
       tint: OrbTint.connecting,
       label: t.connection.disconnecting,
       ring: true,
       enabled: false,
     ),
-    AsyncError(:final error) => OrbState(
-      tint: OrbTint.error,
-      label: t.presentShortError(error),
-      ring: false,
-      enabled: true,
-    ),
-    // AsyncLoading: the initial status has not arrived. The old fall-through
+    // No status at all: the first one has not arrived. The old fall-through
     // painted this red for a frame, then navy with no label at all.
-    _ => OrbState(tint: OrbTint.disconnected, label: t.connection.starting, ring: false, enabled: false, dimmed: true),
+    null => OrbState(
+      tint: OrbTint.disconnected,
+      label: t.connection.starting,
+      ring: false,
+      enabled: false,
+      dimmed: true,
+    ),
   };
 }
 
