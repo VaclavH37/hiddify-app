@@ -1246,6 +1246,23 @@ void main() {
       expect(announcing, ['lib/features/auth/widget/account_section.dart']);
     });
   });
+
+  test('every share sheet is anchored', () {
+    // Unanchored, iOS refuses the sheet wherever it is a popover (iPad, and
+    // iPhone on recent iOS): the diagnostics export fell to the clipboard every
+    // time (upstream c49d6edb). Each call is read up to its closing `;`.
+    final unanchored = <String>[];
+    for (final file in _dartFilesUnder('lib')) {
+      final source = _withoutLineComments(file.readAsStringSync().replaceAll('\r\n', '\n'), '//');
+      for (final call in RegExp(r'Share\.share\w*\(').allMatches(source)) {
+        final statement = source.substring(call.start, source.indexOf(';', call.start));
+        if (!statement.contains('sharePositionOrigin: shareOrigin()')) {
+          unanchored.add('${file.path.replaceAll(r'\', '/')}: ${statement.split('\n').first}');
+        }
+      }
+    }
+    expect(unanchored, isEmpty);
+  });
 }
 
 /// Every `XCBuildConfiguration` body in a pbxproj, one string per block.

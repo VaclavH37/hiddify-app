@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:hiddify/core/utils/share_origin.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:loggy/loggy.dart';
 import 'package:share_plus/share_plus.dart';
@@ -33,7 +34,7 @@ abstract class UriUtils {
     try {
       loggy.debug("sharing [$uri]");
       final file = XFile(uri.path, mimeType: mimeType);
-      final result = await Share.shareXFiles([file]);
+      final result = await Share.shareXFiles([file], sharePositionOrigin: shareOrigin());
       loggy.debug("share result: ${result.raw}");
       return result.status == ShareResultStatus.success;
     } catch (e, stackTrace) {

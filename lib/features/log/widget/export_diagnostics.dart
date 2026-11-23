@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
+import 'package:hiddify/core/utils/share_origin.dart';
 import 'package:hiddify/features/log/data/diagnostics_exporter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -23,7 +24,11 @@ Future<void> exportDiagnostics(WidgetRef ref, Translations t) async {
     return;
   }
   try {
-    await Share.shareXFiles([for (final file in files) XFile(file.path, mimeType: "text/plain")]);
+    // Anchored: on iOS the sheet is a popover on iPad and recent iPhones, and
+    // without an anchor it was refused, so every export fell to the clipboard.
+    await Share.shareXFiles([
+      for (final file in files) XFile(file.path, mimeType: "text/plain"),
+    ], sharePositionOrigin: shareOrigin());
   } catch (e) {
     // Fall back to the clipboard rather than dead-ending. The share sheet goes
     // through a native plugin and a UIActivityViewController; when that throws
