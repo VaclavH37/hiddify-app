@@ -131,6 +131,41 @@ void main() {
     expect(dialogs.shown, hasLength(1));
     expect(container.read(Preferences.startedByUser), isFalse);
   });
+
+  test('a tap while connected shows Disconnecting before the core stops', () async {
+    repo.report(const Connected());
+    await _until(() => state() == const AsyncData<ConnectionStatus>(Connected()));
+
+    final tap = notifier().toggleConnection();
+    await _until(() => repo.disconnects == 1);
+
+    expect(state(), const AsyncData<ConnectionStatus>(Disconnecting()));
+
+    repo.disconnecting!.complete(right(unit));
+    repo.report(const Disconnected());
+    await tap;
+    await _until(() => state() == const AsyncData<ConnectionStatus>(Disconnected()));
+  });
+
+  // Logout or an app update can stop a connect in its first second, while the
+  // last status the core reported is still the Disconnected it started from:
+  // the stop is then a repeat, which the status stream drops.
+  test('a stop the status stream drops as a repeat does not leave Disconnecting', () async {
+    await notifier().toggleConnection();
+    await _until(() => repo.connects == 1);
+    expect(state(), const AsyncData<ConnectionStatus>(Connecting()));
+
+    final abort = notifier().abortConnection();
+    await _until(() => repo.disconnects == 1);
+    expect(state(), const AsyncData<ConnectionStatus>(Disconnecting()));
+    repo.disconnecting!.complete(right(unit));
+    // The core reports a stop, which is the same Disconnected again.
+    repo.report(const Disconnected());
+    await abort;
+    await _settle();
+
+    expect(state(), const AsyncData<ConnectionStatus>(Disconnected()));
+  });
 }
 
 /// Lets microtasks and zero-length timers run until [done], or fails.
@@ -202,8 +237,9 @@ class _Repo implements ConnectionRepository {
   @override
   TaskEither<ConnectionFailure, Unit> setup() => TaskEither.right(unit);
 
+  /// Drops repeats, as connectionStatusFrom does.
   @override
-  Stream<ConnectionStatus> watchConnectionStatus() => _statuses.stream;
+  Stream<ConnectionStatus> watchConnectionStatus() => _statuses.stream.distinct();
 
   @override
   TaskEither<ConnectionFailure, Unit> connect(ProfileEntity activeProfile, bool disableMemoryLimit) => TaskEither(() {

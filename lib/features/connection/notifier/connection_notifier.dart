@@ -73,6 +73,7 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
     ref.watch(coreRestartSignalProvider);
 
     yield* _connectionRepo.watchConnectionStatus().doOnData((event) {
+      _lastReported = event;
       if (event case Disconnected(connectionFailure: final _?) when PlatformUtils.isDesktop) {
         // Deferred to a microtask: this runs inside the connection-status stream,
         // so updating a provider here mutates state during another provider's
@@ -84,6 +85,10 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
   }
 
   ConnectionRepository get _connectionRepo => ref.read(connectionRepositoryProvider);
+
+  /// The last status the core reported, as opposed to the Connecting or
+  /// Disconnecting this notifier sets itself around a tap (see [_disconnect]).
+  ConnectionStatus? _lastReported;
 
   Future<void> mayConnect() async {
     if (state case AsyncData(:final value)) {
@@ -333,11 +338,22 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
     // then be refused its ref calls.
     final dialogs = ref.read(dialogNotifierProvider.notifier);
     final t = ref.read(translationsProvider).requireValue;
-    await _connectionRepo.disconnect().mapLeft((err) {
+    // Disconnecting from the tap. The core often goes from Started to Stopped
+    // with no Stopping in between, and the orb held a green, tappable
+    // "Connected" until then.
+    state = const AsyncData(Disconnecting());
+    final result = await _connectionRepo.disconnect().mapLeft((err) {
       loggy.warning("error disconnecting", err);
       dialogs.showCustomAlertFromErr(err.present(t));
       state = AsyncError(err, StackTrace.current);
     }).run();
+    // The core's stop arrives through a stream that drops repeats. When the last
+    // status it reported was already Disconnected (a stop during the first
+    // second of a connect, before the core said Starting), the stop never
+    // arrives, and the orb would hold Disconnecting with taps off.
+    if (result.isRight() && state.valueOrNull is Disconnecting && _lastReported is Disconnected) {
+      state = AsyncData(_lastReported!);
+    }
   }
 }
 
