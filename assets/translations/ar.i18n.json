@@ -290,6 +290,8 @@
       "serviceNotRunning": "الخدمة لا تعمل",
       "missingPrivilege": "صلاحيات مطلوبة",
       "missingPrivilegeMsg": "وضع الـ VPN يتطلب صلاحيات المسؤول. يرجى إعادة تشغيل التطبيق كمسؤول أو تغيير وضع الخدمة.",
+      "tunAddressInUse": "شبكة VPN أخرى نشطة",
+      "tunAddressInUseMsg": "لا يمكن تشغيل Rayn VPN أثناء اتصال شبكة VPN أخرى. أوقف شبكة VPN الأخرى وحاول مرة أخرى.",
       "invalidConfigOptions": "خيارات تكوين غير صالحة",
       "invalidConfig": "تكوين غير صالح"
     }

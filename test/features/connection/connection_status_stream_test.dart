@@ -161,4 +161,53 @@ void main() {
       expect(coreStatusSettlesStart(const CoreStatus.stopping()), isFalse);
     });
   });
+
+  // On Windows the core gives its TUN adapter 172.19.0.1; another VPN using it
+  // made the start fail with Windows' raw text, in the system's language.
+  group('another VPN holding the TUN address', () {
+    const english =
+        'failed to start core START_SERVICE start service: start inbound/tun[tun-in]: '
+        'configure tun interface: set ipv4 address: The object already exists.';
+    // Windows words its part in the system language; sing-tun's part stays.
+    const chinese =
+        'failed to start core START_SERVICE start service: start inbound/tun[tun-in]: '
+        'configure tun interface: set ipv4 address: 对象已存在。';
+    const ipv6 = 'start inbound/tun[tun-in]: configure tun interface: set ipv6 address: The object already exists.';
+
+    test('a start that failed on it is named, whatever the language', () {
+      for (final message in [english, chinese, ipv6]) {
+        for (final alert in [CoreAlert.startFailed, CoreAlert.startService]) {
+          expect(
+            CoreStatus.stopped(alert: alert, message: message).getCoreAlert(),
+            const ConnectionFailure.tunAddressInUse(),
+            reason: '$alert: $message',
+          );
+        }
+      }
+    });
+
+    test('reaches the orb through the status stream too', () async {
+      final status = CoreStatus.fromCoreInfo(
+        CoreInfoResponse(coreState: CoreStates.STOPPED, messageType: MessageType.START_SERVICE, message: english),
+      );
+      expect(
+        await connectionStatusFrom(Stream.value(status)).single,
+        const Disconnected(ConnectionFailure.tunAddressInUse()),
+      );
+    });
+
+    test('other start failures keep their own reading', () {
+      const denied = 'start inbound/tun[tun-in]: configure tun interface: Access is denied.';
+      expect(
+        const CoreStatus.stopped(alert: CoreAlert.startFailed, message: denied).getCoreAlert(),
+        isA<UnexpectedConnectionFailure>(),
+      );
+      // A config error that happens to mention the words is not a start.
+      expect(
+        const CoreStatus.stopped(alert: CoreAlert.emptyConfiguration, message: english).getCoreAlert(),
+        isA<InvalidConfig>(),
+      );
+      expect(isTunAddressInUse(null), isFalse);
+    });
+  });
 }

@@ -90,6 +90,12 @@ sealed class CoreStatus with _$CoreStatus {
         CoreAlert.createService ||
         CoreAlert.startService ||
         CoreAlert.alreadyStarted ||
+        CoreAlert.startFailed when isTunAddressInUse(message) => const ConnectionFailure.tunAddressInUse(),
+
+        CoreAlert.startCommandServer ||
+        CoreAlert.createService ||
+        CoreAlert.startService ||
+        CoreAlert.alreadyStarted ||
         CoreAlert.startFailed => ConnectionFailure.unexpected("${alert.name} - $message"),
 
         _ => null,
@@ -99,6 +105,18 @@ sealed class CoreStatus with _$CoreStatus {
     };
   }
 }
+
+/// Whether [message] is a start that failed because the TUN adapter could not
+/// take its address: another adapter already has it, which in practice is
+/// another VPN using the same one (172.19.0.1, or the IPv6 fdfe:dcba:9876::1
+/// that Hiddify-family clients share). Windows only: on Android and iOS the
+/// platform owns the tunnel.
+///
+/// Only sing-tun's own words are matched. What follows them is Windows' text
+/// for the error, which is in the system's language: "The object already
+/// exists." on an English install, something else elsewhere.
+bool isTunAddressInUse(String? message) =>
+    message != null && message.contains(RegExp('configure tun interface: set ipv[46] address: '));
 
 /// Whether a status from the core's own stream is news to the app.
 ///

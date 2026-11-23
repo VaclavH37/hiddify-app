@@ -290,6 +290,8 @@
       "serviceNotRunning": "Le service n'est pas en cours d'exécution",
       "missingPrivilege": "Autorisation manquante",
       "missingPrivilegeMsg": "Le mode VPN nécessite des droits d'administrateur. Veuillez relancer l'application en tant qu'administrateur ou changer le mode de service.",
+      "tunAddressInUse": "Un autre VPN est actif",
+      "tunAddressInUseMsg": "Rayn VPN ne peut pas démarrer tant qu'un autre VPN est connecté. Désactivez l'autre VPN, puis réessayez.",
       "invalidConfigOptions": "Options de configuration invalides",
       "invalidConfig": "Configuration invalide"
     }

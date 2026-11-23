@@ -290,6 +290,8 @@
       "serviceNotRunning": "服務未運行",
       "missingPrivilege": "缺少權限",
       "missingPrivilegeMsg": "VPN 模式需要管理員權限。請以管理員身份重新啟動應用，或更改服務模式。",
+      "tunAddressInUse": "另一個 VPN 正在運作",
+      "tunAddressInUseMsg": "另一個 VPN 已連線時，Rayn VPN 無法啟動。請關閉另一個 VPN 後再試一次。",
       "invalidConfigOptions": "設定選項無效",
       "invalidConfig": "設定無效"
     }

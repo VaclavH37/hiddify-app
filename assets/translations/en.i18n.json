@@ -474,6 +474,8 @@
       "serviceNotRunning": "Service is not running",
       "missingPrivilege": "Missing privilege",
       "missingPrivilegeMsg": "VPN mode requires administrator privileges. Either relaunch the app as administrator or change service mode.",
+      "tunAddressInUse": "Another VPN is active",
+      "tunAddressInUseMsg": "Rayn VPN can't start while another VPN is connected. Turn off the other VPN and try again.",
       "invalidConfigOptions": "Invalid configuration options",
       "invalidConfig": "Invalid configuration"
     }

@@ -290,6 +290,8 @@
       "serviceNotRunning": "Layanan tidak berjalan",
       "missingPrivilege": "Izin hilang",
       "missingPrivilegeMsg": "Mode VPN memerlukan izin administrator. Harap mulai ulang aplikasi sebagai administrator atau ubah mode layanan.",
+      "tunAddressInUse": "VPN lain sedang aktif",
+      "tunAddressInUseMsg": "Rayn VPN tidak dapat dimulai saat VPN lain terhubung. Matikan VPN lain, lalu coba lagi.",
       "invalidConfigOptions": "Opsi konfigurasi tidak valid",
       "invalidConfig": "Konfigurasi tidak valid"
     }

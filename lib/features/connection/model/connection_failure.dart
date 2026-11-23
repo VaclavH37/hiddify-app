@@ -21,6 +21,11 @@ sealed class ConnectionFailure with _$ConnectionFailure, Failure {
   @With<ExpectedMeasuredFailure>()
   const factory ConnectionFailure.missingPrivilege() = MissingPrivilege;
 
+  /// Another adapter already has the address the core gives its TUN: another
+  /// VPN is connected (see isTunAddressInUse in core_status.dart).
+  @With<ExpectedMeasuredFailure>()
+  const factory ConnectionFailure.tunAddressInUse() = TunAddressInUse;
+
   @With<ExpectedMeasuredFailure>()
   const factory ConnectionFailure.invalidConfigOption([String? message, ConfigOptionFailure? configOptionFailure]) =
       InvalidConfigOption;
@@ -45,6 +50,7 @@ sealed class ConnectionFailure with _$ConnectionFailure, Failure {
         message: message,
       ),
       MissingPrivilege() => (type: t.errors.singbox.missingPrivilege, message: t.errors.singbox.missingPrivilegeMsg),
+      TunAddressInUse() => (type: t.errors.singbox.tunAddressInUse, message: t.errors.singbox.tunAddressInUseMsg),
       InvalidConfigOption(:final message, :final configOptionFailure) =>
         configOptionFailure?.present(t) ?? (type: t.errors.singbox.invalidConfigOptions, message: message),
       InvalidConfig(:final message) => (type: t.errors.singbox.invalidConfig, message: message),

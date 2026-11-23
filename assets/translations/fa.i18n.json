@@ -290,6 +290,8 @@
       "serviceNotRunning": "سرویس در حال اجرا نیست",
       "missingPrivilege": "دسترسی وجود ندارد",
       "missingPrivilegeMsg": "حالت VPN به دسترسی ادمین نیاز دارد. یا برنامه را به عنوان ادمین مجدداً راه‌اندازی کنید یا حالت سرویس را تغییر دهید.",
+      "tunAddressInUse": "یک VPN دیگر فعال است",
+      "tunAddressInUseMsg": "تا وقتی VPN دیگری متصل است، Rayn VPN نمی‌تواند شروع به کار کند. VPN دیگر را خاموش کنید و دوباره تلاش کنید.",
       "invalidConfigOptions": "گزینه‌های پیکربندی نامعتبر",
       "invalidConfig": "پیکربندی نامعتبر"
     }

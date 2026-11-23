@@ -290,6 +290,8 @@
       "serviceNotRunning": "Servis çalışmıyor",
       "missingPrivilege": "Eksik yetki",
       "missingPrivilegeMsg": "VPN modu yönetici yetkisi gerektirir. Lütfen uygulamayı yönetici olarak yeniden başlatın veya servis modunu değiştirin.",
+      "tunAddressInUse": "Başka bir VPN etkin",
+      "tunAddressInUseMsg": "Başka bir VPN bağlıyken Rayn VPN başlatılamaz. Diğer VPN'i kapatıp tekrar deneyin.",
       "invalidConfigOptions": "Geçersiz yapılandırma seçenekleri",
       "invalidConfig": "Geçersiz yapılandırma"
     }
