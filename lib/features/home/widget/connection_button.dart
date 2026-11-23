@@ -194,7 +194,7 @@ class ConnectionButton extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final connectionStatus = ref.watch(connectionNotifierProvider);
-    final delay = ref.watch(activeProxyNotifierProvider.select((value) => value.valueOrNull?.urlTestDelay ?? 0));
+    final delay = ref.watch(activeProxyNotifierProvider.select(activeProxyDelay));
     // A timed-out test counts as measured for the state table; see orbStateFor.
     final measuredDelay = delay >= _delayTimeout ? _delayTimeout : delay;
     final account = ref.watch(accountStateNotifierProvider);

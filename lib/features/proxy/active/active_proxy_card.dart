@@ -127,7 +127,7 @@ class _LatencyLabel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final palette = context.rayn;
-    final delay = ref.watch(activeProxyNotifierProvider.select((value) => value.valueOrNull?.urlTestDelay ?? 0));
+    final delay = ref.watch(activeProxyNotifierProvider.select(activeProxyDelay));
 
     final (String text, String semantics, Color colour) = switch (delay) {
       <= 0 => (t.pages.proxies.delay.measuring, t.pages.proxies.delay.testing, palette.textMuted),

@@ -29,13 +29,12 @@ void main() {
 
     test('no sentry dependency in pubspec.yaml', () {
       final pubspec = File('pubspec.yaml').readAsStringSync();
-      final offenders = const ['sentry_flutter', 'sentry_dart_plugin', 'sentry:']
-          .where(pubspec.contains)
-          .toList();
+      final offenders = const ['sentry_flutter', 'sentry_dart_plugin', 'sentry:'].where(pubspec.contains).toList();
       expect(
         offenders,
         isEmpty,
-        reason: 'pubspec.yaml declares $offenders. Sentry was removed from this '
+        reason:
+            'pubspec.yaml declares $offenders. Sentry was removed from this '
             'fork; see DESIGN-INVARIANTS.md#no-sentry.',
       );
     });
@@ -45,16 +44,16 @@ void main() {
       expect(
         RegExp(r'^\s{2}sentry\w*:', multiLine: true).hasMatch(lock),
         isFalse,
-        reason: 'pubspec.lock resolves a sentry package, so something still '
+        reason:
+            'pubspec.lock resolves a sentry package, so something still '
             'depends on it transitively.',
       );
     });
 
     test('no sentry import anywhere in lib/', () {
-      final offenders = _dartFilesUnder('lib')
-          .where((f) => f.readAsStringSync().contains("package:sentry"))
-          .map((f) => f.path)
-          .toList();
+      final offenders = _dartFilesUnder(
+        'lib',
+      ).where((f) => f.readAsStringSync().contains("package:sentry")).map((f) => f.path).toList();
       expect(offenders, isEmpty, reason: 'sentry imported by: $offenders');
     });
   });
@@ -75,7 +74,8 @@ void main() {
       expect(
         RegExp(r'^\s{2}flutter_test:\s*$', multiLine: true).hasMatch(pubspec),
         isTrue,
-        reason: 'pubspec.yaml does not declare flutter_test under '
+        reason:
+            'pubspec.yaml does not declare flutter_test under '
             'dev_dependencies. Every file in test/ then imports a package '
             'this project does not depend on, which is both 30 analyzer infos '
             'and a suite that stops compiling the moment an unrelated UI '
@@ -86,13 +86,13 @@ void main() {
     test('the lockfile resolves it as a direct dev dependency', () {
       final lock = File('pubspec.lock').readAsStringSync();
       // \s+ rather than \n: this file is CRLF on a Windows checkout.
-      final entry = RegExp(r'^  flutter_test:\s+dependency: (.+?)\s*$', multiLine: true)
-          .firstMatch(lock);
+      final entry = RegExp(r'^  flutter_test:\s+dependency: (.+?)\s*$', multiLine: true).firstMatch(lock);
       expect(entry, isNotNull, reason: 'pubspec.lock has no flutter_test entry');
       expect(
         entry!.group(1),
         '"direct dev"',
-        reason: 'flutter_test resolves as ${entry.group(1)}. If that is '
+        reason:
+            'flutter_test resolves as ${entry.group(1)}. If that is '
             '`transitive`, the pubspec declaration was removed and the suite '
             'is once again compiling only by accident.',
       );
@@ -110,13 +110,12 @@ void main() {
         // Strip XML comments first: main/AndroidManifest.xml documents the
         // removal in prose, and a naive substring search would flag its own
         // explanation.
-        final xml = manifest
-            .readAsStringSync()
-            .replaceAll(RegExp('<!--.*?-->', dotAll: true), '');
+        final xml = manifest.readAsStringSync().replaceAll(RegExp('<!--.*?-->', dotAll: true), '');
         expect(
           xml.contains('QUERY_ALL_PACKAGES'),
           isFalse,
-          reason: '${manifest.path} requests QUERY_ALL_PACKAGES. It blocks Play '
+          reason:
+              '${manifest.path} requests QUERY_ALL_PACKAGES. It blocks Play '
               'release without a sensitive-permission declaration and was '
               'removed with per-app proxy.',
         );
@@ -244,7 +243,10 @@ void main() {
     test('Info.plist declares one scene, run by FlutterSceneDelegate, from the Main storyboard', () {
       expect(plist, contains('<key>UIApplicationSceneManifest</key>'));
       expect(RegExp(r'<key>UIApplicationSupportsMultipleScenes</key>\s*<false/>').hasMatch(plist), isTrue);
-      expect(RegExp(r'<key>UISceneDelegateClassName</key>\s*<string>FlutterSceneDelegate</string>').hasMatch(plist), isTrue);
+      expect(
+        RegExp(r'<key>UISceneDelegateClassName</key>\s*<string>FlutterSceneDelegate</string>').hasMatch(plist),
+        isTrue,
+      );
       expect(RegExp(r'<key>UISceneStoryboardFile</key>\s*<string>Main</string>').hasMatch(plist), isTrue);
     });
 
@@ -353,12 +355,12 @@ void main() {
     // counts as the last refresh: live on 2026-10-17, a fresh sign-in got
     // "failover is not available (… standby cached: false …)" for its whole
     // first hour.
-    final notifier = File('lib/features/profile/notifier/profiles_update_notifier.dart')
-        .readAsStringSync()
-        .replaceAll('\r\n', '\n');
-    final import = File('lib/features/profile/notifier/profile_notifier.dart')
-        .readAsStringSync()
-        .replaceAll('\r\n', '\n');
+    final notifier = File(
+      'lib/features/profile/notifier/profiles_update_notifier.dart',
+    ).readAsStringSync().replaceAll('\r\n', '\n');
+    final import = File(
+      'lib/features/profile/notifier/profile_notifier.dart',
+    ).readAsStringSync().replaceAll('\r\n', '\n');
 
     test('a successful import starts the fetch', () {
       final success = import.indexOf('"successfully added profile"');
@@ -391,9 +393,9 @@ void main() {
     // blocked; a failed check would feed the same wrong verdict into its hub
     // health counts. So every place the ladder acts on a dead tunnel asks
     // first, after its last await.
-    final ladder = File('lib/features/profile/notifier/profiles_update_notifier.dart')
-        .readAsStringSync()
-        .replaceAll('\r\n', '\n');
+    final ladder = File(
+      'lib/features/profile/notifier/profiles_update_notifier.dart',
+    ).readAsStringSync().replaceAll('\r\n', '\n');
 
     test('the URL-test fast path asks before failing over', () {
       final start = ladder.indexOf('Future<void> _failOverOnUrlTestFailure()');
@@ -585,9 +587,7 @@ void main() {
     final recipes = _makeRecipes(makefile);
 
     test('FF_OBFUSCATE is defined and carries both flags', () {
-      final definition = RegExp(r'^FF_OBFUSCATE\s*=\s*(.+)$', multiLine: true)
-          .firstMatch(makefile)
-          ?.group(1);
+      final definition = RegExp(r'^FF_OBFUSCATE\s*=\s*(.+)$', multiLine: true).firstMatch(makefile)?.group(1);
       expect(definition, isNotNull, reason: 'FF_OBFUSCATE is not defined in the Makefile');
       expect(definition, contains('obfuscate'));
       expect(definition, contains('split-debug-info'));
@@ -599,14 +599,11 @@ void main() {
         expect(
           recipe,
           isNotNull,
-          reason: 'target "$target" no longer exists in the Makefile — if it was '
+          reason:
+              'target "$target" no longer exists in the Makefile — if it was '
               'renamed, update this list; if it was removed, remove it here too.',
         );
-        expect(
-          recipe,
-          contains(r'$(FF_OBFUSCATE)'),
-          reason: 'release target "$target" builds without --obfuscate.',
-        );
+        expect(recipe, contains(r'$(FF_OBFUSCATE)'), reason: 'release target "$target" builds without --obfuscate.');
       });
     }
   });
@@ -618,14 +615,8 @@ void main() {
     // other half — a minified build that strips them still builds and signs,
     // then fails at connect.
     // DESIGN-INVARIANTS.md#android-release-r8
-    final gradle = _withoutLineComments(
-      File('android/app/build.gradle').readAsStringSync(),
-      '//',
-    );
-    final rules = _withoutLineComments(
-      File('android/app/proguard-rules.pro').readAsStringSync(),
-      '#',
-    );
+    final gradle = _withoutLineComments(File('android/app/build.gradle').readAsStringSync(), '//');
+    final rules = _withoutLineComments(File('android/app/proguard-rules.pro').readAsStringSync(), '#');
     final makefile = File('Makefile').readAsStringSync();
     final recipes = _makeRecipes(makefile);
 
@@ -647,7 +638,8 @@ void main() {
         expect(
           rules,
           contains(keep),
-          reason: 'Go finds the bridge classes and our callbacks by name over '
+          reason:
+              'Go finds the bridge classes and our callbacks by name over '
               'JNI; R8 renames or removes them without this keep.',
         );
       });
@@ -658,16 +650,18 @@ void main() {
         expect(
           rules,
           isNot(contains(option)),
-          reason: '$option hides missing classes or zeroes a Play DEX score '
+          reason:
+              '$option hides missing classes or zeroes a Play DEX score '
               'for the whole app.',
         );
       });
     }
 
     test('archive-r8-mapping fails a build that left no mapping', () {
-      final definition = RegExp(r'^define archive-r8-mapping\n([\s\S]*?)^endef', multiLine: true)
-          .firstMatch(makefile.replaceAll('\r\n', '\n'))
-          ?.group(1);
+      final definition = RegExp(
+        r'^define archive-r8-mapping\n([\s\S]*?)^endef',
+        multiLine: true,
+      ).firstMatch(makefile.replaceAll('\r\n', '\n'))?.group(1);
       expect(definition, isNotNull, reason: 'archive-r8-mapping is not defined in the Makefile');
       expect(definition, contains('mapping.txt'));
       expect(definition, contains('exit 1'));
@@ -680,7 +674,8 @@ void main() {
         expect(
           recipe,
           contains(r'rm -rf $(R8_MAPPING_DIR)'),
-          reason: 'without the delete, a mapping left by an earlier build is '
+          reason:
+              'without the delete, a mapping left by an earlier build is '
               'archived and R8 being off goes unnoticed.',
         );
         expect(recipe, contains(r'$(call archive-r8-mapping,'));
@@ -734,24 +729,32 @@ void main() {
     // project.pbxproj.
     String read(String path) => File(path).readAsStringSync().replaceAll('\r\n', '\n');
     String withoutComments(String xml) => xml.replaceAll(RegExp('<!--.*?-->', dotAll: true), '');
-    bool hasTrueKey(String plist, String key) =>
-        RegExp('<key>${RegExp.escape(key)}</key>\\s*<true/>').hasMatch(plist);
+    bool hasTrueKey(String plist, String key) => RegExp('<key>${RegExp.escape(key)}</key>\\s*<true/>').hasMatch(plist);
 
     final pbxproj = read('macos/Runner.xcodeproj/project.pbxproj');
-    final tunnelConfigs = _buildConfigurations(pbxproj)
-        .where((b) => b.contains('INFOPLIST_FILE = RaynTunnel/Info.plist;'))
-        .toList();
+    final tunnelConfigs = _buildConfigurations(
+      pbxproj,
+    ).where((b) => b.contains('INFOPLIST_FILE = RaynTunnel/Info.plist;')).toList();
 
     test('the shipped entitlements are sandboxed, JIT-free and packet-tunnel only', () {
       for (final path in ['macos/Runner/Release.entitlements', 'macos/RaynTunnel/RaynTunnel.entitlements']) {
         final plist = withoutComments(read(path));
-        expect(hasTrueKey(plist, 'com.apple.security.app-sandbox'), isTrue,
-            reason: '$path is not sandboxed. The Mac App Store refuses an unsandboxed app.');
-        expect(plist.contains('com.apple.security.cs.allow-jit'), isFalse,
-            reason: '$path allows JIT. Only DebugProfile.entitlements needs it, for the Dart VM.');
+        expect(
+          hasTrueKey(plist, 'com.apple.security.app-sandbox'),
+          isTrue,
+          reason: '$path is not sandboxed. The Mac App Store refuses an unsandboxed app.',
+        );
+        expect(
+          plist.contains('com.apple.security.cs.allow-jit'),
+          isFalse,
+          reason: '$path allows JIT. Only DebugProfile.entitlements needs it, for the Dart VM.',
+        );
         expect(plist, contains('<string>packet-tunnel-provider</string>'), reason: path);
-        expect(plist.contains('systemextension'), isFalse,
-            reason: '$path asks for a system-extension provider; the Mac client is an app extension.');
+        expect(
+          plist.contains('systemextension'),
+          isFalse,
+          reason: '$path asks for a system-extension provider; the Mac client is an app extension.',
+        );
       }
     });
 
@@ -762,7 +765,8 @@ void main() {
         expect(
           flags,
           '"-lresolv"',
-          reason: 'RaynTunnel OTHER_LDFLAGS is $flags. It must not inherit: the '
+          reason:
+              'RaynTunnel OTHER_LDFLAGS is $flags. It must not inherit: the '
               'project-level configurations include the Pods-Runner settings, so '
               r'$(inherited) links FlutterMacOS and every plugin into the extension.',
         );
@@ -779,8 +783,11 @@ void main() {
     });
 
     test('no upstream core or Hiddify name is left in the project', () {
-      expect(pbxproj.contains('hiddify-core.dylib'), isFalse,
-          reason: 'the FFI dylib is retired on macOS; the core is RaynCore.xcframework');
+      expect(
+        pbxproj.contains('hiddify-core.dylib'),
+        isFalse,
+        reason: 'the FFI dylib is retired on macOS; the core is RaynCore.xcframework',
+      );
       for (final path in [
         'macos/Runner.xcodeproj/project.pbxproj',
         'macos/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme',
@@ -793,10 +800,9 @@ void main() {
     test('macOS 12 is the floor everywhere', () {
       // Go 1.25, which builds the core, supports macOS 12 and later. A lower
       // target in the project or the Podfile builds, and then fails at launch.
-      final targets = RegExp('MACOSX_DEPLOYMENT_TARGET = ([0-9.]+);')
-          .allMatches(pbxproj)
-          .map((m) => m.group(1))
-          .toSet();
+      final targets = RegExp(
+        'MACOSX_DEPLOYMENT_TARGET = ([0-9.]+);',
+      ).allMatches(pbxproj).map((m) => m.group(1)).toSet();
       expect(targets, {'12.0'});
       expect(read('macos/Podfile'), contains("platform :osx, '12.0'"));
       expect(read('hiddify-core/Makefile'), contains('-macosversion=12.0'));
@@ -829,7 +835,8 @@ void main() {
       expect(
         keyData.contains('const bool kRaynLinkKeyIsDev = true;'),
         isTrue,
-        reason: 'lib/utils/rayn_link_key_data.dart was generated from a real '
+        reason:
+            'lib/utils/rayn_link_key_data.dart was generated from a real '
             'RAYN_LINK_SECRET. Run `make rayn-link-key-dev` before committing. '
             'If you are mid-release-build, this failure is correct — finish the '
             'build, then restore the dev key.',
@@ -886,7 +893,8 @@ void main() {
         expect(
           stale,
           isEmpty,
-          reason: '$setting is $stale in a shipped iOS target, but pubspec says '
+          reason:
+              '$setting is $stale in a shipped iOS target, but pubspec says '
               '$name+$build. Set it to `$derived`, or to the literal if that '
               'build breaks. A mismatched extension version fails App Store '
               'Connect validation.',
@@ -900,7 +908,8 @@ void main() {
       expect(
         declared,
         '${version!.group(1)}.0',
-        reason: "msix_version must be pubspec's version with a trailing .0. "
+        reason:
+            "msix_version must be pubspec's version with a trailing .0. "
             'Note MSIX versions must increase monotonically per identity_name, '
             'so lowering this after a public release blocks upgrades.',
       );
@@ -923,7 +932,8 @@ void main() {
       expect(
         source.contains('PopScope('),
         isFalse,
-        reason: 'A PopScope in a shell branch stays mounted after the user leaves it and swallows back '
+        reason:
+            'A PopScope in a shell branch stays mounted after the user leaves it and swallows back '
             'presses meant for another branch. Handle back in ShellBackHandler instead.',
       );
     });
@@ -979,7 +989,11 @@ void main() {
         final source = File(path).readAsStringSync();
         final shutdowns = 'shutdown()'.allMatches(source).length;
         // Mobile replaces two channels, desktop one (its hello probe is gone).
-        expect(shutdowns, greaterThanOrEqualTo(path.contains('mobile') ? 2 : 1), reason: 'replaced channels must be shut down');
+        expect(
+          shutdowns,
+          greaterThanOrEqualTo(path.contains('mobile') ? 2 : 1),
+          reason: 'replaced channels must be shut down',
+        );
         expect(
           'shutdown().ignore()'.allMatches(source).length,
           shutdowns,
@@ -1037,6 +1051,42 @@ void main() {
     });
   });
 
+  group("a new core session starts without the last one's ping", () {
+    // The core service replays its last outbound list to each new active-groups
+    // stream, and Riverpod keeps the previous outbound on a loading or error
+    // state. Either way a reconnect read "Connected" with the last session's
+    // ping before anything had been measured (upstream 85bb1128).
+    // Line endings normalised: a Windows checkout has this file in CRLF.
+    final core = File('lib/hiddifycore/rayn_core_service.dart').readAsStringSync().replaceAll('\r\n', '\n');
+
+    for (final signature in const [
+      'Future<Either<ConnectionFailure, Unit>> _start(',
+      'TaskEither<String, Unit> stop()',
+      'TaskEither<String, Unit> restart(',
+    ]) {
+      test('$signature empties the replayed outbound list', () {
+        final start = core.indexOf(signature);
+        expect(start, isNot(-1), reason: '$signature not found');
+        final end = core.indexOf('\n  }\n', start);
+        expect(_withoutLineComments(core.substring(start, end), '//'), contains('latest = const [];'));
+      });
+    }
+
+    test('every reader of the active delay goes through activeProxyDelay', () {
+      final direct = <String>[];
+      for (final file in _dartFilesUnder('lib')) {
+        if (file.path.endsWith('.g.dart')) continue;
+        final lines = file.readAsLinesSync();
+        for (var i = 0; i < lines.length; i++) {
+          if (lines[i].contains('activeProxyNotifierProvider') && lines[i].contains('urlTestDelay')) {
+            direct.add('${file.path}:${i + 1}');
+          }
+        }
+      }
+      expect(direct, isEmpty, reason: "read the delay with activeProxyDelay, which drops a previous session's value");
+    });
+  });
+
   group('the shipped core options match the Go golden fixture', () {
     // hiddify-core/v2/config/golden_config_test.go pins the generated sing-box
     // config for the configuration this client actually sends. To do that it
@@ -1053,8 +1103,7 @@ void main() {
     // out of the provider rather than building the provider, which would need a
     // full SharedPreferences harness for no extra signal. It catches the
     // realistic drift: someone edits the literal and forgets the Go side.
-    final source = File('lib/features/settings/data/config_option_repository.dart')
-        .readAsStringSync();
+    final source = File('lib/features/settings/data/config_option_repository.dart').readAsStringSync();
 
     const pinned = <String, String>{
       'region': 'region: "cn"',
@@ -1083,7 +1132,8 @@ void main() {
         expect(
           source.contains(literal),
           isTrue,
-          reason: 'Expected `$literal` in singboxConfigOptions. If this changed '
+          reason:
+              'Expected `$literal` in singboxConfigOptions. If this changed '
               'deliberately, update shipped() in '
               'hiddify-core/v2/config/golden_config_test.go and regenerate the '
               'goldens with -update in the same commit — otherwise the golden '
@@ -1133,11 +1183,10 @@ void main() {
       // be asked for.
       final constants = File('lib/core/model/constants.dart').readAsStringSync();
       expect(
-        constants.contains(
-          'static const diagnosticsBuild = kDebugMode || bool.fromEnvironment("RAYN_DIAGNOSTICS");',
-        ),
+        constants.contains('static const diagnosticsBuild = kDebugMode || bool.fromEnvironment("RAYN_DIAGNOSTICS");'),
         isTrue,
-        reason: 'diagnosticsBuild must stay opt-in: kDebugMode, or an explicit dart-define. '
+        reason:
+            'diagnosticsBuild must stay opt-in: kDebugMode, or an explicit dart-define. '
             'Anything that can be true in an ordinary release build re-enables the log '
             'file, the core debug flag and box.log on every shipped install.',
       );
@@ -1156,7 +1205,8 @@ void main() {
       expect(
         constants.contains('bool.fromEnvironment("MARKETING_SCREENSHOTS") || marketingDelayMsOverride > 0;'),
         isTrue,
-        reason: 'marketingScreenshots must stay exactly two dart-defines wide: '
+        reason:
+            'marketingScreenshots must stay exactly two dart-defines wide: '
             'MARKETING_SCREENSHOTS, or naming a latency. Anything else can make a '
             'shipped build show a latency it never measured and a price nobody charges.',
       );
@@ -1186,22 +1236,16 @@ List<String> _buildConfigurations(String pbxproj) {
   return blocks;
 }
 
-List<File> _dartFilesUnder(String dir) => Directory(dir)
-    .listSync(recursive: true)
-    .whereType<File>()
-    .where((f) => f.path.endsWith('.dart'))
-    .toList();
+List<File> _dartFilesUnder(String dir) =>
+    Directory(dir).listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart')).toList();
 
 /// [text] without the lines that start (after indentation) with [marker], so a
 /// comment explaining a removed setting does not count as the setting.
 String _withoutLineComments(String text, String marker) =>
     text.split('\n').where((line) => !line.trimLeft().startsWith(marker)).join('\n');
 
-List<File> _filesNamed(String dir, String name) => Directory(dir)
-    .listSync(recursive: true)
-    .whereType<File>()
-    .where((f) => f.uri.pathSegments.last == name)
-    .toList();
+List<File> _filesNamed(String dir, String name) =>
+    Directory(dir).listSync(recursive: true).whereType<File>().where((f) => f.uri.pathSegments.last == name).toList();
 
 /// Splits a Makefile into `target -> recipe text`.
 ///

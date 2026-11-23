@@ -91,7 +91,7 @@ class LocalRoutingNotifier extends _$LocalRoutingNotifier with AppLogger {
       tracker.update((
         connected: ref.read(connectionNotifierProvider).valueOrNull is Connected,
         accountBlocked: ref.read(accountStateNotifierProvider).blocksConnect,
-        delay: ref.read(activeProxyNotifierProvider).valueOrNull?.urlTestDelay ?? 0,
+        delay: activeProxyDelay(ref.read(activeProxyNotifierProvider)),
       )),
     );
   }

@@ -44,7 +44,7 @@ void main() {
         activeProfileProvider.overrideWith(_Profile.new),
         accountStateNotifierProvider.overrideWith(_Account.new),
         dialogNotifierProvider.overrideWith(() => dialogs),
-        translationsProvider.overrideWith((ref) async => AppLocale.en.buildSync()),
+        translationsProvider.overrideWith((ref) => AppLocale.en.buildSync()),
         sharedPreferencesProvider.overrideWith((ref) => SharedPreferences.getInstance()),
       ],
     );

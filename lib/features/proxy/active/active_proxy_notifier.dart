@@ -15,6 +15,16 @@ import 'package:rxdart/rxdart.dart';
 
 part 'active_proxy_notifier.g.dart';
 
+/// The active location's URL-test delay for this core session: 0 while it has
+/// not been measured.
+///
+/// Read through unwrapPrevious. After a stop, a reconnect or a reload, Riverpod
+/// keeps the previous outbound on the loading or error state, and read as it
+/// was, a reconnect showed "Connected" with the last session's ping before the
+/// new session had measured anything. Use it with `select`, so every reader of
+/// the delay agrees: the connect orb, the location card, the IP routing check.
+int activeProxyDelay(AsyncValue<OutboundInfo> value) => value.unwrapPrevious().valueOrNull?.urlTestDelay ?? 0;
+
 @Riverpod(keepAlive: true)
 class ActiveProxyNotifier extends _$ActiveProxyNotifier with AppLogger {
   // Synchronous build, returning the stream rather than `async*` + `yield*`.

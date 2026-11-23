@@ -38,6 +38,12 @@ class RaynCoreService with InfraLogger {
   final logController = BehaviorSubject<List<LogMessage>>();
   final CallOptions? grpcOptions = null; //CallOptions(timeout: const Duration(milliseconds: 10000));
   final Map<String, StreamSubscription?> subscriptions = {};
+
+  /// The last outbound list, replayed to each new active-groups stream
+  /// (watchActiveGroups) so a reopened stream starts with what it showed.
+  /// Emptied whenever the core starts, stops or restarts: replayed into the
+  /// next session, the last one's ping made a reconnect read "Connected" with
+  /// a stale number before anything had been measured.
   List<OutboundGroup> latest = [];
 
   Future<void> init() async {
@@ -223,9 +229,7 @@ class RaynCoreService with InfraLogger {
       }
 
       try {
-        await core.bgClient.changeHiddifySettings(
-          ChangeHiddifySettingsRequest(hiddifySettingsJson: payload),
-        );
+        await core.bgClient.changeHiddifySettings(ChangeHiddifySettingsRequest(hiddifySettingsJson: payload));
       } on GrpcError catch (e) {
         if (e.code == StatusCode.unavailable) {
           // Expected before the first connect.
@@ -261,12 +265,7 @@ class RaynCoreService with InfraLogger {
   /// [content] is the already-decrypted sing-box JSON and goes to the core over
   /// gRPC. The core never opens the sealed file itself and never receives the
   /// key.
-  TaskEither<ConnectionFailure, Unit> start(
-    String sealedPath,
-    String content,
-    String name,
-    bool disableMemoryLimit,
-  ) {
+  TaskEither<ConnectionFailure, Unit> start(String sealedPath, String content, String name, bool disableMemoryLimit) {
     // Held until the core runs. On iOS the tunnel comes up first and then waits
     // for the `Start` below, which an app suspended in between never sends.
     return TaskEither(
@@ -308,6 +307,7 @@ class RaynCoreService with InfraLogger {
     String name,
     bool disableMemoryLimit,
   ) async {
+    latest = const [];
     statusController.add(currentState = const CoreStatus.starting());
     loggy.debug("starting");
     // Before the start, so the start's own lines are caught.
@@ -376,6 +376,7 @@ class RaynCoreService with InfraLogger {
   TaskEither<String, Unit> stop() {
     return TaskEither(() async {
       loggy.debug("stopping");
+      latest = const [];
       var errMsg = "";
       try {
         await core.bgClient.stop(Empty());
@@ -399,6 +400,7 @@ class RaynCoreService with InfraLogger {
   TaskEither<String, Unit> restart(String content, String name, bool disableMemoryLimit) {
     return TaskEither(() async {
       loggy.debug("restarting");
+      latest = const [];
       // if (!await core.restart(path, name)) {
       try {
         final res = await core.bgClient.restart(
@@ -789,8 +791,8 @@ class RaynCoreService with InfraLogger {
     };
   }
 
-// getCoreLogLevel lived here. Its only caller was startListeningLogs, which no
-// longer maps the setting onto the subscription — see the note there.
+  // getCoreLogLevel lived here. Its only caller was startListeningLogs, which no
+  // longer maps the setting onto the subscription — see the note there.
 
   Future<void> closeFront() async {
     if (!core.isInitialized()) {
