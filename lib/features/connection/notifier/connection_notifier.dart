@@ -135,14 +135,15 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
         return _disconnect();
       }
       loggy.info("active profile changed, reconnecting");
+      // Read up front, as in _connectThrottled.
+      final dialogs = ref.read(dialogNotifierProvider.notifier);
+      final t = ref.read(translationsProvider).requireValue;
       await ref.read(Preferences.startedByUser.notifier).update(true);
       await _recordAppliedTier(profile);
       await _connectionRepo.reconnect(profile, ref.read(Preferences.disableMemoryLimit)).mapLeft((err) async {
         loggy.warning("error reconnecting", err);
         state = AsyncError(err, StackTrace.current);
-        await ref
-            .read(dialogNotifierProvider.notifier)
-            .showCustomAlertFromErr(err.present(ref.read(translationsProvider).requireValue));
+        await dialogs.showCustomAlertFromErr(err.present(t));
       }).run();
     }
   }
@@ -297,6 +298,13 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
       return;
     }
     if (_refusedByAccount()) return;
+    // Read before connecting, not in the failure handler. The start sends the
+    // core restart signal on its way out, success or failure, which marks this
+    // notifier out of date until it rebuilds, and debug builds refuse any ref
+    // call in between: the handler threw before it could show its dialog.
+    final dialogs = ref.read(dialogNotifierProvider.notifier);
+    final t = ref.read(translationsProvider).requireValue;
+    final startedByUser = ref.read(Preferences.startedByUser.notifier);
     // Connecting from here on. The core reports Starting only once the app has
     // set it up and read the config, about a second after the tap, and until
     // then the orb said "Tap to connect". A later status from the core wins over
@@ -313,20 +321,21 @@ class ConnectionNotifier extends _$ConnectionNotifier with AppLogger {
       // a failure over a tunnel that was working.
       state = AsyncError(err, StackTrace.current);
       //Go err is not normal object to see the go errors are string and need to be dumped
-      await ref
-          .read(dialogNotifierProvider.notifier)
-          .showCustomAlertFromErr(err.present(ref.read(translationsProvider).requireValue));
+      await dialogs.showCustomAlertFromErr(err.present(t));
       loggy.warning(err);
-      await ref.read(Preferences.startedByUser.notifier).update(false);
+      await startedByUser.update(false);
     }).run();
   }
 
   Future<void> _disconnect() async {
+    // Read up front, as in _connectThrottled: a restart signal can land while
+    // the core stops (a resume's setup sends one), and the handler below would
+    // then be refused its ref calls.
+    final dialogs = ref.read(dialogNotifierProvider.notifier);
+    final t = ref.read(translationsProvider).requireValue;
     await _connectionRepo.disconnect().mapLeft((err) {
       loggy.warning("error disconnecting", err);
-      ref
-          .read(dialogNotifierProvider.notifier)
-          .showCustomAlertFromErr(err.present(ref.read(translationsProvider).requireValue));
+      dialogs.showCustomAlertFromErr(err.present(t));
       state = AsyncError(err, StackTrace.current);
     }).run();
   }

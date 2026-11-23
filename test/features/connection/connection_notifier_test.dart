@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/features/auth/account/model/account_state.dart';
@@ -14,6 +15,7 @@ import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
+import 'package:hiddify/hiddifycore/init_signal.dart';
 import 'package:hiddify/singbox/model/singbox_config_option.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
@@ -109,6 +111,25 @@ void main() {
     await _settle();
 
     expect(state(), const AsyncData<ConnectionStatus>(Connected()));
+  });
+
+  // The real start sends the core restart signal on its way out, success or
+  // failure. That marks this notifier out of date until it rebuilds, and in
+  // debug builds Riverpod refuses a ref call in between, so the failure
+  // handler threw before it could show its dialog.
+  test('a failed connect shows its dialog after the core restart signal', () async {
+    repo.duringConnect = () => container.read(coreRestartSignalProvider.notifier).restart();
+    final uncaught = <Object>[];
+    await runZonedGuarded(() async {
+      await notifier().toggleConnection();
+      await _until(() => repo.connects == 1);
+      repo.connecting!.complete(left(const ConnectionFailure.missingVpnPermission()));
+      await _settle();
+    }, (error, _) => uncaught.add(error));
+
+    expect(uncaught, isEmpty);
+    expect(dialogs.shown, hasLength(1));
+    expect(container.read(Preferences.startedByUser), isFalse);
   });
 }
 
