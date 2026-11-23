@@ -104,7 +104,7 @@ class AccountSection extends ConsumerWidget {
               trailing: IconButton(
                 tooltip: t.pages.profiles.update,
                 icon: const Icon(Icons.refresh_rounded),
-                onPressed: () => ref.read(foregroundProfilesUpdateNotifierProvider.notifier).trigger(),
+                onPressed: () => ref.read(foregroundProfilesUpdateNotifierProvider.notifier).trigger(announce: true),
               ),
             ),
             // Offer converting a plan that does not renew itself — a legacy

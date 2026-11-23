@@ -1212,6 +1212,40 @@ void main() {
       );
     });
   });
+
+  group('only a refresh the user asked for reports its result', () {
+    // The 15-minute cycle, a resume and every other background trigger toasted
+    // "updated" or "failed" at moments nobody had asked for anything (upstream
+    // d52027e6; owner decision 2026-11-14: no toasts for background refreshes).
+    final notifier = File(
+      'lib/features/profile/notifier/profiles_update_notifier.dart',
+    ).readAsStringSync().replaceAll('\r\n', '\n');
+    const gate = 'final toasts = announce ? ref.read(inAppNotificationControllerProvider) : null;';
+
+    test('updateProfiles reaches the toasts only through the announce gate', () {
+      final start = notifier.indexOf('Future<void> updateProfiles()');
+      expect(start, isNot(-1), reason: 'updateProfiles not found');
+      final end = notifier.indexOf('\n  }\n', start);
+      final body = _withoutLineComments(notifier.substring(start, end), '//');
+      expect(body, contains(gate));
+      final shown = RegExp(r'show\w*Toast\(').allMatches(body).length;
+      expect(shown, greaterThan(0), reason: 'the refresh results are still reported when asked for');
+      expect(RegExp(r'toasts\?\.show\w*Toast\(').allMatches(body).length, shown);
+    });
+
+    test('no other part of the notifier reads the toast controller', () {
+      final rest = _withoutLineComments(notifier, '//').replaceFirst(gate, '');
+      expect(rest, isNot(contains('inAppNotificationControllerProvider')));
+    });
+
+    test("only the Account page's refresh button announces", () {
+      final announcing = [
+        for (final file in _dartFilesUnder('lib'))
+          if (file.readAsStringSync().contains('trigger(announce: true)')) file.path.replaceAll(r'\', '/'),
+      ];
+      expect(announcing, ['lib/features/auth/widget/account_section.dart']);
+    });
+  });
 }
 
 /// Every `XCBuildConfiguration` body in a pbxproj, one string per block.

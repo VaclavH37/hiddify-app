@@ -179,6 +179,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
 
   NeatPeriodicTaskScheduler? _scheduler;
   bool _forceNextRun = false;
+  bool _announceNextRun = false;
 
   /// The fast path's window over the core's URL-test results, and the one
   /// timer it runs at a time (the window, then the re-test's guard). In memory
@@ -382,10 +383,23 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
     return true;
   }
 
-  Future<void> trigger() async {
-    loggy.debug("triggering update");
+  /// Refreshes now. Only a refresh with [announce] reports its result in a
+  /// toast, and only the Account page's refresh button asks for one. Every
+  /// other trigger (a resume while the clock warning is up, the expiry
+  /// watchdog, a renewal, a plan change, a clock reading after a dead session)
+  /// and the 15-minute cycle stay silent: they toasted "updated" or "failed"
+  /// at moments nobody had asked for anything.
+  Future<void> trigger({bool announce = false}) async {
+    loggy.debug("triggering update${announce ? " (announced)" : ""}");
     _forceNextRun = true;
-    await _scheduler?.trigger();
+    if (announce) _announceNextRun = true;
+    try {
+      await _scheduler?.trigger();
+    } finally {
+      // The scheduler ignores a trigger while a refresh is running; the request
+      // to announce is not left for a later cycle to act on.
+      if (announce) _announceNextRun = false;
+    }
   }
 
   @visibleForTesting
@@ -395,6 +409,10 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
       force = true;
       _forceNextRun = false;
     }
+    final announce = _announceNextRun;
+    _announceNextRun = false;
+    // Null unless the user asked for this refresh: see [trigger].
+    final toasts = announce ? ref.read(inAppNotificationControllerProvider) : null;
 
     try {
       final previousRun = DateTime.tryParse(ref.read(sharedPreferencesProvider).requireValue.getString(prefKey) ?? "");
@@ -441,9 +459,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
                 // While the IP routing or device time warning is up it already
                 // explains why nothing reaches the network, this refresh included.
                 if (ref.read(localRoutingNotifierProvider) == null && ref.read(clockSkewNotifierProvider) == null) {
-                  ref
-                      .read(inAppNotificationControllerProvider)
-                      .showErrorToast(t.pages.profiles.msg.update.failureNamed(name: profile.name));
+                  toasts?.showErrorToast(t.pages.profiles.msg.update.failureNamed(name: profile.name));
                 }
                 state = AsyncData((name: profile.name, success: false));
                 // A refresh that failed WHILE CONNECTED is not noise — it is the
@@ -468,7 +484,7 @@ class ForegroundProfilesUpdateNotifier extends _$ForegroundProfilesUpdateNotifie
               // act on.
               await _applyConfig(profile);
               await _checkHubReachability(profile);
-              ref.read(inAppNotificationControllerProvider).showSuccessToast(t.pages.profiles.msg.update.success);
+              toasts?.showSuccessToast(t.pages.profiles.msg.update.success);
               state = AsyncData((name: profile.name, success: true));
             },
           );
