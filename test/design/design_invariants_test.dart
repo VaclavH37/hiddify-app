@@ -347,6 +347,25 @@ void main() {
       expect(listen, isNonNegative);
       expect(service.indexOf('onDone:', listen), isNonNegative);
     });
+
+    // Android keeps one log listener because the VPN service shares the app's
+    // process (upstream 1685304f). Moved to a process of its own, the skipped
+    // listener would be the only one carrying the service's lines.
+    test("Android's single log listener rests on the VPN service sharing the app's process", () {
+      final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+      expect(manifest.replaceAll(RegExp('<!--.*?-->', dotAll: true), ''), isNot(contains('android:process')));
+      final mobile = File('lib/hiddifycore/core_interface/core_interface_mobile.dart').readAsStringSync();
+      expect(mobile, contains('bool get coreSharesProcess => Platform.isAndroid;'));
+    });
+
+    test('with the background listener left out, Android reopens the foreground one', () {
+      final reopen = service.indexOf('Future<void> _reopenLogStreamIfDead()');
+      expect(reopen, isNonNegative);
+      expect(
+        service.substring(reopen, service.indexOf('\n  }\n', reopen)),
+        contains('core.isSingleChannel() || core.coreSharesProcess'),
+      );
+    });
   });
 
   group('a sign-in caches the standby config', () {

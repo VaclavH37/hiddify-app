@@ -31,4 +31,23 @@ void main() {
     expect(coreStreamErrorLevel('fgLogListener', const GrpcError.internal('HTTP/2 error')), CoreStreamErrorLevel.error);
     expect(coreStreamErrorLevel('fgLogListener', StateError('client not built')), CoreStreamErrorLevel.error);
   });
+
+  // One broadcaster per core process: a listener on each channel to the same
+  // process logged every line twice (upstream 1685304f).
+  group('log listeners', () {
+    test('Android: the background listener is left out, the foreground one kept', () {
+      expect(skipsLogListener('bg', sameChannel: false, sharesProcess: true), isTrue);
+      expect(skipsLogListener('fg', sameChannel: false, sharesProcess: true), isFalse);
+    });
+
+    test('desktop: one channel, one listener', () {
+      expect(skipsLogListener('bg', sameChannel: true, sharesProcess: false), isTrue);
+      expect(skipsLogListener('fg', sameChannel: true, sharesProcess: false), isFalse);
+    });
+
+    test('iOS: the extension is its own process, so both are kept', () {
+      expect(skipsLogListener('bg', sameChannel: false, sharesProcess: false), isFalse);
+      expect(skipsLogListener('fg', sameChannel: false, sharesProcess: false), isFalse);
+    });
+  });
 }

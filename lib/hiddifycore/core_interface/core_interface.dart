@@ -37,6 +37,10 @@ class CoreInterface {
     return fgClient == bgClient;
   }
 
+  /// Whether both channels reach cores in one process, which then publish one
+  /// log to both (see skipsLogListener).
+  bool get coreSharesProcess => false;
+
   Future<bool> resetTunnel() async {
     return false;
   }

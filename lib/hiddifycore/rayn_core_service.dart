@@ -667,8 +667,11 @@ class RaynCoreService with InfraLogger {
   /// first live failover on Windows (2026-10-18) no core line reached the app
   /// or an exported log for the rest of the session, the egress-routing line
   /// included. The status stream already recovers through watchStatus.
+  ///
+  /// On Android too: its background listener is left out (skipsLogListener),
+  /// so start() no longer opens one, and the foreground one is the only log.
   Future<void> _reopenLogStreamIfDead() async {
-    if (!core.isInitialized() || !core.isSingleChannel()) return;
+    if (!core.isInitialized() || !(core.isSingleChannel() || core.coreSharesProcess)) return;
     if (subscriptions.containsKey("fgLogListener")) return;
     loggy.info("reopening the core log stream");
     await startListeningLogs("fg", core.fgClient);
@@ -676,6 +679,10 @@ class RaynCoreService with InfraLogger {
 
   Future<void> startListeningLogs(String key, CoreClient cc) async {
     final listenKey = "${key}LogListener";
+    if (skipsLogListener(key, sameChannel: identical(cc, core.fgClient), sharesProcess: core.coreSharesProcess)) {
+      await stopListenSingle(listenKey);
+      return;
+    }
     // await stopListenSingle(listenKey);
     await listenSingle<LogMessage>(listenKey, () {
       // Subscribe at TRACE and let the core decide what to emit. Filtering by

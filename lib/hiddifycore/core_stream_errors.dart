@@ -36,3 +36,16 @@ CoreStreamErrorLevel coreStreamErrorLevel(String key, Object? error) {
   }
   return CoreStreamErrorLevel.error;
 }
+
+/// Whether the log listener for channel [key] ("fg" or "bg") is left out
+/// because the other one already receives every line.
+///
+/// The core publishes its log to every listener in its process (one
+/// broadcaster, `static.logObserver`). Desktop runs both clients on one channel
+/// ([sameChannel]), and on Android the VPN service shares the app's process
+/// ([sharesProcess]), so a listener on each channel logged every core line
+/// twice. The foreground one stays: it is there from setup, before any tunnel.
+/// On iOS the background core runs in the packet-tunnel extension's own
+/// process, and its lines reach only the background listener.
+bool skipsLogListener(String key, {required bool sameChannel, required bool sharesProcess}) =>
+    key == "bg" && (sameChannel || sharesProcess);

@@ -18,6 +18,11 @@ import 'package:hiddify/utils/utils.dart';
 import 'package:rxdart/rxdart.dart';
 
 class CoreInterfaceMobile extends CoreInterface with InfraLogger {
+  /// The VPN service has no android:process, so on Android the background core
+  /// runs in the app's process; iOS runs it in the packet-tunnel extension.
+  @override
+  bool get coreSharesProcess => Platform.isAndroid;
+
   static const channelPrefix = "com.raynlabs.app";
   static const methodChannel = MethodChannel("$channelPrefix/method");
   static const statusChannel = EventChannel("$channelPrefix/service.status", JSONMethodCodec());
