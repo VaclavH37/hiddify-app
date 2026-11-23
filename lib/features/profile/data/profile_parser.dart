@@ -692,9 +692,22 @@ class ProfileParser {
     return headers;
   }
 
+  /// Reads `subscription-userinfo`, e.g.
+  /// `upload=0; download=1024; total=10240; expire=1704054600`.
+  ///
+  /// A segment that is not a `key=value` pair (a trailing `;`, a stray `;;`, a
+  /// bare word) is skipped. Every segment used to be read as a pair, so one of
+  /// those threw, and because [parse] is one try/catch the whole profile failed
+  /// to load. Values may be decimals and are truncated.
   static SubscriptionInfo? _parseSubscriptionInfo(String subInfoStr) {
-    final values = subInfoStr.split(';');
-    final map = {for (final v in values) v.split('=').first.trim(): num.tryParse(v.split('=').second.trim())?.toInt()};
+    final map = <String, int?>{};
+    for (final segment in subInfoStr.split(';')) {
+      final parts = segment.split('=');
+      if (parts.length < 2) continue;
+      final key = parts.first.trim();
+      if (key.isEmpty) continue;
+      map[key] = num.tryParse(parts[1].trim())?.toInt();
+    }
     if (map case {"upload": final upload?, "download": final download?, "total": final total, "expire": var expire}) {
       final total1 = (total == null || total == 0) ? infiniteTrafficThreshold + 1 : total;
       expire = (expire == null || expire == 0) ? infiniteTimeThreshold : expire;

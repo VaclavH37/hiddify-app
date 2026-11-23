@@ -241,6 +241,57 @@ void main() {
     });
   });
 
+  /// Parses a profile whose headers are [headers], as a download hands them on
+  /// (one value per header). Fails the test if the parse itself fails.
+  RemoteProfileEntity parseWithHeaders(Map<String, String> headers) {
+    final populated = ProfileParser.populateHeaders(content: '', remoteHeaders: {...headers});
+    final parsed = ProfileParser.parse(
+      content: '',
+      profile: RemoteProfileEntity(
+        id: const Uuid().v4(),
+        active: true,
+        name: '',
+        url: validBaseUrl,
+        lastUpdate: DateTime.now(),
+        populatedHeaders: populated.getOrElse((l) => fail("headers: $l")),
+      ),
+    );
+    return parsed.getOrElse((l) => fail("parse: $l")) as RemoteProfileEntity;
+  }
+
+  group("subscription-userinfo", () {
+    // One malformed segment used to throw, and the parse is one try/catch, so
+    // the whole profile failed to load: no name, no traffic, nothing.
+    final expected = SubscriptionInfo(
+      upload: 0,
+      download: 1024,
+      total: 10240,
+      expire: DateTime.fromMillisecondsSinceEpoch(1704054600 * 1000),
+    );
+
+    for (final (label, value) in [
+      ("a trailing ;", "upload=0;download=1024;total=10240;expire=1704054600;"),
+      ("a stray ;;", "upload=0;;download=1024;total=10240;expire=1704054600"),
+      ("spaces after each ;", "upload=0; download=1024; total=10240; expire=1704054600; "),
+      ("a bare word", "upload=0;download=1024;unlimited;total=10240;expire=1704054600"),
+      ("an empty key", "upload=0;=5;download=1024;total=10240;expire=1704054600"),
+    ]) {
+      test("Should skip $label", () {
+        final rp = parseWithHeaders({"subscription-userinfo": value});
+        expect(rp.subInfo, equals(expected));
+      });
+    }
+
+    test("Should still need upload and download", () {
+      final rp = parseWithHeaders({
+        "profile-title": "title",
+        "subscription-userinfo": "total=10240;expire=1704054600;",
+      });
+      expect(rp.name, equals("title"));
+      expect(rp.subInfo, isNull);
+    });
+  });
+
   group("hub tier headers", () {
     // The middleware decides the tier and emits only that tier's outbounds; the
     // client's whole job is to carry these two headers through to the UI and the
