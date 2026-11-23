@@ -721,6 +721,21 @@ class ProfileParser {
     return null;
   }
 
+  /// Decodes a `profile-title: base64:<value>` header.
+  ///
+  /// Accepts the value without its `=` padding, which some servers leave off,
+  /// and in the URL-safe alphabet. Returns '' when it is not base64 or not UTF-8,
+  /// so the name falls through to the next source: it used to throw, and
+  /// [parse] is one try/catch, so the whole profile failed to load.
+  @visibleForTesting
+  static String decodeBase64Title(String value) {
+    try {
+      return utf8.decode(base64.decode(base64.normalize(value.trim()))).trim();
+    } on FormatException {
+      return '';
+    }
+  }
+
   @visibleForTesting
   static Either<ProfileFailure, ProfileEntity> parse({required String content, required ProfileEntity profile}) =>
       Either.tryCatch(() {
@@ -732,7 +747,7 @@ class ProfileParser {
 
         if (headers['profile-title'] case final String titleHeader when name.isEmpty) {
           if (titleHeader.startsWith("base64:")) {
-            name = utf8.decode(base64.decode(titleHeader.replaceFirst("base64:", "")));
+            name = decodeBase64Title(titleHeader.replaceFirst("base64:", ""));
           } else {
             name = titleHeader.trim();
           }

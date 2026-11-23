@@ -311,6 +311,30 @@ void main() {
     }
   });
 
+  group("profile-title base64", () {
+    for (final (label, value, name) in [
+      ("padded", "UmF5bg==", "Rayn"),
+      ("without its padding", "UmF5bg", "Rayn"),
+      ("in the URL-safe alphabet", "UmF5bj8_Pw", "Rayn???"),
+      ("with spaces around it", " UmF5bg== ", "Rayn"),
+      ("not ASCII", "6IqC54K5", "节点"),
+    ]) {
+      test("Should decode a title $label", () {
+        expect(ProfileParser.decodeBase64Title(value), equals(name));
+        expect(parseWithHeaders({"profile-title": "base64:$value"}).name, equals(name));
+      });
+    }
+
+    // Undecodable used to throw, failing the whole profile; the name now falls
+    // through to the next source, here the URL's file name.
+    for (final (label, value) in [("not base64", "not base64!!"), ("not UTF-8", "//4=")]) {
+      test("Should fall through when the title is $label", () {
+        expect(ProfileParser.decodeBase64Title(value), isEmpty);
+        expect(parseWithHeaders({"profile-title": "base64:$value"}).name, equals("filename"));
+      });
+    }
+  });
+
   group("hub tier headers", () {
     // The middleware decides the tier and emits only that tier's outbounds; the
     // client's whole job is to carry these two headers through to the UI and the
