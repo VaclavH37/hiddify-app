@@ -85,21 +85,21 @@ Nothing here was built or run. A commit was either read in full against our code
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `85bb1128` | Drops the last session's ping from the connect button | connection_button.dart:182, active_proxy_notifier.dart:27, rayn_core_service.dart:488: startWith(latest) re-emits the old list, so a reconnect briefly shows a false Connected with an old ping. Low severity. Proposed ADAPT, clearing latest on stop. |
-| `ef2835ac` | Shows Connecting immediately | connection_notifier.dart:293; the button says Tap to connect for about a second after a tap. Proposed ADAPT. |
-| `ff69cf23` | Sets the error before awaiting the failure dialog | connection_notifier.dart:311; a late Started during the dialog is overwritten, leaving an error over a working tunnel. Proposed ADAPT. |
-| `390927b5` | Connect button keeps its last value during reload | connection_button.dart:127-167; the button flashes dimmed Starting after the core starts. Proposed ADAPT. |
-| `0c357d63` | Shows a Disconnected-with-failure state as a failure | connection_button.dart:127; a failed start can read Tap to connect. Proposed ADAPT. |
-| `c90f08ae` | Reads the dialog's dependencies before connecting | connection_notifier.dart:303-310; debug builds lose the failure dialog. Proposed ADAPT, dropping the Sentry lines. |
-| `43fb83cf` | Shows Disconnecting on tap | connection_notifier.dart:315; the button stays Connected and tappable during stop. Proposed ADAPT. |
-| `9fa1e611` | AnimatedSwitcher duplicate keys | connection_button.dart:302,336; a quick A-B-A flip gives a debug crash and a possible release glitch. Proposed ADAPT. |
+| `85bb1128` | Drops the last session's ping from the connect button | connection_button.dart:182, active_proxy_notifier.dart:27, rayn_core_service.dart:488: startWith(latest) re-emits the old list, so a reconnect briefly shows a false Connected with an old ping. Low severity. Proposed ADAPT, clearing latest on stop. **Landed for 1.6.6 as `6daefc1e`.** |
+| `ef2835ac` | Shows Connecting immediately | connection_notifier.dart:293; the button says Tap to connect for about a second after a tap. Proposed ADAPT. **Landed for 1.6.6 as `3817c6ce`.** |
+| `ff69cf23` | Sets the error before awaiting the failure dialog | connection_notifier.dart:311; a late Started during the dialog is overwritten, leaving an error over a working tunnel. Proposed ADAPT. **Landed for 1.6.6 as `46994494`.** |
+| `390927b5` | Connect button keeps its last value during reload | connection_button.dart:127-167; the button flashes dimmed Starting after the core starts. Proposed ADAPT. **Landed for 1.6.6 as `fe0a2a65`.** |
+| `0c357d63` | Shows a Disconnected-with-failure state as a failure | connection_button.dart:127; a failed start can read Tap to connect. Proposed ADAPT. **Landed for 1.6.6 as `f2163348`.** |
+| `c90f08ae` | Reads the dialog's dependencies before connecting | connection_notifier.dart:303-310; debug builds lose the failure dialog. Proposed ADAPT, dropping the Sentry lines. **Landed for 1.6.6 as `67508616`.** |
+| `43fb83cf` | Shows Disconnecting on tap | connection_notifier.dart:315; the button stays Connected and tappable during stop. Proposed ADAPT. **Landed for 1.6.6 as `e37afb10`.** |
+| `9fa1e611` | AnimatedSwitcher duplicate keys | connection_button.dart:302,336; a quick A-B-A flip gives a debug crash and a possible release glitch. Proposed ADAPT. **Landed for 1.6.6 as `1cd04c93`.** |
 
 ### 11. Small visible fixes
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
 | `676a8904` | Stops swallowing the Flutter error report (the idea only) | logger.dart:8 hides Flutter's own error presentation in debug. Proposed ADAPT of the idea: presentError in debug, with library and context in the log. The rest of the logging rewrite is rejected. |
-| `567d1ca3` | Friendly dialog for a TUN address clash | Absent at rayn_core_service.dart:344; on Windows another VPN using 172.19.0.1 gives a raw object-already-exists error. Proposed ADAPT. |
+| `567d1ca3` | Friendly dialog for a TUN address clash | Absent at rayn_core_service.dart:344; on Windows another VPN using 172.19.0.1 gives a raw object-already-exists error. Proposed ADAPT. **Landed for 1.6.6 as `a265c7ab`.** |
 | `d52027e6` | Bulk-update toast only when forced | profiles_update_notifier.dart:471; every periodic refresh pops a success toast. Proposed ADAPT. |
 | `748fb8eb` | Toast on a failed proxy switch | proxies_overview_notifier.dart:126; a failed tap throws uncaught and looks ignored. Proposed ADAPT. |
 | `c49d6edb` | Anchors the iOS share sheet | export_diagnostics.dart:26 and uri_utils.dart:36; iOS share can refuse and fall back to the clipboard. Proposed ADAPT. |
