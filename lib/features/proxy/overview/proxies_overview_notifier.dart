@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:dartx/dartx.dart';
+import 'package:fpdart/fpdart.dart';
 
 import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/core/utils/resubscribe_backoff.dart';
@@ -147,11 +149,19 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
     loggy.debug("changing proxy, group: [$groupTag] - outbound: [$outboundTag]");
     if (!state.hasValue) return;
     final outbounds = state.value!;
+    // Everything read before the first await: a core restart during the switch
+    // rebuilds this notifier, and Riverpod then refuses ref calls until it has.
+    final t = ref.read(translationsProvider).requireValue;
+    final toasts = ref.read(inAppNotificationControllerProvider);
+    final repository = ref.read(proxyRepositoryProvider);
     await ref.read(hapticServiceProvider.notifier).lightImpact();
-    await ref.read(proxyRepositoryProvider).selectProxy(groupTag, outboundTag).getOrElse((err) {
+    if (await repository.selectProxy(groupTag, outboundTag).run() case Left(value: final err)) {
+      // This used to be thrown from the tap handler, where nothing caught it:
+      // the app logged an uncaught error and the tap looked ignored.
       loggy.warning("error selecting outbound", err);
-      throw err;
-    }).run();
+      toasts.showErrorToast(t.pages.proxies.switchFailed);
+      return;
+    }
     final newselected = outbounds.items.where((e) => e.tag == outboundTag).firstOrNull;
     if (newselected != null) {
       newselected.isSelected = true;

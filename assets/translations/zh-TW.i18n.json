@@ -54,6 +54,7 @@
       "title": "代理",
       "sort": "排序代理",
       "testDelay": "測試延遲",
+      "switchFailed": "無法切換到此位置，請再試一次。",
       "empty": "無可用代理",
       "activeProxy": "當前代理",
       "selectLocation": "選擇位置",

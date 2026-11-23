@@ -54,6 +54,7 @@
       "title": "代理",
       "sort": "排序代理",
       "testDelay": "测试延迟",
+      "switchFailed": "无法切换到此位置，请重试。",
       "empty": "无可用代理",
       "activeProxy": "当前代理",
       "selectLocation": "选择位置",

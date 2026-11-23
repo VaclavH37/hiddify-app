@@ -54,6 +54,7 @@
       "title": "Proxy'ler",
       "sort": "Proxy'leri sırala",
       "testDelay": "Gecikmeyi test et",
+      "switchFailed": "Bu konuma geçilemedi. Tekrar deneyin.",
       "empty": "Kullanılabilir proxy yok",
       "activeProxy": "Aktif proxy",
       "selectLocation": "Konum seç",

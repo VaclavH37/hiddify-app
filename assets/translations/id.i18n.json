@@ -54,6 +54,7 @@
       "title": "Proxy",
       "sort": "Urutkan proksi",
       "testDelay": "Uji latensi",
+      "switchFailed": "Tidak dapat beralih ke lokasi ini. Coba lagi.",
       "empty": "Tidak ada proksi yang tersedia",
       "activeProxy": "Proksi aktif",
       "selectLocation": "Pilih lokasi",

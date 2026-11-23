@@ -54,6 +54,7 @@
       "title": "Proxys",
       "sort": "Trier les proxys",
       "testDelay": "Tester le délai",
+      "switchFailed": "Impossible de passer à cet emplacement. Réessayez.",
       "empty": "Aucun proxy disponible",
       "activeProxy": "Proxy actif",
       "selectLocation": "Choisir un emplacement",

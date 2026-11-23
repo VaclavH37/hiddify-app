@@ -54,6 +54,7 @@
       "title": "Proxies",
       "sort": "Ordenar proxies",
       "testDelay": "Probar latencia",
+      "switchFailed": "No se pudo cambiar a esta ubicación. Inténtalo de nuevo.",
       "empty": "No hay proxies disponibles",
       "activeProxy": "Proxy activo",
       "selectLocation": "Seleccionar ubicación",

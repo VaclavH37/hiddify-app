@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:hiddify/core/haptic/haptic_service.dart';
+import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
 import 'package:hiddify/features/proxy/data/proxy_repository.dart';
@@ -11,6 +14,7 @@ import 'package:hiddify/features/proxy/model/proxy_failure.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_notifier.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:toastification/toastification.dart';
 
 /// The location list. Its gRPC stream fails whenever its connection drops, for
 /// example when iOS suspends the app; the page then showed an error until it
@@ -19,19 +23,25 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 /// testWidgets for its fake clock, so the reopen timers run without real waits.
 void main() {
   late _FakeProxyRepository repository;
+  late _RecordingToasts toasts;
   late ProviderContainer container;
 
   Future<void> start(WidgetTester tester) async {
     repository = _FakeProxyRepository();
+    toasts = _RecordingToasts();
     container = ProviderContainer(
       overrides: [
         serviceRunningProvider.overrideWith((ref) => true),
         proxyRepositoryProvider.overrideWithValue(repository),
         proxiesSortNotifierProvider.overrideWith(_UnsortedNotifier.new),
+        hapticServiceProvider.overrideWith(_NoHaptics.new),
+        translationsProvider.overrideWith((ref) => AppLocale.en.buildSync()),
+        inAppNotificationControllerProvider.overrideWithValue(toasts),
       ],
     );
     addTearDown(container.dispose);
     container.listen(proxiesOverviewNotifierProvider, (_, _) {}, fireImmediately: true);
+    container.listen(translationsProvider, (_, _) {}, fireImmediately: true);
     await tester.pump();
   }
 
@@ -64,6 +74,44 @@ void main() {
     expect(repository.subscriptions, 3);
   });
 
+  group('switching location', () {
+    OutboundGroup twoLocations() => OutboundGroup(
+      tag: 'select',
+      selected: 'EXIT-Tokyo',
+      items: [
+        OutboundInfo(tag: 'EXIT-Tokyo', isSelected: true),
+        OutboundInfo(tag: 'EXIT-Seoul'),
+      ],
+    );
+
+    Future<void> switchToSeoul(WidgetTester tester) async {
+      repository.emit(right(twoLocations()));
+      await tester.pump();
+      await container.read(proxiesOverviewNotifierProvider.notifier).changeProxy('select', 'EXIT-Seoul');
+      await tester.pump();
+    }
+
+    // It used to throw from the tap handler, where nothing caught it: an
+    // uncaught error in the log and a tap that looked ignored.
+    testWidgets('a failed switch says so and keeps the location', (tester) async {
+      await start(tester);
+      repository.selectResult = left(const ProxyFailure.unexpected('core restarting'));
+      await switchToSeoul(tester);
+
+      expect(toasts.errors, ["Couldn't switch to this location. Try again."]);
+      expect(state().valueOrNull?.selected, 'EXIT-Tokyo');
+    });
+
+    testWidgets('a switch selects the location without a toast', (tester) async {
+      await start(tester);
+      await switchToSeoul(tester);
+
+      expect(repository.selected, ['select/EXIT-Seoul']);
+      expect(toasts.errors, isEmpty);
+      expect(state().valueOrNull?.selected, 'EXIT-Seoul');
+    });
+  });
+
   testWidgets('a list arriving again brings the wait back to 2 s', (tester) async {
     await start(tester);
     repository.end();
@@ -82,8 +130,25 @@ class _UnsortedNotifier extends ProxiesSortNotifier {
   ProxiesSort build() => ProxiesSort.unsorted;
 }
 
+class _NoHaptics extends HapticService {
+  @override
+  bool build() => false;
+}
+
+class _RecordingToasts extends InAppNotificationController {
+  final errors = <String>[];
+
+  @override
+  ToastificationItem? showErrorToast(String message) {
+    errors.add(message);
+    return null;
+  }
+}
+
 class _FakeProxyRepository implements ProxyRepository {
   int subscriptions = 0;
+  Either<ProxyFailure, Unit> selectResult = right(unit);
+  final selected = <String>[];
   late StreamController<Either<ProxyFailure, OutboundGroup?>> _current;
 
   void emit(Either<ProxyFailure, OutboundGroup?> event) => _current.add(event);
@@ -105,7 +170,10 @@ class _FakeProxyRepository implements ProxyRepository {
   TaskEither<ProxyFailure, oldipinfo.IpInfo> getCurrentIpInfo(CancelToken cancelToken) => throw UnimplementedError();
 
   @override
-  TaskEither<ProxyFailure, Unit> selectProxy(String groupTag, String outboundTag) => throw UnimplementedError();
+  TaskEither<ProxyFailure, Unit> selectProxy(String groupTag, String outboundTag) => TaskEither(() async {
+    if (selectResult.isRight()) selected.add('$groupTag/$outboundTag');
+    return selectResult;
+  });
 
   @override
   TaskEither<ProxyFailure, Unit> urlTest(String groupTag) => throw UnimplementedError();

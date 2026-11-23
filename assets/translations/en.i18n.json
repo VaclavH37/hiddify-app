@@ -238,6 +238,7 @@
       "title": "Location",
       "sort": "Sort locations",
       "testDelay": "Test latency",
+      "switchFailed": "Couldn't switch to this location. Try again.",
       "empty": "No locations available",
       "activeProxy": "Current location",
       "selectLocation": "Select location",
