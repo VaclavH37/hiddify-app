@@ -98,27 +98,27 @@ Nothing here was built or run. A commit was either read in full against our code
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `676a8904` | Stops swallowing the Flutter error report (the idea only) | logger.dart:8 hides Flutter's own error presentation in debug. Proposed ADAPT of the idea: presentError in debug, with library and context in the log. The rest of the logging rewrite is rejected. |
+| `676a8904` | Stops swallowing the Flutter error report (the idea only) | logger.dart:8 hides Flutter's own error presentation in debug. Proposed ADAPT of the idea: presentError in debug, with library and context in the log. The rest of the logging rewrite is rejected. **Landed for 1.6.6 as `02482432`.** |
 | `567d1ca3` | Friendly dialog for a TUN address clash | Absent at rayn_core_service.dart:344; on Windows another VPN using 172.19.0.1 gives a raw object-already-exists error. Proposed ADAPT. **Landed for 1.6.6 as `a265c7ab`.** |
-| `d52027e6` | Bulk-update toast only when forced | profiles_update_notifier.dart:471; every periodic refresh pops a success toast. Proposed ADAPT. |
-| `748fb8eb` | Toast on a failed proxy switch | proxies_overview_notifier.dart:126; a failed tap throws uncaught and looks ignored. Proposed ADAPT. |
-| `c49d6edb` | Anchors the iOS share sheet | export_diagnostics.dart:26 and uri_utils.dart:36; iOS share can refuse and fall back to the clipboard. Proposed ADAPT. |
-| `1685304f` | Cached ping sort, Android log dedupe, installer (log dedupe only) | rayn_core_service.dart:176-179; Android core lines are exported twice. Proposed ADAPT, dedupe only; the sort needs the core. |
-| `247f1b5a` | Blocks a notification repost after close | ServiceNotification.kt updateStatus; an in-flight poll reposts the ongoing notification after stop. Proposed ADAPT. |
+| `d52027e6` | Bulk-update toast only when forced | profiles_update_notifier.dart:471; every periodic refresh pops a success toast. Proposed ADAPT. **Landed for 1.6.6 as `e8a7dbfd`.** |
+| `748fb8eb` | Toast on a failed proxy switch | proxies_overview_notifier.dart:126; a failed tap throws uncaught and looks ignored. Proposed ADAPT. **Landed for 1.6.6 as `6289ad14`.** |
+| `c49d6edb` | Anchors the iOS share sheet | export_diagnostics.dart:26 and uri_utils.dart:36; iOS share can refuse and fall back to the clipboard. Proposed ADAPT. **Landed for 1.6.6 as `0cc38565`.** |
+| `1685304f` | Cached ping sort, Android log dedupe, installer (log dedupe only) | rayn_core_service.dart:176-179; Android core lines are exported twice. Proposed ADAPT, dedupe only; the sort needs the core. **Landed for 1.6.6 as `e51a31cc`.** |
+| `247f1b5a` | Blocks a notification repost after close | ServiceNotification.kt updateStatus; an in-flight poll reposts the ongoing notification after stop. Proposed ADAPT. **Landed for 1.6.6 as `17b334b3`.** |
 
 ### 12. Malformed subscription headers
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `36064f6d` | Skips malformed ';' segments in subscription-userinfo | profile_parser.dart:697 throws on .second; a trailing ';' from the middleware fails every refresh. Whether the middleware can send it is unverified. Proposed TAKE. |
-| `7ecc0aee` | Uses tryParse for the update interval | profile_parser.dart:765; a decimal or junk value fails the whole refresh. Proposed TAKE. |
-| `4cc86c4e` | Pads a base64 profile-title that has no padding | profile_parser.dart:722; an unpadded title fails the whole refresh. Proposed TAKE. |
+| `36064f6d` | Skips malformed ';' segments in subscription-userinfo | profile_parser.dart:697 throws on .second; a trailing ';' from the middleware fails every refresh. Whether the middleware can send it is unverified. Proposed TAKE. **Landed for 1.6.6 as `98fdc4f9`.** |
+| `7ecc0aee` | Uses tryParse for the update interval | profile_parser.dart:765; a decimal or junk value fails the whole refresh. Proposed TAKE. **Landed for 1.6.6 as `6e49ee1e`.** |
+| `4cc86c4e` | Pads a base64 profile-title that has no padding | profile_parser.dart:722; an unpadded title fails the whole refresh. Proposed TAKE. **Landed for 1.6.6 as `21c47659`.** |
 
 ### 13. Windows portable download
 
 | Commit | What it does | Why, in Rayn's terms |
 |---|---|---|
-| `8aaeb368` | Repacks the portable ZIP with Windows tar.exe | Makefile:466 runs GNU tar -a, writing a plain tar named .zip; Explorer shows it empty. Proposed ADAPT. |
+| `8aaeb368` | Repacks the portable ZIP with Windows tar.exe | Makefile:466 runs GNU tar -a, writing a plain tar named .zip; Explorer shows it empty. Proposed ADAPT. **Landed for 1.6.6 as `4ca8316c`.** |
 
 ## Proposed: macOS, for the Mac App Store port
 
