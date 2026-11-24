@@ -326,7 +326,7 @@ android-aab-install-deps: android-install-deps
 # loads the package list from linux_deps.list
 LINUX_DEPS = $(shell grep -vE '^\s*#|^\s*$$' linux_deps.list)
 # reads the Flutter version from pubspec.yaml
-REQUIRED_VER = $(shell sed -n '/environment:/,/flutter:/ s/.*flutter:[[:space:]]*//p' pubspec.yaml | tr -d " '^\"")
+REQUIRED_VER = $(shell sed -n '/environment:/,/flutter:/ s/.*flutter:[[:space:]]*//p' pubspec.yaml | tr -d " '^\"\r")
 
 linux-amd64-install-deps:linux-install-deps
 linux-amd64-musl-install-deps:linux-install-deps
@@ -402,6 +402,23 @@ linux-flutter-sync:
 		flutter doctor; \
 	else \
 		$(GREEN)Flutter SDK is ready.$(DONE); \
+	fi
+
+# Switches the Flutter on PATH to the version pubspec.yaml pins (REQUIRED_VER),
+# on any build machine: the PC in Git Bash, the Mac, Linux. pub refuses every
+# other version, so run this when `flutter pub get` says "requires Flutter SDK
+# version". The SDK must be a git checkout, which the standard install is; a
+# zip install has to be replaced by hand.
+flutter-sync:
+	@SDK=$$(cd "$$(dirname "$$(command -v flutter)")/.." && pwd); \
+	CURRENT=$$(flutter --version --machine 2>/dev/null | sed -n 's/.*"frameworkVersion": *"\([^"]*\)".*/\1/p'); \
+	$(BLUE)Flutter at $$SDK: $$CURRENT, pinned: $(REQUIRED_VER)$(DONE); \
+	if [ "$$CURRENT" = "$(REQUIRED_VER)" ]; then \
+		$(GREEN)Flutter $(REQUIRED_VER) is in place.$(DONE); \
+	elif [ ! -d "$$SDK/.git" ]; then \
+		echo "$$SDK is not a git checkout; install Flutter $(REQUIRED_VER) by hand."; exit 1; \
+	else \
+		git -C "$$SDK" fetch --tags && git -C "$$SDK" checkout $(REQUIRED_VER) && flutter --version; \
 	fi
 
 windows-install-deps:

@@ -5,11 +5,17 @@ version: 1.6.6+10606
 
 environment:
   sdk: ^3.10.4
-  # ! IMPORTANT !
-  # This SDK version is strictly required and must not be removed.
-  # It is parsed/grep-ed by Makefile and Dockerfile to configure the build environment.
-  # Ensure this matches the target Flutter version.
-  flutter: ^3.38.5
+  # The one Flutter every machine builds with, exact. Pub refuses any other
+  # version, so a Mac or PC on a different Flutter stops at `flutter pub get`
+  # instead of quietly re-resolving the packages Flutter pins itself
+  # (characters, matcher, material_color_utilities, test_api) and building
+  # what no other machine tested. To move to a new Flutter: change it here, in
+  # .github/workflows/rayn-checks.yml and build.yml and in
+  # docs/upstream/BASELINE.md (the design tests keep them together), then run
+  # `make flutter-sync` on every build machine. The Makefile reads this line
+  # (REQUIRED_VER), so keep it a bare version, and keep the key's own name out
+  # of these comments: the Makefile stops at its first mention.
+  flutter: 3.41.9
   
 dependencies:
   flutter:

@@ -1318,6 +1318,49 @@ void main() {
     });
   });
 
+  group('one Flutter, pinned', () {
+    // The Mac ran an older Flutter than the PC, and nothing said so: its
+    // `flutter pub get` quietly moved the packages Flutter pins itself
+    // (material_color_utilities 0.13.0 -> 0.11.1 among them) and every iPhone
+    // build compiled against an SDK the tests never ran on. pubspec now pins
+    // the version exactly, and pub refuses any other.
+    final pubspec = File('pubspec.yaml').readAsStringSync().replaceAll('\r\n', '\n');
+    final pinned = RegExp(
+      r'^environment:\n(?:  .*\n)*?  flutter: (.*)$',
+      multiLine: true,
+    ).firstMatch(pubspec)?.group(1);
+
+    test('pubspec pins an exact version, not a range', () {
+      expect(pinned, isNotNull, reason: 'environment has no flutter constraint');
+      expect(pinned, matches(RegExp(r'^\d+\.\d+\.\d+$')), reason: 'a range lets each machine resolve its own');
+    });
+
+    test("the Makefile's REQUIRED_VER reads that line and no comment above it", () {
+      // REQUIRED_VER is `sed -n '/environment:/,/flutter:/ ...'`: the range ends
+      // at the first line naming the key, so a comment that does is read instead.
+      final section = pubspec.substring(pubspec.indexOf('environment:'));
+      final firstMention = section.split('\n').firstWhere((line) => line.contains('flutter:'));
+      expect(firstMention.trim(), 'flutter: $pinned');
+    });
+
+    for (final workflow in ['rayn-checks.yml', 'build.yml']) {
+      test('$workflow builds with it', () {
+        final yaml = File('.github/workflows/$workflow').readAsStringSync();
+        expect(RegExp("FLUTTER_VERSION: '([^']*)'").firstMatch(yaml)?.group(1), pinned);
+      });
+    }
+
+    test('BASELINE.md records it', () {
+      final baseline = File('docs/upstream/BASELINE.md').readAsStringSync();
+      expect(baseline, contains('| Flutter | $pinned stable'));
+    });
+
+    test('the lock was resolved under it', () {
+      final lock = File('pubspec.lock').readAsStringSync().replaceAll('\r\n', '\n');
+      expect(lock, contains('\n  flutter: "$pinned"\n'));
+    });
+  });
+
   test('the portable ZIP is repacked as a real zip', () {
     // Git Bash's tar is GNU tar, which ignores -a for .zip and wrote an
     // uncompressed tar under the .zip name (upstream 8aaeb368).

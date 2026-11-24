@@ -15,7 +15,9 @@ on:
 env:
   IS_GITHUB_ACTIONS: 1
   CHANNEL: "${{ inputs.channel }}"
-  FLUTTER_VERSION: '3.38.5'
+  # pubspec.yaml pins Flutter exactly and pub refuses any other version; the
+  # design tests keep this in step with it.
+  FLUTTER_VERSION: '3.41.9'
   NDK_VERSION: r28c
   UPLOAD_ARTIFACT: "${{ inputs.upload-artifact }}"
   TAG_NAME: "${{ inputs.tag-name }}"
